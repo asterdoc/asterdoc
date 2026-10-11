@@ -11,13 +11,11 @@
  * own `bindComponent` — transforms a `.tsx`/`.jsx` file instead of failing
  * on its extension.
  *
- * The import is lazy — nothing here loads `tsx` until a command actually
- * binds a React layer — but the package itself is a real, non-optional
- * dependency of `@paradoc/cli`, not an on-demand install: `tsx` wraps
- * esbuild, which adds roughly 10 MB to every `paradoc` install whether or not
- * a project ever composes in React. That is the honest trade-off; it is not
- * hidden behind the renderer manager's on-demand-install path the way
- * `@paradoc/react` itself is.
+ * `tsx` is not a dependency of `@paradoc/cli`: it wraps esbuild, roughly 10 MB
+ * that most `paradoc` installs never touch. It is an optional peer, resolved at
+ * the composition's project first and at `paradoc`'s own installation second,
+ * the way `paradoc dev` resolves its bundler. A project with neither is told
+ * what to install. Whichever copy registers, the hooks are process-wide.
  *
  * **The tsconfig has to be resolved explicitly.** Left to its own defaults,
  * `register()` resolves one from `process.cwd()`, which is wherever the
@@ -40,6 +38,11 @@
 import { existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
+import { importCheckLoader } from '../commands/dev/peers.js'
+
+/** The slice of `tsx/esm/api` this needs. */
+type Register = (options: { tsconfig: string | false }) => unknown
+
 /** Walks up from `fromDir` for the nearest `tsconfig.json`, or `undefined` past the filesystem root. */
 function findNearestTsconfig(fromDir: string): string | undefined {
   let dir = fromDir
@@ -54,10 +57,17 @@ function findNearestTsconfig(fromDir: string): string | undefined {
 
 let registered = false
 
-/** `fromDir` is where tsconfig discovery starts — the composition's own directory. */
-export async function ensureTsLoader(fromDir: string): Promise<void> {
+/**
+ * `root` is the project the loader is resolved from; `fromDir` is where tsconfig
+ * discovery starts — the composition's own directory.
+ *
+ * @throws {MissingPeerError} when neither the project nor `paradoc` has `tsx`.
+ */
+export async function ensureTsLoader(root: string, fromDir: string): Promise<void> {
   if (registered) return
-  const { register } = await import('tsx/esm/api')
+  const api = await importCheckLoader(root)
+  // Resolved through `require`, so the CommonJS build may arrive under `default`.
+  const register = (api.register ?? (api.default as { register?: unknown } | undefined)?.register) as Register
   const tsconfig = findNearestTsconfig(fromDir)
   register({ tsconfig: tsconfig ?? false })
   registered = true

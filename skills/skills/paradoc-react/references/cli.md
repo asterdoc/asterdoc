@@ -107,8 +107,16 @@ class with its substitute in
 fix each path against the artifact's fields, and give each image a `data:` URI
 or bytes at render time.
 
-**Runtime.** The check loads `.tsx` through `tsx`, with the composition's
-nearest `tsconfig.json`, so `@/` aliases resolve. The project must install `@paradoc/react`, `@paradoc/react-pdf`, `react`, and `react-dom`.
+**Runtime.** The check loads `.tsx` through the project's `tsx`, with the
+composition's nearest `tsconfig.json`, so `@/` aliases resolve. Install these
+in the project first:
+
+```bash
+npm install @paradoc/react @paradoc/react-pdf react react-dom
+npm install -D tsx
+```
+
+Without `tsx`, the command stops with the exact install line.
 <!-- dep:R4 -->
 
 ### From code

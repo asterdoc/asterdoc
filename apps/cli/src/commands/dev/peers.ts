@@ -48,6 +48,33 @@ export const DEV_BUILD_PEERS = [
 /** Everything `paradoc dev` needs from the project, named the way a person installs it. */
 export const DEV_PEERS = [...DEV_BUILD_PEERS, ...DEV_RUNTIME_PEERS] as const
 
+/**
+ * The loader `paradoc check` imports a composition through. It only compiles, so
+ * it sits in the same tier as the bundler: the project's copy, else `paradoc`'s own.
+ */
+export const CHECK_LOADER_PEER = 'tsx'
+
+/** Which command is asking, and what it does with the packages it asks for. */
+export interface PeerNeed {
+	command: string
+	reason: string
+}
+
+const DEV_NEED: PeerNeed = {
+	command: 'paradoc dev',
+	reason:
+		'The preview compiles your compositions against your own React and ' +
+		"your own @paradoc/react, so it uses your project's toolchain.",
+}
+
+/** What `paradoc check` says when the project cannot supply a package it loads. */
+export const CHECK_NEED: PeerNeed = {
+	command: 'paradoc check',
+	reason:
+		'The check imports your composition against your own React and your own ' +
+		"@paradoc/react, through your project's TypeScript loader.",
+}
+
 /** The install commands each package manager spells, by the lockfile it leaves. */
 const PACKAGE_MANAGERS = [
 	{ lockfile: 'pnpm-lock.yaml', runtime: 'pnpm add', development: 'pnpm add -D' },
@@ -65,12 +92,12 @@ function installer(root: string): { runtime: string; development: string } {
 	return { runtime: 'npm install', development: 'npm install --save-dev' }
 }
 
-/** Thrown when the project cannot supply what the preview is built from. */
-export class MissingDevPeerError extends Error {
+/** Thrown when the project cannot supply what a command is built from. */
+export class MissingPeerError extends Error {
 	/** The packages that could not be resolved, in the order they are listed. */
 	readonly peers: readonly string[]
 
-	constructor(peers: readonly string[], root: string) {
+	constructor(peers: readonly string[], root: string, need: PeerNeed = DEV_NEED) {
 		const commands = installer(root)
 		const runtime = peers.filter((peer) => (DEV_RUNTIME_PEERS as readonly string[]).includes(peer))
 		const development = peers.filter((peer) => !runtime.includes(peer))
@@ -80,12 +107,11 @@ export class MissingDevPeerError extends Error {
 		].filter((line): line is string => line !== undefined)
 
 		super(
-			`paradoc dev needs ${peers.join(', ')}, and ${peers.length === 1 ? 'it is' : 'they are'} not ` +
-				`installed in ${root}. The preview compiles your compositions against your own React and ` +
-				"your own @paradoc/react, so it uses your project's toolchain. Install them with:\n\n" +
+			`${need.command} needs ${peers.join(', ')}, and ${peers.length === 1 ? 'it is' : 'they are'} not ` +
+				`installed in ${root}. ${need.reason} Install ${peers.length === 1 ? 'it' : 'them'} with:\n\n` +
 				`${lines.join('\n')}\n`,
 		)
-		this.name = 'MissingDevPeerError'
+		this.name = 'MissingPeerError'
 		this.peers = peers
 	}
 }
@@ -126,12 +152,25 @@ function resolveFrom(root: string, specifier: string): string | undefined {
 /**
  * A module resolved for this project, imported through its file URL.
  *
- * @throws {MissingDevPeerError} when the project cannot supply it.
+ * @throws {MissingPeerError} when the project cannot supply it.
  */
-export async function importPeer(root: string, specifier: string): Promise<Record<string, unknown>> {
+export async function importPeer(
+	root: string,
+	specifier: string,
+	need: PeerNeed = DEV_NEED,
+): Promise<Record<string, unknown>> {
 	const file = resolveFrom(root, specifier)
-	if (!file) throw new MissingDevPeerError([packageOf(specifier)], root)
+	if (!file) throw new MissingPeerError([packageOf(specifier)], root, need)
 	return (await import(pathToFileURL(file).href)) as Record<string, unknown>
+}
+
+/**
+ * The loader module `paradoc check` registers, from the project or from `paradoc` itself.
+ *
+ * @throws {MissingPeerError} naming `paradoc check` when neither has it.
+ */
+export async function importCheckLoader(root: string): Promise<Record<string, unknown>> {
+	return importPeer(root, `${CHECK_LOADER_PEER}/esm/api`, CHECK_NEED)
 }
 
 /** The package a subpath specifier belongs to, which is what a person installs. */
@@ -151,16 +190,16 @@ export function missingDevPeers(root: string): string[] {
 	return DEV_PEERS.filter((peer) => resolveFrom(root, peer) === undefined)
 }
 
-/** Refuses a project that cannot supply the toolchain. @throws {MissingDevPeerError} */
+/** Refuses a project that cannot supply the toolchain. @throws {MissingPeerError} */
 export function assertDevPeers(root: string): void {
 	const missing = missingDevPeers(root)
-	if (missing.length > 0) throw new MissingDevPeerError(missing, root)
+	if (missing.length > 0) throw new MissingPeerError(missing, root)
 }
 
 /**
  * Everything the preview is built from, or one error naming every missing part.
  *
- * @throws {MissingDevPeerError} when the project cannot supply a peer.
+ * @throws {MissingPeerError} when the project cannot supply a peer.
  */
 export async function loadDevToolchain(root: string): Promise<DevToolchain> {
 	assertDevPeers(root)

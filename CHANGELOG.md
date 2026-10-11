@@ -4,6 +4,10 @@ All notable changes to Paradoc. Packages are versioned in lockstep.
 
 ## [Unreleased]
 
+### Breaking
+
+- `paradoc check` takes `tsx` from your project. The CLI no longer installs it, which halves the install and removes the `esbuild` install-scripts warning. Run `npm install -D tsx` in a project that runs `check`. Without it, the command stops and prints the install line.
+
 ## [0.7.1] - 2026-10-08
 
 Paradoc 0.7.1 fixes problems that real models hit with the AI tools. Renders no longer report a blank file as success, registry calls can rely on the configured default registry, and the Mastra adapter passes free-form JSON through intact.

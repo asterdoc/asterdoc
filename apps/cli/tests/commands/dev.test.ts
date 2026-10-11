@@ -23,7 +23,7 @@ import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { clientModule, stylesheetModule } from '../../src/commands/dev/harness.js'
-import { DEV_PEERS, MissingDevPeerError, missingDevPeers } from '../../src/commands/dev/peers.js'
+import { DEV_PEERS, MissingPeerError, missingDevPeers } from '../../src/commands/dev/peers.js'
 import { projectAliases, servableRoots, serverOrigin, startDevServer } from '../../src/commands/dev/server.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -173,7 +173,7 @@ describe('the toolchain paradoc dev borrows', () => {
 
   it('asks the project for the PDF integration the preview renders through', () => {
     expect(DEV_PEERS).toContain('@paradoc/react-pdf')
-    const error = new MissingDevPeerError(['@paradoc/react-pdf', 'vite'], scratch)
+    const error = new MissingPeerError(['@paradoc/react-pdf', 'vite'], scratch)
 
     // A runtime dependency, like @paradoc/react: it is loaded, not only compiled.
     expect(error.message).toContain('npm install @paradoc/react-pdf\n')
@@ -181,7 +181,7 @@ describe('the toolchain paradoc dev borrows', () => {
   })
 
   it('splits runtime packages from development ones', () => {
-    const error = new MissingDevPeerError(
+    const error = new MissingPeerError(
       ['vite', '@vitejs/plugin-react', '@paradoc/react', 'react'],
       scratch
     )
@@ -192,11 +192,11 @@ describe('the toolchain paradoc dev borrows', () => {
   })
 
   it('spells the install for whichever package manager left a lockfile', async () => {
-    const npm = new MissingDevPeerError(['vite', 'react'], scratch)
+    const npm = new MissingPeerError(['vite', 'react'], scratch)
     await fs.writeFile(path.join(scratch, 'yarn.lock'), '', 'utf8')
-    const yarn = new MissingDevPeerError(['vite', 'react'], scratch)
+    const yarn = new MissingPeerError(['vite', 'react'], scratch)
     await fs.writeFile(path.join(scratch, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\n", 'utf8')
-    const pnpm = new MissingDevPeerError(['vite', 'react'], scratch)
+    const pnpm = new MissingPeerError(['vite', 'react'], scratch)
 
     expect(npm.message).toContain('npm install --save-dev vite')
     expect(npm.message).toContain('npm install react')
@@ -208,7 +208,7 @@ describe('the toolchain paradoc dev borrows', () => {
   })
 
   it('names only what is missing, and only once', () => {
-    const one = new MissingDevPeerError(['react'], scratch)
+    const one = new MissingPeerError(['react'], scratch)
 
     expect(one.message).toContain('paradoc dev needs react, and it is not installed')
     expect(one.message).not.toContain('--save-dev')

@@ -16,7 +16,7 @@ export type { DiscoveredComposition, SampleSource } from '@paradoc/react/discove
 /**
  * `@paradoc/react/discovery` for one project.
  *
- * @throws {MissingDevPeerError} when the project has no `@paradoc/react`.
+ * @throws {MissingPeerError} when the project has no `@paradoc/react`.
  */
 export async function loadDiscovery(root: string): Promise<typeof Discovery> {
 	return (await importPeer(root, '@paradoc/react/discovery')) as unknown as typeof Discovery

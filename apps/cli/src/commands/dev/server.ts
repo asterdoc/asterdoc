@@ -69,7 +69,7 @@ export interface DevServer {
 /**
  * Starts the preview.
  *
- * @throws {MissingDevPeerError} when the project cannot supply the toolchain.
+ * @throws {MissingPeerError} when the project cannot supply the toolchain.
  */
 export async function startDevServer(options: DevServerOptions): Promise<DevServer> {
 	const root = resolve(options.root)

@@ -12,7 +12,7 @@ import kleur from 'kleur'
 
 import { loadDiscovery, type DiscoveredComposition } from './discovery.js'
 import { bindingLabel, sampleLabel } from './messages.js'
-import { assertDevPeers, MissingDevPeerError } from './peers.js'
+import { assertDevPeers, MissingPeerError } from './peers.js'
 import { findRepoRoot } from '../../utils/project.js'
 import { resolve } from 'node:path'
 import { existsSync } from 'node:fs'
@@ -104,7 +104,7 @@ export function createDevCommand(): Command {
 				process.on('SIGINT', stop)
 				process.on('SIGTERM', stop)
 			} catch (error) {
-				if (error instanceof MissingDevPeerError) {
+				if (error instanceof MissingPeerError) {
 					console.error(kleur.red(error.message))
 					process.exit(1)
 				}

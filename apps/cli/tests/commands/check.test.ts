@@ -1,7 +1,8 @@
 import { runCli as executeCliCommand } from '../setup/spawn-cli'
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest'
+import { spawn } from 'node:child_process'
 import { promises as fs } from 'node:fs'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
@@ -352,4 +353,138 @@ describe('CLI check command (built binary)', () => {
     },
     30000
   )
+})
+
+describe('CLI check command resolves its loader from the project', () => {
+  const packageRoot = path.resolve(__dirname, '../..')
+  const builtDist = path.join(packageRoot, 'dist')
+  const packageJson = JSON.parse(readFileSync(path.join(packageRoot, 'package.json'), 'utf8')) as {
+    dependencies: Record<string, string>
+  }
+
+  /** What a project that composes in React installs, minus the loader. */
+  const PROJECT_PACKAGES = ['@paradoc/components', '@paradoc/react', '@paradoc/react-pdf', 'react', 'react-dom']
+
+  let scratch: string
+
+  async function link(name: string, intoNodeModules: string): Promise<void> {
+    const target = path.join(intoNodeModules, name)
+    await fs.mkdir(path.dirname(target), { recursive: true })
+    await fs.symlink(await fs.realpath(path.join(packageRoot, 'node_modules', name)), target, 'dir')
+  }
+
+  /**
+   * An installation shaped like `npm i -g paradoc-cli`, outside this repository:
+   * the built binary beside its `dependencies` and nothing else. Inside the
+   * repository the CLI's own development copy of `tsx` always resolves, so only
+   * an installation without one can show what a published `paradoc` does.
+   */
+  async function installCli(): Promise<string> {
+    const nodeModules = path.join(scratch, 'install', 'node_modules')
+    const cli = path.join(nodeModules, '@paradoc', 'cli')
+    await fs.mkdir(cli, { recursive: true })
+    await fs.cp(builtDist, path.join(cli, 'dist'), { recursive: true })
+    await fs.writeFile(path.join(cli, 'package.json'), JSON.stringify({ type: 'module' }))
+    for (const name of Object.keys(packageJson.dependencies)) await link(name, nodeModules)
+    return path.join(cli, 'dist', 'index.js')
+  }
+
+  async function project(options: { loader: boolean; without?: string }): Promise<string> {
+    const dir = path.join(scratch, options.loader ? 'with-loader' : 'without-loader')
+    await fs.mkdir(dir, { recursive: true })
+    for (const name of ['clean-artifact.json', 'clean-composition.tsx']) {
+      await fs.copyFile(path.join(fixturesDir, name), path.join(dir, name))
+    }
+    await fs.writeFile(path.join(dir, 'package.json'), JSON.stringify({ name: 'check-project', type: 'module' }))
+    await fs.writeFile(path.join(dir, 'tsconfig.json'), JSON.stringify({ compilerOptions: { jsx: 'react-jsx' } }))
+    const nodeModules = path.join(dir, 'node_modules')
+    for (const name of PROJECT_PACKAGES) {
+      if (name !== options.without) await link(name, nodeModules)
+    }
+    if (options.loader) await link('tsx', nodeModules)
+    return dir
+  }
+
+  function run(entry: string, cwd: string): Promise<CliResult> {
+    return new Promise((resolve, reject) => {
+      // NODE_PATH is dropped: Vitest points it at pnpm's virtual store, which
+      // would make `tsx` resolvable from a project that does not have it.
+      const child = spawn(process.execPath, [entry, 'check', 'clean-artifact.json'], {
+        cwd,
+        env: { ...process.env, NODE_PATH: undefined },
+      })
+      let stdout = ''
+      let stderr = ''
+      child.stdout.setEncoding('utf8').on('data', (chunk: string) => { stdout += chunk })
+      child.stderr.setEncoding('utf8').on('data', (chunk: string) => { stderr += chunk })
+      child.on('error', reject)
+      child.on('close', (code) => resolve({ stdout, stderr, exitCode: code ?? 0 }))
+    })
+  }
+
+  beforeAll(() => {
+    if (!existsSync(builtDist)) {
+      throw new Error(`Built binary not found at ${builtDist}. Run 'pnpm build' first.`)
+    }
+  })
+
+  beforeEach(async () => {
+    scratch = await fs.realpath(await fs.mkdtemp(path.join(tmpdir(), 'paradoc-check-loader-')))
+  })
+
+  afterEach(async () => {
+    await fs.rm(scratch, { recursive: true, force: true })
+  })
+
+  it('ships no loader of its own', () => {
+    expect(packageJson.dependencies).not.toHaveProperty('tsx')
+  })
+
+  it('checks a composition with the tsx the project installed', async () => {
+    const entry = await installCli()
+    const dir = await project({ loader: true })
+
+    const result = await run(entry, dir)
+
+    expect(result.stderr).toBe('')
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain('No unsupported classes, unresolved paths, or missing images')
+  }, 30000)
+
+  it('stops with the install command when the project has no tsx', async () => {
+    const entry = await installCli()
+    const dir = await project({ loader: false })
+
+    const result = await run(entry, dir)
+
+    expect(result.exitCode).toBe(1)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain(`paradoc check needs tsx, and it is not installed in ${dir}`)
+    expect(result.stderr).toContain('npm install --save-dev tsx\n')
+    expect(result.stderr).not.toContain('paradoc dev')
+    expect(result.stderr).not.toContain('preview')
+  }, 30000)
+
+  it('spells the install for the package manager the project uses', async () => {
+    const entry = await installCli()
+    const dir = await project({ loader: false })
+    await fs.writeFile(path.join(dir, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\n")
+
+    const result = await run(entry, dir)
+
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr).toContain('pnpm add -D tsx\n')
+  }, 30000)
+
+  it('names check, not dev, when the project lacks a package the check loads', async () => {
+    const entry = await installCli()
+    const dir = await project({ loader: true, without: '@paradoc/react-pdf' })
+
+    const result = await run(entry, dir)
+
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr).toContain('paradoc check needs @paradoc/react-pdf, and it is not installed')
+    expect(result.stderr).toContain('npm install @paradoc/react-pdf\n')
+    expect(result.stderr).not.toContain('paradoc dev')
+  }, 30000)
 })

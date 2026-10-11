@@ -49,7 +49,16 @@ React layer resolves to it; passing the artifact file reads its declared
 layer directly. If more than one artifact points at the composition, or the
 artifact declares more than one React layer, pass `--layer` to pick one.
 
-The check runs through `@paradoc/react-pdf/check`. Install `@paradoc/react-pdf`, `@paradoc/react`, `react`, and `react-dom` in the project.
+The check runs through `@paradoc/react-pdf/check` and loads the composition
+with `tsx`. Install them in the project:
+
+```bash
+npm install @paradoc/react @paradoc/react-pdf react react-dom
+npm install -D tsx
+```
+
+Without `tsx`, the command stops and prints the install line for your package
+manager.
 
 Whichever way the artifact is found, from the target, from a layer that
 points at the composition, or as a sibling of the same name, it must carry

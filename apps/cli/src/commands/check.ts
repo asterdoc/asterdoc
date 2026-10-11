@@ -15,7 +15,7 @@ import { findRepoRoot } from '../utils/project.js'
 import { ensureTsLoader } from '../utils/ts-loader.js'
 import { loadValidatedArtifact } from '../utils/artifact-file.js'
 import { formatPayloadErrors, validateFormPayload } from '../utils/validate-data.js'
-import { importPeer } from './dev/peers.js'
+import { CHECK_NEED, importPeer, MissingPeerError } from './dev/peers.js'
 import { loadSampleData } from './dev/sample-loader.js'
 
 type AdapterName = 'takumi' | 'chromium'
@@ -43,7 +43,7 @@ const REACT_EXTENSIONS = new Set(['.tsx', '.jsx'])
  */
 async function loadBindComponent(root: string): Promise<typeof bindComponent> {
   try {
-    const mod = await importPeer(root, '@paradoc/react-pdf')
+    const mod = await importPeer(root, '@paradoc/react-pdf', CHECK_NEED)
     return mod.bindComponent as typeof bindComponent
   } catch (error) {
     throw new Error(
@@ -55,7 +55,7 @@ async function loadBindComponent(root: string): Promise<typeof bindComponent> {
 
 async function loadCheckComposition(root: string): Promise<typeof checkComposition> {
   try {
-    const mod = await importPeer(root, '@paradoc/react-pdf/check')
+    const mod = await importPeer(root, '@paradoc/react-pdf/check', CHECK_NEED)
     return mod.checkComposition as typeof checkComposition
   } catch (error) {
     throw new Error(
@@ -76,7 +76,7 @@ async function loadCheckComposition(root: string): Promise<typeof checkCompositi
  */
 async function loadDiscovery(root: string): Promise<typeof Discovery> {
   try {
-    return (await importPeer(root, '@paradoc/react/discovery')) as unknown as typeof Discovery
+    return (await importPeer(root, '@paradoc/react/discovery', CHECK_NEED)) as unknown as typeof Discovery
   } catch (error) {
     throw new Error(
       `Could not install or load @paradoc/react, needed to find the composition's artifact: ` +
@@ -102,7 +102,7 @@ export function createCheckCommand(): Command {
         const compositionPath = resolve(resolved.artifactDir, resolved.layer.path)
         const projectRoot = (await findRepoRoot(dirname(compositionPath))) ?? dirname(compositionPath)
 
-        await ensureTsLoader(dirname(compositionPath))
+        await ensureTsLoader(projectRoot, dirname(compositionPath))
         const bind = await loadBindComponent(projectRoot)
         const composition = await bind(
           { type: 'react', mimeType: resolved.layer.mimeType, key: resolved.layer.key, path: resolved.layer.path },
@@ -125,6 +125,10 @@ export function createCheckCommand(): Command {
 
         if (offenderCount(result) > 0) process.exitCode = 1
       } catch (error) {
+        if (error instanceof MissingPeerError) {
+          console.error(kleur.red(error.message))
+          process.exit(1)
+        }
         console.error(kleur.red(`Error: ${error instanceof Error ? error.message : String(error)}`))
         process.exit(1)
       }
@@ -339,7 +343,7 @@ async function explicitData(value: string, form: Form): Promise<DocumentData> {
 async function discoverSampleData(compositionPath: string, root: string): Promise<DocumentData | undefined> {
   const discovery = await loadDiscovery(root)
   const sources = await discovery.sampleSources(root, compositionPath)
-  await ensureTsLoader(dirname(compositionPath))
+  await ensureTsLoader(root, dirname(compositionPath))
   return loadSampleData(sources, async (source) =>
     (await import(/* @vite-ignore */ source.file)) as Record<string, unknown>
   )
