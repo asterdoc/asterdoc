@@ -15,7 +15,7 @@ const proxied: string[] = []
 beforeAll(async () => {
   registry = http.createServer((_req, res) => {
     res.setHeader('content-type', 'application/json')
-    res.end(JSON.stringify({ name: 'test', items: [{ name: 'direct-item', kind: 'form', version: '1.0.0' }] }))
+    res.end(JSON.stringify({ name: 'test', items: [{ name: 'direct-item', kind: 'form', latestVersion: '1.0.0', versions: { '1.0.0': { path: 'direct-item/1.0.0/direct-item.json', sha256: 'a'.repeat(64) } } }] }))
   })
   proxy = http.createServer((req, res) => { proxied.push(req.url ?? ''); res.writeHead(502); res.end() })
   proxy.on('connect', (req, socket) => { proxied.push(`CONNECT ${req.url}`); socket.end('HTTP/1.1 502 Bad Gateway\r\n\r\n') })

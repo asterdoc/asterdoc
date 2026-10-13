@@ -1,10 +1,8 @@
 import type { ParadocToolsConfig } from './config'
 import { SourceSchema, type SourceInput } from './contracts'
 import {
-	buildArtifactItemUrl,
 	fetchPolicyFromConfig,
-	fetchRegistryIndexResponse,
-	fetchRegistryItemResponse,
+	fetchRegistryArtifact,
 	MAX_ITEM_SIZE,
 	registryUrlFromConfig,
 	safeFetch,
@@ -14,29 +12,6 @@ export interface ResolvedSource {
 	artifact: Record<string, unknown>
 	base_url?: string
 	artifact_url?: string
-}
-
-export async function resolveRegistryArtifact(
-	registryUrl: string,
-	artifactName: string,
-	config?: ParadocToolsConfig,
-): Promise<ResolvedSource | undefined> {
-	const resolvedIndex = await fetchRegistryIndexResponse(registryUrl, config?.fetch, config)
-	const index = resolvedIndex.index
-	const resolvedRegistryUrl = registryBaseFromIndexUrl(resolvedIndex.response.url || new URL('registry.json', `${registryUrl.replace(/\/$/, '')}/`).toString())
-	const indexItem = index.items.find((item) => item.name === artifactName)
-	if (!indexItem) return undefined
-	const requestedArtifactUrl = buildArtifactItemUrl(resolvedRegistryUrl, index.artifactsPath, artifactName, indexItem.path)
-	const resolvedItem = await fetchRegistryItemResponse(
-		resolvedRegistryUrl,
-		index.artifactsPath,
-		artifactName,
-		indexItem.path,
-		config?.fetch,
-		config,
-	)
-	const artifactUrl = resolvedItem.response.url || requestedArtifactUrl
-	return { artifact: resolvedItem.artifact, base_url: artifactBaseUrl(artifactUrl), artifact_url: artifactUrl }
 }
 
 class MissingRegistryUrlError extends Error {
@@ -55,10 +30,6 @@ function artifactBaseUrl(artifactUrl: string): string {
 	url.search = ''
 	url.hash = ''
 	return url.toString().replace(/\/$/, '')
-}
-
-function registryBaseFromIndexUrl(indexUrl: string): string {
-	return new URL('.', indexUrl).toString().replace(/\/$/, '')
 }
 
 /**
@@ -98,9 +69,11 @@ async function resolveUncheckedSource(
 	}
 
 	const registryUrl = requireRegistryUrl(source.registry_url, config)
-	const resolved = await resolveRegistryArtifact(registryUrl, source.artifact_name, config)
-	if (!resolved) {
-		throw new Error(`Artifact "${source.artifact_name}" not found in registry`)
-	}
-	return resolved
+	const fetched = await fetchRegistryArtifact(
+		registryUrl,
+		{ name: source.artifact_name, edition: source.edition, version: source.version },
+		config?.fetch,
+		config,
+	)
+	return { artifact: fetched.artifact, base_url: fetched.baseUrl, artifact_url: fetched.artifactUrl }
 }

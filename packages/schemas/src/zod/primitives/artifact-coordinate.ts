@@ -20,9 +20,10 @@ import { ARTIFACT_VERSION_PATTERN } from './version';
  * `/registry/org/repo/w-9/2024-03/1.0.0`.
  *
  * It is the coordinate grammar of the platform registry: bundle registry
- * items, the SDK and the platform services use it. The CLI's file registries
- * (`add`, the catalog and the lock) do not: they name an artifact as
- * `@ns/name` and have no editions.
+ * items, the SDK and the platform services use it. A file registry has a
+ * shorter head, because it has no org and repo: it names an artifact as
+ * `@ns/name[/edition][@version]` (see `registry-reference.ts`). The edition
+ * and version tail is the same in both grammars, and both have editions.
  */
 
 /**
@@ -30,7 +31,14 @@ import { ARTIFACT_VERSION_PATTERN } from './version';
  * Lowercase letters and digits with single hyphens between them, the
  * platform's slug rule.
  */
-const SEGMENT_SOURCE = '[a-z0-9](?:[a-z0-9]|-[a-z0-9])*';
+export const SEGMENT_SOURCE = '[a-z0-9](?:[a-z0-9]|-[a-z0-9])*';
+
+/**
+ * A whole string that is one coordinate segment. It is the rule for an org, a
+ * repo, and an artifact name in a registry: a platform coordinate and a file
+ * registry manifest both name an artifact with it.
+ */
+export const COORDINATE_SEGMENT_PATTERN = new RegExp(`^${SEGMENT_SOURCE}$`);
 
 /** The edition selector for the artifact's current edition. */
 export const CURRENT_EDITION = 'current';
@@ -76,7 +84,12 @@ export const EDITION_KEY_SCHEMA_PATTERN = new RegExp(
 const unanchored = (pattern: RegExp) => pattern.source.slice(1, -1);
 
 const ADDRESS_SOURCE = `@?${SEGMENT_SOURCE}/${SEGMENT_SOURCE}/${SEGMENT_SOURCE}`;
-const VERSION_SOURCE = `${LATEST_VERSION}|${unanchored(ARTIFACT_VERSION_PATTERN)}`;
+
+/**
+ * The version position of a coordinate: a SemVer version, or the selector
+ * `latest`. It follows the `@` that ends the address or the edition.
+ */
+export const VERSION_SOURCE = `${LATEST_VERSION}|${unanchored(ARTIFACT_VERSION_PATTERN)}`;
 
 /**
  * The edition position of a coordinate: an edition key of at most
@@ -84,7 +97,7 @@ const VERSION_SOURCE = `${LATEST_VERSION}|${unanchored(ARTIFACT_VERSION_PATTERN)
  * selector `current`. The lookaheads end at the `@` of a version or at the
  * end of the coordinate.
  */
-const EDITION_SOURCE = [
+export const EDITION_SOURCE = [
 	`(?!(?:${RESERVED_EDITION_KEYS.filter((key) => key !== CURRENT_EDITION).join('|')})(?:@|$))`,
 	`(?=[a-z0-9-]{1,${EDITION_KEY_MAX_LENGTH}}(?:@|$))`,
 	unanchored(EDITION_KEY_PATTERN),

@@ -5,7 +5,7 @@ ogTitle: paradoc registry compile
 ogDescription: Validate and compile Paradoc registry artifacts for deployment
 ---
 
-Compile a registry by validating all artifacts, computing checksums, and generating output files for deployment.
+Compile a registry: validate each source file, compute checksums, and write `registry.json` and a folder for each release.
 
 ## Usage
 
@@ -17,13 +17,28 @@ paradoc registry compile [options]
 
 | Option | Description |
 |--------|-------------|
-| `-r, --registry <path>` | Path to registry.json (default: `./registry.json`) |
-| `-o, --output <path>` | Output directory for compiled registry items |
+| `-c, --config <path>` | Path to registry.config.json (default: `./registry.config.json`) |
+| `-o, --output <path>` | Output directory for `registry.json` and the release folders (default: the folder of the config) |
 | `--dry-run` | Show what would be compiled without writing files |
 
 ## Description
 
-Reads the `registry.json` catalog, finds and validates each artifact, and resolves its referenced files relative to the artifact source. It refreshes SHA256 checksums, copies referenced files, and writes every compiled artifact as `<name>.json` in the output directory. The output defaults to `artifactsPath` from `registry.json`, or the registry directory when that setting is absent. Compile refuses to overwrite a source artifact and exits with an error if an artifact or referenced file cannot be compiled.
+Reads `registry.config.json` and validates each source file it lists. Each source file is one release. Compile writes each release as JSON to `<name>/<edition>/<version>/<name>.json`, or to `<name>/<version>/<name>.json` for an artifact with no editions, and copies the files the artifact references beside it. It refreshes the SHA256 checksum of each referenced file in the artifact.
+
+It then writes `registry.json`, the manifest. The manifest lists every edition and version of every artifact, with the path and SHA-256 of each release file. Host the output directory as it is. Do not edit `registry.json` by hand; change the config or the source files and compile again.
+
+### Default edition and version
+
+Compile states the default release of each artifact in the manifest:
+
+- `latestVersion` is the highest version that is not a pre-release.
+- `currentEdition` is the only edition when there is one. With more, it is the edition that started last and not after today. An edition starts on its `effectiveFrom`, or on its `date` when it has no `effectiveFrom`.
+
+To state another default, set `defaults.<name>` in `registry.config.json`. When the files cannot decide, compile fails and names the entry to set. See [Default edition and version](/concepts/registries#default-edition-and-version).
+
+### Errors
+
+Compile is all or nothing. It reports every problem, one line each, and writes no file when there is one. It also refuses to overwrite a source file.
 
 ## Examples
 
@@ -33,10 +48,10 @@ Compile with defaults:
 paradoc registry compile
 ```
 
-Compile to a custom output directory:
+Compile to a separate output directory:
 
 ```bash
-paradoc registry compile -o ./dist/r
+paradoc registry compile -o ./dist
 ```
 
 Preview without writing:
@@ -49,13 +64,43 @@ paradoc registry compile --dry-run
 
 ```
 Compiling registry: acme-forms
-Output: /path/to/registry/r
+Output: /path/to/my-registry/dist
 
-✓ w9-form: compiled
-✓ residential-lease: compiled
-✓ nda-template: compiled
+✔ residential-lease v1.0.0: compiled
+✔ w4 2024 v1.0.0: compiled
+✔ w4 2024 v1.1.0: compiled
+✔ w4 2025 v1.0.0: compiled
+✔ w9 v1.0.0: compiled
+  residential-lease default: v1.0.0
+  w4 default: 2025 v1.0.0
+  w9 default: v1.0.0
 
-Compiled 3 artifact(s) successfully
+Compiled 5 release(s) of 3 artifact(s) successfully
+```
+
+The output directory then holds:
+
+```
+dist/
+├── registry.json
+├── residential-lease/1.0.0/residential-lease.json
+├── residential-lease/1.0.0/residential-lease-legal.md
+├── w4/2024/1.0.0/w4.json
+├── w4/2024/1.1.0/w4.json
+├── w4/2025/1.0.0/w4.json
+├── w9/1.0.0/w9.json
+└── w9/1.0.0/w9.pdf
+```
+
+When a default cannot be chosen:
+
+```
+Compiling registry: acme-forms
+Output: /path/to/my-registry/dist
+
+✖ pet-policy: every version is a pre-release (2.0.0-beta.1), and a pre-release is the default only when the publisher says so. Set defaults["pet-policy"].latestVersion in registry.config.json
+
+Nothing was written (1 error(s))
 ```
 
 ## See also

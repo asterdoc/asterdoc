@@ -2,9 +2,14 @@
  * Artifact name pattern
  *
  * Letters and digits, with single hyphens between them: no leading, trailing
- * or consecutive hyphens, and no underscores. It is the one name rule for
- * artifacts, registry index entries, registry items and lock file references,
- * so a registry can never list a name that core refuses to load.
+ * or consecutive hyphens, and no underscores. It is the name rule for artifact
+ * files, registry item files and lock file references.
+ *
+ * A registry manifest is stricter: its item names are lowercase only
+ * (`COORDINATE_SEGMENT_PATTERN`), because a name there is a segment of a
+ * reference such as `@acme/w-9`. Every manifest name passes this pattern, so
+ * a registry can never list a name that core refuses to load; an artifact
+ * file whose name has a capital letter cannot be listed under that name.
  */
 export const ARTIFACT_NAME_PATTERN = /^[A-Za-z0-9]([A-Za-z0-9]|-[A-Za-z0-9])*$/;
 

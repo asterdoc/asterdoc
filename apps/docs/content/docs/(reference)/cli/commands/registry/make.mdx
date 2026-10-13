@@ -1,11 +1,11 @@
 ---
 title: registry make
-description: Create a new registry.json file
+description: Create a new registry.config.json file
 ogTitle: paradoc registry make
 ogDescription: Initialize a new Paradoc artifact registry
 ---
 
-Create a new `registry.json` file for hosting your own artifact registry.
+Create a new `registry.config.json` file, the source file of your own artifact registry.
 
 ## Usage
 
@@ -26,14 +26,13 @@ paradoc registry make [directory] [options]
 | `-n, --name <name>` | Registry name |
 | `--description <description>` | Registry description |
 | `--homepage <url>` | Registry homepage URL |
-| `--artifacts-path <path>` | Path prefix for artifacts, such as `/r` or `/artifacts`. Written to `registry.json` only when passed |
 | `--no-registry-telemetry` | Disable usage telemetry for this registry |
 | `--no-directory` | Do not list this registry in the Paradoc Hub |
 | `-y, --yes` | Skip confirmation prompts |
 
 ## Description
 
-Creates a `registry.json` file that defines a new artifact registry. This is the first step in hosting your own Paradoc registry. The command prompts for a name, description, and homepage interactively, or you can pass them via options.
+Creates `registry.config.json`, the file you list your artifact files in. This is the first step in hosting your own Paradoc registry. [`registry compile`](/cli/commands/registry/compile) builds the registry from it: `registry.json` and a folder for each release. The command prompts for a name, description, and homepage interactively, or you can pass them via options. See [Registry config](/concepts/registries#registry-config) for every field.
 
 ## Examples
 
@@ -53,13 +52,40 @@ paradoc registry make ./my-registry \
   -y
 ```
 
+## Output
+
+```
+✓ Created registry.config.json
+
+Name: acme-forms
+Homepage: https://acme.com/forms
+Description: Internal form templates
+
+Next steps:
+  1. Add artifacts with: paradoc registry catalog add <artifact>
+  2. Compile registry with: paradoc registry compile
+```
+
+The new file has no source files yet:
+
+```json
+{
+  "name": "acme-forms",
+  "homepage": "https://acme.com/forms",
+  "description": "Internal form templates",
+  "enableTelemetry": true,
+  "enableDirectory": true,
+  "sources": []
+}
+```
+
 ## Next steps
 
 After creating a registry:
 
 1. Add artifacts with `paradoc registry catalog add <artifact>`
 2. Compile the registry with `paradoc registry compile`
-3. Deploy the output directory to your hosting provider
+3. Deploy the compiled output to your hosting provider
 
 ## See also
 

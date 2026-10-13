@@ -70,6 +70,10 @@ In your own code, check `error.code` before you use a result:
 |---|---|
 | `missing_registry_url` | No `registry_url` in the input and no `defaultRegistryUrl` |
 | `artifact_not_found` | The registry does not list that artifact name |
+| `release_not_found` | The registry lists the artifact, but not that edition or version. The message names the ones it lists. |
+| `integrity_mismatch` | The artifact file's SHA-256 is not the one in `registry.json`. The file was changed or damaged. |
+| `identity_mismatch` | The artifact file states another name, version, or edition than `registry.json` lists for it |
+| `invalid_artifact` | The artifact file could not be parsed, or is not an object. `render` and `extract` also return it for an artifact that fails schema validation. |
 | `artifact_fetch_error`, `registry_fetch_error` | A fetch failed, or the origin is not approved. Other tools report the same failure with their own code, such as `fill_error` or `render_error`, and the message says why. |
 | `outdated-version`, `missing-version`, `unknown-version` | The artifact's `$schema` is not the current schema version. Run `paradoc migrate` on the artifact and publish it again. |
 | `validation_error` | A value does not match the form |

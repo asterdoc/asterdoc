@@ -13,6 +13,7 @@ export default defineConfig({
 		'@paradoc/core',
 		'@paradoc/render',
 		'@paradoc/resolvers',
+		'@paradoc/schemas',
 		'zod',
 	],
 })

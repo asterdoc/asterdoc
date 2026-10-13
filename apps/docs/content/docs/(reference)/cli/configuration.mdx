@@ -116,7 +116,7 @@ Registry URLs and headers also support `${VAR_NAME}` expansion:
 {
   "registries": {
     "@private": {
-      "url": "https://${PRIVATE_REGISTRY_HOST}/registry.json",
+      "url": "https://${PRIVATE_REGISTRY_HOST}",
       "headers": {
         "Authorization": "Bearer ${REGISTRY_TOKEN}"
       }
@@ -219,4 +219,4 @@ paradoc --no-telemetry add @paradoc/w9
 
 When multiple settings conflict, the CLI checks in this order: CLI flag, environment variables, global config. Any opt-out at any level disables telemetry entirely.
 
-A registry can disable its own install telemetry with `enableTelemetry: false`, or only the `directory.installed` event with `enableDirectory: false` in `registry.json`.
+A registry can disable its own install telemetry with `enableTelemetry: false`, or only the `directory.installed` event with `enableDirectory: false`. The publisher sets both in `registry.config.json`, and [`registry compile`](/cli/commands/registry/compile) writes them to `registry.json`.

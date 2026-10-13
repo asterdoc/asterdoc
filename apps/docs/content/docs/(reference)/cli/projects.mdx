@@ -109,11 +109,11 @@ The `.paradoc/` directory stores internal CLI state. Together with `paradoc.json
 
 | File | Purpose |
 |------|---------|
-| `lock.json` | Record of installed artifact versions, source URLs, and integrity checksums |
+| `lock.json` | Record of installed artifact editions and versions, source URLs, and integrity checksums |
 
 ## The lock file
 
-`.paradoc/lock.json` records the version, source URL, and integrity checksum written by `paradoc add` for each installed artifact. The CLI does not use the lock file to restore or pin a later install.
+`.paradoc/lock.json` records the version, source URL, and integrity checksum written by `paradoc add` for each installed artifact. For an artifact that has editions, it also records the key of the installed edition. Each entry is keyed by `@namespace/name`. The CLI does not use the lock file to restore or pin a later install.
 
 ## Output formats
 

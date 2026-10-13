@@ -37,6 +37,36 @@ paradoc list
 paradoc show @acme/example-form
 ```
 
+A registry reference is `@namespace/name[/edition][@version]`. With no edition and no version, `paradoc add` installs the release the registry states as its default: the current edition, latest version.
+
+```bash
+paradoc add @acme/w-9                  # current edition, latest version
+paradoc add @acme/w-9/2024-03          # latest version of edition 2024-03
+paradoc add @acme/w-9@1.0.0            # version 1.0.0 of the current edition
+paradoc add @acme/w-9/2024-03@1.0.0    # one edition, one version
+```
+
+`paradoc add` checks each file against the SHA-256 in the registry manifest and records the installed edition and version in `.paradoc/lock.json`. `paradoc search` shows every edition and version of an artifact.
+
+To publish a registry, list your artifact source files in `registry.config.json` and compile it. Each source file is one release; files with the same `name` become the editions and versions of one artifact.
+
+```bash
+paradoc registry make                       # writes registry.config.json
+paradoc registry catalog add forms/w-9.json # adds a source file
+paradoc registry compile --output dist      # writes dist/registry.json and each release
+```
+
+`registry compile` writes each release to `<name>/<edition>/<version>/` (or `<name>/<version>/` for an artifact with no editions). The default version is the highest version that is not a pre-release. The default edition is the one that started last and not after today. State another default in `registry.config.json`:
+
+```json
+{
+  "name": "acme",
+  "sources": ["forms/w-9-2024-03.json", "forms/w-9-2018-10.json"],
+  "defaults": { "w-9": { "currentEdition": "2018-10" } },
+  "tags": { "w-9": ["tax"] }
+}
+```
+
 `paradoc init` prompts for project details. For a non-interactive setup, pass `--yes` and `--name`:
 
 ```bash

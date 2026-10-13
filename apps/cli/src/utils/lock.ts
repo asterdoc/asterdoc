@@ -205,6 +205,8 @@ export class LockFileManager {
    */
   createLockedArtifact(params: {
     kind: ArtifactKind
+    /** Key of the installed edition; omitted for an artifact that has no editions. */
+    edition?: string
     version: string
     resolved: string
     content: string | Buffer
@@ -225,6 +227,7 @@ export class LockFileManager {
 
     return {
       kind: params.kind,
+      ...(params.edition !== undefined && { edition: params.edition }),
       version: params.version,
       resolved: params.resolved,
       integrity: this.computeIntegrity(params.content),

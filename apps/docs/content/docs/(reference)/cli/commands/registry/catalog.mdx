@@ -5,7 +5,7 @@ ogTitle: paradoc registry catalog
 ogDescription: Add and remove artifacts from a Paradoc registry catalog
 ---
 
-Manage which artifacts are listed in a registry catalog.
+Manage the artifact source files that `registry.config.json` lists.
 
 ## Usage
 
@@ -17,14 +17,14 @@ paradoc registry catalog <command> [options]
 
 | Command | Description |
 |---------|-------------|
-| `add` | Add an artifact to the registry catalog |
-| `remove` | Remove an artifact from the registry catalog |
+| `add` | Add an artifact source file to the registry catalog |
+| `remove` | Remove an artifact, or one source file of it, from the registry catalog |
 
 ---
 
 ## catalog add
 
-Add an artifact to the registry catalog.
+Add an artifact source file to the registry catalog.
 
 ```bash
 paradoc registry catalog add <artifact> [options]
@@ -34,55 +34,76 @@ paradoc registry catalog add <artifact> [options]
 
 | Argument | Description |
 |----------|-------------|
-| `artifact` | Path to artifact file (JSON/YAML) |
+| `artifact` | Path to artifact file (JSON/YAML): one release of one artifact |
 
 ### Options
 
 | Option | Description |
 |--------|-------------|
-| `-r, --registry <path>` | Path to registry.json (default: `./registry.json`) |
-| `-y, --yes` | Skip confirmation prompts |
+| `-c, --config <path>` | Path to registry.config.json (default: `./registry.config.json`) |
 
 ### Description
 
-Reads and validates the artifact file, then adds it to the `items` array in `registry.json`. If an artifact with the same name already exists, you will be prompted to update it.
+Reads and validates the artifact file, then adds its path to `sources` in `registry.config.json`. Each file is one release: one version of one edition, or one version of an artifact that has no editions. Files with the same `name` are the editions and versions of one artifact.
+
+The file must be in the folder of `registry.config.json` or below it. The command refuses a file that conflicts with the catalog, for example a second file for the same edition and version, and says why. A file that is already listed changes nothing. A version with build metadata (`1.0.0+build.5`) is refused.
+
+Search tags and default editions and versions are not set here. Edit `tags` and `defaults` in `registry.config.json`. See [Registry config](/concepts/registries#registry-config).
 
 ### Examples
 
 ```bash
-paradoc registry catalog add ./artifacts/w9-form.json
-paradoc registry catalog add ./lease.yaml -r ./my-registry/registry.json
+paradoc registry catalog add forms/w4/2024-1.1.0.json
+paradoc registry catalog add forms/lease.yaml -c ./my-registry/registry.config.json
+```
+
+### Output
+
+```
+✓ Added w4 2024 v1.1.0 (form)
+Catalog now has 4 source file(s)
 ```
 
 ---
 
 ## catalog remove
 
-Remove an artifact from the registry catalog.
+Remove an artifact, or one source file of it, from the registry catalog.
 
 ```bash
-paradoc registry catalog remove <name> [options]
-paradoc registry catalog rm <name> [options]
+paradoc registry catalog remove <target> [options]
+paradoc registry catalog rm <target> [options]
 ```
 
 ### Arguments
 
 | Argument | Description |
 |----------|-------------|
-| `name` | Artifact name to remove |
+| `target` | Artifact name, which removes every edition and version of it, or the path of one source file |
 
 ### Options
 
 | Option | Description |
 |--------|-------------|
-| `-r, --registry <path>` | Path to registry.json (default: `./registry.json`) |
+| `-c, --config <path>` | Path to registry.config.json (default: `./registry.config.json`) |
 | `-y, --yes` | Skip confirmation prompts |
+
+### Description
+
+Removes source files from `sources` in `registry.config.json`. It does not delete the files. The next [`registry compile`](/cli/commands/registry/compile) writes a manifest without those releases, which is how you withdraw a version.
 
 ### Examples
 
 ```bash
-paradoc registry catalog remove w9-form
-paradoc registry catalog rm old-template -y
+paradoc registry catalog remove w9
+paradoc registry catalog rm forms/w4/2025-1.0.0.json -y
+```
+
+### Output
+
+```
+✓ Removed forms/w4/2025-1.0.0.json from the catalog
+Catalog now has 4 source file(s)
 ```
 
 ## See also

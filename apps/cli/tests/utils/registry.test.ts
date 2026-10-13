@@ -4,7 +4,7 @@ import {
   parseArtifactRef,
   parseNamespaceOnly,
   buildRegistryIndexUrl,
-  buildArtifactItemUrl,
+  buildReleaseUrl,
   buildLayerFileUrl,
 } from '../../src/utils/registry.js'
 import type { ResolvedRegistry } from '../../src/types.js'
@@ -30,6 +30,29 @@ describe('parseArtifactRef', () => {
 
   it.each(['@acme/my_artifact', '@acme/a--b', '@acme/-a', '@acme/a-'])(
     'refuses %s, whose name breaks the artifact name rule',
+    (ref) => {
+      expect(parseArtifactRef(ref)).toBeNull()
+    },
+  )
+
+  it('parses an edition and a version, and keeps them out of the lock key', () => {
+    expect(parseArtifactRef('@acme/w-9/2024-03@1.0.0')).toEqual({
+      namespace: '@acme',
+      name: 'w-9',
+      full: '@acme/w-9',
+      edition: '2024-03',
+      version: '1.0.0',
+    })
+    expect(parseArtifactRef('@acme/w-9/2024-03')).toEqual({ namespace: '@acme', name: 'w-9', full: '@acme/w-9', edition: '2024-03' })
+    expect(parseArtifactRef('@acme/w-9@1.0.0')).toEqual({ namespace: '@acme', name: 'w-9', full: '@acme/w-9', version: '1.0.0' })
+  })
+
+  it('reads current and latest as the default, the same as leaving them out', () => {
+    expect(parseArtifactRef('@acme/w-9/current@latest')).toEqual({ namespace: '@acme', name: 'w-9', full: '@acme/w-9' })
+  })
+
+  it.each(['@acme/w-9@1.0', '@acme/w-9@', '@acme/w-9/', '@acme/w-9/2024-03/extra', '@acme/w-9/editions'])(
+    'refuses %s, which is not a registry reference',
     (ref) => {
       expect(parseArtifactRef(ref)).toBeNull()
     },
@@ -124,46 +147,20 @@ describe('buildRegistryIndexUrl', () => {
   })
 })
 
-describe('buildArtifactItemUrl', () => {
-  it('builds correct URL for artifact item', () => {
-    const registry: ResolvedRegistry = {
-      namespace: '@acme',
-      baseUrl: 'https://registry.acme.com',
-    }
-    expect(buildArtifactItemUrl(registry, 'residential-lease')).toBe(
-      'https://registry.acme.com/residential-lease.json'
+describe('buildReleaseUrl', () => {
+  it('resolves a manifest path under the registry base address', () => {
+    const registry: ResolvedRegistry = { namespace: '@acme', baseUrl: 'https://registry.acme.com' }
+    expect(buildReleaseUrl(registry, 'w-9/2024-03/1.0.0/w-9.json')).toBe(
+      'https://registry.acme.com/w-9/2024-03/1.0.0/w-9.json'
     )
   })
 
-  it('handles trailing slash in baseUrl', () => {
-    const registry: ResolvedRegistry = {
-      namespace: '@acme',
-      baseUrl: 'https://registry.acme.com/',
+  it('keeps a base address that is a folder, with or without its trailing slash', () => {
+    for (const baseUrl of ['https://acme.com/forms/registry', 'https://acme.com/forms/registry/']) {
+      expect(buildReleaseUrl({ namespace: '@acme', baseUrl }, 'pet-addendum/1.1.0/pet-addendum.json')).toBe(
+        'https://acme.com/forms/registry/pet-addendum/1.1.0/pet-addendum.json'
+      )
     }
-    expect(buildArtifactItemUrl(registry, 'my-form')).toBe(
-      'https://registry.acme.com/my-form.json'
-    )
-  })
-
-  it('uses artifactsPath when set', () => {
-    const registry: ResolvedRegistry = {
-      namespace: '@acme',
-      baseUrl: 'https://registry.acme.com',
-      artifactsPath: '/r',
-    }
-    expect(buildArtifactItemUrl(registry, 'residential-lease')).toBe(
-      'https://registry.acme.com/r/residential-lease.json'
-    )
-  })
-
-  it('uses itemPath when provided', () => {
-    const registry: ResolvedRegistry = {
-      namespace: '@acme',
-      baseUrl: 'https://registry.acme.com',
-    }
-    expect(buildArtifactItemUrl(registry, 'my-form', 'custom/path/my-form.json')).toBe(
-      'https://registry.acme.com/custom/path/my-form.json'
-    )
   })
 })
 

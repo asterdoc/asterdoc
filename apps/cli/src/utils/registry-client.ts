@@ -10,9 +10,10 @@ import type {
   ResolvedRegistry,
 } from '../types.js'
 import { fetch } from 'undici'
+import type { RegistryRelease } from '../types.js'
 import {
   buildRegistryIndexUrl,
-  buildArtifactItemUrl,
+  buildReleaseUrl,
   buildLayerFileUrl,
 } from './registry.js'
 import {
@@ -25,6 +26,8 @@ import {
 import { sanitizeForDisplay, validateUrl } from './security.js'
 import { cacheManager, type CacheResult } from './cache.js'
 import { formatBytes } from './format.js'
+import { computeHashFromContent } from './hash.js'
+import { checkRegistryManifest, parseRegistryManifest } from './registry-manifest.js'
 import { parse } from '@paradoc/core'
 
 /**
@@ -35,7 +38,8 @@ export type RegistryContentRef =
   | { kind: 'file'; path: string; mimeType: string; checksum?: string }
 
 /**
- * Registry item with full details (fetched from r/{name}.json).
+ * Registry item with full details: the artifact file of one release, fetched
+ * from the path the manifest lists for it.
  *
  * A registry serves the artifact itself, flat, as `paradoc registry compile`
  * writes it. `tags` and a file layer's `url` are registry metadata that the
@@ -46,6 +50,7 @@ export interface RegistryItem {
   name: string
   kind: 'form' | 'document' | 'checklist' | 'bundle'
   version: string
+  edition?: { key: string; label: string; date?: string; effectiveFrom?: string }
   title?: string
   description?: string
   tags?: string[]
@@ -153,6 +158,18 @@ export class ContentTypeError extends Error {
   ) {
     super(message)
     this.name = 'ContentTypeError'
+  }
+}
+
+/**
+ * Error thrown when a downloaded artifact file is not the release the
+ * manifest lists: its bytes do not match the checksum, or the artifact names
+ * another name, version or edition.
+ */
+export class RegistryReleaseMismatchError extends Error {
+  constructor(message: string, public url: string) {
+    super(message)
+    this.name = 'RegistryReleaseMismatchError'
   }
 }
 
@@ -293,16 +310,16 @@ async function fetchBytesWithLimits(url: string, limits: FetchLimits): Promise<U
   }
 }
 
-function sanitizeRegistryItem<T extends RegistryItem | RegistryItemSummary>(item: T): T {
+function sanitizeRegistryItem(item: RegistryItem): RegistryItem {
   return {
     ...item,
     name: sanitizeForDisplay(item.name),
-    kind: sanitizeForDisplay(item.kind) as T['kind'],
+    kind: sanitizeForDisplay(item.kind) as RegistryItem['kind'],
     version: sanitizeForDisplay(item.version),
     title: item.title === undefined ? undefined : sanitizeForDisplay(item.title),
     description: item.description === undefined ? undefined : sanitizeForDisplay(item.description),
     tags: item.tags?.map(sanitizeForDisplay),
-    ...('layers' in item && item.layers && !Array.isArray(item.layers) ? {
+    ...(item.layers && !Array.isArray(item.layers) ? {
       layers: Object.fromEntries(Object.entries(item.layers).map(([name, layer]) => [name, {
         ...layer,
         title: layer.title === undefined ? undefined : sanitizeForDisplay(layer.title),
@@ -312,32 +329,86 @@ function sanitizeRegistryItem<T extends RegistryItem | RegistryItemSummary>(item
   }
 }
 
+/**
+ * Sanitize the free text of a manifest item for display. Names, edition keys,
+ * versions and paths need none: the manifest schema restricts their characters.
+ */
+function sanitizeRegistryItemSummary(item: RegistryItemSummary): RegistryItemSummary {
+  const text = {
+    ...(item.title !== undefined && { title: sanitizeForDisplay(item.title) }),
+    ...(item.description !== undefined && { description: sanitizeForDisplay(item.description) }),
+    ...(item.tags !== undefined && { tags: item.tags.map(sanitizeForDisplay) }),
+    ...(item.layers !== undefined && { layers: item.layers.map(sanitizeForDisplay) }),
+  }
+  if (item.editions === undefined) return { ...item, ...text }
+  return {
+    ...item,
+    ...text,
+    editions: Object.fromEntries(Object.entries(item.editions).map(([key, edition]) => [key, {
+      ...edition,
+      label: sanitizeForDisplay(edition.label),
+    }])),
+  }
+}
+
 function sanitizeRegistryIndex(index: RegistryIndex): RegistryIndex {
   return {
     ...index,
-    name: sanitizeForDisplay(index.name),
-    description: index.description === undefined ? undefined : sanitizeForDisplay(index.description),
-    homepage: index.homepage === undefined ? undefined : sanitizeForDisplay(index.homepage),
-    items: index.items.map(sanitizeRegistryItem),
+    ...(index.description !== undefined && { description: sanitizeForDisplay(index.description) }),
+    ...(index.homepage !== undefined && { homepage: sanitizeForDisplay(index.homepage) }),
+    items: index.items.map(sanitizeRegistryItemSummary),
   }
 }
 
 /**
- * Fetch registry JSON (index or item); the body must be a JSON or YAML content type
+ * Refuse an artifact file that is not the release the manifest lists: the
+ * artifact's own name, version and edition key must be the release's.
  */
-async function fetchJson<T>(
+function assertReleaseIdentity(artifact: unknown, name: string, release: RegistryRelease, url: string): void {
+  const record = typeof artifact === 'object' && artifact !== null && !Array.isArray(artifact)
+    ? artifact as Record<string, unknown>
+    : {}
+  const edition = typeof record.edition === 'object' && record.edition !== null
+    ? (record.edition as Record<string, unknown>).key
+    : undefined
+
+  const mismatches: string[] = []
+  const expect = (label: string, expected: string, actual: unknown) => {
+    if (actual !== expected) {
+      const got = typeof actual === 'string' ? `"${sanitizeForDisplay(actual)}"` : 'none'
+      mismatches.push(`${label} "${expected}" expected, the file has ${got}`)
+    }
+  }
+  expect('name', name, record.name)
+  expect('version', release.version, record.version)
+  if (release.edition !== null) expect('edition', release.edition.key, edition)
+
+  if (mismatches.length > 0) {
+    throw new RegistryReleaseMismatchError(
+      `The file at ${url} is not the release the registry manifest lists: ${mismatches.join('; ')}.`,
+      url,
+    )
+  }
+}
+
+/**
+ * Fetch the bytes of registry JSON or YAML (manifest or artifact file); the
+ * body must be a JSON or YAML content type
+ */
+async function fetchJsonBytes(
   url: string,
   headers: Record<string, string> | undefined,
   maxSize: number,
-): Promise<T> {
-  const bytes = await fetchBytesWithLimits(url, {
+): Promise<Uint8Array<ArrayBuffer>> {
+  return fetchBytesWithLimits(url, {
     timeoutMs: NETWORK_TIMEOUTS.CONNECT_TIMEOUT,
     maxSize,
     headers: { Accept: 'application/json', ...headers },
     validateContentType: validateArtifactContentType,
   })
-  return parse(new TextDecoder().decode(bytes)) as T
 }
+
+const parseBytes = (bytes: Uint8Array): unknown => parse(new TextDecoder().decode(bytes))
 
 /**
  * Fetch layer bytes; the body must be one of the allowed layer content types
@@ -385,8 +456,9 @@ export class RegistryClient {
   }
 
   /**
-   * Fetch the registry index (list of all artifacts)
-   * Uses persistent cache with configurable TTL
+   * Fetch the registry manifest (every artifact, with its editions and versions)
+   * Uses persistent cache with configurable TTL. The manifest is checked
+   * against the registry.json schema; one that breaks it is refused.
    *
    * @param registry - Resolved registry configuration
    * @param options - Fetch options including cache TTL
@@ -410,9 +482,11 @@ export class RegistryClient {
 
     // Check persistent cache (if not skipping)
     if (!options?.skipCache && ttl !== 0) {
-      const cacheResult: CacheResult<RegistryIndex> = await cacheManager.get<RegistryIndex>(url, ttl)
-      if (cacheResult.hit) {
-        const sanitized = sanitizeRegistryIndex(cacheResult.data)
+      const cacheResult: CacheResult<unknown> = await cacheManager.get<unknown>(url, ttl)
+      // A cached entry that is not a valid manifest is not used; the network copy is.
+      const cached = cacheResult.hit ? checkRegistryManifest(cacheResult.data) : undefined
+      if (cached?.ok) {
+        const sanitized = sanitizeRegistryIndex(cached.manifest)
         // Store in session cache for fast repeated access
         this.sessionCache.set(url, sanitized)
         return sanitized
@@ -420,12 +494,8 @@ export class RegistryClient {
     }
 
     // Fetch from network
-    const fetchedIndex = await fetchJson<RegistryIndex>(
-      url,
-      registry.headers,
-      SECURITY_LIMITS.MAX_INDEX_SIZE,
-    )
-    const index = sanitizeRegistryIndex(fetchedIndex)
+    const bytes = await fetchJsonBytes(url, registry.headers, SECURITY_LIMITS.MAX_INDEX_SIZE)
+    const index = sanitizeRegistryIndex(parseRegistryManifest(parseBytes(bytes), url))
 
     // Store in persistent cache (if caching is enabled)
     if (ttl !== 0) {
@@ -474,48 +544,38 @@ export class RegistryClient {
   }
 
   /**
-   * Get the artifacts path for a registry, fetching index if needed
+   * Fetch the artifact file of one release and check it is that release:
+   * the bytes must match the manifest's SHA-256, and the artifact's own name,
+   * version and edition must be the release's.
    * @param registry - Resolved registry configuration
-   * @param options - Fetch options including cache TTL
+   * @param artifactName - Name of the manifest item
+   * @param release - The release, from `resolveRegistryRelease`
+   * @throws RegistryReleaseMismatchError when the file is not the release
    */
-  async getArtifactsPath(registry: ResolvedRegistry, options?: FetchOptions): Promise<string> {
-    // If already set on the registry, use it
-    if (registry.artifactsPath) {
-      return registry.artifactsPath
+  async fetchRelease(
+    registry: ResolvedRegistry,
+    artifactName: string,
+    release: RegistryRelease,
+  ): Promise<{ item: RegistryItem; url: string }> {
+    const url = buildReleaseUrl(registry, release.path)
+    const bytes = await fetchJsonBytes(url, registry.headers, SECURITY_LIMITS.MAX_ARTIFACT_SIZE)
+
+    const actual = computeHashFromContent(bytes)
+    if (actual !== release.sha256) {
+      throw new RegistryReleaseMismatchError(
+        `Checksum mismatch for ${url}: the registry manifest lists sha256 ${release.sha256}, the file has ${actual}. The file may have been changed or corrupted.`,
+        url,
+      )
     }
 
-    // Otherwise, fetch the index to get it
-    const index = await this.fetchIndex(registry, options)
-    return index.artifactsPath || ''
+    const item = parseBytes(bytes)
+    assertReleaseIdentity(item, artifactName, release, url)
+    return { item: sanitizeRegistryItem(item as RegistryItem), url }
   }
 
-  /**
-   * Fetch a specific artifact item
-   * @param registry - Resolved registry configuration
-   * @param artifactName - Name of the artifact
-   * @param options - Fetch options including cache TTL
-   */
-  async fetchItem(registry: ResolvedRegistry, artifactName: string, options?: FetchOptions): Promise<{ item: RegistryItem; url: string }> {
-    // Ensure we have the artifacts path
-    const artifactsPath = await this.getArtifactsPath(registry, options)
-    const resolvedRegistry = { ...registry, artifactsPath }
-
-    // Look up item.path from the index (session-cached, so free after first fetch)
-    const index = await this.fetchIndex(registry, options)
-    const item = index.items.find((i) => i.name === artifactName)
-
-    const url = buildArtifactItemUrl(resolvedRegistry, artifactName, item?.path)
-    const fetchedItem = await fetchJson<RegistryItem>(
-      url,
-      registry.headers,
-      SECURITY_LIMITS.MAX_ARTIFACT_SIZE,
-    )
-    return { item: sanitizeRegistryItem(fetchedItem), url }
-  }
-
-  /** Fetch one artifact from its exact URL without consulting a registry index. */
+  /** Fetch one artifact from its exact URL without consulting a registry manifest. */
   async fetchItemUrl(url: string, headers?: Record<string, string>): Promise<{ item: RegistryItem; url: string }> {
-    const item = await fetchJson<RegistryItem>(url, headers, SECURITY_LIMITS.MAX_ARTIFACT_SIZE)
+    const item = parseBytes(await fetchJsonBytes(url, headers, SECURITY_LIMITS.MAX_ARTIFACT_SIZE)) as RegistryItem
     return { item: sanitizeRegistryItem(item), url }
   }
 
@@ -580,21 +640,6 @@ export class RegistryClient {
     }
 
     return results
-  }
-
-  /**
-   * Get artifact summary from registry index
-   * @param registry - Resolved registry configuration
-   * @param artifactName - Name of the artifact
-   * @param options - Fetch options including cache TTL
-   */
-  async getArtifactSummary(
-    registry: ResolvedRegistry,
-    artifactName: string,
-    options?: FetchOptions
-  ): Promise<RegistryItemSummary | null> {
-    const index = await this.fetchIndex(registry, options)
-    return index.items.find((item) => item.name === artifactName) || null
   }
 }
 

@@ -55,7 +55,7 @@ An installed reference such as `@acme/w9` works in place of a file path for `val
 | `list` (`ls`) | List installed artifacts | [Registries](#registries) |
 | `search [query]` | Search a registry | [Registries](#registries) |
 | `registry add\|remove\|list\|info\|view` | Manage registries | [Registries](#registries) |
-| `registry make\|catalog\|compile\|stats` | Publish a registry | [docs.paradoc.dev](https://docs.paradoc.dev) |
+| `registry make\|catalog\|compile\|stats` | Publish a registry | [Registries](#registries) |
 | `check <target>` | Check a React composition | the `paradoc-react` skill |
 | `dev [dir]` | Live composition preview with a proof PDF | the `paradoc-react` skill |
 | `configure` (`config`) | Wizard: output format, artifacts dir, cache TTL, telemetry | [Settings](#settings) |
@@ -274,12 +274,15 @@ When you author a form, follow the full sequence in [workflow-author-form.md](./
 ```bash
 paradoc registry add @acme https://registry.acme.com --header "Authorization: Bearer \${ACME_TOKEN}" -y
 paradoc add @acme/residential-lease --layers all          # or --layers pdf,markdown
+paradoc add @acme/w-9/2024-03@1.0.0                       # one edition and one version
 paradoc add @acme/residential-lease --output yaml         # json | yaml | typed | ts
 paradoc add @acme                                         # pick from the namespace interactively
 paradoc add https://example.com/r/form.json --header "Authorization: Bearer TOKEN"
 ```
 
-`add` writes the artifact to `<artifactsDir>/<namespace>/` (default `artifacts`) and records it in `.paradoc/lock.json`. Pass `--layers` to download layer files. ContentRef files (`instructions`, `agentInstructions`) always download. `--no-cache` or `--cache-ttl 0` fetches fresh.
+`add` writes the artifact to `<artifactsDir>/<namespace>/` (default `artifacts`) and records it in `.paradoc/lock.json`, keyed by `@ns/name`, with its version and its edition when it has one. Pass `--layers` to download layer files. ContentRef files (`instructions`, `agentInstructions`) always download. `--no-cache` or `--cache-ttl 0` fetches fresh.
+
+A reference is `@ns/name[/edition][@version]`. An edition is the issuer's revision of a form (IRS W-9 Rev. March 2024 is `2024-03`); a version is the publisher's revision of the artifact for that edition. An omitted edition is the current edition (also written `current`); an omitted version is the latest version (also written `latest`). The publisher states both defaults in `registry.json`; the CLI never compares dates or version numbers. `@acme/w-9@1.0.0` is version 1.0.0 of the current edition, or of an artifact with no editions. A reference to an edition or version the registry does not list fails and names the ones it lists. `add` refuses a file whose SHA-256, name, version or edition differs from what the manifest lists. A direct-URL `add` reads no manifest, so it has no checksum or identity check. A project holds one release of an artifact: adding another edition or version replaces it. `search` lists every edition and version.
 
 <!-- dep:L3 -->
 Every namespace needs `registry add` first ([Preconditions](#preconditions)).
@@ -312,7 +315,21 @@ A registry entry is a URL string or an object:
 }
 ```
 
-`${VAR}` expands in `url` and in header values. Keep a token in the environment variable and rotate it there. `HTTPS_PROXY` and `HTTP_PROXY` are honored. Publishing a registry (`registry make`, `catalog`, `compile`, and `stats -r ./registry.json`) is documented at [docs.paradoc.dev](https://docs.paradoc.dev).
+`${VAR}` expands in `url` and in header values. Keep a token in the environment variable and rotate it there. `HTTPS_PROXY` and `HTTP_PROXY` are honored. ### Publish
+
+```bash
+paradoc registry make ./my-registry --name acme -y           # writes registry.config.json
+paradoc registry catalog add forms/w-9-2024-03-1.0.0.json    # one source file = one release
+paradoc registry catalog remove w-9 -y                       # a name (every release) or one source path
+paradoc registry compile --output dist                       # writes dist/registry.json and the release folders
+paradoc registry stats -r dist/registry.json --json          # checks the manifest, then counts
+```
+
+The publisher's source is `registry.config.json`: `name`, `description?`, `homepage?`, `sources` (artifact file paths, in its folder or below), `tags` (by artifact name) and `defaults` (by artifact name). `make`, `catalog` and `compile` take `-c, --config <path>`. `registry.json` is compile output only; never edit it. Source files with the same `name` are the editions and versions of one artifact, and an artifact has an `edition` in every release or in none.
+
+`compile` writes each release to `<name>/<edition>/<version>/<name>.json` (`<name>/<version>/` with no editions), copies referenced files beside it, and writes the manifest with each release's `path` and `sha256`. It is all or nothing: one error and no file is written. Defaults it chooses: `latestVersion` is the highest version that is not a pre-release; `currentEdition` is the only edition, else the one with the latest `effectiveFrom ?? date` not after today. When it cannot choose, it fails and names the entry to set, such as `defaults["w-9"].currentEdition` or `defaults["w-9"].editions["2024-03"].latestVersion` (`defaults["<name>"].latestVersion` with no editions).
+
+A published version never changes: a fix is a new source file with a new version. To withdraw a version, remove its source file and compile again. Full reference: [docs.paradoc.dev](https://docs.paradoc.dev).
 
 ## Settings
 

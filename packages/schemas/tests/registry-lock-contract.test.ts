@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { ArtifactSchema } from '../src/zod';
 import { LAYER_BINDINGS_RULE, LAYER_FONT_RULE, LAYER_FORMAT_RULE } from '../src/zod/artifacts/shared/layer';
 import { LockFileSchema, LockedArtifactSchema } from '../src/zod/registry/lock';
-import { RegistryItemSummarySchema } from '../src/zod/registry/registry-index';
+import { RegistryItemNameSchema } from '../src/zod/registry/registry-index';
 import { RegistryFileLayerSchema, RegistryItemSchema, RegistryLayerSchema } from '../src/zod/registry/registry-item';
 
 /** The integrity form the CLI's lock file manager writes. */
@@ -69,16 +69,57 @@ describe('schemas-012: the lock file schema', () => {
 	});
 });
 
-describe('schemas-013: one artifact name rule', () => {
-	it.each(['my_form-', 'a--b', 'a_b', '-a', 'a-'])('registry and artifact schemas both refuse %s', (name) => {
-		expect(RegistryItemSummarySchema.shape.name.safeParse(name).success).toBe(false);
+describe('the locked edition', () => {
+	it('keeps the key of the installed edition beside the version', () => {
+		const entry = { ...lockedArtifact, edition: '2024-03' };
+		const result = LockFileSchema.safeParse({ version: 1, artifacts: { '@acme/w9': entry } });
+		expect(messages(result)).toEqual([]);
+		expect(result.data?.artifacts['@acme/w9']).toEqual(entry);
+	});
+
+	it('is absent for an artifact that has no editions', () => {
+		const parsed = LockedArtifactSchema.parse(lockedArtifact);
+		expect('edition' in parsed).toBe(false);
+	});
+
+	it.each(['current', 'latest', '3B', 'rev.2024', '', 'a'.repeat(65)])('refuses the edition %j', (edition) => {
+		const result = messages(LockedArtifactSchema.safeParse({ ...lockedArtifact, edition }));
+		expect(result.length).toBeGreaterThan(0);
+		for (const message of result) expect(message).toMatch(/^edition: /);
+	});
+
+	it('refuses an edition object: the lock holds the key only', () => {
+		expect(messages(LockedArtifactSchema.safeParse({ ...lockedArtifact, edition: { key: '2024-03', label: 'Rev. March 2024' } }))).toEqual([
+			'edition: Invalid input: expected string, received object',
+		]);
+	});
+
+	it('keeps the lock file format version at 1', () => {
+		expect(LockFileSchema.parse({ artifacts: {} }).version).toBe(1);
+	});
+});
+
+describe('schemas-013: the artifact name rules', () => {
+	it.each(['my_form-', 'a--b', 'a_b', '-a', 'a-'])('registry and artifact schemas all refuse %s', (name) => {
+		expect(RegistryItemNameSchema.safeParse(name).success).toBe(false);
 		expect(RegistryItemSchema.shape.name.safeParse(name).success).toBe(false);
 		expect(ArtifactSchema.shape.name.safeParse(name).success).toBe(false);
 	});
 
-	it.each(['w9', 'W-9', 'form-1040-sr'])('registry and artifact schemas both accept %s', (name) => {
-		expect(RegistryItemSummarySchema.shape.name.safeParse(name).success).toBe(true);
+	it.each(['w9', 'w-9', 'form-1040-sr'])('registry and artifact schemas all accept %s', (name) => {
+		expect(RegistryItemNameSchema.safeParse(name).success).toBe(true);
 		expect(RegistryItemSchema.shape.name.safeParse(name).success).toBe(true);
+		expect(ArtifactSchema.shape.name.safeParse(name).success).toBe(true);
+	});
+
+	it.each(['W-9', 'Form-1040-SR'])('only the manifest refuses the capital letters of %s', (name) => {
+		expect(RegistryItemNameSchema.safeParse(name).success).toBe(false);
+		expect(RegistryItemSchema.shape.name.safeParse(name).success).toBe(true);
+		expect(ArtifactSchema.shape.name.safeParse(name).success).toBe(true);
+	});
+
+	it.each(['w9', 'w-9', 'form-1040-sr', '1099', 'a1-b2'])('a manifest name %s is always a name an artifact file can have', (name) => {
+		expect(RegistryItemNameSchema.safeParse(name).success).toBe(true);
 		expect(ArtifactSchema.shape.name.safeParse(name).success).toBe(true);
 	});
 });

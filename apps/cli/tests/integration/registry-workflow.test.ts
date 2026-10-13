@@ -104,6 +104,42 @@ describe('Registry Integration Tests', () => {
       expect(Array.isArray(data)).toBe(true)
       expect(data.length).toBeGreaterThan(0)
     })
+
+    createIntegrationTest('shows the editions and versions of each artifact, with the current edition and latest version marked', async (tempDir) => {
+      await setupProject(tempDir)
+      const result = await runCli(['search', '--registry', '@acme'], tempDir)
+      expect(result.exitCode).toBe(0)
+      // The default release is beside the reference: the publisher's current edition, not the newest
+      expect(result.stdout).toContain('@acme/w4 2024 v1.1.0')
+      expect(result.stdout).toContain('Editions:')
+      expect(result.stdout).toContain('2024 (current)  2024: 1.1.0 (latest), 1.0.0')
+      expect(result.stdout).toContain('2025  2025: 1.0.0 (latest)')
+      expect(result.stdout.indexOf('2024 (current)')).toBeLessThan(result.stdout.indexOf('2025  2025'))
+      // An artifact with no editions: the latest version first, then by precedence
+      expect(result.stdout).toContain('@acme/pet-policy v1.1.0')
+      expect(result.stdout).toContain('Versions: 1.1.0 (latest), 2.0.0-beta.1, 1.0.0')
+    })
+
+    createIntegrationTest('carries every edition and version in --json', async (tempDir) => {
+      await setupProject(tempDir)
+      const result = await runCli(['search', '--json', '--registry', '@acme'], tempDir)
+      const data = JSON.parse(result.stdout) as Array<Record<string, unknown>>
+      const w4 = data.find((item) => item.name === 'w4') as { currentEdition: string; editions: Record<string, { latestVersion: string; versions: Record<string, { path: string; sha256: string }> }> }
+      expect(w4.currentEdition).toBe('2024')
+      expect(Object.keys(w4.editions).sort()).toEqual(['2024', '2025'])
+      expect(w4.editions['2024']!.latestVersion).toBe('1.1.0')
+      expect(w4.editions['2024']!.versions['1.0.0']!.path).toBe('w4/2024/1.0.0/w4.json')
+      expect(w4).not.toHaveProperty('version')
+      const petPolicy = data.find((item) => item.name === 'pet-policy') as { latestVersion: string; versions: Record<string, unknown> }
+      expect(petPolicy.latestVersion).toBe('1.1.0')
+      expect(Object.keys(petPolicy.versions).sort()).toEqual(['1.0.0', '1.1.0', '2.0.0-beta.1'])
+    })
+
+    createIntegrationTest('counts editions and releases in registry info', async (tempDir) => {
+      await setupProject(tempDir)
+      const result = await runCli(['registry', 'info', '@acme', '--json'], tempDir)
+      expect(JSON.parse(result.stdout)).toMatchObject({ artifactCount: 7, editionCount: 2, releaseCount: 11 })
+    })
   })
 
   describe('Add artifact workflow', () => {
@@ -164,7 +200,7 @@ describe('Registry Integration Tests', () => {
       expect(result.exitCode).toBe(0)
       expect(result.stdout).toContain('Added')
       expect(await fs.readFile(path.join(tempDir, 'artifacts', '@acme', 'residential-lease-legal.md'), 'utf8'))
-        .toBe(await fs.readFile(path.join(testRegistryRoot, 'r', 'residential-lease-legal.md'), 'utf8'))
+        .toBe(await fs.readFile(path.join(testRegistryRoot, 'r', 'residential-lease', '1.0.0', 'residential-lease-legal.md'), 'utf8'))
     })
 
     createIntegrationTest('creates lock file entry', async (tempDir) => {

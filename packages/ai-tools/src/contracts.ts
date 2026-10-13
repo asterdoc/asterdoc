@@ -1,3 +1,4 @@
+import { EditionSelectorSchema, VersionSelectorSchema } from '@paradoc/schemas'
 import { z } from 'zod'
 
 /**
@@ -7,6 +8,15 @@ import { z } from 'zod'
  */
 
 const JsonObjectSchema = z.record(z.string(), z.unknown())
+
+/**
+ * The release of a registry artifact a tool input names. Both are optional:
+ * the registry manifest states the default of each.
+ */
+const RegistryReleaseShape = {
+	edition: EditionSelectorSchema.optional().describe('Edition key of the registry artifact, such as 2024-03. Omit it, or use "current", for the current edition. Only for an artifact that has editions.'),
+	version: VersionSelectorSchema.optional().describe('Version of the registry artifact, such as 1.2.0. Omit it, or use "latest", for the latest version of the edition.'),
+}
 
 export const ArtifactSourceSchema = z.object({
 	source: z.literal('artifact'),
@@ -23,6 +33,7 @@ export const RegistrySourceSchema = z.object({
 	source: z.literal('registry'),
 	registry_url: z.string().url().optional().describe('Registry base URL. Omit it to use the configured default registry.'),
 	artifact_name: z.string().min(1).describe('Artifact name within the registry'),
+	...RegistryReleaseShape,
 })
 
 export const SourceSchema = z.discriminatedUnion('source', [
@@ -42,6 +53,17 @@ const SourceShape = {
 	url: z.string().url().optional().describe('URL to a Paradoc artifact JSON file'),
 	registry_url: z.string().url().optional().describe('Registry base URL. Omit it to use the configured default registry.'),
 	artifact_name: z.string().min(1).optional().describe('Artifact name within the registry'),
+	...RegistryReleaseShape,
+}
+
+/** An edition or a version names a release of a registry artifact, so it has no meaning for another source. */
+function refuseReleaseOutsideRegistry(value: Record<string, unknown>, context: z.RefinementCtx): void {
+	if (value.source === 'registry') return
+	for (const key of ['edition', 'version']) {
+		if (value[key] !== undefined) {
+			context.addIssue({ code: 'custom', path: [key], message: `${key} is only allowed when source is "registry"` })
+		}
+	}
 }
 
 /**
@@ -63,6 +85,7 @@ export const SourceOperationSchema = z.object({
 	if (value.source === 'registry' && value.artifact_name === undefined) {
 		context.addIssue({ code: 'custom', path: ['artifact_name'], message: 'artifact_name is required when source is "registry"' })
 	}
+	refuseReleaseOutsideRegistry(value, context)
 })
 
 function withSourceFields<T extends z.ZodRawShape>(shape: T) {
@@ -73,6 +96,7 @@ function withSourceFields<T extends z.ZodRawShape>(shape: T) {
 				context.addIssue({ code: 'custom', path: issue.path, message: issue.message })
 			}
 		}
+		refuseReleaseOutsideRegistry(value, context)
 	})
 }
 
@@ -84,6 +108,7 @@ export type GetRegistryInput = z.infer<typeof GetRegistryInputSchema>
 export const GetArtifactInputSchema = z.object({
 	registry_url: z.string().url().optional().describe('Registry base URL'),
 	artifact_name: z.string().min(1).describe('Artifact name within the registry'),
+	...RegistryReleaseShape,
 	include_instructions: z.boolean().optional().default(true),
 	include_agent_instructions: z.boolean().optional().default(true),
 })
@@ -205,8 +230,38 @@ export type FormPayload = {
 
 export type ChecklistPayload = Record<string, boolean | string>
 
-export const RegistryItemSchema = z.object({ name: z.string(), path: z.string().optional() })
-export type RegistryItem = z.infer<typeof RegistryItemSchema>
+export const RegistryEditionOutputSchema = z.object({
+	key: z.string().describe('Edition key: the value to pass as edition'),
+	label: z.string().describe("The issuer's edition text, such as Rev. March 2024"),
+	date: z.string().optional(),
+	effective_from: z.string().optional(),
+	latest_version: z.string().describe('The version used when a request names none'),
+	versions: z.array(z.string()).describe('Every version of this edition, the latest first'),
+})
+
+/**
+ * The releases of a registry artifact. An artifact that has editions carries
+ * `current_edition` and `editions`; an artifact that has none carries
+ * `latest_version` and `versions`. Never both.
+ */
+const RegistryReleasesOutputShape = {
+	current_edition: z.string().optional().describe('Key of the edition used when a request names none'),
+	editions: z.array(RegistryEditionOutputSchema).optional().describe('Every edition, the current one first'),
+	latest_version: z.string().optional().describe('The version used when a request names none'),
+	versions: z.array(z.string()).optional().describe('Every version, the latest first'),
+}
+export const RegistryReleasesOutputSchema = z.object(RegistryReleasesOutputShape)
+export type RegistryReleasesOutput = z.infer<typeof RegistryReleasesOutputSchema>
+
+export const RegistryItemOutputSchema = z.object({
+	name: z.string(),
+	kind: z.enum(['form', 'document', 'checklist', 'bundle']),
+	title: z.string().optional(),
+	description: z.string().optional(),
+	tags: z.array(z.string()).optional(),
+	...RegistryReleasesOutputShape,
+})
+export type RegistryItemOutput = z.infer<typeof RegistryItemOutputSchema>
 
 export const InstructionContentSchema = z.object({
 	kind: z.enum(['inline', 'file']),
@@ -299,14 +354,18 @@ export const RenderOutputSchema = z.object({
 
 export const GetRegistryOutputSchema = z.object({
 	registry_url: z.string().optional(),
-	artifacts_path: z.string().optional(),
-	items: z.array(z.object({ name: z.string(), path: z.string().optional() })),
+	name: z.string().optional().describe('Registry name'),
+	description: z.string().optional(),
+	items: z.array(RegistryItemOutputSchema),
 	error: ToolErrorSchema.optional(),
 })
 
 export const GetArtifactOutputSchema = z.object({
 	artifact: z.record(z.string(), z.unknown()).optional(),
 	artifact_name: z.string().optional(),
+	edition: z.string().optional().describe('Key of the edition that was read. Absent for an artifact that has no editions.'),
+	version: z.string().optional().describe('The version that was read'),
+	releases: RegistryReleasesOutputSchema.optional().describe('Every release of this artifact the registry lists'),
 	base_url: z.string().optional(),
 	instructions: InstructionContentSchema.optional(),
 	agent_instructions: InstructionContentSchema.optional(),

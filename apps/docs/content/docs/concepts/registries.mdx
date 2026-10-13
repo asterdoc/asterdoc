@@ -89,6 +89,19 @@ Download layers alongside the definition:
 paradoc add @acme/residential-lease --layers all
 ```
 
+A reference is `@namespace/name`, with an optional edition and an optional version. See [Editions and versions](#editions-and-versions) for the difference.
+
+| Reference | Meaning |
+|-----------|---------|
+| `@acme/w-9` | The current edition, latest version |
+| `@acme/w-9/2024-03` | The latest version of edition `2024-03` |
+| `@acme/w-9@1.0.0` | Version `1.0.0` of the current edition, or of an artifact that has no editions |
+| `@acme/w-9/2024-03@1.0.0` | One edition and one version |
+
+`current` names the current edition and `latest` names the latest version, so `@acme/w-9/current@latest` is the same as `@acme/w-9`. A reference to an edition or version that the registry does not list fails, and the error says which ones it does list.
+
+The CLI checks the downloaded file against the checksum in the registry manifest and refuses a file that does not match. The lock file records the installed version and, when the artifact has editions, the edition.
+
 ### Viewing artifact details
 
 View metadata for an installed artifact:
@@ -162,23 +175,101 @@ See the [`registry`](/cli/commands/registry) command reference for all subcomman
 
 ### Registry structure
 
-A registry is a directory containing a `registry.json` index file and individual artifact files:
+You write two things: the artifact files, and `registry.config.json`, which lists them. [`paradoc registry compile`](/cli/commands/registry/compile) builds the registry from them: one manifest file, `registry.json`, and a folder for each release.
 
 ```
 my-registry/
-├── registry.json           # Registry index
-└── artifacts/
-    ├── residential-lease/
-    │   ├── artifact.yaml   # Artifact definition
-    │   └── lease.pdf       # Layer files
-    └── w9/
-        ├── artifact.yaml
-        └── w9.pdf
+├── registry.config.json        # You write this
+├── forms/                      # Your artifact files, one for each release
+│   ├── w-9-2024-03-1.0.0.json
+│   ├── w-9-2024-03-1.1.0.json
+│   ├── w-9.pdf
+│   ├── pet-addendum.json
+│   └── pet-addendum.pdf
+└── dist/                       # Compile writes this. You host it.
+    ├── registry.json           # The manifest
+    ├── w-9/
+    │   └── 2024-03/            # An edition
+    │       ├── 1.0.0/          # A version
+    │       │   ├── w-9.json
+    │       │   └── w-9.pdf
+    │       └── 1.1.0/
+    │           ├── w-9.json
+    │           └── w-9.pdf
+    └── pet-addendum/
+        └── 1.1.0/
+            ├── pet-addendum.json
+            └── pet-addendum.pdf
 ```
 
-### Registry index
+Each artifact file is one release: one version of one edition, or one version of an artifact that has no editions. Files with the same `name` become the editions and versions of one artifact. Name and place your source files as you like.
 
-The `registry.json` file lists all available artifacts:
+### Editions and versions
+
+An artifact can change in two ways, and the manifest keeps them apart.
+
+- An **edition** is the issuer's revision of a form. The IRS issued the W-9 as Rev. October 2018 and later as Rev. March 2024. Those are two editions.
+- A **version** is the publisher's own revision of the artifact for one edition. If you fix a field label in your encoding of the March 2024 W-9, you publish version `1.1.0` of that edition. The form the IRS printed did not change.
+
+A form that you wrote yourself, such as a pet addendum, has no issuer and no editions. It has versions only.
+
+The manifest names the default for each: `currentEdition` on an artifact that has editions, and `latestVersion` on each edition or on an artifact that has none. Both are your statements as the publisher. A reader uses them as written and does not compare dates or version numbers. This lets you list a future edition before it takes effect and keep the edition in force as the current one until that day. Compile fills in both from your files, and you can state either one yourself. See [Default edition and version](#default-edition-and-version).
+
+An artifact has an edition in every release or in none. When an artifact that has only versions gets its first edition, publish it again in the edition shape: give every source file of that artifact an `edition`, and compile. `currentEdition` and `editions` then replace `latestVersion` and `versions` on the item.
+
+### Registry config
+
+`registry.config.json` is the publisher's source file. [`paradoc registry make`](/cli/commands/registry/make) creates it, and [`paradoc registry catalog`](/cli/commands/registry/catalog) adds and removes source files.
+
+```json
+{
+  "name": "acme",
+  "description": "Official forms and documents for Acme Corp",
+  "homepage": "https://acme.com/forms",
+  "sources": [
+    "forms/w-9-2024-03-1.0.0.json",
+    "forms/w-9-2024-03-1.1.0.json",
+    "forms/pet-addendum.json"
+  ],
+  "tags": { "w-9": ["irs", "tax"] }
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Registry name, a lowercase slug (e.g., `acme`) |
+| `description` | string | No | Registry description |
+| `homepage` | string | No | Registry homepage URL |
+| `enableTelemetry` | boolean | No | Set `false` to turn off install telemetry for this registry |
+| `enableDirectory` | boolean | No | Set `false` to keep this registry out of the Paradoc Hub |
+| `sources` | array | Yes | Paths of the artifact files, relative to this file. Each file is in this folder or below it |
+| `tags` | object | No | Search tags, keyed by artifact name |
+| `defaults` | object | No | The default edition and version of an artifact, keyed by artifact name. See below |
+
+#### Default edition and version
+
+Compile chooses each default, and you state one in `defaults` when the choice is not what you mean.
+
+- **`latestVersion`** is the highest version that is not a pre-release.
+- **`currentEdition`** is the only edition when there is one. With more, it is the edition that started last and not after today. An edition starts on its `effectiveFrom`, or on its `date` when it has no `effectiveFrom`.
+
+When the files cannot decide, compile fails and names the `defaults` entry to set. This happens when every version is a pre-release, an edition has no date, every edition starts after today, or two dates do not say which is later.
+
+```json
+{
+  "defaults": {
+    "w-9": {
+      "currentEdition": "2018-10",
+      "editions": { "2024-03": { "latestVersion": "1.0.0" } }
+    },
+    "pet-addendum": { "latestVersion": "2.0.0-beta.1" }
+  }
+}
+```
+
+### Manifest
+
+`registry.json` is the one file that lists every artifact in the registry, with every edition and version of each. Compile writes it. Do not edit it by hand:
 
 ```json
 {
@@ -188,19 +279,46 @@ The `registry.json` file lists all available artifacts:
   "homepage": "https://acme.com/forms",
   "items": [
     {
-      "name": "residential-lease",
-      "version": "1.0.0",
+      "name": "w-9",
       "kind": "form",
-      "title": "Residential Lease Agreement",
-      "description": "Standard residential lease agreement",
-      "tags": ["legal", "real-estate", "lease"],
-      "path": "artifacts/residential-lease/artifact.yaml"
+      "title": "Request for Taxpayer Identification Number and Certification",
+      "tags": ["irs", "tax"],
+      "currentEdition": "2024-03",
+      "editions": {
+        "2024-03": {
+          "label": "Rev. March 2024",
+          "date": "2024-03",
+          "latestVersion": "1.1.0",
+          "versions": {
+            "1.0.0": {
+              "path": "w-9/2024-03/1.0.0/w-9.json",
+              "sha256": "5f2b7c1e9a4d38e06b1f0c7d2a9e4b6c8d0f1a3b5c7e9d2f4a6b8c0e1d3f5a79"
+            },
+            "1.1.0": {
+              "path": "w-9/2024-03/1.1.0/w-9.json",
+              "sha256": "0c9e8d7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "pet-addendum",
+      "kind": "form",
+      "title": "Pet Addendum to Lease Agreement",
+      "latestVersion": "1.1.0",
+      "versions": {
+        "1.1.0": {
+          "path": "pet-addendum/1.1.0/pet-addendum.json",
+          "sha256": "a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90"
+        }
+      }
     }
   ]
 }
 ```
 
-#### Index fields
+#### Manifest fields
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -208,41 +326,68 @@ The `registry.json` file lists all available artifacts:
 | `name` | string | Yes | Registry name, a lowercase slug (e.g., `acme`) |
 | `description` | string | No | Registry description |
 | `homepage` | string | No | Registry homepage URL |
-| `artifactsPath` | string | No | Path prefix for artifact URLs (e.g., `/r`) |
-| `items` | array | Yes | List of artifact entries |
+| `items` | array | Yes | One entry for each artifact name. No two entries have the same name |
 
 #### Artifact entry fields
 
+An entry has `currentEdition` and `editions`, or `latestVersion` and `versions`. It never has both pairs.
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | string | Yes | Artifact identifier (slug) |
-| `version` | string | Yes | Semantic version |
+| `name` | string | Yes | Artifact name: lowercase letters and digits with single hyphens, such as `w-9`. It is the name in a reference such as `@acme/w-9` |
 | `kind` | string | Yes | Artifact type: `form`, `checklist`, `document`, `bundle` |
 | `title` | string | No | Human-readable name |
 | `description` | string | No | Artifact description |
+| `currentEdition` | string | With `editions` | The edition to use when a reference names none. A key of `editions` |
+| `editions` | object | For an artifact with editions | Editions, keyed by edition key |
+| `latestVersion` | string | With `versions` | The version to use when a reference names none. A key of `versions` |
+| `versions` | object | For an artifact without editions | Versions, keyed by version |
 | `layers` | array | No | Layer keys the artifact provides |
-| `tags` | array | No | Searchable tags |
-| `path` | string | No | Path to the artifact file, relative to the registry URL plus `artifactsPath`. Default: `<name>.json` |
+| `tags` | array | No | Searchable tags, from `tags` in the config |
+
+#### Edition fields
+
+The key of an edition is lowercase letters and digits with single hyphens, such as `2024-03`. It cannot be `current`, `latest`, `editions`, `tags` or `diff`.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `label` | string | Yes | The edition text as the issuer prints it, such as `Rev. March 2024` |
+| `date` | string | No | When the issuer released the edition: `YYYY`, `YYYY-MM` or `YYYY-MM-DD` |
+| `effectiveFrom` | string | No | The date the edition takes effect, when the issuer prints one |
+| `latestVersion` | string | Yes | The version to use when a reference names none. A key of `versions` |
+| `versions` | object | Yes | Versions of this edition, keyed by version |
+
+#### Version fields
+
+The key of a version is a semantic version with no build metadata, such as `1.2.0` or `1.3.0-beta.1`.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `path` | string | Yes | Path to the artifact file, relative to the folder that holds `registry.json`. Forward slashes, no leading slash, no `.` or `..` segment, and a `.json`, `.yaml` or `.yml` file. No two versions have the same path |
+| `sha256` | string | Yes | SHA-256 of the bytes of the file, as 64 lowercase hex digits. A reader refuses a file that does not match |
+
+#### Publishing rules
+
+- **A published version does not change.** To fix an artifact, add a source file with a new version and compile. The checksum makes a changed file fail for everyone who reads it.
+- **To withdraw a version, remove its source file from the config and compile.** The manifest then no longer lists it.
 
 ### Workflow
 
-The CLI provides commands to scaffold and manage a registry:
+1. **Create the config** — [`paradoc registry make`](/cli/commands/registry/make) writes `registry.config.json` with your registry name and metadata.
 
-1. **Create the registry** — [`paradoc registry make`](/cli/commands/registry/make) generates a `registry.json` with your registry name and metadata.
+2. **Add source files** — [`paradoc registry catalog add`](/cli/commands/registry/catalog) adds one artifact file, which is one release.
 
-2. **Add artifacts to the catalog** — [`paradoc registry catalog`](/cli/commands/registry/catalog) manages the artifacts listed in the index.
-
-3. **Compile** — [`paradoc registry compile`](/cli/commands/registry/compile) validates all artifacts and prepares the registry for publishing.
+3. **Compile** — [`paradoc registry compile`](/cli/commands/registry/compile) validates every source file, computes checksums, and writes `registry.json` and the release folders. One error stops the build, and nothing is written.
 
 ```bash
 paradoc registry make --name acme --description "Official forms and documents for Acme Corp"
-paradoc registry catalog add ./artifacts/residential-lease/artifact.yaml
-paradoc registry compile
+paradoc registry catalog add forms/w-9-2024-03-1.0.0.json
+paradoc registry compile --output dist
 ```
 
 ### Hosting
 
-A registry is just static files served over HTTPS. Any hosting provider or web server works:
+A registry is just static files served over HTTPS. Host the folder that compile writes. Any hosting provider or web server works:
 
 - **GitHub Pages** — free for public repositories
 - **Netlify / Vercel** — deploy from a Git repository
@@ -252,7 +397,7 @@ A registry is just static files served over HTTPS. Any hosting provider or web s
 For local development, serve the directory with a static file server:
 
 ```bash
-npx serve my-registry -l 4567
+npx serve my-registry/dist -l 4567
 ```
 
 Then configure the local registry:
@@ -269,7 +414,7 @@ Then configure the local registry:
 
 ### Example: GitHub Pages
 
-1. Create a repository with your registry structure (`registry.json` + `artifacts/`)
+1. Create a repository with your compiled registry (`registry.json` and the release folders)
 2. Enable GitHub Pages in repository settings (serve from the root or `docs/` folder)
 3. Configure the registry in your project:
 
@@ -285,8 +430,8 @@ The CLI fetches `https://myorg.github.io/paradoc-registry/registry.json` to disc
 
 ### Best practices
 
-1. **Version your artifacts** — use semantic versioning for all artifacts
+1. **Version your artifacts** — use semantic versioning, and publish a new version for every change
 2. **Add descriptive tags** — help users discover artifacts through search
 3. **Include descriptions** — add descriptions to the registry, artifacts, and fields
-4. **Validate before publishing** — run `paradoc validate` on all artifacts before compiling
+4. **Validate before publishing** — run `paradoc validate` on your artifacts. Compile validates them again
 5. **Use HTTPS** — always use HTTPS in production (HTTP only for local development)

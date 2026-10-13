@@ -2,18 +2,17 @@ import { describe, expect, it, vi } from 'vitest'
 import { PARADOC_SCHEMA_URL, SCHEMA_VERSION, schemaVersionUrl } from '@paradoc/core'
 import { executeFill } from '../src/tools/fill'
 import { executeGetArtifact } from '../src/tools/get-artifact'
+import { registryFetch as serveRegistry } from './helpers/registry'
 
 const form = (schema?: string) => ({
 	...(schema ? { $schema: schema } : {}),
 	kind: 'form',
 	name: 'intake',
+	version: '1.0.0',
 	fields: { x: { type: 'text', label: 'X' } },
 })
 
-const registryFetch = (artifact: unknown) =>
-	vi.fn().mockImplementation((url: string) =>
-		Promise.resolve(new Response(JSON.stringify(url.includes('registry.json') ? { items: [{ name: 'intake' }] } : artifact))),
-	)
+const registryFetch = (artifact: Record<string, unknown>) => vi.fn(serveRegistry('https://registry.example', [{ artifact }]))
 
 const fillFromUrl = (artifact: unknown) =>
 	executeFill(

@@ -17,7 +17,11 @@ import {
   RequestTimeoutError,
   UrlValidationError,
   ContentTypeError,
+  RegistryReleaseMismatchError,
 } from '../../src/utils/registry-client.js'
+import { RegistryManifestError } from '../../src/utils/registry-manifest.js'
+import { createHash } from 'node:crypto'
+import { resolveRegistryRelease, type RegistryItemSummary } from '@paradoc/schemas'
 import { SECURITY_LIMITS, NETWORK_TIMEOUTS } from '../../src/utils/constants.js'
 import type { ResolvedRegistry } from '../../src/types.js'
 
@@ -87,8 +91,8 @@ describe('Security Constants', () => {
     expect(SECURITY_LIMITS.MAX_LAYER_SIZE).toBeGreaterThan(0)
 
     // Index size should be limited
-    expect(SECURITY_LIMITS.MAX_INDEX_SIZE).toBeLessThanOrEqual(50 * 1024 * 1024) // Max 50MB
-    expect(SECURITY_LIMITS.MAX_INDEX_SIZE).toBeGreaterThan(0)
+    // The manifest lists every edition and version, so its cap is 10 MB
+    expect(SECURITY_LIMITS.MAX_INDEX_SIZE).toBe(10 * 1024 * 1024)
   })
 
   it('has reasonable network timeouts', async () => {
@@ -184,11 +188,41 @@ describe('RegistryClient network fetches', () => {
         () => new Response(JSON.stringify(index), { headers: { 'content-type': 'application/json' } })
       )
 
-      await expect((await newClient()).fetchIndex(registry, noCache)).resolves.toEqual(index)
+      await expect((await newClient()).fetchIndex(registry, noCache)).resolves.toMatchObject(index)
 
       const [url, init] = fetchMock.mock.calls[0]!
       expect(url).toBe(indexUrl)
       expect(init?.headers).toEqual({ Accept: 'application/json', Authorization: 'Bearer t0ken' })
+    })
+
+    it('refuses a manifest of the old shape, naming each issue with its path', async () => {
+      const oldShape = {
+        name: 'test',
+        artifactsPath: '/r',
+        items: [{ name: 'w-9', kind: 'form', version: '1.0.0', path: 'w-9.json' }],
+      }
+      stubFetch(() => new Response(JSON.stringify(oldShape), { headers: { 'content-type': 'application/json' } }))
+
+      const error = await (await newClient()).fetchIndex(registry, noCache).catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(RegistryManifestError)
+      const message = (error as RegistryManifestError).message
+      expect(message).toContain(`The registry manifest at ${indexUrl} is not valid:`)
+      expect(message).toMatch(/• root: .*artifactsPath/)
+      expect(message).toMatch(/• items\[0\]: .*(version|path)/)
+    })
+
+    it('does not use a cached manifest that is not valid, and fetches a new one', async () => {
+      const client = await newClient()
+      const staleRegistry = { ...registry, baseUrl: 'https://stale.example.com' }
+      const { cacheManager } = await import('../../src/utils/cache.js')
+      await cacheManager.set('https://stale.example.com/registry.json', { name: 'test', items: [{ name: 'w-9', kind: 'form', version: '1.0.0' }] }, 3600)
+      const fetchMock = stubFetch(
+        () => new Response(JSON.stringify({ name: 'test', items: [] }), { headers: { 'content-type': 'application/json' } })
+      )
+
+      const index = await client.fetchIndex(staleRegistry, { cacheTtl: 3600 })
+      expect(index.items).toEqual([])
+      expect(fetchMock).toHaveBeenCalledTimes(1)
     })
 
     it('refuses a non-OK status', async () => {
@@ -219,7 +253,7 @@ describe('RegistryClient network fetches', () => {
 
       const error = await (await newClient()).fetchIndex(registry, noCache).catch((e: unknown) => e)
       expect(error).toBeInstanceOf(FileSizeExceededError)
-      expect((error as FileSizeExceededError).message).toBe('File size (5.0 MB) exceeds limit (5.0 MB)')
+      expect((error as FileSizeExceededError).message).toBe('File size (10.0 MB) exceeds limit (10.0 MB)')
       expect((error as FileSizeExceededError).size).toBe(limit + 1)
       expect((error as FileSizeExceededError).limit).toBe(limit)
     })
@@ -229,14 +263,14 @@ describe('RegistryClient network fetches', () => {
       const chunk = new Uint8Array(1024 * 1024)
       stubFetch(
         () =>
-          new Response(streamOf(Array.from({ length: 6 }, () => chunk)), {
+          new Response(streamOf(Array.from({ length: 11 }, () => chunk)), {
             headers: { 'content-type': 'application/json' },
           })
       )
 
       const error = await (await newClient()).fetchIndex(registry, noCache).catch((e: unknown) => e)
       expect(error).toBeInstanceOf(FileSizeExceededError)
-      expect((error as FileSizeExceededError).message).toBe('Download size (>6.0 MB) exceeds limit (5.0 MB)')
+      expect((error as FileSizeExceededError).message).toBe('Download size (>11.0 MB) exceeds limit (10.0 MB)')
       expect((error as FileSizeExceededError).limit).toBe(limit)
     })
 
@@ -267,6 +301,61 @@ describe('RegistryClient network fetches', () => {
   })
 
 
+
+  describe('release file', () => {
+    const artifact = { name: 'w-9', kind: 'form', version: '1.1.0', edition: { key: '2024-03', label: 'Rev. March 2024' }, fields: {} }
+    const body = JSON.stringify(artifact)
+    const sha256 = (text: string) => createHash('sha256').update(text).digest('hex')
+    const item = (digest: string): RegistryItemSummary => ({
+      name: 'w-9',
+      kind: 'form',
+      currentEdition: '2024-03',
+      editions: {
+        '2024-03': {
+          label: 'Rev. March 2024',
+          latestVersion: '1.1.0',
+          versions: { '1.1.0': { path: 'w-9/2024-03/1.1.0/w-9.json', sha256: digest } },
+        },
+      },
+    })
+    const releaseOf = (digest: string) => {
+      const resolution = resolveRegistryRelease(item(digest))
+      if (!resolution.ok) throw new Error('fixture does not resolve')
+      return resolution.release
+    }
+    const serve = (text: string) =>
+      stubFetch(() => new Response(text, { headers: { 'content-type': 'application/json' } }))
+
+    it('fetches the file at the manifest path under the base address when its bytes and identity match', async () => {
+      const fetchMock = serve(body)
+      const result = await (await newClient()).fetchRelease(registry, 'w-9', releaseOf(sha256(body)))
+      expect(result.url).toBe('https://registry.example.com/w-9/2024-03/1.1.0/w-9.json')
+      expect(fetchMock.mock.calls[0]![0]).toBe(result.url)
+      expect(result.item).toMatchObject({ name: 'w-9', version: '1.1.0' })
+    })
+
+    it('refuses bytes that do not match the sha256 the manifest lists', async () => {
+      serve(body.replace('Rev. March 2024', 'Rev. March 2025'))
+      const error = await (await newClient()).fetchRelease(registry, 'w-9', releaseOf(sha256(body))).catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(RegistryReleaseMismatchError)
+      expect((error as Error).message).toContain('Checksum mismatch for https://registry.example.com/w-9/2024-03/1.1.0/w-9.json')
+      expect((error as Error).message).toContain(sha256(body))
+    })
+
+    it.each([
+      ['name', { ...artifact, name: 'w-8' }, 'name "w-9" expected, the file has "w-8"'],
+      ['version', { ...artifact, version: '1.0.0' }, 'version "1.1.0" expected, the file has "1.0.0"'],
+      ['edition', { ...artifact, edition: { key: '2018-10', label: 'Rev. October 2018' } }, 'edition "2024-03" expected, the file has "2018-10"'],
+      ['missing edition', { name: 'w-9', kind: 'form', version: '1.1.0' }, 'edition "2024-03" expected, the file has none'],
+    ])('refuses a file with the right checksum and another %s', async (_what, other, expected) => {
+      const text = JSON.stringify(other)
+      serve(text)
+      const error = await (await newClient()).fetchRelease(registry, 'w-9', releaseOf(sha256(text))).catch((e: unknown) => e)
+      expect(error).toBeInstanceOf(RegistryReleaseMismatchError)
+      expect((error as Error).message).toContain('is not the release the registry manifest lists')
+      expect((error as Error).message).toContain(expected)
+    })
+  })
 
   describe('layer binary', () => {
     it('returns exactly the streamed bytes', async () => {

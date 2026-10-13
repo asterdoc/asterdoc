@@ -109,7 +109,13 @@ describe('CLI search and registry info cache configuration', () => {
         response.writeHead(200, { 'content-type': 'application/json' })
         response.end(JSON.stringify({
           name: 'test',
-          items: [{ name: itemName, kind: 'form', version: '1.0.0', title: itemName }],
+          items: [{
+            name: itemName,
+            kind: 'form',
+            title: itemName,
+            latestVersion: '1.0.0',
+            versions: { '1.0.0': { path: `${itemName}/1.0.0/${itemName}.json`, sha256: 'a'.repeat(64) } },
+          }],
         }))
         return
       }

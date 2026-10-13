@@ -9,7 +9,7 @@ const schemaUrlFiles = [
   'utils/lock.ts',
   'utils/config.ts',
   'utils/templates.ts',
-  'commands/registry.ts',
+  'utils/registry-build.ts',
 ]
 
 describe('framework-cli-seam-016: CLI schema URLs derive from SCHEMA_BASE', () => {

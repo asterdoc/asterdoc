@@ -6,6 +6,7 @@ import { lockFileManager } from '../utils/lock.js'
 import { configManager } from '../utils/config.js'
 import { findRepoRoot } from '../utils/project.js'
 import { formatLayerCount, PROJECT_REQUIRED_MESSAGE } from '../utils/user-copy.js'
+import { formatInstalledRelease } from '../utils/registry-manifest.js'
 
 /**
  * Create the 'list' command
@@ -51,6 +52,7 @@ export function createListCommand(): Command {
         if (options.json) {
           const output = artifacts.map(({ ref, info }) => ({
             ref,
+            ...(info.edition !== undefined && { edition: info.edition }),
             version: info.version,
             output: info.output,
             path: info.path,
@@ -86,7 +88,7 @@ export function createListCommand(): Command {
               const name = ref.split('/')[1] ?? ref
               const layerCount = Object.keys(info.layers).length
               const layerInfo = layerCount > 0 ? kleur.gray(` (${formatLayerCount(layerCount)})`) : ''
-              console.log(`  ${name} ${kleur.gray('v' + info.version)}${layerInfo}`)
+              console.log(`  ${name} ${kleur.gray(formatInstalledRelease(info))}${layerInfo}`)
             }
           }
           console.log()

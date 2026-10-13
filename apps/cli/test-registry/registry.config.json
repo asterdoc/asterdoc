@@ -1,0 +1,60 @@
+{
+  "name": "acme",
+  "homepage": "https://acme-realestate.example.com",
+  "description": "ACME Real Estate - Official artifact registry for property management forms and documents",
+  "sources": [
+    "commercial-lease.json",
+    "lease-addendum.json",
+    "pet-policy/1.0.0.json",
+    "pet-policy/1.1.0.json",
+    "pet-policy/2.0.0-beta.1.json",
+    "property-inspection.json",
+    "residential-lease.json",
+    "w4/2024-1.0.0.json",
+    "w4/2024-1.1.0.json",
+    "w4/2025-1.0.0.json",
+    "w9.json"
+  ],
+  "defaults": {
+    "w4": {
+      "currentEdition": "2024"
+    }
+  },
+  "tags": {
+    "w9": [
+      "irs",
+      "tax",
+      "w9",
+      "tin",
+      "government"
+    ],
+    "residential-lease": [
+      "lease",
+      "residential",
+      "rental",
+      "agreement"
+    ],
+    "commercial-lease": [
+      "lease",
+      "commercial",
+      "business",
+      "agreement"
+    ],
+    "lease-addendum": [
+      "lease",
+      "addendum",
+      "modification"
+    ],
+    "property-inspection": [
+      "inspection",
+      "checklist",
+      "property",
+      "condition"
+    ],
+    "w4": [
+      "irs",
+      "tax",
+      "payroll"
+    ]
+  }
+}

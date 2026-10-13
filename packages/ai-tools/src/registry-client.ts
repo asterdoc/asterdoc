@@ -1,9 +1,20 @@
-import { z } from 'zod'
+import {
+	RegistryIndexSchema,
+	describeRegistryReleaseFailure,
+	listRegistryReleases,
+	resolveRegistryRelease,
+	type RegistryIndex,
+	type RegistryItemSummary,
+	type RegistryRelease,
+	type RegistryReleaseFailure,
+	type RegistryReleaseRequest,
+} from '@paradoc/schemas'
 import type { ParadocToolsConfig } from './config'
+import type { RegistryReleasesOutput } from './contracts'
 import type { ToolExecutionContext } from './context'
 import { cacheKey, configForExecution } from './context'
 
-export const MAX_INDEX_SIZE = 1_048_576
+export const MAX_INDEX_SIZE = 10_485_760
 export const MAX_ITEM_SIZE = 1_048_576
 export const MAX_INSTRUCTIONS_SIZE = 5_242_880
 export const MAX_LAYER_FILE_SIZE = 20_971_520
@@ -20,16 +31,6 @@ function fetchScope(fetchFn: typeof globalThis.fetch, customFetch: typeof global
 	const identity = nextFetchIdentity++
 	fetchIdentities.set(fetchFn, identity)
 	return `custom:${identity}`
-}
-
-const RegistryIndexSchema = z.object({
-	artifactsPath: z.string().optional(),
-	items: z.array(z.object({ name: z.string(), path: z.string().optional() })),
-})
-
-export interface RegistryIndex {
-	artifactsPath?: string
-	items: Array<{ name: string; path?: string }>
 }
 
 export interface FetchPolicy {
@@ -304,16 +305,29 @@ export function fetchPolicyFromConfig(config?: ParadocToolsConfig): FetchPolicy 
 	}
 }
 
+/** A parsed manifest, the response that carried it, and the registry base address it was read from. */
+export interface FetchedRegistryIndex {
+	index: RegistryIndex
+	response: Response
+	/** The address of the folder that holds `registry.json`, after redirects, with no trailing slash. */
+	baseUrl: string
+}
+
+/**
+ * Fetch `registry.json` from a registry base address and validate it against
+ * the manifest schema. Throws when the fetch fails, the body is over
+ * `MAX_INDEX_SIZE`, or the body is not a valid manifest.
+ */
 export async function fetchRegistryIndexResponse(
 	baseUrl: string,
 	customFetch?: typeof globalThis.fetch,
 	config?: ParadocToolsConfig,
-): Promise<{ index: RegistryIndex; response: Response }> {
+): Promise<FetchedRegistryIndex> {
 	const url = new URL('registry.json', `${trimBase(baseUrl)}/`).toString()
 	const res = await safeFetch(url, MAX_INDEX_SIZE, customFetch, fetchPolicyFromConfig(config))
 	const parsed = RegistryIndexSchema.safeParse(await res.json())
 	if (!parsed.success) throw new Error(`Invalid registry index format: ${parsed.error.message}`)
-	return { index: parsed.data, response: res }
+	return { index: parsed.data, response: res, baseUrl: new URL('.', res.url || url).toString().replace(/\/$/, '') }
 }
 
 export async function fetchRegistryIndex(
@@ -341,52 +355,138 @@ export function resolveRelativeUrl(baseUrl: string, relativePath: string, label 
 	return result.toString()
 }
 
-/** Build an item URL while keeping the resolved path inside the registry's artifact root. */
-export function buildArtifactItemUrl(
-	baseUrl: string,
-	artifactsPath: string | undefined,
-	artifactName: string,
-	itemPath?: string,
-): string {
-	const base = new URL(`${trimBase(baseUrl)}/`)
-	const root = new URL(`${artifactsPath ? `${artifactsPath.replace(/^\/+|\/+$/g, '')}/` : ''}`, base)
-	const basePath = base.pathname.endsWith('/') ? base.pathname : `${base.pathname}/`
-	if (root.origin !== base.origin || !root.pathname.startsWith(basePath)) {
-		throw new Error('Artifact path must remain inside the registry root')
+export type RegistryArtifactErrorCode =
+	| 'artifact_not_found'
+	| 'release_not_found'
+	| 'integrity_mismatch'
+	| 'identity_mismatch'
+	| 'invalid_artifact'
+
+/** Why a registry artifact could not be read. `failure` is set for `release_not_found`. */
+export class RegistryArtifactError extends Error {
+	constructor(
+		readonly code: RegistryArtifactErrorCode,
+		message: string,
+		readonly failure?: RegistryReleaseFailure,
+	) {
+		super(message)
+		this.name = 'RegistryArtifactError'
 	}
-	const relative = itemPath ?? `${encodeURIComponent(artifactName)}.json`
-	assertRelativePath(relative, 'Artifact item path')
-	const result = new URL(relative, root)
-	if (result.origin !== root.origin || !result.pathname.startsWith(root.pathname)) {
-		throw new Error(`Artifact path escaped registry root: ${relative}`)
-	}
-	return result.toString()
 }
 
-export async function fetchRegistryItemResponse(
-	baseUrl: string,
-	artifactsPath: string | undefined,
-	artifactName: string,
-	itemPath?: string,
-	customFetch?: typeof globalThis.fetch,
-	config?: ParadocToolsConfig,
-): Promise<{ artifact: Record<string, unknown>; response: Response }> {
-	const url = buildArtifactItemUrl(baseUrl, artifactsPath, artifactName, itemPath)
-	const res = await safeFetch(url, MAX_ITEM_SIZE, customFetch, fetchPolicyFromConfig(config))
-	const value = await res.json()
-	if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('Registry artifact must be a JSON object')
-	return { artifact: value as Record<string, unknown>, response: res }
+/** The artifact a caller names: its manifest item name, and an optional edition and version. */
+export interface RegistryArtifactRequest extends RegistryReleaseRequest {
+	name: string
 }
 
-export async function fetchRegistryItem(
-	baseUrl: string,
-	artifactsPath: string | undefined,
-	artifactName: string,
-	itemPath?: string,
+export interface FetchedRegistryArtifact {
+	artifact: Record<string, unknown>
+	/** The manifest item of the artifact, with every release of it. */
+	item: RegistryItemSummary
+	/** The release the request resolved to. */
+	release: RegistryRelease
+	/** The address the artifact file was read from, after redirects. */
+	artifactUrl: string
+	/** The address of the folder that holds the artifact file, with no trailing slash. */
+	baseUrl: string
+}
+
+async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
+	const digest = await globalThis.crypto.subtle.digest('SHA-256', bytes)
+	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')
+}
+
+async function parseArtifactFile(text: string, path: string): Promise<Record<string, unknown>> {
+	let value: unknown
+	try {
+		value = path.endsWith('.json') ? JSON.parse(text) : (await import('@paradoc/core')).fromYAML(text)
+	} catch (error) {
+		throw new RegistryArtifactError('invalid_artifact', `Registry artifact ${path} could not be parsed: ${error instanceof Error ? error.message : String(error)}`)
+	}
+	if (!value || typeof value !== 'object' || Array.isArray(value)) {
+		throw new RegistryArtifactError('invalid_artifact', `Registry artifact ${path} must be an object`)
+	}
+	return value as Record<string, unknown>
+}
+
+/** Refuse a file that is not the release the manifest lists at its path. */
+function assertReleaseIdentity(artifact: Record<string, unknown>, name: string, release: RegistryRelease): void {
+	const edition = artifact.edition && typeof artifact.edition === 'object' ? (artifact.edition as { key?: unknown }).key : undefined
+	const stated = [
+		{ what: 'name', expected: name, actual: artifact.name },
+		{ what: 'version', expected: release.version, actual: artifact.version },
+		...(release.edition ? [{ what: 'edition key', expected: release.edition.key, actual: edition }] : []),
+	]
+	for (const { what, expected, actual } of stated) {
+		if (actual !== expected) {
+			throw new RegistryArtifactError(
+				'identity_mismatch',
+				`Registry artifact identity mismatch: the manifest lists ${what} "${expected}" at ${release.path}, but the file states ${actual === undefined ? 'none' : `"${String(actual)}"`}.`,
+			)
+		}
+	}
+}
+
+/**
+ * Read one release of an artifact from a file registry: fetch the manifest,
+ * resolve the request through the shared resolver, fetch the file, and check
+ * its SHA-256 digest and its own name, version and edition key against the
+ * manifest. Throws `RegistryArtifactError` when the registry does not list
+ * the artifact or the release, or when the file is not the one it lists.
+ */
+export async function fetchRegistryArtifact(
+	registryUrl: string,
+	request: RegistryArtifactRequest,
 	customFetch?: typeof globalThis.fetch,
 	config?: ParadocToolsConfig,
-): Promise<Record<string, unknown>> {
-	return (await fetchRegistryItemResponse(baseUrl, artifactsPath, artifactName, itemPath, customFetch, config)).artifact
+): Promise<FetchedRegistryArtifact> {
+	const { index, baseUrl } = await fetchRegistryIndexResponse(registryUrl, customFetch, config)
+	const item = index.items.find((candidate) => candidate.name === request.name)
+	if (!item) {
+		throw new RegistryArtifactError('artifact_not_found', `Artifact "${request.name}" not found in registry. Use get_registry to list its artifacts.`)
+	}
+	const resolution = resolveRegistryRelease(item, { edition: request.edition, version: request.version })
+	if (!resolution.ok) {
+		throw new RegistryArtifactError('release_not_found', describeRegistryReleaseFailure(resolution.failure), resolution.failure)
+	}
+	const { release } = resolution
+	const url = resolveRelativeUrl(baseUrl, release.path, 'Artifact path')
+	const response = await safeFetch(url, MAX_ITEM_SIZE, customFetch, fetchPolicyFromConfig(config))
+	const bytes = await response.arrayBuffer()
+	const digest = await sha256Hex(bytes)
+	if (digest !== release.sha256) {
+		throw new RegistryArtifactError(
+			'integrity_mismatch',
+			`Registry artifact checksum mismatch for ${release.path}: the manifest lists sha256 ${release.sha256}, but the file has ${digest}.`,
+		)
+	}
+	const artifact = await parseArtifactFile(bytesToText(new Uint8Array(bytes)), release.path)
+	assertReleaseIdentity(artifact, item.name, release)
+	const artifactUrl = response.url || url
+	return { artifact, item, release, artifactUrl, baseUrl: new URL('.', artifactUrl).toString().replace(/\/$/, '') }
+}
+
+/**
+ * The releases of a manifest item in the compact form a tool result carries:
+ * edition keys with their labels, the current edition, and version numbers
+ * with the latest first. It leaves out every `path` and `sha256`.
+ */
+export function summarizeRegistryReleases(item: RegistryItemSummary): RegistryReleasesOutput {
+	const groups = listRegistryReleases(item)
+	if (item.editions === undefined) {
+		return { latest_version: item.latestVersion, versions: groups.flatMap((group) => group.versions.map((entry) => entry.version)) }
+	}
+	return {
+		current_edition: item.currentEdition,
+		editions: groups.flatMap((group) => group.edition === null ? [] : [{
+			key: group.edition.key,
+			label: group.edition.label,
+			...(group.edition.date !== undefined ? { date: group.edition.date } : {}),
+			...(group.edition.effectiveFrom !== undefined ? { effective_from: group.edition.effectiveFrom } : {}),
+			latest_version: group.latestVersion,
+			versions: group.versions.map((entry) => entry.version),
+		}]),
+	}
 }
 
 export function bytesToBase64(bytes: Uint8Array): string {

@@ -26,8 +26,8 @@ Every adapter wraps `@paradoc/ai-tools`, so the tool names, inputs and outputs a
 
 | Tool | Does | Key inputs (besides the source) | `execute` function |
 |------|------|----------------------------------|--------------------|
-| `get_registry` | List the artifacts in a registry | `registry_url?` | `executeGetRegistry` |
-| `get_artifact` | Fetch one artifact and its instructions | `registry_url?`, `artifact_name`, `include_instructions?`, `include_agent_instructions?` | `executeGetArtifact` |
+| `get_registry` | List the artifacts in a registry, with the editions and versions of each | `registry_url?` | `executeGetRegistry` |
+| `get_artifact` | Fetch one artifact and its instructions | `registry_url?`, `artifact_name`, `edition?`, `version?`, `include_instructions?`, `include_agent_instructions?` | `executeGetArtifact` |
 | `inspect_artifact` | Bounded description of an artifact | `sections?` (`metadata`, `fields`, `parties`, `annexes`, `items`, `layers`), `max_items?` (default 100, max 500) | `executeInspectArtifact` |
 | `validate_artifact` | Validate an artifact definition | `options?: { schema?, logic? }` | `executeValidateArtifact` |
 | `validate_input` | Validate and normalize one value | `target` (`field`, `party`, `annex`, `checklist_item`), `field_path` / `role_id` + `index` / `annex_id` / `item_id`, `value` | `executeValidateInput` |
@@ -45,9 +45,11 @@ Every adapter wraps `@paradoc/ai-tools`, so the tool names, inputs and outputs a
 |----------|--------|------------|
 | `"artifact"` | `artifact`, `base_url?` | Inline artifact JSON. File layers (a PDF template) resolve against `base_url`. |
 | `"url"` | `url` | Fetches the artifact JSON. File layers resolve against the URL's directory. |
-| `"registry"` | `registry_url?`, `artifact_name` | Fetches `registry.json`, checks the artifact is listed, then fetches it. Without `registry_url`, uses `defaultRegistryUrl`. |
+| `"registry"` | `registry_url?`, `artifact_name`, `edition?`, `version?` | Fetches `registry.json`, finds the edition and version, then fetches that file and checks its SHA-256. An omitted `edition` is the current edition (also `current`); an omitted `version` is the latest (also `latest`). The registry states both defaults. Without `registry_url`, uses `defaultRegistryUrl`. |
 
 The `$schema` rules are the SDK's ([schemas.md § Loading rules](./schemas.md#loading-rules)): a fetched artifact declares the current version, and an inline one may omit it. An older version returns an error that names `paradoc migrate`.
+
+A registry read fails with one of these `error.code` values: `artifact_not_found` (the name is not listed), `release_not_found` (the edition or version is not listed; the message names the ones that are), `integrity_mismatch` (the file's SHA-256 differs from `registry.json`), `identity_mismatch` (the file states another name, version or edition), `invalid_artifact` (the file is not a JSON object). `get_registry` returns each artifact's `current_edition` and `editions`, or `latest_version` and `versions`.
 
 ## Wire format
 

@@ -5,7 +5,7 @@ ogTitle: get_registry — Paradoc AI Tools
 ogDescription: Fetch a Paradoc registry index to discover the artifacts it lists
 ---
 
-Fetches a registry's `registry.json` and returns the artifacts it lists.
+Fetches a registry's `registry.json` and returns the artifacts it lists, with the editions and versions of each.
 
 ## Input
 
@@ -20,9 +20,24 @@ If neither is set, the tool returns a `missing_registry_url` error.
 | Field | Type | Description |
 |-------|------|-------------|
 | `registry_url` | `string` | The registry that was read |
-| `artifacts_path` | `string` | Optional path under which the registry keeps its artifacts |
-| `items` | `{ name, path? }[]` | The listed artifacts. Empty when the call fails. |
+| `name` | `string` | The registry's name |
+| `description` | `string` | The registry's description, when it has one |
+| `items` | `RegistryItem[]` | The listed artifacts. Empty when the call fails. |
 | `error` | [`ToolError`](/ai-tools#errors) | Set when the registry could not be read |
+
+`RegistryItem` has these fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | `string` | Artifact name. Pass it as `artifact_name`. |
+| `kind` | `string` | `form`, `document`, `checklist`, or `bundle` |
+| `title`, `description`, `tags` | | Present when the registry states them |
+| `current_edition` | `string` | Key of the edition used when a request names none. Only on an artifact that has editions. |
+| `editions` | `object[]` | Every edition, the current one first: `key`, `label`, `date?`, `effective_from?`, `latest_version`, and `versions` |
+| `latest_version` | `string` | The version used when a request names none. Only on an artifact that has no editions. |
+| `versions` | `string[]` | Every version, the latest first. Only on an artifact that has no editions. |
+
+An edition is the issuer's revision of a form, such as IRS W-9 Rev. March 2024. A version is the registry publisher's own revision of the artifact for that edition. The publisher states which edition is current and which version is latest. See [Editions and versions](/concepts/registries#editions-and-versions).
 
 ## Direct usage
 
@@ -44,13 +59,19 @@ const result = await executeGetRegistry({}, {
 
 ## Example response
 
-The item list is shortened here.
+The response is shortened here.
 
 ```json
 {
   "registry_url": "https://public.paradoc.dev",
   "items": [
-    { "name": "pet-addendum" }
+    {
+      "name": "pet-addendum",
+      "kind": "form",
+      "title": "Pet Addendum to Lease Agreement",
+      "latest_version": "1.0.0",
+      "versions": ["1.0.0"]
+    }
   ]
 }
 ```

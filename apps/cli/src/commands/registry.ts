@@ -11,24 +11,27 @@ import { parseArtifactRef, resolveRegistry } from '../utils/registry.js'
 import { findRepoRoot } from '../utils/project.js'
 import { PROJECT_REQUIRED_MESSAGE } from '../utils/user-copy.js'
 import { trackRegistryAdd } from '../utils/telemetry.js'
-import { fileReferencesOf, loadValidatedArtifact, parseArtifactFile } from '../utils/artifact-file.js'
+import { loadValidatedArtifact } from '../utils/artifact-file.js'
 import { collectHeader } from '../utils/cli-helpers.js'
-import { RegistryItemSchema, SCHEMA_BASE } from '@paradoc/schemas'
+import { checkRegistryManifest, countReleases, formatInstalledRelease } from '../utils/registry-manifest.js'
+import {
+  REGISTRY_CONFIG_FILE,
+  REGISTRY_MANIFEST_FILE,
+  RegistryBuildError,
+  buildRegistry,
+  describeSourceRelease,
+  leavesFolder,
+  loadSourceRelease,
+  loadSourceReleases,
+  planRegistryItems,
+  readRegistryConfig,
+  writeRegistryConfig,
+  type RegistryConfig,
+} from '../utils/registry-build.js'
 
 type ConfigTarget = 'global' | 'project'
 
 const REGISTRY_NAME_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/
-
-function setPropertyAtPath(target: Record<string, unknown>, propertyPath: string[], value: unknown): void {
-  let cursor: Record<string, unknown> = target
-  for (const segment of propertyPath.slice(0, -1)) {
-    const next = cursor[segment]
-    if (next === null || typeof next !== 'object') return
-    cursor = next as Record<string, unknown>
-  }
-  const property = propertyPath.at(-1)
-  if (property) cursor[property] = value
-}
 
 /**
  * Convert a string to a valid registry slug
@@ -427,16 +430,14 @@ export function createRegistryCommand(): Command {
     .option('-n, --name <name>', 'Registry name')
     .option('--description <description>', 'Registry description')
     .option('--homepage <url>', 'Registry homepage URL')
-    .option('--artifacts-path <path>', 'Path prefix for artifacts (e.g., /r or /artifacts)')
     .option('--no-registry-telemetry', 'Disable usage telemetry for this registry')
     .option('--no-directory', 'Do not list this registry in the Paradoc Hub')
     .option('-y, --yes', 'Skip confirmation prompts')
-    .description('Create a new registry.json file')
+    .description(`Create a new ${REGISTRY_CONFIG_FILE}: the source file that registry compile builds a registry from`)
     .action(async (directory: string, options: {
       name?: string
       description?: string
       homepage?: string
-      artifactsPath?: string
       registryTelemetry?: boolean
       directory?: boolean
       yes?: boolean
@@ -446,14 +447,14 @@ export function createRegistryCommand(): Command {
         const storage = new LocalFileSystem()
         const targetDir = storage.getAbsolutePath(directory)
 
-        // Check if registry.json already exists
-        const registryPath = storage.joinPath(targetDir, 'registry.json')
+        // Check if the config already exists
+        const registryPath = storage.joinPath(targetDir, REGISTRY_CONFIG_FILE)
         if (await storage.exists(registryPath)) {
           if (!options.yes) {
             const { overwrite } = await prompts({
               type: 'confirm',
               name: 'overwrite',
-              message: 'registry.json already exists. Overwrite?',
+              message: `${REGISTRY_CONFIG_FILE} already exists. Overwrite?`,
               initial: false,
             })
             if (!overwrite) {
@@ -461,7 +462,7 @@ export function createRegistryCommand(): Command {
               process.exit(0)
             }
           } else {
-            console.log(kleur.yellow('registry.json already exists, overwriting...'))
+            console.log(kleur.yellow(`${REGISTRY_CONFIG_FILE} already exists, overwriting...`))
           }
         }
 
@@ -548,34 +549,20 @@ export function createRegistryCommand(): Command {
           homepage = hp || undefined
         }
 
-        // Build registry object
-        const registry: Record<string, unknown> = {
-          $schema: `${SCHEMA_BASE}/registry.json`,
-          name: registryName,
+        // Build the config. The telemetry and directory flags are always
+        // written, so the publisher sees what the registry states.
+        const registry: RegistryConfig = {
+          name: registryName as string,
+          ...(homepage && { homepage }),
+          ...(description && { description }),
+          enableTelemetry: options.registryTelemetry !== false,
+          enableDirectory: options.directory !== false,
+          sources: [],
         }
 
-        if (homepage) {
-          registry.homepage = homepage
-        }
+        await writeRegistryConfig(storage, registryPath, registry)
 
-        if (description) {
-          registry.description = description
-        }
-
-        if (options.artifactsPath) {
-          registry.artifactsPath = options.artifactsPath
-        }
-
-        // Always include telemetry/directory flags explicitly for transparency
-        registry.enableTelemetry = options.registryTelemetry !== false
-        registry.enableDirectory = options.directory !== false
-
-        registry.items = []
-
-        // Write the file
-        await storage.writeFile(registryPath, JSON.stringify(registry, null, 2))
-
-        console.log(kleur.green('✓') + ` Created ${kleur.cyan('registry.json')}`)
+        console.log(kleur.green('✓') + ` Created ${kleur.cyan(REGISTRY_CONFIG_FILE)}`)
         console.log()
         console.log(kleur.gray('Name:'), registryName)
         if (homepage) {
@@ -583,9 +570,6 @@ export function createRegistryCommand(): Command {
         }
         if (description) {
           console.log(kleur.gray('Description:'), description)
-        }
-        if (options.artifactsPath) {
-          console.log(kleur.gray('Artifacts path:'), options.artifactsPath)
         }
         console.log()
         console.log(kleur.gray('Next steps:'))
@@ -644,6 +628,8 @@ export function createRegistryCommand(): Command {
             description: index.description,
             homepage: index.homepage,
             artifactCount: index.items.length,
+            editionCount: countReleases(index.items).editions,
+            releaseCount: countReleases(index.items).releases,
           }, null, 2))
         } else {
           console.log()
@@ -660,6 +646,9 @@ export function createRegistryCommand(): Command {
             console.log(kleur.gray('Homepage:'), index.homepage)
           }
           console.log(kleur.gray('Artifacts:'), index.items.length)
+          const counts = countReleases(index.items)
+          console.log(kleur.gray('Editions:'), counts.editions)
+          console.log(kleur.gray('Releases:'), counts.releases)
           console.log()
 
           // Show artifact kinds breakdown
@@ -689,122 +678,70 @@ export function createRegistryCommand(): Command {
   // registry catalog add
   catalog
     .command('add')
-    .argument('<artifact>', 'Path to artifact file (JSON/YAML)')
-    .option('-r, --registry <path>', 'Path to registry.json', './registry.json')
-    .option('-y, --yes', 'Skip confirmation prompts')
-    .description('Add an artifact to the registry catalog')
-    .action(async (artifactPath: string, options: { registry: string; yes?: boolean }) => {
+    .argument('<artifact>', 'Path to artifact file (JSON/YAML): one release of one artifact')
+    .option('-c, --config <path>', `Path to ${REGISTRY_CONFIG_FILE}`, `./${REGISTRY_CONFIG_FILE}`)
+    .description('Add an artifact source file to the registry catalog. Files with the same name are the editions and versions of one artifact.')
+    .action(async (artifactPath: string, options: { config: string }) => {
       try {
         const { LocalFileSystem } = await import('../utils/local-fs.js')
-        const { validate } = await import('@paradoc/core')
         const storage = new LocalFileSystem()
 
-        // Read registry.json
-        const registryPath = storage.getAbsolutePath(options.registry)
-        if (!(await storage.exists(registryPath))) {
-          console.error(kleur.red(`Registry not found: ${registryPath}`))
+        const configPath = storage.getAbsolutePath(options.config)
+        if (!(await storage.exists(configPath))) {
+          console.error(kleur.red(`Registry config not found: ${configPath}`))
           console.error(kleur.gray('Run "paradoc registry make" to create one.'))
           process.exit(1)
         }
+        const config = await readRegistryConfig(storage, configPath)
+        const configDir = storage.dirname(configPath)
 
-        const registryContent = await storage.readFile(registryPath)
-        const registryData = JSON.parse(registryContent) as {
-          items: Array<{ name: string; kind: string; version: string; path?: string; title?: string; description?: string; layers?: string[]; tags?: string[] }>
-          [key: string]: unknown
-        }
-
-        // Read and validate artifact
         const fullArtifactPath = storage.getAbsolutePath(artifactPath)
         if (!(await storage.exists(fullArtifactPath))) {
           console.error(kleur.red(`Artifact not found: ${fullArtifactPath}`))
           process.exit(1)
         }
 
-        // Security: artifact must be at same level or below registry.json
-        const registryDir = storage.dirname(registryPath)
-        const artifactDir = storage.dirname(fullArtifactPath)
-        const relative = storage.relative(registryDir, artifactDir)
-        if (relative.startsWith('..')) {
-          console.error(kleur.red('Security error: Artifact must be at the same level or below registry.json'))
-          console.error(kleur.gray(`Registry: ${registryPath}`))
+        // Security: the artifact must be in the config's folder or below it
+        const source = storage.relative(configDir, fullArtifactPath).split('\\').join('/')
+        if (leavesFolder(source)) {
+          console.error(kleur.red(`Security error: Artifact must be at the same level or below ${REGISTRY_CONFIG_FILE}`))
+          console.error(kleur.gray(`Config: ${configPath}`))
           console.error(kleur.gray(`Artifact: ${fullArtifactPath}`))
           process.exit(1)
         }
 
-        const artifactContent = await storage.readFile(fullArtifactPath)
-        const parsed = parseArtifactFile(artifactContent)
-        const validation = validate(parsed)
-
-        if (validation.issues) {
-          console.error(kleur.red('Artifact validation failed:'))
-          for (const issue of validation.issues) {
-            const location = issue.path?.length ? issue.path.map(String).join('.') : 'root'
-            console.error(`  - ${location}: ${issue.message}`)
-          }
+        let release
+        try {
+          release = await loadSourceRelease(storage, configDir, source)
+        } catch (error) {
+          console.error(kleur.red(`Cannot add ${source}: ${error instanceof Error ? error.message : String(error)}`))
           process.exit(1)
         }
 
-        const artifact = validation.value as {
-          kind: string
-          name: string
-          version: string
-          title?: string
-          description?: string
-          layers?: Record<string, unknown>
-          tags?: string[]
+        if (config.sources.includes(source)) {
+          console.log(kleur.yellow(`${source} is already in the catalog (${describeSourceRelease(release)}).`))
+          return
         }
 
-        // Check if artifact already exists
-        const existingIndex = registryData.items.findIndex(
-          (item) => item.name === artifact.name
-        )
-
-        if (existingIndex >= 0) {
-          const existing = registryData.items[existingIndex]
-          if (!options.yes) {
-            const { update } = await prompts({
-              type: 'confirm',
-              name: 'update',
-              message: `Artifact "${artifact.name}" already exists (v${existing?.version}). Update to v${artifact.version}?`,
-              initial: true,
-            })
-            if (!update) {
-              console.log(kleur.yellow('Cancelled.'))
-              process.exit(0)
-            }
-          }
-          registryData.items.splice(existingIndex, 1)
+        // The new file must fit with the files already listed: no second
+        // file for the same release, and editions in every release or none.
+        // A default that only the publisher can state is a matter for compile.
+        const others = await loadSourceReleases(storage, configDir, config.sources)
+        const conflicts = planRegistryItems(
+          [...others.releases.filter((other) => other.name === release.name), release],
+          config.defaults?.[release.name] ? { [release.name]: config.defaults[release.name]! } : {},
+        ).errors
+        if (conflicts.length > 0) {
+          console.error(kleur.red(`Cannot add ${source}:`))
+          for (const conflict of conflicts) console.error(kleur.red(`  • ${conflict}`))
+          process.exit(1)
         }
 
-        // Build catalog entry
-        const entry: { name: string; kind: string; version: string; path?: string; title?: string; description?: string; layers?: string[]; tags?: string[] } = {
-          name: artifact.name,
-          kind: artifact.kind,
-          version: artifact.version,
-        }
+        const sources = [...config.sources, source].sort((a, b) => a.localeCompare(b))
+        await writeRegistryConfig(storage, configPath, { ...config, sources })
 
-        // Auto-populate path for artifacts in subfolders
-        const relativePath = storage.relative(registryDir, fullArtifactPath)
-        if (relativePath.includes('/')) {
-          entry.path = relativePath
-        }
-
-        if (artifact.title) entry.title = artifact.title
-        if (artifact.description) entry.description = artifact.description
-        if (artifact.layers) entry.layers = Object.keys(artifact.layers)
-        if (artifact.tags) entry.tags = artifact.tags
-
-        registryData.items.push(entry)
-
-        // Sort items by name
-        registryData.items.sort((a, b) => a.name.localeCompare(b.name))
-
-        // Write back
-        await storage.writeFile(registryPath, JSON.stringify(registryData, null, 2))
-
-        const action = existingIndex >= 0 ? 'Updated' : 'Added'
-        console.log(kleur.green('✓') + ` ${action} ${kleur.cyan(artifact.name)} (${artifact.kind} v${artifact.version})`)
-        console.log(kleur.gray(`Registry now has ${registryData.items.length} artifact(s)`))
+        console.log(kleur.green('✓') + ` Added ${kleur.cyan(describeSourceRelease(release))} (${release.kind})`)
+        console.log(kleur.gray(`Catalog now has ${sources.length} source file(s)`))
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
         process.exit(1)
@@ -815,46 +752,45 @@ export function createRegistryCommand(): Command {
   catalog
     .command('remove')
     .alias('rm')
-    .argument('<name>', 'Artifact name to remove')
-    .option('-r, --registry <path>', 'Path to registry.json', './registry.json')
+    .argument('<target>', 'Artifact name (removes every edition and version of it) or the path of one source file')
+    .option('-c, --config <path>', `Path to ${REGISTRY_CONFIG_FILE}`, `./${REGISTRY_CONFIG_FILE}`)
     .option('-y, --yes', 'Skip confirmation prompts')
-    .description('Remove an artifact from the registry catalog')
-    .action(async (name: string, options: { registry: string; yes?: boolean }) => {
+    .description('Remove an artifact, or one source file of it, from the registry catalog')
+    .action(async (target: string, options: { config: string; yes?: boolean }) => {
       try {
         const { LocalFileSystem } = await import('../utils/local-fs.js')
         const storage = new LocalFileSystem()
 
-        // Read registry.json
-        const registryPath = storage.getAbsolutePath(options.registry)
-        if (!(await storage.exists(registryPath))) {
-          console.error(kleur.red(`Registry not found: ${registryPath}`))
+        const configPath = storage.getAbsolutePath(options.config)
+        if (!(await storage.exists(configPath))) {
+          console.error(kleur.red(`Registry config not found: ${configPath}`))
           process.exit(1)
         }
+        const config = await readRegistryConfig(storage, configPath)
+        const configDir = storage.dirname(configPath)
+        const loaded = await loadSourceReleases(storage, configDir, config.sources)
 
-        const registryContent = await storage.readFile(registryPath)
-        const registryData = JSON.parse(registryContent) as {
-          items: Array<{ name: string; kind: string; version: string }>
-          [key: string]: unknown
-        }
+        // A listed source path names one file; anything else is an artifact name.
+        const asPath = storage.relative(configDir, storage.getAbsolutePath(target)).split('\\').join('/')
+        const listedPath = [target, asPath].find((candidate) => config.sources.includes(candidate))
+        const removed = listedPath !== undefined
+          ? [listedPath]
+          : loaded.releases.filter((release) => release.name === target).map((release) => release.source)
 
-        // Find artifact
-        const index = registryData.items.findIndex((item) => item.name === name)
-        if (index < 0) {
-          console.error(kleur.red(`Artifact not found: ${name}`))
+        if (removed.length === 0) {
+          console.error(kleur.red(`Artifact not found: ${target}`))
           console.error(kleur.gray('Available artifacts:'))
-          for (const item of registryData.items) {
-            console.error(kleur.gray(`  - ${item.name}`))
+          for (const release of loaded.releases) {
+            console.error(kleur.gray(`  - ${describeSourceRelease(release)} (${release.source})`))
           }
           process.exit(1)
         }
-
-        const item = registryData.items[index]
 
         if (!options.yes) {
           const { confirm } = await prompts({
             type: 'confirm',
             name: 'confirm',
-            message: `Remove "${name}" (${item?.kind} v${item?.version}) from registry?`,
+            message: `Remove ${removed.join(', ')} from the catalog?`,
             initial: false,
           })
           if (!confirm) {
@@ -863,13 +799,26 @@ export function createRegistryCommand(): Command {
           }
         }
 
-        registryData.items.splice(index, 1)
+        const sources = config.sources.filter((source) => !removed.includes(source))
 
-        // Write back
-        await storage.writeFile(registryPath, JSON.stringify(registryData, null, 2))
+        // A default or tags for an artifact with no source file left would stop the next compile.
+        const namesLeft = new Set(loaded.releases.filter((release) => sources.includes(release.source)).map((release) => release.name))
+        const namesRemoved = loaded.releases.filter((release) => removed.includes(release.source)).map((release) => release.name)
+        const keep = <T,>(byName: Record<string, T> | undefined): Record<string, T> => Object.fromEntries(
+          Object.entries(byName ?? {}).filter(([name]) => !namesRemoved.includes(name) || namesLeft.has(name)),
+        )
+        const defaults = keep(config.defaults)
+        const tags = keep(config.tags)
+        const { defaults: _defaults, tags: _tags, ...rest } = config
+        await writeRegistryConfig(storage, configPath, {
+          ...rest,
+          sources,
+          ...(Object.keys(defaults).length > 0 && { defaults }),
+          ...(Object.keys(tags).length > 0 && { tags }),
+        })
 
-        console.log(kleur.green('✓') + ` Removed ${kleur.cyan(name)} from registry`)
-        console.log(kleur.gray(`Registry now has ${registryData.items.length} artifact(s)`))
+        console.log(kleur.green('✓') + ` Removed ${kleur.cyan(removed.join(', '))} from the catalog`)
+        console.log(kleur.gray(`Catalog now has ${sources.length} source file(s)`))
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
         process.exit(1)
@@ -879,9 +828,9 @@ export function createRegistryCommand(): Command {
   // registry stats
   registry
     .command('stats')
-    .option('-r, --registry <path>', 'Path to local registry.json', './registry.json')
+    .option('-r, --registry <path>', `Path to a compiled ${REGISTRY_MANIFEST_FILE}`, `./${REGISTRY_MANIFEST_FILE}`)
     .option('--json', 'Output as JSON')
-    .description('Show statistics for a local registry.json')
+    .description(`Check a local ${REGISTRY_MANIFEST_FILE} against the manifest schema and show its statistics`)
     .allowExcessArguments(false)
     .action(async (options: { registry: string; json?: boolean }) => {
       try {
@@ -894,25 +843,37 @@ export function createRegistryCommand(): Command {
           process.exit(1)
         }
 
-        const registryContent = await storage.readFile(registryPath)
-        const registryData = JSON.parse(registryContent) as {
-          name: string
-          items: Array<{ name: string; kind: string; version: string }>
-          enableTelemetry?: boolean
-          enableDirectory?: boolean
-          [key: string]: unknown
+        let data: unknown
+        try {
+          data = JSON.parse(await storage.readFile(registryPath))
+        } catch (error) {
+          console.error(kleur.red(`Invalid JSON in ${registryPath}: ${error instanceof Error ? error.message : String(error)}`))
+          process.exit(1)
         }
+
+        const checked = checkRegistryManifest(data)
+        if (!checked.ok) {
+          console.error(kleur.red(`${registryPath} is not a valid registry manifest:`))
+          for (const issue of checked.issues) {
+            console.error(kleur.red(`  • ${issue}`))
+          }
+          process.exit(1)
+        }
+        const registryData = checked.manifest
 
         const kindCounts = new Map<string, number>()
         for (const item of registryData.items) {
           const count = kindCounts.get(item.kind) || 0
           kindCounts.set(item.kind, count + 1)
         }
+        const counts = countReleases(registryData.items)
 
         if (options.json) {
           console.log(JSON.stringify({
             name: registryData.name,
             totalArtifacts: registryData.items.length,
+            totalEditions: counts.editions,
+            totalReleases: counts.releases,
             byKind: Object.fromEntries(kindCounts),
             telemetryEnabled: registryData.enableTelemetry !== false,
             directoryEnabled: registryData.enableDirectory !== false,
@@ -922,6 +883,8 @@ export function createRegistryCommand(): Command {
           console.log(kleur.bold(registryData.name))
           console.log()
           console.log(kleur.gray('Total artifacts:'), registryData.items.length)
+          console.log(kleur.gray('Total editions:'), counts.editions)
+          console.log(kleur.gray('Total releases:'), counts.releases)
           console.log()
 
           if (kindCounts.size > 0) {
@@ -944,155 +907,70 @@ export function createRegistryCommand(): Command {
   // registry compile
   registry
     .command('compile')
-    .option('-r, --registry <path>', 'Path to registry.json', './registry.json')
-    .option('-o, --output <path>', 'Output directory for compiled registry items')
+    .option('-c, --config <path>', `Path to ${REGISTRY_CONFIG_FILE}`, `./${REGISTRY_CONFIG_FILE}`)
+    .option('-o, --output <path>', `Output directory for ${REGISTRY_MANIFEST_FILE} and the release folders (default: the folder of the config)`)
     .option('--dry-run', 'Show what would be compiled without writing files')
-    .description('Compile registry: validate artifacts, compute checksums, generate registry items')
-    .action(async (options: { registry: string; output?: string; dryRun?: boolean }) => {
+    .description(
+      `Compile a registry: validate each source file, compute checksums, and write ${REGISTRY_MANIFEST_FILE} with every release at <name>/<edition>/<version>/ (or <name>/<version>/ for an artifact with no editions)`,
+    )
+    .action(async (options: { config: string; output?: string; dryRun?: boolean }) => {
       const spinner = ora()
 
       try {
         const { LocalFileSystem } = await import('../utils/local-fs.js')
-        const { computeHash } = await import('../utils/hash.js')
         const storage = new LocalFileSystem()
 
-        // Read registry.json
-        const registryPath = storage.getAbsolutePath(options.registry)
-        if (!(await storage.exists(registryPath))) {
-          console.error(kleur.red(`Registry not found: ${registryPath}`))
+        const configPath = storage.getAbsolutePath(options.config)
+        if (!(await storage.exists(configPath))) {
+          console.error(kleur.red(`Registry config not found: ${configPath}`))
+          console.error(kleur.gray('Run "paradoc registry make" to create one.'))
           process.exit(1)
         }
 
-        const registryDir = storage.dirname(registryPath)
-        const registryContent = await storage.readFile(registryPath)
-        const registryData = JSON.parse(registryContent) as {
-          name: string
-          artifactsPath?: string
-          items: Array<{ name: string; kind: string; version: string; path?: string }>
-          [key: string]: unknown
-        }
+        const configDir = storage.dirname(configPath)
+        const config = await readRegistryConfig(storage, configPath)
+        const outputDir = options.output ? storage.getAbsolutePath(options.output) : configDir
 
-        const artifactsPath = registryData.artifactsPath
-        const outputDir = options.output
-          ? storage.getAbsolutePath(options.output)
-          : artifactsPath
-            ? storage.joinPath(registryDir, artifactsPath.replace(/^\//, ''))
-            : registryDir
-
-        console.log(kleur.bold(`Compiling registry: ${registryData.name}`))
+        console.log(kleur.bold(`Compiling registry: ${config.name}`))
         console.log(kleur.gray(`Output: ${outputDir}`))
         console.log()
 
+        // The whole registry is built in memory first: a build with an error writes nothing.
+        let build
+        try {
+          build = await buildRegistry(storage, { configDir, outputDir, config })
+        } catch (error) {
+          if (!(error instanceof RegistryBuildError)) throw error
+          for (const message of error.errors) {
+            spinner.fail(message)
+          }
+          console.log()
+          console.log(kleur.yellow(`Nothing was written (${error.errors.length} error(s))`))
+          process.exitCode = 1
+          return
+        }
+
         if (!options.dryRun) {
-          await storage.mkdir(outputDir)
-        }
-
-        let compiled = 0
-        let errors = 0
-
-        for (const item of registryData.items) {
-          spinner.start(`Compiling ${item.name}...`)
-
-          try {
-            // Find the artifact file
-            let artifactPath: string | null = null
-            if (item.path) {
-              // Use explicit path from registry item
-              const candidate = storage.joinPath(registryDir, item.path)
-              if (await storage.exists(candidate)) {
-                artifactPath = candidate
-              }
-            } else {
-              // Default: try {name}.json, .yaml, .yml in registry dir
-              for (const ext of ['.json', '.yaml', '.yml']) {
-                const candidate = storage.joinPath(registryDir, `${item.name}${ext}`)
-                if (await storage.exists(candidate)) {
-                  artifactPath = candidate
-                  break
-                }
-              }
-            }
-
-            if (!artifactPath) {
-              spinner.fail(`${item.name}: artifact file not found`)
-              errors++
-              continue
-            }
-
-            // Read and validate
-            const content = await storage.readFile(artifactPath)
-            const artifact = loadValidatedArtifact(content)
-            const artifactDir = storage.dirname(artifactPath)
-            const outputPath = storage.joinPath(outputDir, `${item.name}.json`)
-            if (outputPath === artifactPath) {
-              throw new Error(`output would overwrite source artifact: ${artifactPath}`)
-            }
-
-            const filesToCopy: Array<{ source: string; destination: string }> = []
-            for (const reference of fileReferencesOf(artifact)) {
-              const source = storage.joinPath(artifactDir, reference.path)
-              if (!(await storage.exists(source))) {
-                throw new Error(`referenced file not found: ${reference.path}`)
-              }
-
-              // Bundle path items point at other artifacts and have no checksum
-              // property. Every other walker result is a checksummed file ref.
-              if (reference.checksum !== undefined || reference.propertyPath[0] !== 'contents') {
-                setPropertyAtPath(artifact as unknown as Record<string, unknown>, [...reference.propertyPath, 'checksum'], `sha256:${await computeHash(source)}`)
-              }
-
-              const destination = storage.joinPath(outputDir, reference.path)
-              const relativeDestination = storage.relative(outputDir, destination)
-              if (relativeDestination === '..' || relativeDestination.startsWith('../') || relativeDestination.startsWith('..\\')) {
-                throw new Error(`referenced file escapes output directory: ${reference.path}`)
-              }
-              filesToCopy.push({ source, destination })
-            }
-
-            const compiledItem = RegistryItemSchema.safeParse(artifact)
-            if (!compiledItem.success) {
-              const issues = compiledItem.error.issues
-                .map((issue) => `${issue.path.join('.') || 'root'}: ${issue.message}`)
-                .join('; ')
-              throw new Error(`compiled registry item is invalid: ${issues}`)
-            }
-
-            if (options.dryRun) {
-              spinner.succeed(`${item.name}: would compile`)
-            } else {
-              for (const file of filesToCopy) {
-                if (file.source === file.destination) continue
-                await storage.writeFile(file.destination, await storage.readFile(file.source, 'binary'))
-              }
-              await storage.writeFile(outputPath, JSON.stringify(artifact, null, 2))
-              spinner.succeed(`${item.name}: compiled`)
-            }
-            compiled++
-          } catch (err) {
-            spinner.fail(`${item.name}: ${err instanceof Error ? err.message : String(err)}`)
-            errors++
+          for (const file of build.files) {
+            const destination = storage.joinPath(outputDir, file.path)
+            await storage.mkdir(storage.dirname(destination), true)
+            await storage.writeFile(destination, file.content)
           }
         }
 
-        if (!options.dryRun && errors === 0) {
-          const { artifactsPath: _artifactsPath, items, ...registryMetadata } = registryData
-          const compiledIndex = {
-            ...registryMetadata,
-            items: items.map(({ path: _path, ...item }) => item),
-          }
-          await storage.writeFile(
-            storage.joinPath(outputDir, 'registry.json'),
-            JSON.stringify(compiledIndex, null, 2),
-          )
+        for (const release of build.compiled) {
+          spinner.succeed(`${describeSourceRelease(release)}: ${options.dryRun ? 'would compile' : 'compiled'}`)
+        }
+
+        // Say which release each artifact installs by default: it is the publisher's statement.
+        for (const item of build.manifest.items) {
+          const latest = item.editions === undefined ? item.latestVersion : item.editions[item.currentEdition]?.latestVersion
+          const edition = item.editions === undefined ? undefined : item.currentEdition
+          console.log(kleur.gray(`  ${item.name} default: ${formatInstalledRelease({ edition, version: latest ?? '' })}`))
         }
 
         console.log()
-        if (errors > 0) {
-          console.log(kleur.yellow(`Compiled ${compiled}/${registryData.items.length} artifacts (${errors} error(s))`))
-          process.exitCode = 1
-        } else {
-          console.log(kleur.green(`Compiled ${compiled} artifact(s) successfully`))
-        }
+        console.log(kleur.green(`Compiled ${build.compiled.length} release(s) of ${build.manifest.items.length} artifact(s) successfully`))
 
         if (options.dryRun) {
           console.log(kleur.gray('(dry run - no files written)'))
@@ -1109,7 +987,7 @@ export function createRegistryCommand(): Command {
     .command('view')
     .argument('<artifact>', 'Artifact reference (@namespace/name)')
     .option('--json', 'Output as JSON')
-    .description('View details of an installed artifact')
+    .description('View details of an installed artifact, with its installed edition and version')
     .action(async (artifact: string, options: ViewOptions) => {
       try {
         const { LocalFileSystem } = await import('../utils/local-fs.js')
@@ -1174,6 +1052,9 @@ export function createRegistryCommand(): Command {
           console.log()
 
           // Basic info
+          if (lockedInfo.edition !== undefined) {
+            console.log(kleur.gray('Edition:'), lockedInfo.edition)
+          }
           console.log(kleur.gray('Version:'), lockedInfo.version)
           console.log(kleur.gray('Kind:'), artifactContent.kind || 'unknown')
           if (artifactContent.title) {

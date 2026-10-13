@@ -5,12 +5,13 @@ import {
 	bytesToBase64,
 	bytesToText,
 	fetchPolicyFromConfig,
+	fetchRegistryArtifact,
 	MAX_INSTRUCTIONS_SIZE,
 	registryUrlFromConfig,
 	resolveRelativeUrl,
 	safeFetch,
+	summarizeRegistryReleases,
 } from '../registry-client'
-import { resolveRegistryArtifact } from '../resolve-source'
 
 type ContentRef =
 	| { kind: 'inline'; text: string }
@@ -52,16 +53,21 @@ export async function executeGetArtifact(
 		const normalized = GetArtifactInputSchema.parse(input)
 		const registryUrl = registryUrlFromConfig(normalized.registry_url, config)
 		if (!registryUrl) return { error: { code: 'missing_registry_url', message: 'registry_url is required, or configure defaultRegistryUrl.' } }
-		const resolved = await resolveRegistryArtifact(registryUrl, normalized.artifact_name, config)
-		if (!resolved) return { artifact_name: normalized.artifact_name, error: { code: 'artifact_not_found', message: `Artifact "${normalized.artifact_name}" not found in registry.` } }
-		const { artifact, artifact_url: artifactUrl, base_url } = resolved
+		const { artifact, artifactUrl, baseUrl, item, release } = await fetchRegistryArtifact(
+			registryUrl,
+			{ name: normalized.artifact_name, edition: normalized.edition, version: normalized.version },
+			config?.fetch,
+			config,
+		)
 		const { assertCurrentSchemaVersion } = await import('@paradoc/core')
 		assertCurrentSchemaVersion(artifact, { required: true })
-		if (!artifactUrl) throw new Error('Resolved registry artifact has no source URL')
 		const output: GetArtifactOutput = {
 			artifact,
 			artifact_name: normalized.artifact_name,
-			base_url,
+			...(release.edition ? { edition: release.edition.key } : {}),
+			version: release.version,
+			releases: summarizeRegistryReleases(item),
+			base_url: baseUrl,
 		}
 		if (normalized.include_instructions !== false) {
 			const ref = contentRef(artifact.instructions)

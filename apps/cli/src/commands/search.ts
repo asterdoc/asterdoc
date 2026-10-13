@@ -8,6 +8,8 @@ import { registryClient, RequestTimeoutError } from '../utils/registry-client.js
 import { configManager, normalizeNamespace } from '../utils/config.js'
 import { findRepoRoot } from '../utils/project.js'
 import { formatLayerCount } from '../utils/user-copy.js'
+import { resolveRegistryRelease } from '@paradoc/schemas'
+import { formatRelease, formatReleaseLines } from '../utils/registry-manifest.js'
 
 /** fetch() rejects with a TypeError carrying a cause when no response arrives at all. */
 function isUnreachable(error: unknown): error is TypeError | RequestTimeoutError {
@@ -118,9 +120,11 @@ export function createSearchCommand(): Command {
           console.log()
 
           for (const item of results) {
-            // Artifact reference
+            // Artifact reference, with the release an install gets by default
             const ref = `${namespace}/${item.name}`
-            console.log(`${kleur.cyan(ref)} ${kleur.dim('v' + item.version)}`)
+            const defaultRelease = resolveRegistryRelease(item)
+            const defaultLabel = defaultRelease.ok ? ` ${kleur.dim(formatRelease(defaultRelease.release))}` : ''
+            console.log(`${kleur.cyan(ref)}${defaultLabel}`)
 
             // Title and description
             if (item.title) {
@@ -143,11 +147,16 @@ export function createSearchCommand(): Command {
               meta.push(formatLayerCount(item.layers.length))
             }
             console.log(`  ${meta.join(kleur.dim(' · '))}`)
+
+            // Editions and versions: current edition and latest version marked
+            for (const line of formatReleaseLines(item)) {
+              console.log(kleur.gray(`  ${line}`))
+            }
             console.log()
           }
 
           // Hint
-          console.log(`Run ${kleur.white(`paradoc add ${namespace}/<name>`)} to install an artifact.`)
+          console.log(`Run ${kleur.white(`paradoc add ${namespace}/<name>`)} to install an artifact, or ${kleur.white(`${namespace}/<name>/<edition>@<version>`)} for one release.`)
         }
       } catch (error) {
         spinner.fail('Search failed')

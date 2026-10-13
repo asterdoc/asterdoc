@@ -4,6 +4,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { spawn } from 'node:child_process'
 import http from 'node:http'
+import { createHash } from 'node:crypto'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -29,11 +30,17 @@ beforeAll(async () => {
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(JSON.stringify({
         name: 'val',
-        items: [{ name: 'lease', kind: 'document', version: '1.0.0', title: 'Lease', path: 'artifacts/lease/artifact.yaml' }],
+        items: [{
+          name: 'lease',
+          kind: 'document',
+          title: 'Lease',
+          latestVersion: '1.0.0',
+          versions: { '1.0.0': { path: 'lease/1.0.0/lease.yaml', sha256: createHash('sha256').update(ITEM_YAML).digest('hex') } },
+        }],
       }))
       return
     }
-    if (req.url === '/artifacts/lease/artifact.yaml') {
+    if (req.url === '/lease/1.0.0/lease.yaml') {
       res.writeHead(200, { 'content-type': 'application/yaml' })
       res.end(ITEM_YAML)
       return

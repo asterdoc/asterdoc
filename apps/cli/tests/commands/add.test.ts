@@ -187,9 +187,11 @@ describe('paradoc add (files the artifact references)', () => {
   let serve: Record<string, { status: number; type: string; body: Buffer }>
   let connections: number
   let registryUrl: string
+  /** The sha256 the manifest lists for the artifact file; undefined: the one of the file served. */
+  let manifestSha256: string | undefined
 
   beforeEach(async () => {
-    const w9 = JSON.parse(await fs.readFile(path.resolve(__dirname, '../../test-registry/r/w9.json'), 'utf-8'))
+    const w9 = JSON.parse(await fs.readFile(path.resolve(__dirname, '../../test-registry/w9.json'), 'utf-8'))
     const artifact = {
       $schema: w9.$schema,
       kind: 'form',
@@ -202,19 +204,37 @@ describe('paradoc add (files the artifact references)', () => {
       },
       instructions: { kind: 'file', path: 'packet-instructions.md', mimeType: 'text/markdown', checksum: sha256(instructionsBytes) },
     }
+    manifestSha256 = undefined
     serve = {
-      '/registry.json': {
-        status: 200,
-        type: 'application/json',
-        body: Buffer.from(JSON.stringify({ name: 'fixture', artifactsPath: '/r', items: [{ name: 'packet', kind: 'form', version: '1.0.0' }] })),
-      },
-      '/r/packet.json': { status: 200, type: 'application/json', body: Buffer.from(JSON.stringify(artifact)) },
-      '/r/packet.pdf': { status: 200, type: 'application/pdf', body: layerBytes },
-      '/r/packet-instructions.md': { status: 200, type: 'text/markdown', body: instructionsBytes },
+      '/packet/1.0.0/packet.json': { status: 200, type: 'application/json', body: Buffer.from(JSON.stringify(artifact)) },
+      '/packet/1.0.0/packet.pdf': { status: 200, type: 'application/pdf', body: layerBytes },
+      '/packet/1.0.0/packet-instructions.md': { status: 200, type: 'text/markdown', body: instructionsBytes },
     }
     connections = 0
     server = createServer((req, res) => {
-      const file = serve[new URL(req.url ?? '/', 'http://127.0.0.1').pathname]
+      const pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname
+      // The manifest lists the checksum of the artifact file as it is served
+      // now, unless a test pins another one.
+      const file = pathname === '/registry.json'
+        ? {
+            status: 200,
+            type: 'application/json',
+            body: Buffer.from(JSON.stringify({
+              name: 'fixture',
+              items: [{
+                name: 'packet',
+                kind: 'form',
+                latestVersion: '1.0.0',
+                versions: {
+                  '1.0.0': {
+                    path: 'packet/1.0.0/packet.json',
+                    sha256: manifestSha256 ?? createHash('sha256').update(serve['/packet/1.0.0/packet.json']!.body).digest('hex'),
+                  },
+                },
+              }],
+            })),
+          }
+        : serve[pathname]
       res.writeHead(file?.status ?? 404, { 'Content-Type': file?.type ?? 'application/json' })
       res.end(file?.body ?? '{}')
     })
@@ -256,7 +276,7 @@ describe('paradoc add (files the artifact references)', () => {
   }, 30000)
 
   it('fails and installs nothing when a layer does not match its checksum', async () => {
-    serve['/r/packet.pdf']!.body = Buffer.from('tampered bytes')
+    serve['/packet/1.0.0/packet.pdf']!.body = Buffer.from('tampered bytes')
 
     const result = await executeCliCommand(['add', '@fixture/packet', '--layers', 'all', '--no-cache'], { cwd: tempDir })
 
@@ -271,7 +291,7 @@ describe('paradoc add (files the artifact references)', () => {
   }, 30000)
 
   it('fails and installs nothing when the instructions file cannot be downloaded', async () => {
-    serve['/r/packet-instructions.md'] = { status: 500, type: 'text/plain', body: Buffer.from('boom') }
+    serve['/packet/1.0.0/packet-instructions.md'] = { status: 500, type: 'text/plain', body: Buffer.from('boom') }
 
     const result = await executeCliCommand(['add', '@fixture/packet', '--no-cache'], { cwd: tempDir })
 
@@ -284,8 +304,8 @@ describe('paradoc add (files the artifact references)', () => {
   }, 30000)
 
   it('names every failed file, not just the first', async () => {
-    serve['/r/packet.pdf']!.body = Buffer.from('tampered bytes')
-    delete serve['/r/packet-instructions.md']
+    serve['/packet/1.0.0/packet.pdf']!.body = Buffer.from('tampered bytes')
+    delete serve['/packet/1.0.0/packet-instructions.md']
 
     const result = await executeCliCommand(['add', '@fixture/packet', '--layers', 'all', '--no-cache'], { cwd: tempDir })
 
@@ -303,9 +323,9 @@ describe('paradoc add (files the artifact references)', () => {
   }, 30000)
 
   it('fails when a requested file layer has no checksum', async () => {
-    const item = JSON.parse(serve['/r/packet.json']!.body.toString()) as { layers: { pdf: { checksum?: string } } }
+    const item = JSON.parse(serve['/packet/1.0.0/packet.json']!.body.toString()) as { layers: { pdf: { checksum?: string } } }
     delete item.layers.pdf.checksum
-    serve['/r/packet.json']!.body = Buffer.from(JSON.stringify(item))
+    serve['/packet/1.0.0/packet.json']!.body = Buffer.from(JSON.stringify(item))
     const result = await executeCliCommand(['add', '@fixture/packet', '--layers', 'pdf', '--no-cache'], { cwd: tempDir })
     expect(result.exitCode).toBe(1)
     expect(result.stderr).toContain('missing required checksum')
@@ -316,13 +336,13 @@ describe('paradoc add (files the artifact references)', () => {
     JSON.parse(await fs.readFile(join(tempDir, 'artifacts/@fixture/packet.json'), 'utf-8')) as Record<string, unknown>
 
   const servePacket = (item: Record<string, unknown>): void => {
-    serve['/r/packet.json']!.body = Buffer.from(JSON.stringify(item))
+    serve['/packet/1.0.0/packet.json']!.body = Buffer.from(JSON.stringify(item))
   }
 
   it('installs only the artifact, without the registry metadata the item carries', async () => {
-    const item = JSON.parse(serve['/r/packet.json']!.body.toString()) as Record<string, unknown> & { layers: { pdf: Record<string, unknown> } }
+    const item = JSON.parse(serve['/packet/1.0.0/packet.json']!.body.toString()) as Record<string, unknown> & { layers: { pdf: Record<string, unknown> } }
     item.tags = ['tax']
-    item.layers.pdf.url = `${registryUrl}/r/packet.pdf`
+    item.layers.pdf.url = `${registryUrl}/packet/1.0.0/packet.pdf`
     servePacket(item)
 
     const result = await executeCliCommand(['add', '@fixture/packet', '--output', 'json', '--layers', 'all', '--no-cache'], { cwd: tempDir })
@@ -336,8 +356,51 @@ describe('paradoc add (files the artifact references)', () => {
     expect(validated.exitCode).toBe(0)
   }, 30000)
 
+  it('records the version, the release URL and no edition in the lock file', async () => {
+    const result = await executeCliCommand(['add', '@fixture/packet', '--no-cache'], { cwd: tempDir })
+
+    expect(result.exitCode).toBe(0)
+    const locked = (await lockedArtifacts())['@fixture/packet'] as Record<string, unknown>
+    expect(locked.version).toBe('1.0.0')
+    expect(locked.resolved).toBe(`${registryUrl}/packet/1.0.0/packet.json`)
+    expect(locked).not.toHaveProperty('edition')
+  }, 30000)
+
+  it('fails and installs nothing when the artifact file does not match the sha256 the manifest lists', async () => {
+    manifestSha256 = createHash('sha256').update(serve['/packet/1.0.0/packet.json']!.body).digest('hex')
+    const item = JSON.parse(serve['/packet/1.0.0/packet.json']!.body.toString()) as Record<string, unknown>
+    servePacket({ ...item, title: 'Changed after the manifest was written' })
+
+    const result = await executeCliCommand(['add', '@fixture/packet', '--no-cache'], { cwd: tempDir })
+
+    expect(result.exitCode).not.toBe(0)
+    expect(result.stderr).toContain(`Checksum mismatch for ${registryUrl}/packet/1.0.0/packet.json`)
+    expect(result.stderr).toContain(manifestSha256)
+    expect(result.stderr).toContain('Nothing was installed')
+    expect(result.stdout).not.toContain('Added')
+    expect(await exists('artifacts/@fixture/packet.json')).toBe(false)
+    expect(Object.keys(await lockedArtifacts())).not.toContain('@fixture/packet')
+  }, 30000)
+
+  it.each([
+    ['name', { name: 'other-packet' }, 'name "packet" expected, the file has "other-packet"'],
+    ['version', { version: '2.0.0' }, 'version "1.0.0" expected, the file has "2.0.0"'],
+  ])('fails and installs nothing when the artifact file states another %s than the release', async (_what, change, message) => {
+    const item = JSON.parse(serve['/packet/1.0.0/packet.json']!.body.toString()) as Record<string, unknown>
+    servePacket({ ...item, ...change })
+
+    const result = await executeCliCommand(['add', '@fixture/packet', '--no-cache'], { cwd: tempDir })
+
+    expect(result.exitCode).not.toBe(0)
+    expect(result.stderr).toContain('is not the release the registry manifest lists')
+    expect(result.stderr).toContain(message)
+    expect(result.stdout).not.toContain('Added')
+    expect(await exists('artifacts/@fixture/packet.json')).toBe(false)
+    expect(Object.keys(await lockedArtifacts())).not.toContain('@fixture/packet')
+  }, 30000)
+
   it('fails and installs nothing when the item wraps its artifact in an envelope', async () => {
-    const { $schema, kind, name, version, title, ...definition } = JSON.parse(serve['/r/packet.json']!.body.toString()) as Record<string, unknown>
+    const { $schema, kind, name, version, title, ...definition } = JSON.parse(serve['/packet/1.0.0/packet.json']!.body.toString()) as Record<string, unknown>
     servePacket({ $schema, kind, name, version, title, artifact: { $schema, kind, name, version, title, ...definition } })
 
     const result = await executeCliCommand(['add', '@fixture/packet', '--no-cache'], { cwd: tempDir })
@@ -352,7 +415,7 @@ describe('paradoc add (files the artifact references)', () => {
 
   // A direct URL must be https, which this plain server cannot answer, so these
   // tests observe whether `add` opens a connection at all, not what it sends.
-  const directUrl = (): string => `${registryUrl.replace('http://', 'https://')}/r/packet.json`
+  const directUrl = (): string => `${registryUrl.replace('http://', 'https://')}/packet/1.0.0/packet.json`
 
   it('goes on to contact the registry when every --header is well formed', async () => {
     await executeCliCommand(['add', directUrl(), '--header', 'Authorization: Bearer abc', '--no-cache'], { cwd: tempDir })
@@ -504,6 +567,79 @@ describe('paradoc add (registry integration)', () => {
     const result = await executeCliCommand(['add', '@acme/nonexistent'], { cwd: tempDir })
     expect(result.exitCode).not.toBe(0)
     expect(result.stderr).toContain('not found')
+  }, 30000)
+
+  const locked = async (ref: string): Promise<Record<string, unknown>> =>
+    JSON.parse(await fs.readFile(join(tempDir, '.paradoc', 'lock.json'), 'utf8')).artifacts[ref]
+  const installed = async (name: string): Promise<Record<string, unknown>> =>
+    JSON.parse(await fs.readFile(join(tempDir, 'artifacts', '@acme', `${name}.json`), 'utf8'))
+
+  // The test registry states 2024 as the current edition of w4 although it
+  // also lists 2025, and 1.1.0 as the latest version of pet-policy although
+  // it also lists 2.0.0-beta.1: the default is the publisher's statement.
+  it.each([
+    ['@acme/w4', '2024', '1.1.0'],
+    ['@acme/w4/current@latest', '2024', '1.1.0'],
+    ['@acme/w4/2025', '2025', '1.0.0'],
+    ['@acme/w4@1.0.0', '2024', '1.0.0'],
+    ['@acme/w4/2024@1.0.0', '2024', '1.0.0'],
+  ])('adds %s as edition %s, version %s, and records both in the lock file', async (ref, edition, version) => {
+    const result = await executeCliCommand(['add', ref, '--no-cache'], { cwd: tempDir })
+
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain(`Added @acme/w4 ${edition} v${version}`)
+    expect(await installed('w4')).toMatchObject({ name: 'w4', version, edition: { key: edition } })
+    expect(await locked('@acme/w4')).toMatchObject({
+      edition,
+      version,
+      resolved: `${TEST_REGISTRY_URL}/w4/${edition}/${version}/w4.json`,
+    })
+  }, 30000)
+
+  it.each([
+    ['@acme/pet-policy', '1.1.0'],
+    ['@acme/pet-policy@1.0.0', '1.0.0'],
+    ['@acme/pet-policy@2.0.0-beta.1', '2.0.0-beta.1'],
+  ])('adds %s, an artifact with no editions, as version %s with no edition in the lock file', async (ref, version) => {
+    const result = await executeCliCommand(['add', ref, '--no-cache'], { cwd: tempDir })
+
+    expect(result.exitCode).toBe(0)
+    expect(result.stdout).toContain(`Added @acme/pet-policy v${version}`)
+    const entry = await locked('@acme/pet-policy')
+    expect(entry).toMatchObject({ version, resolved: `${TEST_REGISTRY_URL}/pet-policy/${version}/pet-policy.json` })
+    expect(entry).not.toHaveProperty('edition')
+  }, 30000)
+
+  it.each([
+    ['@acme/w4/2019', 'w4 has no edition 2019. Its editions: 2024, 2025 (current: 2024).'],
+    ['@acme/w4@9.9.9', 'Edition 2024 of w4 has no version 9.9.9. Its versions: 1.1.0, 1.0.0 (latest: 1.1.0).'],
+    ['@acme/w4/2025@1.1.0', 'Edition 2025 of w4 has no version 1.1.0. Its versions: 1.0.0 (latest: 1.0.0).'],
+    ['@acme/pet-policy/2024', 'pet-policy has no editions, so it has no edition 2024.'],
+  ])('refuses %s, says what the registry lists, and installs nothing', async (ref, message) => {
+    const result = await executeCliCommand(['add', ref, '--no-cache'], { cwd: tempDir })
+
+    expect(result.exitCode).not.toBe(0)
+    expect(result.stderr).toContain(message)
+    expect(result.stdout).not.toContain('Added')
+    await expect(fs.access(join(tempDir, 'artifacts', '@acme'))).rejects.toThrow()
+    await expect(fs.access(join(tempDir, '.paradoc', 'lock.json'))).rejects.toThrow()
+  }, 30000)
+
+  it('lists the installed edition beside the version, and carries it in --json', async () => {
+    await executeCliCommand(['add', '@acme/w4/2025', '--no-cache'], { cwd: tempDir })
+    await executeCliCommand(['add', '@acme/pet-policy', '--no-cache'], { cwd: tempDir })
+
+    const human = await executeCliCommand(['list'], { cwd: tempDir })
+    expect(human.stdout).toContain('w4 2025 v1.0.0')
+    expect(human.stdout).toContain('pet-policy v1.1.0')
+
+    const json = JSON.parse((await executeCliCommand(['list', '--json'], { cwd: tempDir })).stdout) as Array<Record<string, unknown>>
+    expect(json.find((entry) => entry.ref === '@acme/w4')).toMatchObject({ edition: '2025', version: '1.0.0' })
+    expect(json.find((entry) => entry.ref === '@acme/pet-policy')).not.toHaveProperty('edition')
+
+    const view = await executeCliCommand(['registry', 'view', '@acme/w4'], { cwd: tempDir })
+    expect(view.stdout).toMatch(/Edition:\s+2025/)
+    expect(view.stdout).toMatch(/Version:\s+1\.0\.0/)
   }, 30000)
 
   it('can re-add (update) an existing artifact', async () => {

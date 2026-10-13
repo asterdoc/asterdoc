@@ -8,7 +8,7 @@ describe('paradoc-cli-007: compile fails when an item fails', () => {
   it('exits nonzero for a missing artifact', async () => {
     const root = await mkdtemp(path.join(tmpdir(), 'paradoc-registry-compile-'))
     try {
-      await writeFile(path.join(root, 'registry.json'), JSON.stringify({ name: 'test', items: [{ name: 'ghost', kind: 'form', version: '1.0.0' }] }))
+      await writeFile(path.join(root, 'registry.config.json'), JSON.stringify({ name: 'test', sources: ['ghost.json'] }))
       const result = await runCli(['registry', 'compile'], { cwd: root })
       expect(result.stdout + result.stderr).toContain('ghost')
       expect(result.exitCode).toBe(1)

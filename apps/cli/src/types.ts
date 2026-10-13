@@ -37,17 +37,22 @@ export type {
 } from '@paradoc/schemas'
 
 /**
- * Registry item summary (from registry.json index)
+ * Registry manifest (registry.json), its items, and one release of an item
  */
-export type { RegistryItemSummary, RegistryIndex } from '@paradoc/schemas'
+export type { RegistryItemSummary, RegistryIndex, RegistryRelease } from '@paradoc/schemas'
 
 /**
- * Parsed artifact reference
+ * Parsed artifact reference: `@namespace/name[/edition][@version]`
  */
 export interface ArtifactRef {
   namespace: string  // e.g., "@acme"
   name: string       // e.g., "residential-lease"
-  full: string       // e.g., "@acme/residential-lease"
+  /** The artifact without its edition and version, e.g. "@acme/residential-lease". It is the lock file key. */
+  full: string
+  /** An edition key. Omitted: the artifact's current edition. */
+  edition?: string
+  /** A version. Omitted: the latest version. */
+  version?: string
 }
 
 /**
@@ -59,7 +64,6 @@ export interface ResolvedRegistry {
   /** Configured URL before environment variables are expanded. */
   configuredUrl?: string
   headers?: Record<string, string>
-  artifactsPath?: string
   cache?: RegistryCacheConfig
 }
 

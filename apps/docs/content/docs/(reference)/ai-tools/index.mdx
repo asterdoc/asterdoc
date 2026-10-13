@@ -28,7 +28,7 @@ All tools except `get_registry` and `get_artifact` work on an artifact that you 
 |------|--------|------------|
 | `source: "artifact"` | `artifact`, `base_url?` | Artifact JSON passed inline. File-backed layers resolve against `base_url`. |
 | `source: "url"` | `url` | Fetches the artifact JSON. File-backed layers resolve against the URL's directory. |
-| `source: "registry"` | `registry_url?`, `artifact_name` | Fetches `registry.json`, checks the artifact is listed, then fetches it. Without `registry_url`, uses `defaultRegistryUrl` from the [config](/ai-tools/api#configuration). |
+| `source: "registry"` | `registry_url?`, `artifact_name`, `edition?`, `version?` | Fetches `registry.json`, finds the edition and version, then fetches that file and checks its SHA-256. Without `edition` or `version`, uses the current edition and the latest version. Without `registry_url`, uses `defaultRegistryUrl` from the [config](/ai-tools/api#configuration). |
 
 ```typescript
 { source: "artifact", artifact: { kind: "form", name: "my-form", /* ... */ } }

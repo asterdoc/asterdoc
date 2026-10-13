@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { Agent } from '@mastra/core/agent'
@@ -22,6 +23,7 @@ const documentArtifact = {
 	$schema: PARADOC_SCHEMA_URL,
 	kind: 'document' as const,
 	name: 'notice',
+	version: '1.0.0',
 	layers: {
 		text: { kind: 'inline' as const, mimeType: 'text/plain', text: 'A notice.' },
 	},
@@ -107,18 +109,28 @@ describe('@paradoc/mastra', () => {
 	})
 
 	it('executes registry, validation, draft, and rendering operations through Mastra', async () => {
+		const body = JSON.stringify(documentArtifact)
+		const manifest = {
+			name: 'registry',
+			items: [{
+				name: 'notice',
+				kind: 'document',
+				latestVersion: '1.0.0',
+				versions: { '1.0.0': { path: 'notice/1.0.0/notice.json', sha256: createHash('sha256').update(body).digest('hex') } },
+			}],
+		}
 		const fetch = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input)
-			if (url.endsWith('/registry.json')) return Response.json({ items: [{ name: 'notice', path: 'notice.json' }] })
-			if (url.endsWith('/notice.json')) return Response.json(documentArtifact)
+			if (url.endsWith('/registry.json')) return Response.json(manifest)
+			if (url.endsWith('/notice/1.0.0/notice.json')) return new Response(body)
 			return new Response('missing', { status: 404 })
 		})
 		const tools = paradocTools({ fetch })
 
 		const registry = await execute(tools.get_registry, { registry_url: 'https://registry.example' })
-		expect(registry).toMatchObject({ items: [{ name: 'notice', path: 'notice.json' }] })
+		expect(registry).toMatchObject({ items: [{ name: 'notice', kind: 'document', latest_version: '1.0.0', versions: ['1.0.0'] }] })
 		const fetched = await execute(tools.get_artifact, { registry_url: 'https://registry.example', artifact_name: 'notice' })
-		expect(fetched).toMatchObject({ artifact_name: 'notice', artifact: documentArtifact })
+		expect(fetched).toMatchObject({ artifact_name: 'notice', version: '1.0.0', artifact: documentArtifact })
 
 		const validation = await execute(tools.validate_artifact, { source: 'artifact', artifact: documentArtifact })
 		expect(validation).toMatchObject({ valid: true, artifact_kind: 'document' })
@@ -281,7 +293,7 @@ describe('@paradoc/mastra', () => {
 	it.each(['signal', 'context'] as const)('honors an aborted config %s signal', async (source) => {
 		const controller = new AbortController()
 		controller.abort(new Error('cancelled before execution'))
-		const fetch = vi.fn(async () => Response.json({ items: [] }))
+		const fetch = vi.fn(async () => Response.json({ name: 'registry', items: [] }))
 		const signalConfig = source === 'signal'
 			? { signal: controller.signal }
 			: { context: { signal: controller.signal } }
@@ -297,7 +309,7 @@ describe('@paradoc/mastra', () => {
 	})
 
 	it('creates a fresh request cache for each Mastra call', async () => {
-		const fetch = vi.fn(async () => Response.json({ items: [] }))
+		const fetch = vi.fn(async () => Response.json({ name: 'registry', items: [] }))
 		const tool = getRegistry({ fetch, defaultRegistryUrl: 'https://registry.example' })
 
 		await execute(tool, {})

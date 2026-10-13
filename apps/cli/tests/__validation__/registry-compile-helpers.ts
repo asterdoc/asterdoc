@@ -27,9 +27,9 @@ export async function makeCompileFixture(): Promise<string> {
   await writeFile(path.join(forms, 'w9.yaml'), SOURCE_YAML)
   await writeFile(path.join(forms, 'w9.md'), '# Layer\n')
   await writeFile(path.join(forms, 'instr.md'), '# Instructions\n')
-  await writeFile(path.join(root, 'registry.json'), JSON.stringify({
+  await writeFile(path.join(root, 'registry.config.json'), JSON.stringify({
     name: 'test',
-    items: [{ name: 'w9', kind: 'form', version: '1.0.0', path: 'forms/w9.yaml' }],
+    sources: ['forms/w9.yaml'],
   }))
   return root
 }

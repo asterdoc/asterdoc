@@ -30,7 +30,7 @@ paradoc search [query] [options]
 
 ## Description
 
-The `search` command queries a registry's index to find matching artifacts. You can filter results by kind, tags, or a text query that matches against artifact names, titles, and descriptions.
+The `search` command queries a registry's index to find matching artifacts. You can filter results by kind, tags, or a text query that matches against artifact names, titles, and descriptions. Each result shows the release you get by default, and the editions and versions the registry lists for the artifact. To install one of them, see the reference forms in [add](/cli/commands/add).
 
 There is no default registry. Without `--registry`, it searches the one registry you have configured. With no registry configured, it fails and tells you to pass `--registry` or run [`paradoc registry add`](/cli/commands/registry/add). With several configured, it fails and lists them so you can pick one with `--registry`.
 
@@ -79,22 +79,29 @@ paradoc search --json
 ```
 Found 3 artifacts:
 
+@acme/pet-policy v1.1.0
+  Pet Policy
+  Rules for keeping pets in a rental unit
+  form
+  Versions: 1.1.0 (latest), 2.0.0-beta.1, 1.0.0
+
 @acme/residential-lease v1.0.0
   Residential Lease Agreement
-  Standard residential lease agreement for property rentals
-  form · #legal #real-estate · 2 layers
+  Standard residential property lease agreement between landlord and tenant
+  form · #lease #residential #rental #agreement · 2 layers
+  Versions: 1.0.0 (latest)
 
-@acme/commercial-lease v1.0.0
-  Commercial Lease Agreement
-  Commercial property lease agreement
-  form · #legal #commercial · 2 layers
+@acme/w4 2024 v1.1.0
+  Employee's Withholding Certificate
+  form · #irs #tax #payroll
+  Editions:
+    2024 (current)  2024: 1.1.0 (latest), 1.0.0
+    2025  2025: 1.0.0 (latest)
 
-@acme/lease-addendum v1.0.0
-  Lease Addendum
-  form · #legal · 1 layer
-
-Run 'paradoc add @acme/<name>' to install an artifact.
+Run paradoc add @acme/<name> to install an artifact, or @acme/<name>/<edition>@<version> for one release.
 ```
+
+The first line of a result is the release you get by default. An artifact that has editions lists each one with its key, the issuer's label, and its versions.
 
 ## See also
 

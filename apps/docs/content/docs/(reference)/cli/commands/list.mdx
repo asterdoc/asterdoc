@@ -23,7 +23,7 @@ paradoc ls [options]
 
 ## Description
 
-The `list` command reads the project's lock file and displays all installed artifacts, grouped by namespace. It shows the artifact name, version, and number of downloaded layers.
+The `list` command reads the project's lock file and displays all installed artifacts, grouped by namespace. It shows the artifact name, the edition when the artifact has one, the version, and the number of downloaded layers. In JSON output, an artifact that has editions also carries `edition`.
 
 ## Examples
 
@@ -48,10 +48,11 @@ paradoc list --json
 ## Output
 
 ```
-Installed artifacts (3):
+Installed artifacts (4):
 
 @acme
   residential-lease v1.0.0 (2 layers)
+  w4 2025 v1.0.0
   w9 v1.0.0 (1 layer)
 
 @internal
@@ -76,6 +77,15 @@ Run 'paradoc add @namespace/artifact-name' to install one.
     "path": "artifacts/@acme/residential-lease.json",
     "installedAt": "2025-01-15T10:30:00.000Z",
     "layers": ["pdf", "markdown"]
+  },
+  {
+    "ref": "@acme/w4",
+    "edition": "2025",
+    "version": "1.0.0",
+    "output": "json",
+    "path": "artifacts/@acme/w4.json",
+    "installedAt": "2025-01-15T10:31:00.000Z",
+    "layers": []
   }
 ]
 ```

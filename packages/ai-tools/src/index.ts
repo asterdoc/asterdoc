@@ -61,9 +61,9 @@ export {
 	validateFetchUrl,
 	fetchRegistryIndex,
 	fetchRegistryIndexResponse,
-	fetchRegistryItem,
-	fetchRegistryItemResponse,
-	buildArtifactItemUrl,
+	fetchRegistryArtifact,
+	summarizeRegistryReleases,
+	RegistryArtifactError,
 	resolveRelativeUrl,
 	bytesToBase64,
 	bytesToText,
@@ -74,7 +74,14 @@ export {
 	FETCH_TIMEOUT_MS,
 	DEFAULT_MAX_REDIRECTS,
 } from './registry-client'
-export type { RegistryIndex, FetchPolicy } from './registry-client'
+export type {
+	FetchPolicy,
+	FetchedRegistryArtifact,
+	FetchedRegistryIndex,
+	RegistryArtifactErrorCode,
+	RegistryArtifactRequest,
+} from './registry-client'
+export type { RegistryIndex, RegistryItemSummary, RegistryRelease, RegistryReleaseFailure } from '@paradoc/schemas'
 
 // These wrappers keep the package root free of document-core and renderer
 // imports. The implementation module is loaded only when an operation runs.
@@ -121,14 +128,14 @@ export async function executeExtract(input: ExtractInput | Record<string, unknow
 export const toolDefinitions = {
 	get_registry: {
 		name: 'get_registry',
-		description: 'Discover the artifacts available in a Paradoc registry.',
+		description: 'Discover the artifacts available in a Paradoc registry, with the editions and versions of each.',
 		input_schema: GetRegistryInputSchema,
 		output_schema: GetRegistryOutputSchema,
 		execute: executeGetRegistry,
 	},
 	get_artifact: {
 		name: 'get_artifact',
-		description: 'Retrieve one artifact and optionally its instructions from a Paradoc registry.',
+		description: 'Retrieve one artifact and optionally its instructions from a Paradoc registry. Names the current edition and latest version unless edition or version is given.',
 		input_schema: GetArtifactInputSchema,
 		output_schema: GetArtifactOutputSchema,
 		execute: executeGetArtifact,

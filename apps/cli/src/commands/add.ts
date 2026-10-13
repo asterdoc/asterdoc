@@ -3,12 +3,14 @@ import kleur from 'kleur'
 import ora, { type Ora } from 'ora'
 import prompts from 'prompts'
 import { assertCurrentSchemaVersion, validate, type Artifact } from '@paradoc/core'
+import { describeRegistryReleaseFailure, formatRegistryReference, resolveRegistryRelease } from '@paradoc/schemas'
 import { LocalFileSystem } from '../utils/local-fs.js'
 
-import type { AddOptions, OutputFormat, ArtifactKind, ResolvedRegistry, RegistryItemSummary } from '../types.js'
+import type { AddOptions, OutputFormat, ArtifactKind, ResolvedRegistry, RegistryItemSummary, RegistryRelease } from '../types.js'
 import { parseArtifactArg, resolveRegistry, createRegistryFromUrl, parseNamespaceOnly } from '../utils/registry.js'
 import { addComponents, COMPONENT_ITEMS, COMPONENT_NAMESPACE, isComponentName } from './add-component.js'
-import { registryClient, RegistryFetchError, type RegistryItem } from '../utils/registry-client.js'
+import { registryClient, RegistryFetchError, RegistryReleaseMismatchError, type RegistryItem } from '../utils/registry-client.js'
+import { formatInstalledRelease, formatRelease } from '../utils/registry-manifest.js'
 import { lockFileManager } from '../utils/lock.js'
 import { configManager } from '../utils/config.js'
 import { findRepoRoot } from '../utils/project.js'
@@ -26,6 +28,11 @@ interface InstallArtifactOpts {
   artifactName: string
   artifactNamespace: string
   artifactFull: string
+  /** The edition the reference names. Omitted: the artifact's current edition. */
+  edition?: string
+  /** The version the reference names. Omitted: the latest version. */
+  version?: string
+  /** An exact artifact URL, installed without a registry manifest. */
   resolvedUrl?: string
   projectRoot: string
   options: AddOptions & { header: Record<string, string>; cache?: boolean }
@@ -83,32 +90,70 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
   // Fetch artifact from registry
   spinner.start(`Fetching ${artifactFull}...`)
 
-  let registryItem
+  // What the reference asks for, for messages: @ns/name[/edition][@version]
+  const requested = formatRegistryReference({
+    namespace: artifactNamespace,
+    name: artifactName,
+    edition: opts.edition,
+    version: opts.version,
+  })
+
+  let registryItem: RegistryItem
+  // The release the manifest lists; null for an exact URL, which has no manifest.
+  let release: RegistryRelease | null = null
   let registryTelemetry = { enableTelemetry: true, enableDirectory: true }
   try {
-    const fetched = resolvedUrl
-      ? await registryClient.fetchItemUrl(resolvedUrl, registry.headers)
-      : await registryClient.fetchItem(registry, artifactName, { cacheTtl, skipCache })
-    registryItem = fetched.item
-    resolvedUrl ??= fetched.url
-    if (!opts.resolvedUrl) {
+    if (resolvedUrl) {
+      registryItem = (await registryClient.fetchItemUrl(resolvedUrl, registry.headers)).item
+    } else {
       const index = await registryClient.fetchIndex(registry, { cacheTtl, skipCache })
       registryTelemetry = {
         enableTelemetry: index.enableTelemetry !== false,
         enableDirectory: index.enableDirectory !== false,
       }
+
+      const summary = index.items.find((item) => item.name === artifactName)
+      if (!summary) {
+        spinner.fail(`Failed to fetch ${artifactFull}`)
+        console.error(kleur.red(`Artifact not found: ${artifactFull}`))
+        console.error(kleur.gray(`Registry: ${registry.baseUrl}`))
+        process.exit(1)
+      }
+
+      const resolution = resolveRegistryRelease(summary, { edition: opts.edition, version: opts.version })
+      if (!resolution.ok) {
+        spinner.fail(`Failed to resolve ${requested}`)
+        console.error(kleur.red(describeRegistryReleaseFailure(resolution.failure)))
+        console.error(kleur.gray(`Registry: ${registry.baseUrl}`))
+        process.exit(1)
+      }
+      release = resolution.release
+
+      const fetched = await registryClient.fetchRelease(registry, artifactName, release)
+      registryItem = fetched.item
+      resolvedUrl = fetched.url
     }
   } catch (error) {
-    spinner.fail(`Failed to fetch ${artifactFull}`)
+    spinner.fail(`Failed to fetch ${requested}`)
     if (error instanceof RegistryFetchError && error.statusCode === 404) {
-      console.error(kleur.red(`Artifact not found: ${artifactFull}`))
+      console.error(kleur.red(`Artifact not found: ${requested}`))
       console.error(kleur.gray(`Registry: ${registry.baseUrl}`))
     } else {
       console.error(kleur.red(error instanceof Error ? error.message : String(error)))
+      if (error instanceof RegistryReleaseMismatchError) {
+        console.error(kleur.gray('Nothing was installed. Consider contacting the registry maintainer.'))
+      }
     }
     process.exit(1)
   }
-  spinner.succeed(`Found ${registryItem.name} v${registryItem.version}`)
+
+  // The installed release: the manifest's, or the artifact's own for an exact URL.
+  const installed = {
+    edition: release === null ? registryItem.edition?.key : release.edition?.key,
+    version: release === null ? registryItem.version : release.version,
+  }
+  const installedLabel = formatInstalledRelease(installed)
+  spinner.succeed(`Found ${registryItem.name} ${installedLabel}`)
 
   // A registry serves artifact files, so the schema version rule for files applies.
   try {
@@ -179,7 +224,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
   // is written. The artifact file references these files, so one that fails to
   // download or verify fails the whole install: nothing lands on disk, and the
   // lock file does not record an install that did not happen.
-  const artifactDir = resolvedUrl!.substring(0, resolvedUrl!.lastIndexOf('/'))
+  const artifactDir = resolvedUrl.substring(0, resolvedUrl.lastIndexOf('/'))
   const allowedContentTypes = await configManager.getAllowedContentTypes()
   const verifiedFiles: VerifiedFile[] = []
   const failures: FileFailure[] = []
@@ -282,7 +327,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
 
   if (failures.length > 0) {
     console.error()
-    console.error(kleur.red(`Could not add ${artifactFull} v${registryItem.version}: ${failures.length === 1 ? '1 file' : `${failures.length} files`} failed to download or verify.`))
+    console.error(kleur.red(`Could not add ${artifactFull} ${installedLabel}: ${failures.length === 1 ? '1 file' : `${failures.length} files`} failed to download or verify.`))
     for (const failure of failures) {
       console.error(kleur.red(`  • ${failure.label} (${failure.path}): ${failure.cause}`))
     }
@@ -356,7 +401,8 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
     : sanitizedArtifactPath
   const lockedArtifact = lockFileManager.createLockedArtifact({
     kind: artifactKind,
-    version: registryItem.version,
+    edition: installed.edition,
+    version: installed.version,
     resolved: resolvedUrl,
     content: contentString,
     output: format,
@@ -370,7 +416,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
   trackInstall(
     registry.configuredUrl ?? registry.baseUrl,
     artifactName,
-    registryItem.version,
+    installed.version,
     registryItem.kind,
     isUpdate,
     {
@@ -381,7 +427,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
 
   // Success message
   console.log()
-  console.log(kleur.green('✓') + ` Added ${kleur.bold(artifactFull)} v${registryItem.version}`)
+  console.log(kleur.green('✓') + ` Added ${kleur.bold(artifactFull)} ${installedLabel}`)
   console.log()
   console.log(kleur.gray('Format:'), format)
   for (const file of writtenFiles) {
@@ -409,7 +455,7 @@ export function createAddCommand(): Command {
   const add = new Command('add')
 
   add
-    .argument('<targets...>', 'Artifact reference (@namespace/name), namespace (@namespace), direct URL (https://...), or one or more document component names')
+    .argument('<targets...>', 'Artifact reference (@namespace/name[/edition][@version]), namespace (@namespace), direct URL (https://...), or one or more document component names')
     .description('Add an artifact from a registry, or one or more document components from the Paradoc component registry')
     .option('--layers <layers>', 'Layers to download (comma-separated, or "all")')
     .option('--output <output>', 'Output format: json, yaml, typed (json + .d.ts), or ts (TypeScript module)')
@@ -497,7 +543,8 @@ export function createAddCommand(): Command {
         if (!parsed && !nsOnly) {
           console.error(kleur.red(`Invalid artifact: ${artifact}`))
           console.error(kleur.gray('Expected format:'))
-          console.error(kleur.gray('  @namespace/artifact-name (registry reference)'))
+          console.error(kleur.gray('  @namespace/artifact-name (registry reference: current edition, latest version)'))
+          console.error(kleur.gray('  @namespace/artifact-name/edition@version (one edition, one version; each part is optional)'))
           console.error(kleur.gray('  @namespace              (browse all artifacts)'))
           console.error(kleur.gray('  https://registry.example.com/r/artifact.json (direct URL)'))
           console.error(kleur.gray(`  field                   (document component: ${COMPONENT_ITEMS.join(', ')})`))
@@ -548,11 +595,15 @@ export function createAddCommand(): Command {
             type: 'multiselect',
             name: 'selected',
             message: `Select artifacts to add from ${nsOnly.namespace}`,
-            choices: index.items.map((item: RegistryItemSummary) => ({
-              title: `${item.name} ${kleur.dim(`(${item.kind} v${item.version})`)}`,
-              description: item.title || item.description || '',
-              value: item,
-            })),
+            choices: index.items.map((item: RegistryItemSummary) => {
+              const defaultRelease = resolveRegistryRelease(item)
+              const label = defaultRelease.ok ? ` ${formatRelease(defaultRelease.release)}` : ''
+              return {
+                title: `${item.name} ${kleur.dim(`(${item.kind}${label})`)}`,
+                description: item.title || item.description || '',
+                value: item,
+              }
+            }),
             instructions: false,
             hint: 'Space to select, Enter to confirm',
           })
@@ -585,6 +636,8 @@ export function createAddCommand(): Command {
         let artifactNamespace: string
         let artifactFull: string
         let resolvedUrl: string | undefined
+        let edition: string | undefined
+        let version: string | undefined
 
         if (parsedArg.type === 'url') {
           const headers = Object.keys(options.header).length > 0 ? options.header : undefined
@@ -601,6 +654,8 @@ export function createAddCommand(): Command {
           artifactName = parsedArg.ref.name
           artifactNamespace = parsedArg.ref.namespace
           artifactFull = parsedArg.ref.full
+          edition = parsedArg.ref.edition
+          version = parsedArg.ref.version
 
           spinner.succeed(`Registry: ${registry.baseUrl}`)
         }
@@ -610,6 +665,8 @@ export function createAddCommand(): Command {
           artifactName,
           artifactNamespace,
           artifactFull,
+          edition,
+          version,
           resolvedUrl,
           projectRoot,
           options,

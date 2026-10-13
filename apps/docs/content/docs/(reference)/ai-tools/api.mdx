@@ -86,8 +86,9 @@ These helpers fetch from a Paradoc registry with the same URL and size checks th
 | `safeFetch` | Fetch with URL validation, a size limit, a timeout, and validated redirects |
 | `validateFetchUrl` | Check a URL against the fetch policy (HTTPS, local addresses, `approvedOrigins`) |
 | `fetchRegistryIndex`, `fetchRegistryIndexResponse` | Fetch and parse `registry.json` |
-| `fetchRegistryItem`, `fetchRegistryItemResponse` | Fetch one artifact from a registry |
-| `buildArtifactItemUrl` | Build an artifact URL from a registry URL and item |
+| `fetchRegistryArtifact` | Fetch one edition and version of an artifact from a registry, and check its SHA-256 and identity against `registry.json` |
+| `summarizeRegistryReleases` | List the editions and versions of a `registry.json` item, without paths or checksums |
+| `RegistryArtifactError` | The error `fetchRegistryArtifact` throws. Its `code` says why the artifact could not be read |
 | `resolveRelativeUrl` | Resolve an instruction or item path against a base URL. Layer files are read with `@paradoc/resolvers/http` |
 | `bytesToBase64`, `bytesToText` | Encode fetched bytes |
 

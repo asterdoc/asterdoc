@@ -4,17 +4,11 @@
  * Handles parsing artifact references and resolving registry URLs.
  */
 
-import { ARTIFACT_NAME_PATTERN, REGISTRY_NAMESPACE_PATTERN } from '@paradoc/schemas'
+import { ARTIFACT_NAME_PATTERN, REGISTRY_NAMESPACE_PATTERN, parseRegistryReference } from '@paradoc/schemas'
 import { configManager, normalizeNamespace } from './config.js'
 import type { ArtifactRef, ResolvedRegistry } from '../types.js'
 
 const unanchored = (pattern: RegExp) => pattern.source.slice(1, -1)
-
-// Pattern for validating artifact references: @namespace/artifact-name,
-// built from the schemas' namespace and name rules
-const ARTIFACT_REF_PATTERN = new RegExp(
-  `^(${unanchored(REGISTRY_NAMESPACE_PATTERN)})/(${unanchored(ARTIFACT_NAME_PATTERN)})$`,
-)
 
 // Pattern for bare namespace: @namespace (no artifact name)
 const NAMESPACE_ONLY_PATTERN = new RegExp(`^(${unanchored(REGISTRY_NAMESPACE_PATTERN)})$`)
@@ -104,25 +98,22 @@ export function createRegistryFromUrl(
 }
 
 /**
- * Parse an artifact reference string into its components
- * @param ref - Artifact reference (e.g., "@acme/residential-lease")
+ * Parse a file registry reference into its components
+ * @param ref - Artifact reference (e.g., "@acme/w-9", "@acme/w-9/2024-03@1.0.0")
  * @returns Parsed artifact reference or null if invalid
  */
 export function parseArtifactRef(ref: string): ArtifactRef | null {
-  const match = ref.match(ARTIFACT_REF_PATTERN)
-  if (!match) {
-    return null
-  }
-
-  const [, namespace, name] = match
-  if (!namespace || !name) {
+  const parsed = parseRegistryReference(ref)
+  if (!parsed) {
     return null
   }
 
   return {
-    namespace,
-    name,
-    full: ref,
+    namespace: parsed.namespace,
+    name: parsed.name,
+    full: `${parsed.namespace}/${parsed.name}`,
+    ...(parsed.edition !== undefined && { edition: parsed.edition }),
+    ...(parsed.version !== undefined && { version: parsed.version }),
   }
 }
 
@@ -153,27 +144,31 @@ export async function resolveRegistry(namespace: string): Promise<ResolvedRegist
 }
 
 /**
- * Build URL for fetching the registry index
+ * The registry base address: the address of the folder that holds
+ * registry.json. It ends in a slash, so a manifest path resolves under it.
+ * @param registry - Resolved registry configuration
+ */
+export function registryBaseUrl(registry: ResolvedRegistry): string {
+  return `${registry.baseUrl.replace(/\/+$/, '')}/`
+}
+
+/**
+ * Build URL for fetching the registry manifest
  * @param registry - Resolved registry configuration
  * @returns URL for registry.json
  */
 export function buildRegistryIndexUrl(registry: ResolvedRegistry): string {
-  const baseUrl = registry.baseUrl.replace(/\/$/, '') // Remove trailing slash
-  return `${baseUrl}/registry.json`
+  return `${registryBaseUrl(registry)}registry.json`
 }
 
 /**
- * Build URL for fetching a specific artifact item
+ * Build the URL of a release's artifact file from its manifest path, which is
+ * relative to the registry base address
  * @param registry - Resolved registry configuration
- * @param artifactName - Name of the artifact
- * @param itemPath - Optional relative path to the artifact file (overrides default {name}.json)
- * @returns URL for the artifact's item.json
+ * @param releasePath - `path` of the release, as the manifest lists it
  */
-export function buildArtifactItemUrl(registry: ResolvedRegistry, artifactName: string, itemPath?: string): string {
-  const baseUrl = registry.baseUrl.replace(/\/$/, '') // Remove trailing slash
-  const artifactsPath = registry.artifactsPath || ''
-  const suffix = itemPath ? `/${itemPath}` : `/${artifactName}.json`
-  return `${baseUrl}${artifactsPath}${suffix}`
+export function buildReleaseUrl(registry: ResolvedRegistry, releasePath: string): string {
+  return new URL(releasePath, registryBaseUrl(registry)).toString()
 }
 
 /**

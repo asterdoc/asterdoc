@@ -4,7 +4,7 @@
  * These schemas define the structure for:
  * - Global user config (~/.paradoc/config.json)
  * - Lock files (.paradoc/lock.json)
- * - Registry index (registry.json)
+ * - Registry manifest (registry.json), and the releases it lists
  * - Registry items (r/{name}.json)
  */
 
@@ -12,4 +12,5 @@ export * from './registry-entry';
 export * from './global-config';
 export * from './lock';
 export * from './registry-index';
+export * from './release';
 export * from './registry-item';

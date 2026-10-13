@@ -21,10 +21,10 @@ export const SECURITY_LIMITS = {
   MAX_LAYER_SIZE: 20 * 1024 * 1024, // 20MB
 
   /**
-   * Maximum file size for registry index (5MB)
-   * Registry index lists all artifacts, could be moderately large
+   * Maximum file size for the registry manifest (10MB)
+   * The manifest lists every edition and version of every artifact
    */
-  MAX_INDEX_SIZE: 5 * 1024 * 1024, // 5MB
+  MAX_INDEX_SIZE: 10 * 1024 * 1024, // 10MB
 }
 
 /**

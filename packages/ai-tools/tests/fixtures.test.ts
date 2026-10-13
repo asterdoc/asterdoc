@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url'
 import { executeValidateArtifact } from '../src/tools/validate'
 import { executeFill } from '../src/tools/fill'
 import { executeRender } from '../src/tools/render'
+import { registryFixture } from './helpers/registry'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const fixturesDir = join(__dirname, 'fixtures')
@@ -27,18 +28,17 @@ function loadFixture(name: string) {
   return { artifact, data }
 }
 
-function createPetAddendumRegistryFetch(artifact: unknown): typeof globalThis.fetch {
+function createPetAddendumRegistryFetch(artifact: Record<string, unknown>): typeof globalThis.fetch {
+  const { manifest, bodies } = registryFixture([{ artifact, path: 'pet-addendum/pet-addendum.json' }])
   return async (input) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
 
     if (url.endsWith('/registry.json')) {
-      return Response.json({
-        items: [{ name: 'pet-addendum', path: 'pet-addendum/pet-addendum.json' }],
-      })
+      return Response.json(manifest)
     }
 
     if (url.endsWith('/pet-addendum/pet-addendum.json')) {
-      return Response.json(artifact)
+      return new Response(bodies['pet-addendum/pet-addendum.json'])
     }
 
     if (url.endsWith('/pet-addendum/pet-addendum.md')) {

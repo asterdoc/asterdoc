@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { PARADOC_SCHEMA_URL } from '@paradoc/core'
 import { executeFill } from '../src/tools/fill'
+import { registryFetch } from './helpers/registry'
 
 describe('executeFill', () => {
   describe('form data fill', () => {
@@ -218,20 +219,15 @@ describe('executeFill', () => {
 
   describe('registry source', () => {
     it('fetches and fills artifact from registry', async () => {
-      const registryIndex = { items: [{ name: 'my-form' }] }
       const artifact = {
         $schema: PARADOC_SCHEMA_URL,
         kind: 'form',
         name: 'my-form',
+        version: '1.0.0',
         fields: { x: { type: 'text', label: 'X' } },
       }
 
-      const mockFetch = vi.fn().mockImplementation((url: string) => {
-        if (url.includes('registry.json')) {
-          return Promise.resolve(new Response(JSON.stringify(registryIndex)))
-        }
-        return Promise.resolve(new Response(JSON.stringify(artifact)))
-      })
+      const mockFetch = vi.fn(registryFetch('https://example.com', [{ artifact }]))
 
       const result = await executeFill(
         {

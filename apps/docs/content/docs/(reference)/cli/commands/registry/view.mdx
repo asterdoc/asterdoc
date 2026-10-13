@@ -17,7 +17,7 @@ paradoc registry view <artifact> [options]
 
 | Argument | Description |
 |----------|-------------|
-| `artifact` | Artifact reference in `@namespace/name` format |
+| `artifact` | Installed artifact, in `@namespace/name` format |
 
 ## Options
 
@@ -29,6 +29,7 @@ paradoc registry view <artifact> [options]
 
 Displays comprehensive information about an installed artifact, including:
 
+- The installed edition, when the artifact has one
 - Version and kind
 - Title and description
 - Installation timestamp
@@ -62,13 +63,29 @@ Description: Standard residential lease agreement
 Installed: 1/15/2025, 10:30:00 AM
 Output: yaml
 Path: artifacts/@acme/residential-lease.yaml
-Source: https://registry.acme.com/r/residential-lease.json
+Source: https://registry.acme.com/residential-lease/1.0.0/residential-lease.json
 
 Layers:
   pdf: residential-lease.pdf
   markdown: residential-lease.md
 
 Available layers (not installed): html
+```
+
+An artifact that has editions also shows the installed edition:
+
+```
+@acme/w4
+
+Edition: 2025
+Version: 1.0.0
+Kind: form
+Title: Employee's Withholding Certificate
+
+Installed: 1/15/2025, 10:30:00 AM
+Output: json
+Path: artifacts/@acme/w4.json
+Source: https://registry.acme.com/w4/2025/1.0.0/w4.json
 ```
 
 ## Error handling

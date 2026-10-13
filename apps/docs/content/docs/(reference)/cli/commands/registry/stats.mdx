@@ -1,11 +1,11 @@
 ---
 title: registry stats
-description: Show statistics for a local registry.json
+description: Check a local registry.json and show its statistics
 ogTitle: paradoc registry stats
 ogDescription: View statistics for a local Paradoc registry.json
 ---
 
-Show statistics for a local `registry.json`.
+Check a local `registry.json` against the manifest schema and show its statistics.
 
 ## Usage
 
@@ -19,27 +19,43 @@ The command takes no arguments. It reads a local file only; for a remote registr
 
 | Option | Description |
 |--------|-------------|
-| `-r, --registry <path>` | Path to local registry.json (default: `./registry.json`) |
+| `-r, --registry <path>` | Path to a compiled registry.json (default: `./registry.json`) |
 | `--json` | Output as JSON |
 
 ## Description
 
-Displays statistics for a local registry, including artifact counts by kind and telemetry/directory settings.
+Reads a compiled `registry.json`, the file [`registry compile`](/cli/commands/registry/compile) writes. A file that is not a valid manifest fails, and the command lists each issue with its path. For a valid one, it shows the number of artifacts, editions and releases, the artifact counts by kind, and the telemetry and directory settings. A release is one version of one edition, or one version of an artifact that has no editions.
 
 ## Output
 
 ```
 acme-forms
 
-Total artifacts: 15
+Total artifacts: 3
+Total editions: 2
+Total releases: 5
 
 By kind:
-  form: 10
-  checklist: 3
-  document: 2
+  form: 3
 
 Telemetry: enabled
 Directory listing: enabled
+```
+
+## JSON output
+
+```json
+{
+  "name": "acme-forms",
+  "totalArtifacts": 3,
+  "totalEditions": 2,
+  "totalReleases": 5,
+  "byKind": {
+    "form": 3
+  },
+  "telemetryEnabled": true,
+  "directoryEnabled": true
+}
 ```
 
 ## See also

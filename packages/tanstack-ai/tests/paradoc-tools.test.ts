@@ -174,7 +174,7 @@ describe('paradocTools', () => {
 			defaultRegistryUrl: 'https://registry.example',
 			fetch: async () => {
 				calls += 1
-				return Response.json({ items: [] })
+				return Response.json({ name: 'registry', items: [] })
 			},
 		})
 

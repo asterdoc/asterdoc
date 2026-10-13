@@ -9,6 +9,8 @@ import { z } from 'zod';
 
 // Import all registry-related schemas
 import {
+	RegistryVersionEntrySchema,
+	RegistryEditionEntrySchema,
 	RegistryItemSummarySchema,
 	RegistryIndexSchema,
 } from './registry-index';
@@ -48,7 +50,9 @@ export const CLISchemaRegistry = z.registry<{
 	description?: string;
 }>();
 
-// Registry Index schemas
+// Registry manifest schemas
+CLISchemaRegistry.add(RegistryVersionEntrySchema, { ...RegistryVersionEntrySchema.meta(), id: 'RegistryVersionEntry' });
+CLISchemaRegistry.add(RegistryEditionEntrySchema, { ...RegistryEditionEntrySchema.meta(), id: 'RegistryEditionEntry' });
 CLISchemaRegistry.add(RegistryItemSummarySchema, { ...RegistryItemSummarySchema.meta(), id: 'RegistryItemSummary' });
 CLISchemaRegistry.add(RegistryIndexSchema, { ...RegistryIndexSchema.meta(), id: 'RegistryIndex' });
 
@@ -71,7 +75,9 @@ CLISchemaRegistry.add(LockFileSchema, { ...LockFileSchema.meta(), id: 'LockFile'
 
 // Re-export all schemas
 export {
-	// Registry Index
+	// Registry manifest
+	RegistryVersionEntrySchema,
+	RegistryEditionEntrySchema,
 	RegistryItemSummarySchema,
 	RegistryIndexSchema,
 	// Registry Item

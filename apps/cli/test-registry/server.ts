@@ -1,7 +1,10 @@
 /**
  * ACME Test Registry Server
  *
- * A simple HTTP server that serves the ACME registry for testing.
+ * A simple HTTP server that serves the ACME registry for testing: the
+ * compiled registry in r/, which `paradoc registry compile --config
+ * test-registry/registry.config.json --output test-registry/r` writes from
+ * the source files beside this file.
  *
  * The CLI test suite starts it in-process through `startTestRegistry()` on a
  * port the operating system picks, so parallel runs in different worktrees do
@@ -73,30 +76,15 @@ function createRegistryServer(logRequests: boolean): http.Server {
       return;
     }
 
-    // Route requests
-    if (pathname === '/registry.json') {
-      serveFile('registry.json', res);
-    } else if (pathname.startsWith('/r/')) {
-      // Artifact requests: /r/{name}.json
-      serveFile(pathname.slice(1), res);
-    } else if (pathname.startsWith('/files/')) {
-      // Layer file requests: /files/{filename}
-      serveFile(pathname.slice(1), res);
-    } else if (pathname === '/') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        name: 'ACME Registry',
-        description: 'Test registry for Paradoc CLI development',
-        endpoints: {
-          index: '/registry.json',
-          artifacts: '/r/{name}.json',
-          files: '/files/{filename}',
-        },
-      }));
-    } else {
+    // The compiled registry in r/ is the registry base address: registry.json
+    // and each release at <name>[/<edition>]/<version>/.
+    const relative = path.posix.normalize(pathname).replace(/^\/+/, '');
+    if (relative === '' || relative.startsWith('..')) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Not found' }));
+      return;
     }
+    serveFile(path.join('r', relative), res);
   });
 }
 
@@ -154,9 +142,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   console.log(`ACME Test Registry running at ${registry.url}
 
 Endpoints:
-  GET /registry.json     - Registry index
-  GET /r/{name}.json     - Individual artifacts
-  GET /files/{filename}  - Layer files
+  GET /registry.json                          - Registry manifest
+  GET /{name}/{version}/{name}.json           - A release of an artifact with no editions
+  GET /{name}/{edition}/{version}/{name}.json - A release of an edition
 
 Press Ctrl+C to stop`);
 

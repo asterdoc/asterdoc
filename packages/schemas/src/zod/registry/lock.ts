@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { EditionKeySchema } from '../primitives/artifact-selectors';
 import { ARTIFACT_REFERENCE_PATTERN } from '../primitives/name';
 import { ArtifactOutputFormatSchema } from './registry-entry';
 
@@ -33,6 +34,9 @@ export const LockedLayerSchema = z.object({
  */
 export const LockedArtifactSchema = z.object({
 	kind: z.enum(['form', 'document', 'checklist', 'bundle']).describe('Artifact kind'),
+	edition: EditionKeySchema
+		.describe('Key of the installed edition, as the registry manifest lists it. Omitted for an artifact that has no editions.')
+		.optional(),
 	version: z.string().describe('Installed artifact version'),
 	resolved: z.url().describe('Full URL used to fetch the artifact'),
 	integrity: LockIntegritySchema
@@ -52,6 +56,12 @@ export const LockedArtifactSchema = z.object({
 
 /**
  * Lock file schema for .paradoc/lock.json
+ *
+ * The format `version` stays 1. A locked artifact's `edition` is one new
+ * optional field: every lock file written before it is still valid and means
+ * what it meant, because `version`, `resolved` and `integrity` already name
+ * one exact file. A new format number would only make readers refuse files
+ * that need no change.
  */
 export const LockFileSchema = z.object({
 	$schema: z.url()

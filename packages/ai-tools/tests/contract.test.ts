@@ -3,7 +3,6 @@ import { PARADOC_SCHEMA_URL } from '@paradoc/core'
 import {
 	configForExecution,
 	createToolExecutionContext,
-	buildArtifactItemUrl,
 	executeFill,
 	executeGetArtifact,
 	executeGetFillState,
@@ -20,6 +19,7 @@ import {
 	truncateContent,
 	validateFetchUrl,
 } from '../src'
+import { registryFetch } from './helpers/registry'
 
 const formArtifact = {
 	kind: 'form' as const,
@@ -53,6 +53,7 @@ const documentArtifact = {
 	$schema: PARADOC_SCHEMA_URL,
 	kind: 'document' as const,
 	name: 'notice',
+	version: '1.0.0',
 	layers: { text: { kind: 'inline' as const, mimeType: 'text/plain', text: 'A notice document.' } },
 	defaultLayer: 'text',
 }
@@ -210,12 +211,7 @@ describe('shared AI tool contract', () => {
 	})
 
 	it('applies default registry precedence, indexed membership, and request caching', async () => {
-		const fetch = vi.fn(async (input: string | URL) => {
-			const url = String(input)
-			if (url.endsWith('/registry.json')) return Response.json({ items: [{ name: 'notice', path: 'notice.json' }] })
-			if (url.endsWith('/notice.json')) return Response.json(documentArtifact)
-			return new Response('missing', { status: 404 })
-		})
+		const fetch = vi.fn(registryFetch('https://registry.example', [{ artifact: documentArtifact }]))
 		const context = createToolExecutionContext()
 		const result = await executeGetArtifact({ artifact_name: 'notice' }, { defaultRegistryUrl: 'https://registry.example', fetch, context })
 		expect(result.artifact_name).toBe('notice')
@@ -226,12 +222,7 @@ describe('shared AI tool contract', () => {
 	})
 
 	it('resolves a registry source without registry_url through the default registry', async () => {
-		const fetch = vi.fn(async (input: string | URL) => {
-			const url = String(input)
-			if (url === 'https://registry.example/registry.json') return Response.json({ items: [{ name: 'notice', path: 'notice.json' }] })
-			if (url === 'https://registry.example/notice.json') return Response.json(documentArtifact)
-			return new Response('missing', { status: 404 })
-		})
+		const fetch = vi.fn(registryFetch('https://registry.example', [{ artifact: documentArtifact }]))
 		const result = await executeRender({ source: 'registry', artifact_name: 'notice' }, { defaultRegistryUrl: 'https://registry.example', fetch })
 		expect(result).toMatchObject({ success: true, artifact_kind: 'document', content: 'A notice document.' })
 		expect(fetch).toHaveBeenCalledWith('https://registry.example/registry.json', expect.anything())
@@ -270,16 +261,15 @@ describe('shared AI tool contract', () => {
 	})
 
 	it('uses the final registry index location for indexed artifact reads', async () => {
+		const cdn = registryFetch('https://cdn.example/catalog', [{ artifact: documentArtifact }])
 		const fetch = vi.fn(async (input: string) => {
 			if (input === 'https://registry.example/registry.json') return new Response(null, { status: 302, headers: { location: 'https://cdn.example/catalog/registry.json' } })
-			if (input === 'https://cdn.example/catalog/registry.json') return Response.json({ items: [{ name: 'notice', path: 'notice.json' }] })
-			if (input === 'https://cdn.example/catalog/notice.json') return Response.json(documentArtifact)
-			return new Response('missing', { status: 404 })
+			return cdn(input)
 		})
 		const result = await executeGetArtifact({ registry_url: 'https://registry.example', artifact_name: 'notice' }, { fetch })
 		expect(result.error).toBeUndefined()
 		expect(result.artifact).toEqual(documentArtifact)
-		expect(fetch).toHaveBeenCalledWith('https://cdn.example/catalog/notice.json', expect.anything())
+		expect(fetch).toHaveBeenCalledWith('https://cdn.example/catalog/notice/1.0.0/notice.json', expect.anything())
 	})
 
 	it('enforces redirect and address policy without claiming DNS rebinding protection', async () => {
@@ -291,11 +281,6 @@ describe('shared AI tool contract', () => {
 		})
 		await expect(safeFetch('https://registry.example/start', 1024, fetch)).rejects.toThrow(/private|local|https/i)
 		expect(fetch).toHaveBeenCalledTimes(1)
-	})
-
-	it('keeps indexed artifact paths inside the configured registry root', () => {
-		expect(() => buildArtifactItemUrl('https://registry.example/catalog', '../outside', 'notice', 'notice.json')).toThrow(/inside the registry root/i)
-		expect(buildArtifactItemUrl('https://registry.example/catalog', 'artifacts', 'notice', 'notice.json')).toBe('https://registry.example/catalog/artifacts/notice.json')
 	})
 
 	it('bounds model-facing render presentation', async () => {

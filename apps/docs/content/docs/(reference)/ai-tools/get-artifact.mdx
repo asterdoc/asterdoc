@@ -5,7 +5,7 @@ ogTitle: get_artifact — Paradoc AI Tools
 ogDescription: Fetch an artifact and its human and agent instructions from a Paradoc registry by name
 ---
 
-Retrieves one artifact from a registry. The tool reads `registry.json`, checks the artifact is listed, and fetches it. By default it also returns the artifact's `instructions` and `agentInstructions`.
+Retrieves one artifact from a registry. The tool reads `registry.json`, finds the edition and version you asked for, and fetches that file. Without an edition or a version, it uses the current edition and the latest version, as the registry states them. It refuses a file whose SHA-256 differs from the one in `registry.json`. By default it also returns the artifact's `instructions` and `agentInstructions`.
 
 ## Input
 
@@ -13,6 +13,8 @@ Retrieves one artifact from a registry. The tool reads `registry.json`, checks t
 |-------|------|----------|-------------|
 | `registry_url` | `string` (URL) | No | Registry base URL. Falls back to `defaultRegistryUrl` in the [config](/ai-tools/api#configuration). |
 | `artifact_name` | `string` | Yes | Artifact name within the registry |
+| `edition` | `string` | No | Edition key, such as `2024-03`. Omit it, or pass `current`, for the current edition. Only for an artifact that has editions. |
+| `version` | `string` | No | Version, such as `1.2.0`. Omit it, or pass `latest`, for the latest version of the edition. |
 | `include_instructions` | `boolean` | No | Return the artifact's `instructions`. Default `true`. |
 | `include_agent_instructions` | `boolean` | No | Return the artifact's `agentInstructions`. Default `true`. |
 
@@ -22,6 +24,9 @@ Retrieves one artifact from a registry. The tool reads `registry.json`, checks t
 |-------|------|-------------|
 | `artifact` | `object` | The artifact JSON (form, document, bundle, or checklist) |
 | `artifact_name` | `string` | The requested name |
+| `edition` | `string` | Key of the edition that was read. Absent for an artifact that has no editions. |
+| `version` | `string` | The version that was read |
+| `releases` | `object` | Every edition and version the registry lists for this artifact, in the same fields as a [`get_registry`](/ai-tools/get-registry) item |
 | `base_url` | `string` | The artifact's directory. Pass it as `base_url` in an [artifact source](/ai-tools#sources) so file-backed layers resolve. |
 | `instructions` | `InstructionContent` | The artifact's instructions, when present and requested |
 | `agent_instructions` | `InstructionContent` | The artifact's agent instructions, when present and requested |
@@ -48,6 +53,17 @@ const result = await executeGetArtifact({
 })
 ```
 
+Name one edition and version:
+
+```typescript
+const result = await executeGetArtifact({
+  registry_url: "https://forms.example.com",
+  artifact_name: "w-9",
+  edition: "2024-03",
+  version: "1.0.0",
+})
+```
+
 ## Example response
 
 The artifact is shortened here. The real registry response also includes file-backed `instructions` and `agent_instructions` entries.
@@ -62,6 +78,8 @@ The artifact is shortened here. The real registry response also includes file-ba
     "fields": { "petName": { "type": "text", "label": "Pet name", "required": true } }
   },
   "artifact_name": "pet-addendum",
-  "base_url": "https://public.paradoc.dev/pet-addendum"
+  "version": "1.0.0",
+  "releases": { "latest_version": "1.0.0", "versions": ["1.0.0"] },
+  "base_url": "https://public.paradoc.dev/pet-addendum/1.0.0"
 }
 ```

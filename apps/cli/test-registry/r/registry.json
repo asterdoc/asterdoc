@@ -1,0 +1,181 @@
+{
+  "$schema": "https://schema.paradoc.dev/registry.json",
+  "name": "acme",
+  "homepage": "https://acme-realestate.example.com",
+  "description": "ACME Real Estate - Official artifact registry for property management forms and documents",
+  "items": [
+    {
+      "name": "commercial-lease",
+      "kind": "form",
+      "title": "Commercial Lease Agreement",
+      "description": "Commercial property lease agreement for business tenants",
+      "latestVersion": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "path": "commercial-lease/1.0.0/commercial-lease.json",
+          "sha256": "717762fd1467a9972e345657a83ec8899a5613f078ae0121beaff0a1f55aa2d2"
+        }
+      },
+      "layers": [
+        "default",
+        "legal"
+      ],
+      "tags": [
+        "lease",
+        "commercial",
+        "business",
+        "agreement"
+      ]
+    },
+    {
+      "name": "lease-addendum",
+      "kind": "form",
+      "title": "Lease Addendum",
+      "description": "Addendum to modify or supplement an existing lease agreement",
+      "latestVersion": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "path": "lease-addendum/1.0.0/lease-addendum.json",
+          "sha256": "ddcac2ae336e13cec05802b85a489933f915432bc900f4f994269b451ccd5581"
+        }
+      },
+      "layers": [
+        "default"
+      ],
+      "tags": [
+        "lease",
+        "addendum",
+        "modification"
+      ]
+    },
+    {
+      "name": "pet-policy",
+      "kind": "form",
+      "title": "Pet Policy",
+      "description": "Test fixture: Pet Policy",
+      "latestVersion": "1.1.0",
+      "versions": {
+        "1.0.0": {
+          "path": "pet-policy/1.0.0/pet-policy.json",
+          "sha256": "5424a16e747c012846c952c9e467984a4a6406a47bccd1426d69cc7aba1e8235"
+        },
+        "1.1.0": {
+          "path": "pet-policy/1.1.0/pet-policy.json",
+          "sha256": "7287f3da697b42322e690aa7650d755f455f3bb70815d3619295459151da1409"
+        },
+        "2.0.0-beta.1": {
+          "path": "pet-policy/2.0.0-beta.1/pet-policy.json",
+          "sha256": "a0ff62eb654a89a9df664af767bf847623ae329c338b46fbbd0e7ee2c0e789aa"
+        }
+      }
+    },
+    {
+      "name": "property-inspection",
+      "kind": "checklist",
+      "title": "Property Inspection Checklist",
+      "description": "Comprehensive move-in/move-out property condition inspection checklist",
+      "latestVersion": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "path": "property-inspection/1.0.0/property-inspection.json",
+          "sha256": "939e27ccff73f0d5eb40b3652f754e8faa546f21bb5bcd6ec1954e55ba6f344e"
+        }
+      },
+      "layers": [
+        "default"
+      ],
+      "tags": [
+        "inspection",
+        "checklist",
+        "property",
+        "condition"
+      ]
+    },
+    {
+      "name": "residential-lease",
+      "kind": "form",
+      "title": "Residential Lease Agreement",
+      "description": "Standard residential property lease agreement between landlord and tenant",
+      "latestVersion": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "path": "residential-lease/1.0.0/residential-lease.json",
+          "sha256": "4b3d27aa08a87315063e803637798377b12100aa52e600c332e480070ec1dae7"
+        }
+      },
+      "layers": [
+        "default",
+        "legal"
+      ],
+      "tags": [
+        "lease",
+        "residential",
+        "rental",
+        "agreement"
+      ]
+    },
+    {
+      "name": "w4",
+      "kind": "form",
+      "title": "Employee's Withholding Certificate",
+      "description": "Test fixture: Employee's Withholding Certificate",
+      "currentEdition": "2024",
+      "editions": {
+        "2024": {
+          "label": "2024",
+          "date": "2024",
+          "latestVersion": "1.1.0",
+          "versions": {
+            "1.0.0": {
+              "path": "w4/2024/1.0.0/w4.json",
+              "sha256": "3a06ee5fe608622cf5199f913557c47a140a41e6820f053efedd4df46f56eb02"
+            },
+            "1.1.0": {
+              "path": "w4/2024/1.1.0/w4.json",
+              "sha256": "000989dad765ffd4d6058bd2761f376fa656f6ca98a8f0adeeed30abf971d26f"
+            }
+          }
+        },
+        "2025": {
+          "label": "2025",
+          "date": "2025",
+          "latestVersion": "1.0.0",
+          "versions": {
+            "1.0.0": {
+              "path": "w4/2025/1.0.0/w4.json",
+              "sha256": "3e0b404328b077298fbcfd0d3559311528769cf6a49351e71d171a11925fb851"
+            }
+          }
+        }
+      },
+      "tags": [
+        "irs",
+        "tax",
+        "payroll"
+      ]
+    },
+    {
+      "name": "w9",
+      "kind": "form",
+      "title": "Request for Taxpayer Identification Number and Certification",
+      "description": "IRS Form W-9 - Request for Taxpayer Identification Number and Certification (Rev. October 2018)",
+      "latestVersion": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "path": "w9/1.0.0/w9.json",
+          "sha256": "090388a8c2e7e9ce49f844125b9a3f06207b61f26013f2859e35f2039bee4f14"
+        }
+      },
+      "layers": [
+        "pdf"
+      ],
+      "tags": [
+        "irs",
+        "tax",
+        "w9",
+        "tin",
+        "government"
+      ]
+    }
+  ]
+}

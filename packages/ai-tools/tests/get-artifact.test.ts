@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { PARADOC_SCHEMA_URL } from '@paradoc/core'
 import { executeGetArtifact } from '../src/tools/get-artifact'
+import { registryFetch } from './helpers/registry'
 
 describe('executeGetArtifact instruction resolution', () => {
   it('returns inline instructions and inline agent instructions', async () => {
@@ -8,6 +9,7 @@ describe('executeGetArtifact instruction resolution', () => {
       $schema: PARADOC_SCHEMA_URL,
       kind: 'form',
       name: 'pet-addendum',
+      version: '1.0.0',
       instructions: {
         kind: 'inline',
         text: 'Fill out required pet details only.',
@@ -17,14 +19,8 @@ describe('executeGetArtifact instruction resolution', () => {
         text: 'Ask one question at a time.',
       },
     }
-    const registryIndex = { items: [{ name: 'pet-addendum' }] }
 
-    const mockFetch = vi.fn().mockImplementation((url: string) => {
-      if (url.endsWith('/registry.json')) {
-        return Promise.resolve(new Response(JSON.stringify(registryIndex)))
-      }
-      return Promise.resolve(new Response(JSON.stringify(artifact)))
-    })
+    const mockFetch = vi.fn(registryFetch('https://public.paradoc.dev', [{ artifact }]))
 
     const result = await executeGetArtifact(
       { registry_url: 'https://public.paradoc.dev', artifact_name: 'pet-addendum' },
@@ -43,6 +39,7 @@ describe('executeGetArtifact instruction resolution', () => {
       $schema: PARADOC_SCHEMA_URL,
       kind: 'form',
       name: 'pet-addendum',
+      version: '1.0.0',
       instructions: {
         kind: 'file',
         path: 'instructions.md',
@@ -54,23 +51,11 @@ describe('executeGetArtifact instruction resolution', () => {
         mimeType: 'text/markdown',
       },
     }
-    const registryIndex = { items: [{ name: 'pet-addendum' }] }
 
-    const mockFetch = vi.fn().mockImplementation((url: string) => {
-      if (url.endsWith('/registry.json')) {
-        return Promise.resolve(new Response(JSON.stringify(registryIndex)))
-      }
-      if (url.endsWith('/pet-addendum.json')) {
-        return Promise.resolve(new Response(JSON.stringify(artifact)))
-      }
-      if (url.endsWith('/instructions.md')) {
-        return Promise.resolve(new Response('# Instructions'))
-      }
-      if (url.endsWith('/agent-instructions.md')) {
-        return Promise.resolve(new Response('# Agent Instructions'))
-      }
-      return Promise.resolve(new Response('Not found', { status: 404 }))
-    })
+    const mockFetch = vi.fn(registryFetch('https://public.paradoc.dev', [{ artifact }], {
+      'pet-addendum/1.0.0/instructions.md': '# Instructions',
+      'pet-addendum/1.0.0/agent-instructions.md': '# Agent Instructions',
+    }))
 
     const result = await executeGetArtifact(
       { registry_url: 'https://public.paradoc.dev', artifact_name: 'pet-addendum' },
@@ -91,23 +76,15 @@ describe('executeGetArtifact instruction resolution', () => {
       $schema: PARADOC_SCHEMA_URL,
       kind: 'form',
       name: 'pet-addendum',
+      version: '1.0.0',
       instructions: {
         kind: 'file',
         path: 'instructions.md',
         mimeType: 'text/markdown',
       },
     }
-    const registryIndex = { items: [{ name: 'pet-addendum' }] }
 
-    const mockFetch = vi.fn().mockImplementation((url: string) => {
-      if (url.endsWith('/registry.json')) {
-        return Promise.resolve(new Response(JSON.stringify(registryIndex)))
-      }
-      if (url.endsWith('/pet-addendum.json')) {
-        return Promise.resolve(new Response(JSON.stringify(artifact)))
-      }
-      return Promise.resolve(new Response('Not found', { status: 404 }))
-    })
+    const mockFetch = vi.fn(registryFetch('https://public.paradoc.dev', [{ artifact }]))
 
     const result = await executeGetArtifact(
       { registry_url: 'https://public.paradoc.dev', artifact_name: 'pet-addendum' },

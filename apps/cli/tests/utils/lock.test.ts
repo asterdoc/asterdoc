@@ -238,6 +238,19 @@ describe('LockFileManager', () => {
       expect(locked.layers).toEqual({})
     })
 
+    it('records the edition key beside the version, and omits it for an artifact with no editions', async () => {
+      const base = { kind: 'form' as const, version: '1.1.0', resolved: 'https://example.com/w-9/2024-03/1.1.0/w-9.json', content: '{}', output: 'json' as const, path: 'artifacts/@test/w-9.json' }
+      expect(manager.createLockedArtifact({ ...base, edition: '2024-03' })).toMatchObject({ edition: '2024-03', version: '1.1.0' })
+      expect(manager.createLockedArtifact(base)).not.toHaveProperty('edition')
+
+      await manager.init(tempDir)
+      manager.setArtifact('@test/w-9', manager.createLockedArtifact({ ...base, edition: '2024-03' }))
+      await manager.save()
+      const reloaded = new LockFileManager()
+      await reloaded.init(tempDir)
+      expect(reloaded.getArtifact('@test/w-9')?.edition).toBe('2024-03')
+    })
+
     it('creates locked artifact with layers', () => {
       const content = JSON.stringify({ name: 'test' })
       const layerContent = 'layer content'

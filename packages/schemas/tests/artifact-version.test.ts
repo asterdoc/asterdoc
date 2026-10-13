@@ -5,9 +5,9 @@ import {
 	ARTIFACT_VERSION_PATTERN,
 	ArtifactSchema,
 	FormSchema,
+	REGISTRY_VERSION_PATTERN,
 	RegistryIndexSchema,
 	RegistryItemSchema,
-	RegistryItemSummarySchema,
 	SCHEMA_VERSION,
 } from '../src/zod';
 
@@ -16,7 +16,6 @@ const rejected = ['1.0.0evil', 'x1.2.3y', '1.0.0.1', '1.0.0 ', ' 1.0.0', '1.0.0\
 
 const versionSchemas = {
 	ArtifactSchema: ArtifactSchema.shape.version,
-	RegistryItemSummarySchema: RegistryItemSummarySchema.shape.version,
 	RegistryItemSchema: RegistryItemSchema.shape.version,
 };
 
@@ -44,22 +43,38 @@ describe('artifact version', () => {
 	});
 });
 
-describe('registry index', () => {
-	const index = (version: string) => ({ name: 'my-registry', items: [{ name: 'foo', kind: 'form', version }] });
-
-	it('accepts an item with a SemVer version', () => {
-		expect(RegistryIndexSchema.safeParse(index('1.0.0-beta')).success).toBe(true);
+describe('registry manifest', () => {
+	const manifest = (version: string) => ({
+		name: 'my-registry',
+		items: [{ name: 'foo', kind: 'form', latestVersion: '1.0.0', versions: { '1.0.0': { path: 'foo.json', sha256: 'a'.repeat(64) }, [version]: { path: 'foo-2.json', sha256: 'b'.repeat(64) } } }],
 	});
 
-	it('rejects an item whose version has trailing text', () => {
-		const result = RegistryIndexSchema.safeParse(index('1.0.0evil'));
+	it('accepts an item with a SemVer version', () => {
+		expect(RegistryIndexSchema.safeParse(manifest('1.0.0-beta')).success).toBe(true);
+	});
+
+	it.each(['1.0.0evil', '1.0.0+build.1'])('rejects an item with the version %s', (version) => {
+		const result = RegistryIndexSchema.safeParse(manifest(version));
 		expect(result.success).toBe(false);
-		expect(result.error?.issues[0]?.path).toEqual(['items', 0, 'version']);
+		expect(result.error?.issues[0]?.path).toEqual(['items', 0, 'versions', version]);
+	});
+});
+
+describe('published registry.json', () => {
+	it('carries the registry version pattern, which refuses build metadata', () => {
+		const text = readFileSync(join(__dirname, '..', 'schemas', 'registry.json'), 'utf-8');
+		const patterns = [...text.matchAll(/"pattern": "(\^\(0\|\[1-9\][^"]*)"/g)].map((m) => JSON.parse(`"${m[1]}"`));
+		// latestVersion and the keys of versions, on the item and in an edition.
+		expect(patterns).toHaveLength(4);
+		for (const pattern of patterns) expect(pattern).toBe(REGISTRY_VERSION_PATTERN.source);
+		const pattern = new RegExp(patterns[0] as string);
+		expect(pattern.test('1.0.0-beta')).toBe(true);
+		expect(pattern.test('1.0.0+build.1')).toBe(false);
+		expect(pattern.test('1.0.0evil')).toBe(false);
 	});
 });
 
 const publishedFiles = [
-	'registry.json',
 	'registry-item.json',
 	`${SCHEMA_VERSION}.json`,
 	...['form', 'document', 'bundle', 'checklist'].map((kind) => `${SCHEMA_VERSION}/${kind}.json`),

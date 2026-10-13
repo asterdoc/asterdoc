@@ -221,7 +221,7 @@ describe('AI SDK 7 Paradoc tools', () => {
 			await new Promise<void>((resolve) => {
 				init?.signal?.addEventListener('abort', () => resolve(), { once: true })
 			})
-			return new Response(JSON.stringify({ items: [] }), {
+			return new Response(JSON.stringify({ name: 'registry', items: [] }), {
 				status: 200,
 				headers: { 'content-type': 'application/json' },
 			})
@@ -255,7 +255,7 @@ describe('AI SDK 7 Paradoc tools', () => {
 			await new Promise<void>((resolve) => {
 				init?.signal?.addEventListener('abort', () => resolve(), { once: true })
 			})
-			return new Response(JSON.stringify({ items: [] }), {
+			return new Response(JSON.stringify({ name: 'registry', items: [] }), {
 				status: 200,
 				headers: { 'content-type': 'application/json' },
 			})
@@ -285,7 +285,7 @@ describe('AI SDK 7 Paradoc tools', () => {
 			defaultRegistryUrl: 'https://registry.example',
 			fetch: async () => {
 				calls += 1
-				return Response.json({ items: [] })
+				return Response.json({ name: 'registry', items: [] })
 			},
 		})
 

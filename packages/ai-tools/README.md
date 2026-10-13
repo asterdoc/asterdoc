@@ -109,7 +109,7 @@ The render tool supports three input modes via discriminated union:
 |------|--------|------------|
 | `source: 'artifact'` | `artifact`, `base_url?` | Direct, no fetch needed |
 | `source: 'url'` | `url` | Fetches artifact JSON and derives its layer base URL |
-| `source: 'registry'` | `registry_url`, `artifact_name` | Fetches `registry.json`, verifies membership, then retrieves the artifact |
+| `source: 'registry'` | `registry_url`, `artifact_name`, `edition?`, `version?` | Fetches `registry.json`, finds the edition and version (by default the current edition and the latest version), then retrieves that file and checks its SHA-256 |
 
 ### Configuration
 
@@ -130,8 +130,8 @@ The configured default is used only when an operation omits `registry_url`; an e
 
 | Tool | Input | Output | Network? |
 |------|-------|--------|----------|
-| `get_registry` | `{registry_url?}` | `{registry_url, items[]}` | Yes |
-| `get_artifact` | `{registry_url?, artifact_name}` | `{artifact, artifact_name, base_url, instructions?, agent_instructions?}` | Yes |
+| `get_registry` | `{registry_url?}` | `{registry_url, name, description?, items[]}`, each item with its editions and versions | Yes |
+| `get_artifact` | `{registry_url?, artifact_name, edition?, version?}` | `{artifact, artifact_name, edition?, version, releases, base_url, instructions?, agent_instructions?}` | Yes |
 | `inspect_artifact` | A source plus selectable sections | Bounded artifact projection | Source dependent |
 | `validate_artifact` | A source plus validation options | `{valid, artifact_kind?, issues?, warnings?}` | Source dependent |
 | `validate_input` | A source plus one field/party/annex/item value | Typed normalized value or structured errors | Source dependent |
