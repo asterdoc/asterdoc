@@ -1,5 +1,5 @@
-// AUTO-GENERATED from artifacts/tax/1099-misc/design/ — do not edit by hand.
-// Regenerate via: node artifacts/scripts/sync-essentials.mjs --only tax/1099-misc
+// Generated from Paradoc's forms library (Fab release d1177485-b5d3-4574-94f8-cfeb122b816b). Do not edit by hand.
+// Regenerate with: pnpm essentials:sync
 
 import { p } from "@paradoc/core";
 import { createMemoryResolver } from "@paradoc/resolvers/memory";
@@ -1282,7 +1282,7 @@ const resolver = createMemoryResolver({ contents });
  * U.S. federal information return filed by a payer to report miscellaneous payments — rents, royalties, other income, fishing/farming proceeds, medical and health-care payments, attorney gross proceeds, NQDC deferrals, and similar — made to a recipient during a calendar year. Copy A goes to the IRS; Copy 1 to the state tax department; Copies B and 2 to the recipient.
  */
 export const f1099MISC = Object.assign(p.form(schema, { resolver }), {
-  /** The raw form spec, exactly as authored in artifacts/tax/1099-misc/. */
+  /** The raw form spec, exactly as released. */
   spec: schema,
 });
 

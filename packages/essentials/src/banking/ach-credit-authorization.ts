@@ -1,5 +1,5 @@
-// AUTO-GENERATED from artifacts/banking/ach-credit-authorization/design/ — do not edit by hand.
-// Regenerate via: node artifacts/scripts/sync-essentials.mjs --only banking/ach-credit-authorization
+// Generated from Paradoc's forms library (Fab release e2800547-98fb-4237-a584-e10a1b378fea). Do not edit by hand.
+// Regenerate with: pnpm essentials:sync
 
 import { p } from "@paradoc/core";
 import { createMemoryResolver } from "@paradoc/resolvers/memory";
@@ -862,7 +862,7 @@ const resolver = createMemoryResolver({ contents });
  * Authorization by which a payee (consumer or organization) authorizes a named originator to initiate ACH credit entries to a deposit account at a named financial institution. Supports one-time and recurring credits, fixed or variable amounts, and optional B2B remittance / addenda fields. Used for vendor / accounts-payable, refunds, dividends, insurance claim payouts, government benefits, and royalty disbursements; governed by NACHA Operating Rules.
  */
 export const achCreditAuthorization = Object.assign(p.form(schema, { resolver }), {
-  /** The raw form spec, exactly as authored in artifacts/banking/ach-credit-authorization/. */
+  /** The raw form spec, exactly as released. */
   spec: schema,
 });
 

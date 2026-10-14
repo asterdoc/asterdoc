@@ -1,5 +1,5 @@
-// AUTO-GENERATED from artifacts/tax/1099-nec/design/ — do not edit by hand.
-// Regenerate via: node artifacts/scripts/sync-essentials.mjs --only tax/1099-nec
+// Generated from Paradoc's forms library (Fab release 6928a7bd-bc91-4d4f-ab6e-ffb483fcfb0a). Do not edit by hand.
+// Regenerate with: pnpm essentials:sync
 
 import { p } from "@paradoc/core";
 import { createMemoryResolver } from "@paradoc/resolvers/memory";
@@ -1153,7 +1153,7 @@ const resolver = createMemoryResolver({ contents });
  * An IRS information return filed by a payer to report nonemployee compensation, excess golden parachute payments, and any federal or state tax withheld for a recipient over a calendar year. Copy A is filed with the IRS, Copy 1 with the state tax department, and Copies B and 2 are furnished to the recipient.
  */
 export const f1099NEC = Object.assign(p.form(schema, { resolver }), {
-  /** The raw form spec, exactly as authored in artifacts/tax/1099-nec/. */
+  /** The raw form spec, exactly as released. */
   spec: schema,
 });
 

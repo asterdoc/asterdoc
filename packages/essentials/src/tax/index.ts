@@ -1,4 +1,5 @@
-// AUTO-GENERATED — do not edit by hand.
+// Generated from Paradoc's forms library. Do not edit by hand.
+// Regenerate with: pnpm essentials:sync
 
 export { w9 } from "./w-9.js";
 export { f1099NEC } from "./1099-nec.js";

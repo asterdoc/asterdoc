@@ -1,4 +1,5 @@
-// AUTO-GENERATED — do not edit by hand.
+// Generated from Paradoc's forms library. Do not edit by hand.
+// Regenerate with: pnpm essentials:sync
 
 export { achBankAccountInfo } from "./ach-bank-account-info.js";
 export { achChangeForm } from "./ach-change-form.js";

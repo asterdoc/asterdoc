@@ -1,5 +1,5 @@
-// AUTO-GENERATED from artifacts/tax/4506-t/design/ — do not edit by hand.
-// Regenerate via: node artifacts/scripts/sync-essentials.mjs --only tax/4506-t
+// Generated from Paradoc's forms library (Fab release a4feccdc-ed09-453c-bd42-1dbf34705cbd). Do not edit by hand.
+// Regenerate with: pnpm essentials:sync
 
 import { p } from "@paradoc/core";
 import { createMemoryResolver } from "@paradoc/resolvers/memory";
@@ -532,7 +532,7 @@ const resolver = createMemoryResolver({ contents });
  * Request transcripts of previously filed tax returns or related information returns from the IRS. Filed by taxpayers (or authorized representatives) to obtain Return Transcripts, Account Transcripts, Records of Account, Verification of Non-filing, or Wage & Income transcripts.
  */
 export const f4506T = Object.assign(p.form(schema, { resolver }), {
-  /** The raw form spec, exactly as authored in artifacts/tax/4506-t/. */
+  /** The raw form spec, exactly as released. */
   spec: schema,
 });
 
