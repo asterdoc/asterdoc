@@ -150,7 +150,7 @@ describe("QRCode", () => {
       // This file owns the Chromium adapter's shared browser whenever it ran
       // the adapter half, and nothing else in this package's suite does.
       await closeChromium();
-    });
+    }, 60_000);
 
     it("decodes to the encoded URL on the default engine", async () => {
       const { bytes } = await renderPdf(documentWithCode(ENCODED_URL));

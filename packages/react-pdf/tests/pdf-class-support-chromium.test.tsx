@@ -90,11 +90,11 @@ describe.skipIf(skipped)("the re-probed classes against the Chromium adapter", (
           "PARADOC_SKIP_CHROMIUM_TESTS=1 to opt out of this file deliberately."
       );
     }
-  });
+  }, 60_000);
 
   afterAll(async () => {
     await closeChromium();
-  });
+  }, 60_000);
 
   it.each(["underline", "line-through"] as const)("%s changes the PDF, and is admitted", async (name) => {
     const [base, probed] = await Promise.all([bytes(inline("")), bytes(inline(name))]);

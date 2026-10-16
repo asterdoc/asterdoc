@@ -121,7 +121,7 @@ describe.skipIf(skipped)("page furniture on the Chromium adapter", () => {
 
   afterAll(async () => {
     await closeChromium();
-  });
+  }, 60_000);
 
   it("carries the header, the numbered footer and the stamp on every page", () => {
     expect(furnished.length).toBeGreaterThan(1);

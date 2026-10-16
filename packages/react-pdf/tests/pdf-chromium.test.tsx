@@ -75,7 +75,7 @@ describe.skipIf(skipped)("the Chromium adapter", () => {
       );
     }
     logo = await proposalLogoImage();
-  });
+  }, 60_000);
 
   afterAll(async () => {
     // This file owns the browser it started for its own suite. `isolate: true`
@@ -83,7 +83,7 @@ describe.skipIf(skipped)("the Chromium adapter", () => {
     // `pdf-class-support-chromium.test.tsx`'s own `shared` browser and its own
     // `closeChromium` call are independent of this one.
     await closeChromium();
-  });
+  }, 60_000);
 
   it("renders the overflow proposal on the page the preview fixes", async () => {
     const { bytes } = await renderPdf(<ProposalDocument data={overflowProposalData} />, {
