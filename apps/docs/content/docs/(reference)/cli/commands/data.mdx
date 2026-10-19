@@ -107,7 +107,7 @@ A field with a `default` gets that value. Otherwise each field gets a placeholde
 
 When the form declares annexes, the template has an `annexes` block with each annex set to `null`. The template has no `parties` block.
 
-The placeholders are a starting point, not valid data. Replace each one before you run [`data validate`](#data-validate). An empty date or a `null` number fails validation, but an empty string in a text field passes, even when the field is required, so a missed placeholder is not always reported.
+The placeholders are a starting point, not valid data. Replace each one before you run [`data validate`](#data-validate). An empty string, an empty date, or a `null` number fails a required field. Object placeholders (`address`, `phone`, `person`, `organization`, `identification`), zero `money`, and `PT0S` still pass, so replace those by hand.
 
 ---
 

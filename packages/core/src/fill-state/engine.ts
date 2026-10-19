@@ -53,9 +53,9 @@ function statusOf(visible: boolean, required: boolean): FillItemStatus {
 // State Computation (runtime, from form + current data)
 // ============================================================================
 
-/** Check if a value counts as "filled" */
+/** Check if a value counts as "filled". An empty string is unfilled, matching `isEmpty`. */
 function isFilled(value: unknown): boolean {
-	return value !== null && value !== undefined
+	return value !== null && value !== undefined && value !== ''
 }
 
 function isFieldFilled(field: FormField, value: unknown): boolean {
