@@ -88,7 +88,7 @@ const artifact = JSON.parse(await readFile('pet-addendum.json', 'utf8'))
 const source = {
   source: 'artifact' as const,
   artifact,
-  base_url: 'https://public-dev.paradoc.dev/pet-addendum/',
+  base_url: 'https://public.paradoc.dev/pet-addendum/1.0.0',
 }
 
 // 1. Start the draft with what the user gave.
