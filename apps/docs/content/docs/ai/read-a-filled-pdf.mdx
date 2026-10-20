@@ -25,7 +25,7 @@ import {
   type ParadocToolsConfig,
 } from "@paradoc/ai-tools"
 
-const config: ParadocToolsConfig = { defaultRegistryUrl: "https://public.paradoc.dev" }
+const config: ParadocToolsConfig = { defaultRegistryUrl: "https://public.paradoc.dev" } // a demo registry
 const source = { source: "registry", artifact_name: "pet-addendum" } as const
 
 export async function draftFromPdf(pdf: Uint8Array) {

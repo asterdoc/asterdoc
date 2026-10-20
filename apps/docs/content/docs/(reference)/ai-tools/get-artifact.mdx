@@ -48,7 +48,7 @@ Retrieves one artifact from a registry. The tool reads `registry.json`, finds th
 import { executeGetArtifact } from "@paradoc/ai-tools"
 
 const result = await executeGetArtifact({
-  registry_url: "https://public.paradoc.dev",
+  registry_url: "https://registry.acme.com",
   artifact_name: "pet-addendum",
 })
 ```
@@ -80,6 +80,6 @@ The artifact is shortened here. The real registry response also includes file-ba
   "artifact_name": "pet-addendum",
   "version": "1.0.0",
   "releases": { "latest_version": "1.0.0", "versions": ["1.0.0"] },
-  "base_url": "https://public.paradoc.dev/pet-addendum/1.0.0"
+  "base_url": "https://registry.acme.com/pet-addendum/1.0.0"
 }
 ```

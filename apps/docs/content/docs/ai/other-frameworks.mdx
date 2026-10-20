@@ -20,7 +20,7 @@ Each tool has an execute function, such as `executeFill` for `fill`. It takes th
 ```typescript
 import { executeFill, executeGetFillState, executeRender } from "@paradoc/ai-tools"
 
-const config = { defaultRegistryUrl: "https://public.paradoc.dev" }
+const config = { defaultRegistryUrl: "https://public.paradoc.dev" } // a demo registry
 const source = { source: "registry", artifact_name: "pet-addendum" } as const
 
 const draft = await executeFill(

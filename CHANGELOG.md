@@ -4,13 +4,53 @@ All notable changes to Paradoc. Packages are versioned in lockstep.
 
 ## [Unreleased]
 
-### Breaking
+## [0.8.0] - 2026-10-19
 
-- `paradoc check` takes `tsx` from your project. The CLI no longer installs it, which halves the install and removes the `esbuild` install-scripts warning. Run `npm install -D tsx` in a project that runs `check`. Without it, the command stops and prints the install line.
+Paradoc 0.8 gives registries editions and versions. A registry manifest now lists every release of an artifact with its checksum, and the CLI and AI tools can ask for one edition or version.
+
+### Highlights
+
+- `paradoc add @ns/name[/edition][@version]` installs one release, checks its SHA-256, and records the edition and version in `.paradoc/lock.json`.
+- `get_artifact` and registry sources in the AI tools take `edition` and `version`, and the output names the release that was read.
+- `paradoc registry compile` builds a registry from `registry.config.json`: one manifest and a folder for each release.
+
+### Breaking changes
+
+#### Registries
+
+- The registry manifest (`registry.json`) lists `currentEdition` and `editions`, or `latestVersion` and `versions`, for each item. `artifactsPath` and the item `path` are removed. Paradoc 0.8 cannot read an older manifest, and 0.7 cannot read a new one.
+
+#### CLI
+
+- `paradoc registry make` writes `registry.config.json` and no longer takes `--artifacts-path`. `registry catalog add`, `catalog remove` and `compile` read that file: `-r, --registry` is now `-c, --config`, and `catalog add` has no `--yes`.
+- `paradoc check` takes `tsx` from your project, which halves the CLI install. Without it, the command stops and prints the install line.
+
+#### AI tools
+
+- `fetchRegistryItem`, `fetchRegistryItemResponse` and `buildArtifactItemUrl` are removed.
+- The `get_registry` output has no `artifacts_path` or item `path`. Each item lists its editions and versions.
+
+### Upgrading from 0.7
+
+1. If you host a registry, run `paradoc registry make`, add your artifact files to `registry.config.json`, and run `paradoc registry compile`. Host the output in place of the old `registry.json` and `r/` folder, and upgrade its clients to 0.8 at the same time.
+2. Replace calls to the removed AI tools registry functions with `fetchRegistryArtifact`.
+3. Run `npm install -D tsx` in a project that runs `paradoc check`.
 
 ### Other changes
 
+#### Schemas
+
+- New exports resolve a release from a manifest (`resolveRegistryRelease`, `listRegistryReleases`), parse and format registry references, and compare versions by SemVer precedence.
+- A lock file entry can record an `edition`.
+
+#### Core
+
 - An empty string no longer satisfies a required field or annex, so fill state keeps it open and validation reports it as missing.
+
+#### CLI
+
+- `paradoc search` shows every edition and version of an artifact.
+- A reference to an edition or version the registry does not list fails and names the ones it does list.
 
 ## [0.7.1] - 2026-10-08
 

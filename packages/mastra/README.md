@@ -28,7 +28,7 @@ const agent = new Agent({
   instructions: "Use the Paradoc tools to inspect and complete documents.",
   model: "openai/gpt-4o-mini",
   tools: paradocTools({
-    defaultRegistryUrl: "https://public.paradoc.dev",
+    defaultRegistryUrl: "https://registry.acme.com",
   }),
 });
 ```
@@ -57,7 +57,7 @@ Mastra's execution `abortSignal` is forwarded to the shared request policy. The 
 
 ```typescript
 const tools = paradocTools({
-  defaultRegistryUrl: "https://public.paradoc.dev",
+  defaultRegistryUrl: "https://registry.acme.com",
   maxOutputBytes: 32_000,
 });
 ```

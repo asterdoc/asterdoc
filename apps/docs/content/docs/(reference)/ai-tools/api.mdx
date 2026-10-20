@@ -70,7 +70,7 @@ import { createToolExecutionContext, executeGetArtifact } from "@paradoc/ai-tool
 const context = createToolExecutionContext({ signal: request.signal })
 
 const result = await executeGetArtifact(
-  { registry_url: "https://public.paradoc.dev", artifact_name: "pet-addendum" },
+  { registry_url: "https://registry.acme.com", artifact_name: "pet-addendum" },
   { context },
 )
 ```
@@ -115,9 +115,9 @@ Every execute function and every adapter accepts `ParadocToolsConfig`:
 
 ```typescript
 paradocTools({
-  defaultRegistryUrl: "https://public.paradoc.dev",
+  defaultRegistryUrl: "https://registry.acme.com",
   fetch: customFetchWithAuth,
-  approvedOrigins: ["https://public.paradoc.dev"],
+  approvedOrigins: ["https://registry.acme.com"],
   maxOutputBytes: 200_000,
 })
 ```

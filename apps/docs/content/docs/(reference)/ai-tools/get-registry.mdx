@@ -45,7 +45,7 @@ An edition is the issuer's revision of a form, such as IRS W-9 Rev. March 2024. 
 import { executeGetRegistry } from "@paradoc/ai-tools"
 
 const result = await executeGetRegistry({
-  registry_url: "https://public.paradoc.dev",
+  registry_url: "https://registry.acme.com",
 })
 ```
 
@@ -53,7 +53,7 @@ With a configured default, the input can be empty:
 
 ```typescript
 const result = await executeGetRegistry({}, {
-  defaultRegistryUrl: "https://public.paradoc.dev",
+  defaultRegistryUrl: "https://registry.acme.com",
 })
 ```
 
@@ -63,7 +63,7 @@ The response is shortened here.
 
 ```json
 {
-  "registry_url": "https://public.paradoc.dev",
+  "registry_url": "https://registry.acme.com",
   "items": [
     {
       "name": "pet-addendum",

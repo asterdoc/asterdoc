@@ -7,7 +7,7 @@ The adapter consumes the canonical schemas, descriptions, result contracts, and 
 ## Installation
 
 ```bash
-npm install @paradoc/tanstack-ai@0.7.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod
+npm install @paradoc/tanstack-ai@0.8.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod
 ```
 
 ## Native server tools
@@ -23,7 +23,7 @@ const result = await chat({
   adapter: openaiText("gpt-5.5"),
   messages: [{ role: "user", content: "Inspect the purchase agreement fields." }],
   tools: paradocTools({
-    defaultRegistryUrl: "https://public.paradoc.dev",
+    defaultRegistryUrl: "https://registry.acme.com",
   }),
   stream: false,
 });
@@ -65,8 +65,8 @@ TanStack AI's execution `abortSignal` is composed with `ParadocToolsConfig.signa
 
 ```typescript
 const tools = paradocTools({
-  defaultRegistryUrl: "https://public.paradoc.dev",
-  approvedOrigins: ["https://public.paradoc.dev"],
+  defaultRegistryUrl: "https://registry.acme.com",
+  approvedOrigins: ["https://registry.acme.com"],
   maxOutputBytes: 200_000,
 });
 ```

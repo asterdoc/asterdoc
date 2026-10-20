@@ -42,7 +42,7 @@ import { executeUpdateFill } from "@paradoc/ai-tools"
 
 const updated = await executeUpdateFill({
   source: "registry",
-  registry_url: "https://public.paradoc.dev",
+  registry_url: "https://registry.acme.com",
   artifact_name: "pet-addendum",
   data: draft.data,
   evaluation_context: draft.evaluation_context,
@@ -60,7 +60,7 @@ Clear a value the user wants to take back:
 ```typescript
 const cleared = await executeUpdateFill({
   source: "registry",
-  registry_url: "https://public.paradoc.dev",
+  registry_url: "https://registry.acme.com",
   artifact_name: "pet-addendum",
   data: updated.data,
   evaluation_context: updated.evaluation_context,

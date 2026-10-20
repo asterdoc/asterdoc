@@ -22,7 +22,7 @@ import { paradocTools } from "@paradoc/ai-sdk";
 const result = await generateText({
   model: openai("gpt-4o"),
   tools: paradocTools({
-    defaultRegistryUrl: "https://public.paradoc.dev",
+    defaultRegistryUrl: "https://registry.acme.com",
   }),
   stopWhen: isStepCount(10),
   prompt: "Find the pet-addendum artifact and list its required fields.",
@@ -54,7 +54,7 @@ Each operation is available as a named factory and as a package subpath. Subpath
 import getFillState from "@paradoc/ai-sdk/get-fill-state";
 
 const fillState = getFillState({
-  defaultRegistryUrl: "https://public.paradoc.dev",
+  defaultRegistryUrl: "https://registry.acme.com",
 });
 ```
 
@@ -69,7 +69,7 @@ const source = { source: "artifact", artifact };
 const remoteSource = { source: "url", url: "https://example.com/artifact.json" };
 const registrySource = {
   source: "registry",
-  registry_url: "https://public.paradoc.dev",
+  registry_url: "https://registry.acme.com",
   artifact_name: "purchase-agreement",
 };
 ```

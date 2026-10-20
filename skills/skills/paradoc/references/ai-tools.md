@@ -18,7 +18,7 @@ The AI packages are npm libraries. The tools run in your own process, with no Pa
 | `@paradoc/ai-tools` | The framework-neutral contract: Zod schemas, `execute*` functions, `toolDefinitions` | `npm install @paradoc/ai-tools` |
 | `@paradoc/ai-sdk` | Vercel AI SDK 7 (`generateText`, `streamText`, agents) | `npm install @paradoc/ai-sdk ai zod` |
 | `@paradoc/mastra` | Mastra agents | `npm install @paradoc/mastra @mastra/core zod` |
-| `@paradoc/tanstack-ai` | TanStack AI `chat()` | `npm install @paradoc/tanstack-ai@0.7.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod` |
+| `@paradoc/tanstack-ai` | TanStack AI `chat()` | `npm install @paradoc/tanstack-ai@0.8.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod` |
 
 Every adapter wraps `@paradoc/ai-tools`, so the tool names, inputs and outputs are the same everywhere.
 
@@ -88,7 +88,7 @@ const artifact = JSON.parse(await readFile('pet-addendum.json', 'utf8'))
 const source = {
   source: 'artifact' as const,
   artifact,
-  base_url: 'https://public.paradoc.dev/pet-addendum/1.0.0',
+  base_url: 'https://registry.acme.com/pet-addendum/1.0.0',
 }
 
 // 1. Start the draft with what the user gave.
@@ -133,7 +133,7 @@ import { openai } from '@ai-sdk/openai'
 
 const result = await generateText({
   model: openai('gpt-4o'),
-  tools: paradocTools({ defaultRegistryUrl: 'https://public.paradoc.dev' }),
+  tools: paradocTools({ defaultRegistryUrl: 'https://registry.acme.com' }),
   stopWhen: isStepCount(10),
   prompt: 'Fill the pet addendum for my dog Rex, 30 lbs',
 })
@@ -160,7 +160,7 @@ const agent = new Agent({
   name: 'Document agent',
   instructions: 'Use the Paradoc tools to inspect and complete documents.',
   model: 'openai/gpt-4o',
-  tools: paradocTools({ defaultRegistryUrl: 'https://public.paradoc.dev' }),
+  tools: paradocTools({ defaultRegistryUrl: 'https://registry.acme.com' }),
 })
 ```
 
@@ -183,7 +183,7 @@ import { paradocTools } from '@paradoc/tanstack-ai'
 const result = await chat({
   adapter: openaiText('gpt-4o'),
   messages: [{ role: 'user', content: 'Inspect the pet addendum fields.' }],
-  tools: paradocTools({ defaultRegistryUrl: 'https://public.paradoc.dev' }),
+  tools: paradocTools({ defaultRegistryUrl: 'https://registry.acme.com' }),
   stream: false,
 })
 ```

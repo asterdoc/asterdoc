@@ -57,12 +57,12 @@ import {
 
 // Fetch available artifacts from a registry
 const registry = await executeGetRegistry({
-  registry_url: "https://public.paradoc.dev",
+  registry_url: "https://registry.acme.com",
 });
 
 // Fetch a specific artifact
 const { artifact } = await executeGetArtifact({
-  registry_url: "https://public.paradoc.dev",
+  registry_url: "https://registry.acme.com",
   artifact_name: "pet-addendum",
 });
 
@@ -117,9 +117,9 @@ The render tool supports three input modes via discriminated union:
 import type { ParadocToolsConfig } from "@paradoc/ai-tools";
 
 const config: ParadocToolsConfig = {
-  defaultRegistryUrl: "https://public.paradoc.dev",
+  defaultRegistryUrl: "https://registry.acme.com",
   fetch: customFetchWithAuth,
-  approvedOrigins: ["https://public.paradoc.dev"],
+  approvedOrigins: ["https://registry.acme.com"],
   maxOutputBytes: 200_000,
 };
 ```

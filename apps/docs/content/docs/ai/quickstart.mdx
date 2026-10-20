@@ -7,7 +7,7 @@ ogDescription: Give an AI agent the Paradoc tools and have it fill a lease adden
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-In this quickstart, an agent fills a pet addendum to a lease from one message and saves it as a PDF. The form comes from the Paradoc public registry, so you do not write a form first.
+In this quickstart, an agent fills a pet addendum to a lease from one message and saves it as a PDF. The form comes from a small demo registry, so you do not write a form first. Use your own registry in a real app.
 
 You need Node.js 22.13 or newer, a project with `"type": "module"` in its `package.json`, and an OpenAI API key in `OPENAI_API_KEY`. To use a different model, change the model line. Any model that can call tools works.
 
@@ -64,7 +64,7 @@ Pick your framework. Each tab is a complete program.
   </Tab>
   <Tab value="TanStack AI">
     ```bash
-    npm install @paradoc/tanstack-ai@0.7.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod
+    npm install @paradoc/tanstack-ai@0.8.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod
     ```
 
     ```typescript title="agent.ts"
@@ -209,7 +209,7 @@ The model writes its own answer, so the text changes from run to run. Sometimes 
 
 ## What happened
 
-1. `get_artifact` loaded the `pet-addendum` form from `https://public.paradoc.dev`, with its agent instructions.
+1. `get_artifact` loaded the `pet-addendum` form from the demo registry, with its agent instructions.
 2. `fill` checked the values against the form and returned a draft. If a value was wrong, such as a species the form does not list, `fill` returned an error, and the model could fix it or ask you.
 3. `render` filled the form's PDF layer with the draft.
 
