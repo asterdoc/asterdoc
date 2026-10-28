@@ -1,4 +1,4 @@
-import { parse, extractReferences } from '@paradoc/expr'
+import { parse, extractReferences } from '@asterdoc/expr'
 
 /**
  * Result of parsing an expression
@@ -17,7 +17,7 @@ export interface ParseResult {
 /**
  * Parses an expression string and extracts referenced variables.
  *
- * Backed by @paradoc/expr: the parser reports a positioned syntax error, and
+ * Backed by @asterdoc/expr: the parser reports a positioned syntax error, and
  * `extractReferences` returns the identifier-rooted dotted paths the expression
  * depends on (function names are not references).
  *

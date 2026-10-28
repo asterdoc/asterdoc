@@ -1,17 +1,17 @@
 /**
- * `paradoc add <name>` — install a document component from the Paradoc registry.
+ * `asterdoc add <name>` — install a document component from the Asterdoc registry.
  *
  * The components are shadcn registry items, so the install itself is the stock
  * shadcn CLI's job and this does not reimplement it. What it does is the part a
- * consumer would otherwise do by hand: put the `@paradoc` namespace into the
- * project's `components.json`, so `@paradoc/field` resolves to
- * `https://docs.paradoc.dev/r/field.json`, and then run the install.
+ * consumer would otherwise do by hand: put the `@asterdoc` namespace into the
+ * project's `components.json`, so `@asterdoc/field` resolves to
+ * `https://docs.asterdoc.com/r/field.json`, and then run the install.
  *
  * A block is installed the same way and is one of these items too: it brings a
- * whole document rather than one component, so `paradoc add purchase-order` lands
+ * whole document rather than one component, so `asterdoc add purchase-order` lands
  * the artifact, its sample data and the composition that binds them.
  *
- * `paradoc add @namespace/name` still adds an artifact from an artifact registry.
+ * `asterdoc add @namespace/name` still adds an artifact from an artifact registry.
  * The two are told apart by shape: an artifact is always namespaced or a URL, a
  * component is always a bare name.
  */
@@ -25,16 +25,16 @@ import kleur from 'kleur'
  * The namespace the components are published under, and where they are served.
  *
  * Both are declared by the registry itself, in
- * `paradoc/packages/components/scripts/registry/manifest.ts`, which is what the
+ * `framework/packages/components/scripts/registry/manifest.ts`, which is what the
  * generator writes into `components.json`-shaped instructions in the docs. They
  * are repeated here because the CLI ships on its own and cannot import a build
  * script from another package; `tests/commands/add-component.test.ts` reads the
  * served index and fails if the two drift.
  */
-export const COMPONENT_NAMESPACE = '@paradoc'
+export const COMPONENT_NAMESPACE = '@asterdoc'
 
 /** Where the docs site serves the registry. `{name}` is the item. */
-export const COMPONENT_REGISTRY_URL = 'https://docs.paradoc.dev/r/{name}.json'
+export const COMPONENT_REGISTRY_URL = 'https://docs.asterdoc.com/r/{name}.json'
 
 /**
  * The shadcn CLI major this command runs.
@@ -103,7 +103,7 @@ interface ComponentsConfig {
  * Finds the `components.json` that governs this directory.
  *
  * shadcn's config sits at the front-end project's root, which is not always the
- * Paradoc project root: a monorepo keeps artifacts at the top and the app in a
+ * Asterdoc project root: a monorepo keeps artifacts at the top and the app in a
  * package. So the search walks up from where the command was run.
  */
 export async function findComponentsConfig(from: string): Promise<string | null> {
@@ -122,7 +122,7 @@ export async function findComponentsConfig(from: string): Promise<string | null>
 }
 
 /**
- * Writes the `@paradoc` namespace into `components.json` if it is not there.
+ * Writes the `@asterdoc` namespace into `components.json` if it is not there.
  *
  * A namespace already pointing somewhere else is left alone and reported: a
  * project pointing at its own mirror of the registry means it, and silently

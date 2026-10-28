@@ -1,4 +1,4 @@
-import { CANONICAL_SHAPES, isCompositeType } from "@paradoc/core";
+import { CANONICAL_SHAPES, isCompositeType } from "@asterdoc/core";
 
 /** What value coercion needs to know about a field. */
 export type CoercionTarget = {

@@ -22,7 +22,7 @@ describe('CLI apply command', () => {
     const result = await executeCliCommand(['apply', '/tmp/nonexistent.patch'])
 
     expect(result.exitCode).toBe(1)
-    // Fails with either "not found" (patch) or "Not in a Paradoc project" (no project)
+    // Fails with either "not found" (patch) or "Not in an Asterdoc project" (no project)
     expect(result.stderr).toContain('Error')
   })
 
@@ -30,7 +30,7 @@ describe('CLI apply command', () => {
     let tempDir: string
 
     beforeEach(async () => {
-      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-apply-test-'))
+      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-apply-test-'))
       // Initialize a project
       await executeCliCommand(['init', '--yes', '--name', 'apply-test'], { cwd: tempDir })
     })

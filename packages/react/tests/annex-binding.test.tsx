@@ -9,7 +9,7 @@
  */
 
 import { renderToStaticMarkup } from "react-dom/server";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 import { describe, expect, it } from "vitest";
 
 import { ArtifactProvider, UnknownAnnexError, readAnnex, resolveAnnex, useAnnex } from "../src";

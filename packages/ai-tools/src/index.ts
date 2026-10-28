@@ -45,7 +45,7 @@ import {
 	type ValidateArtifactOutput,
 	type ValidateInputOutput,
 } from './contracts'
-import type { ParadocToolsConfig } from './config'
+import type { AsterdocToolsConfig } from './config'
 import type { output } from 'zod'
 
 export * from './contracts'
@@ -53,7 +53,7 @@ export { configForExecution, createToolExecutionContext } from './context'
 export { attachModelOutputSerialization, boundModelValue, DEFAULT_MODEL_OUTPUT_MAX_BYTES, toModelOutput, truncateContent } from './model-output'
 export type { ToolResultOutput } from './model-output'
 export type { ToolExecutionContext, RequestCache } from './context'
-export type { ParadocToolsConfig } from './config'
+export type { AsterdocToolsConfig } from './config'
 export { resolveSource } from './resolve-source'
 export type { ResolvedSource } from './resolve-source'
 export {
@@ -81,61 +81,61 @@ export type {
 	RegistryArtifactErrorCode,
 	RegistryArtifactRequest,
 } from './registry-client'
-export type { RegistryIndex, RegistryItemSummary, RegistryRelease, RegistryReleaseFailure } from '@paradoc/schemas'
+export type { RegistryIndex, RegistryItemSummary, RegistryRelease, RegistryReleaseFailure } from '@asterdoc/schemas'
 
 // These wrappers keep the package root free of document-core and renderer
 // imports. The implementation module is loaded only when an operation runs.
-export async function executeGetRegistry(input: GetRegistryInput | Record<string, unknown> = {}, config?: ParadocToolsConfig): Promise<GetRegistryOutput> {
+export async function executeGetRegistry(input: GetRegistryInput | Record<string, unknown> = {}, config?: AsterdocToolsConfig): Promise<GetRegistryOutput> {
 	return (await import('./tools/get-registry')).executeGetRegistry(input, config)
 }
 
-export async function executeGetArtifact(input: GetArtifactInput | Record<string, unknown>, config?: ParadocToolsConfig): Promise<GetArtifactOutput> {
+export async function executeGetArtifact(input: GetArtifactInput | Record<string, unknown>, config?: AsterdocToolsConfig): Promise<GetArtifactOutput> {
 	return (await import('./tools/get-artifact')).executeGetArtifact(input, config)
 }
 
-export async function executeInspectArtifact(input: InspectArtifactInput | Record<string, unknown>, config?: ParadocToolsConfig): Promise<InspectArtifactOutput> {
+export async function executeInspectArtifact(input: InspectArtifactInput | Record<string, unknown>, config?: AsterdocToolsConfig): Promise<InspectArtifactOutput> {
 	return (await import('./tools/inspect-artifact')).executeInspectArtifact(input, config)
 }
 
-export async function executeValidateArtifact(input: ValidateArtifactInput | Record<string, unknown>, config?: ParadocToolsConfig): Promise<ValidateArtifactOutput> {
+export async function executeValidateArtifact(input: ValidateArtifactInput | Record<string, unknown>, config?: AsterdocToolsConfig): Promise<ValidateArtifactOutput> {
 	return (await import('./tools/validate')).executeValidateArtifact(input, config)
 }
 
-export async function executeValidateInput(input: ValidateInputValue | Record<string, unknown>, config?: ParadocToolsConfig): Promise<ValidateInputOutput> {
+export async function executeValidateInput(input: ValidateInputValue | Record<string, unknown>, config?: AsterdocToolsConfig): Promise<ValidateInputOutput> {
 	return (await import('./tools/validate-input')).executeValidateInput(input, config)
 }
 
-export async function executeFill(input: FillInput | Record<string, unknown>, config?: ParadocToolsConfig): Promise<FillOutput> {
+export async function executeFill(input: FillInput | Record<string, unknown>, config?: AsterdocToolsConfig): Promise<FillOutput> {
 	return (await import('./tools/fill')).executeFill(input, config)
 }
 
-export async function executeGetFillState(input: FillStateInput | Record<string, unknown>, config?: ParadocToolsConfig): Promise<FillStateOutput> {
+export async function executeGetFillState(input: FillStateInput | Record<string, unknown>, config?: AsterdocToolsConfig): Promise<FillStateOutput> {
 	return (await import('./tools/get-fill-state')).executeGetFillState(input, config)
 }
 
-export async function executeUpdateFill(input: UpdateFillInput | Record<string, unknown>, config?: ParadocToolsConfig): Promise<UpdateFillOutput> {
+export async function executeUpdateFill(input: UpdateFillInput | Record<string, unknown>, config?: AsterdocToolsConfig): Promise<UpdateFillOutput> {
 	return (await import('./tools/update-fill')).executeUpdateFill(input, config)
 }
 
-export async function executeRender(input: RenderInput | Record<string, unknown>, config?: ParadocToolsConfig): Promise<RenderOutput> {
+export async function executeRender(input: RenderInput | Record<string, unknown>, config?: AsterdocToolsConfig): Promise<RenderOutput> {
 	return (await import('./tools/render')).executeRender(input, config)
 }
 
-export async function executeExtract(input: ExtractInput | Record<string, unknown>, config?: ParadocToolsConfig): Promise<ExtractOutput> {
+export async function executeExtract(input: ExtractInput | Record<string, unknown>, config?: AsterdocToolsConfig): Promise<ExtractOutput> {
 	return (await import('./tools/extract')).executeExtract(input, config)
 }
 
 export const toolDefinitions = {
 	get_registry: {
 		name: 'get_registry',
-		description: 'Discover the artifacts available in a Paradoc registry, with the editions and versions of each.',
+		description: 'Discover the artifacts available in an Asterdoc registry, with the editions and versions of each.',
 		input_schema: GetRegistryInputSchema,
 		output_schema: GetRegistryOutputSchema,
 		execute: executeGetRegistry,
 	},
 	get_artifact: {
 		name: 'get_artifact',
-		description: 'Retrieve one artifact and optionally its instructions from a Paradoc registry. Names the current edition and latest version unless edition or version is given.',
+		description: 'Retrieve one artifact and optionally its instructions from an Asterdoc registry. Names the current edition and latest version unless edition or version is given.',
 		input_schema: GetArtifactInputSchema,
 		output_schema: GetArtifactOutputSchema,
 		execute: executeGetArtifact,
@@ -149,7 +149,7 @@ export const toolDefinitions = {
 	},
 	validate_artifact: {
 		name: 'validate_artifact',
-		description: 'Validate an artifact definition against the Paradoc schema and logic rules.',
+		description: 'Validate an artifact definition against the Asterdoc schema and logic rules.',
 		input_schema: ValidateArtifactInputSchema,
 		output_schema: ValidateArtifactOutputSchema,
 		execute: executeValidateArtifact,

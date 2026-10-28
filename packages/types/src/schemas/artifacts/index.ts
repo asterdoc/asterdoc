@@ -1,5 +1,5 @@
 /**
- * Artifact types for Paradoc
+ * Artifact types for Asterdoc
  * Includes Document, Form, Checklist, and Bundle artifacts
  */
 

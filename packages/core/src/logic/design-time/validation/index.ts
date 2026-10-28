@@ -8,7 +8,7 @@
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { Form, Bundle } from '@paradoc/types'
+import type { Form, Bundle } from '@asterdoc/types'
 import { validateFormDefs } from './validate-form-logic'
 import { validateBundleDefs } from './validate-bundle-logic'
 
@@ -34,7 +34,7 @@ export interface ValidateLogicOptions {
  * Validates all logic expressions in an artifact.
  *
  * Supports Form and Bundle artifacts. For each:
- * - Validates expression syntax using the @paradoc/expr parser
+ * - Validates expression syntax using the @asterdoc/expr parser
  * - Validates that variable references exist (for inline artifacts only)
  * - Recursively validates nested inline artifacts
  *
@@ -47,7 +47,7 @@ export interface ValidateLogicOptions {
  *
  * @example
  * ```typescript
- * import { validateLogic, type Form } from '@paradoc/core'
+ * import { validateLogic, type Form } from '@asterdoc/core'
  *
  * const form: Form = {
  *   kind: 'form',

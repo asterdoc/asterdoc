@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/tanstack-ai",
-  "version": "0.8.0",
-  "description": "Experimental TanStack AI 0.53.0 RC adapter for Paradoc document tools",
+  "name": "@asterdoc/tanstack-ai",
+  "version": "0.9.0",
+  "description": "Experimental TanStack AI 0.53.0 RC adapter for Asterdoc document tools",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -70,7 +70,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
+    "asterdoc",
     "ai",
     "tanstack",
     "tools",
@@ -79,20 +79,20 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
 		"node": ">=22"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/tanstack-ai"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -111,15 +111,15 @@
     "check": "pnpm lint && pnpm check-types"
   },
   "dependencies": {
-    "@paradoc/ai-tools": "workspace:*"
+    "@asterdoc/ai-tools": "workspace:*"
   },
   "peerDependencies": {
     "@tanstack/ai": "0.53.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@tanstack/ai": "0.53.0",
     "@types/node": "catalog:",
     "eslint": "catalog:",

@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'vitest'
 import { evaluateFormDefs } from '@/logic/runtime/evaluation/form-evaluator'
 import { buildFormContext } from '@/logic/runtime/evaluation/context-builder'
-import type { Form, DefsSection } from '@paradoc/types'
+import type { Form, DefsSection } from '@asterdoc/types'
 import { getDefsValues } from '../helpers/evaluation-helpers'
-import { Values, buildRegistry, T } from '@paradoc/expr'
+import { Values, buildRegistry, T } from '@asterdoc/expr'
 
 /**
  * Tests for Expression evaluation with typed computed values.

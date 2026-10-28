@@ -1,5 +1,5 @@
-import { evaluateFormDefs } from "@paradoc/core";
-import type { Attachment, Form, FormAnnex, FormField, Formatter, Party } from "@paradoc/types";
+import { evaluateFormDefs } from "@asterdoc/core";
+import type { Attachment, Form, FormAnnex, FormField, Formatter, Party } from "@asterdoc/types";
 import {
   createContext,
   useContext,

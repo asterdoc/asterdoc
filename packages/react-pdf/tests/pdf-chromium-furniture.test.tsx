@@ -23,7 +23,7 @@ import {
   ProposalDocument,
 } from "../../components/src/examples";
 import { proposalLogoImage } from "../../components/src/examples/pdf";
-import { FURNITURE_EDGE_INSET_PX, type PageFurniture, DEFAULT_PAGE_MARGIN_PX, PAGE_SIZES } from "@paradoc/react";
+import { FURNITURE_EDGE_INSET_PX, type PageFurniture, DEFAULT_PAGE_MARGIN_PX, PAGE_SIZES } from "@asterdoc/react";
 import {
   PageFurnitureOverflowError,
   renderPdf,
@@ -44,7 +44,7 @@ const furniture: PageFurniture = {
   stamp: <span className="text-6xl text-neutral-300">{STAMP}</span>,
 };
 
-const skipped = process.env.PARADOC_SKIP_CHROMIUM_TESTS === "1";
+const skipped = process.env.ASTERDOC_SKIP_CHROMIUM_TESTS === "1";
 
 let logo: PdfImage;
 let furnished: ReadPage[];
@@ -110,7 +110,7 @@ describe.skipIf(skipped)("page furniture on the Chromium adapter", () => {
     if ((await chromiumExecutable()) === undefined) {
       throw new Error(
         "The Chromium furniture tests need a Chrome: set PUPPETEER_EXECUTABLE_PATH, or set " +
-          "PARADOC_SKIP_CHROMIUM_TESTS=1 to opt out of this file deliberately."
+          "ASTERDOC_SKIP_CHROMIUM_TESTS=1 to opt out of this file deliberately."
       );
     }
     logo = await proposalLogoImage();

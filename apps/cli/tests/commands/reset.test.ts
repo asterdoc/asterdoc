@@ -8,16 +8,16 @@ import { fileURLToPath } from 'node:url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Every command runs against a throwaway home, never the real ~/.paradoc.
+// Every command runs against a throwaway home, never the real ~/.asterdoc.
 let testHome: string
-const configPath = () => path.join(testHome, '.paradoc', 'config.json')
+const configPath = () => path.join(testHome, '.asterdoc', 'config.json')
 const writeConfig = async (content: string) => {
-  await fs.mkdir(path.join(testHome, '.paradoc'), { recursive: true })
+  await fs.mkdir(path.join(testHome, '.asterdoc'), { recursive: true })
   await fs.writeFile(configPath(), content)
 }
 
 beforeEach(async () => {
-  testHome = await fs.mkdtemp(path.join(tmpdir(), 'paradoc-home-'))
+  testHome = await fs.mkdtemp(path.join(tmpdir(), 'asterdoc-home-'))
 })
 
 afterEach(async () => {
@@ -45,8 +45,9 @@ describe('CLI reset command', () => {
       const result = await executeCliCommand(['reset', '--yes'])
 
       expect(result.exitCode).toBe(0)
+      expect(result.stdout).toContain('Asterdoc CLI Reset')
       const output = result.stdout + result.stderr
-      expect(output).toContain('reset to factory defaults')
+      expect(output).toContain('Asterdoc CLI has been reset to factory defaults')
     })
 
     it('should accept --keep-cache', async () => {

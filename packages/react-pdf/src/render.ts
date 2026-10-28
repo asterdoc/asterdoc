@@ -1,4 +1,4 @@
-import type { Formatter, FormatterProgressivePolicy } from "@paradoc/types";
+import type { Formatter, FormatterProgressivePolicy } from "@asterdoc/types";
 /**
  * `renderPdf` — one call that turns the composed document into PDF bytes.
  *
@@ -37,7 +37,7 @@ import {
   scriptOf,
   pageGeometry,
   type DocumentTokensInput,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import {
   assertDirectionSupported,
   type PdfAdapter,
@@ -157,7 +157,7 @@ export class MissingAdapterPeerError extends Error {
     super(
       `The "${adapter}" PDF adapter could not be loaded. It needs the optional peer ` +
         `${peers.length === 1 ? "dependency" : "dependencies"} ${peers.join(" and ")}, ` +
-        `install them with @paradoc/react-pdf, or run \`npm install ${peers.join(" ")}\` ` +
+        `install them with @asterdoc/react-pdf, or run \`npm install ${peers.join(" ")}\` ` +
         "(or the equivalent for your package manager). " +
         `The loader said: ${cause instanceof Error ? cause.message : String(cause)}`,
       { cause }
@@ -238,7 +238,7 @@ export async function renderPdf(
   const signingMarkers = options.signingMarkers ?? false;
   // Read off the element, synchronously, by the same function the preview's
   // furniture uses. Nothing is rendered to find out: see `documentTokensOf` in
-  // `@paradoc/react`.
+  // `@asterdoc/react`.
   // Resolving them validates the root token contract before an engine is
   // chosen. Applications remain responsible for glyph coverage.
   const tokens = documentTokensOf(element, options.tokens);
@@ -259,7 +259,7 @@ export async function renderPdf(
   const adapter = await resolveAdapter(options.adapter ?? "takumi");
   if (signingMarkers) {
     const families = adapter.name === "chromium"
-      ? new Set(["Paradoc Signing Marker", ...fonts.map((font) => font.family)])
+      ? new Set(["Asterdoc Signing Marker", ...fonts.map((font) => font.family)])
       : new Set(["sans-serif", ...fonts.map((font) => font.family)]);
     fonts.push(...await Promise.all([...families].map(markerFontFile)));
   }

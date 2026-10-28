@@ -3,9 +3,9 @@ import { GlobalConfigSchema } from '../src/zod';
 
 const ANONYMOUS_ID = '3f2b8c1e-5d4a-4e6f-9a7b-1c2d3e4f5a6b';
 
-// The shape `paradoc configure` and `paradoc reset` write.
+// The shape `asterdoc configure` and `asterdoc reset` write.
 const writtenByCli = {
-	$schema: 'https://schema.paradoc.dev/config.json',
+	$schema: 'https://schema.asterdoc.com/config.json',
 	registries: {
 		'@acme': { url: 'https://registry.acme.com', headers: { Authorization: 'Bearer ${ACME_TOKEN}' } },
 	},
@@ -39,7 +39,7 @@ describe('GlobalConfigSchema', () => {
 	});
 
 	it('does not know the removed defaults.registry key', () => {
-		expect(unknownKeys({ defaults: { output: 'json', registry: '@paradoc' } })).toEqual(['defaults.registry']);
+		expect(unknownKeys({ defaults: { output: 'json', registry: '@asterdoc' } })).toEqual(['defaults.registry']);
 	});
 
 	it('names unknown keys at the top level and inside telemetry and security', () => {

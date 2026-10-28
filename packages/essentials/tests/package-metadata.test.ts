@@ -27,7 +27,7 @@ const achCodes = exportedCodes.filter((code) => code.startsWith('ACH-'))
 
 const ALL = exportedCodes
 const KEYWORD_FORMS: Record<string, string[]> = {
-  paradoc: ALL,
+  asterdoc: ALL,
   forms: ALL,
   artifacts: ALL,
   'business-forms': ALL,

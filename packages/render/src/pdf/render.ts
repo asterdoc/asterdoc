@@ -1,5 +1,5 @@
-import { defaultFormatter } from '@paradoc/format'
-import type { BinaryContent, Form, FormField, Formatter, LayerFormat } from '@paradoc/types'
+import { defaultFormatter } from '@asterdoc/format'
+import type { BinaryContent, Form, FormField, Formatter, LayerFormat } from '@asterdoc/types'
 import { formatFieldData, validateFieldBindings, unwrapFormattedValue } from '../text/field-formatter'
 import { getPath, pathSegments } from '../path'
 import { parseBindings, PdfBindingKeyError, renderDataPath, splitPartIndex, type ParsedPdfBindings } from '../layer-bindings'

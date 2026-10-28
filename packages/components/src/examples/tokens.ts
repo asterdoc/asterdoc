@@ -14,7 +14,7 @@
  * mark in the tenant's own colour is what a tenant's mark is standing in for.
  */
 
-import type { DocumentTokensInput } from "@paradoc/react";
+import type { DocumentTokensInput } from "@asterdoc/react";
 
 /** The tenant's mark, as base 64 PNG. */
 const BRANDED_LOGO_BASE64 =

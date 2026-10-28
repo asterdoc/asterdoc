@@ -18,12 +18,12 @@
 /** @jsxRuntime classic */
 import React from "react";
 import { Bundle } from "../components/bundle";
-import { markDocumentRoot } from "@paradoc/react";
+import { markDocumentRoot } from "@asterdoc/react";
 import type { PdfPaintReport } from "../components/pdf-pages";
 import { Pages } from "../components/pages";
 import { Part } from "../components/part";
 import { PdfPages } from "../components/pdf-pages";
-import type { PagePlan } from "@paradoc/react";
+import type { PagePlan } from "@asterdoc/react";
 import { PurchaseOrderDocument, purchaseOrderFurniture } from "./purchase-order-document";
 import type { PurchaseOrderData } from "./purchase-order-data";
 import { purchaseOrderData as defaultPurchaseOrderData } from "./purchase-order-data";

@@ -18,7 +18,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { overflowProposalData, ProposalDocument } from "../../components/src/examples";
 import { proposalLogoImage } from "../../components/src/examples/pdf";
-import { type PageFurniture, PAGE_SIZES } from "@paradoc/react";
+import { type PageFurniture, PAGE_SIZES } from "@asterdoc/react";
 import {
   PageFurnitureOverflowError,
   PageStampTooWideError,
@@ -38,7 +38,7 @@ const stamp = <span className="-rotate-45 text-9xl font-bold text-neutral-200">{
 /** How far the stamp's baseline may sit from the sheet's centre, per axis. */
 const CENTRE_TOLERANCE_PX = 64;
 
-const skipChromium = process.env.PARADOC_SKIP_CHROMIUM_TESTS === "1";
+const skipChromium = process.env.ASTERDOC_SKIP_CHROMIUM_TESTS === "1";
 const adapters: PdfAdapterName[] = skipChromium ? ["takumi"] : ["takumi", "chromium"];
 
 let logo: PdfImage;
@@ -95,7 +95,7 @@ beforeAll(async () => {
   if (!skipChromium && (await chromiumExecutable()) === undefined) {
     throw new Error(
       "The stamp tests need a Chrome for the Chromium adapter: set PUPPETEER_EXECUTABLE_PATH, " +
-        "or set PARADOC_SKIP_CHROMIUM_TESTS=1 to opt out of that half deliberately."
+        "or set ASTERDOC_SKIP_CHROMIUM_TESTS=1 to opt out of that half deliberately."
     );
   }
 });

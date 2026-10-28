@@ -1,9 +1,9 @@
 import { runCli as executeCliCommand } from '../setup/spawn-cli'
 /**
- * `paradoc dev` at the command line, and the pieces of its server that can be
+ * `asterdoc dev` at the command line, and the pieces of its server that can be
  * tested without one.
  *
- * The conventions themselves belong to `@paradoc/react/discovery` and are
+ * The conventions themselves belong to `@asterdoc/react/discovery` and are
  * tested there. What is tested here is the command around them: that it is
  * registered, that `--list` reports what the conventions found, that the
  * toolchain it borrows is reported rather than crashed into, and that the two
@@ -12,7 +12,7 @@ import { runCli as executeCliCommand } from '../setup/spawn-cli'
  *
  * The fixtures are directories in this package rather than temporary ones,
  * because discovery is loaded from the project being previewed and a directory
- * in `/tmp` has no `@paradoc/react` above it.
+ * in `/tmp` has no `@asterdoc/react` above it.
  */
 
 import { promises as fs } from 'node:fs'
@@ -146,15 +146,15 @@ describe('CLI dev command', () => {
   it('names the pages install before starting a project without it', async () => {
     const result = await executeCliCommand(['dev', path.join(FIXTURES, 'orphan')])
     expect(result.exitCode).toBe(1)
-    expect(result.stderr).toContain('paradoc add pages')
+    expect(result.stderr).toContain('asterdoc add pages')
   })
 })
 
-describe('the toolchain paradoc dev borrows', () => {
+describe('the toolchain asterdoc dev borrows', () => {
   let scratch: string
 
   beforeEach(async () => {
-    scratch = await fs.mkdtemp(path.join(tmpdir(), 'paradoc-dev-peers-'))
+    scratch = await fs.mkdtemp(path.join(tmpdir(), 'asterdoc-dev-peers-'))
   })
 
   afterEach(async () => {
@@ -172,22 +172,22 @@ describe('the toolchain paradoc dev borrows', () => {
   })
 
   it('asks the project for the PDF integration the preview renders through', () => {
-    expect(DEV_PEERS).toContain('@paradoc/react-pdf')
-    const error = new MissingPeerError(['@paradoc/react-pdf', 'vite'], scratch)
+    expect(DEV_PEERS).toContain('@asterdoc/react-pdf')
+    const error = new MissingPeerError(['@asterdoc/react-pdf', 'vite'], scratch)
 
-    // A runtime dependency, like @paradoc/react: it is loaded, not only compiled.
-    expect(error.message).toContain('npm install @paradoc/react-pdf\n')
+    // A runtime dependency, like @asterdoc/react: it is loaded, not only compiled.
+    expect(error.message).toContain('npm install @asterdoc/react-pdf\n')
     expect(error.message).toContain('npm install --save-dev vite\n')
   })
 
   it('splits runtime packages from development ones', () => {
     const error = new MissingPeerError(
-      ['vite', '@vitejs/plugin-react', '@paradoc/react', 'react'],
+      ['vite', '@vitejs/plugin-react', '@asterdoc/react', 'react'],
       scratch
     )
 
     expect(error.message).toContain('npm install --save-dev vite @vitejs/plugin-react')
-    expect(error.message).toContain('npm install @paradoc/react react')
+    expect(error.message).toContain('npm install @asterdoc/react react')
     expect(error.message).toContain(scratch)
   })
 
@@ -210,7 +210,7 @@ describe('the toolchain paradoc dev borrows', () => {
   it('names only what is missing, and only once', () => {
     const one = new MissingPeerError(['react'], scratch)
 
-    expect(one.message).toContain('paradoc dev needs react, and it is not installed')
+    expect(one.message).toContain('asterdoc dev needs react, and it is not installed')
     expect(one.message).not.toContain('--save-dev')
     expect(one.peers).toEqual(['react'])
   })
@@ -229,7 +229,7 @@ describe('what the dev server may read', () => {
   })
 
   it('maps tsconfig paths to Vite aliases', async () => {
-    const root = await fs.mkdtemp(path.join(tmpdir(), 'paradoc-dev-aliases-'))
+    const root = await fs.mkdtemp(path.join(tmpdir(), 'asterdoc-dev-aliases-'))
     try {
       await fs.writeFile(path.join(root, 'tsconfig.json'), `{
         // The documented project alias
@@ -251,15 +251,15 @@ describe('the stylesheet the preview compiles', () => {
     expect(css).toContain('@source not "node_modules"')
     expect(css).toContain('@source not "dist"')
     expect(css).toContain('@import "tailwindcss"')
-    expect(css).not.toContain('@paradoc/react/styles.css')
+    expect(css).not.toContain('@asterdoc/react/styles.css')
   })
 
-  it('uses the project-owned Paradoc stylesheet when present', async () => {
-    const root = await fs.mkdtemp(path.join(tmpdir(), 'paradoc-dev-styles-'))
+  it('uses the project-owned Asterdoc stylesheet when present', async () => {
+    const root = await fs.mkdtemp(path.join(tmpdir(), 'asterdoc-dev-styles-'))
     await fs.mkdir(path.join(root, 'styles'))
-    await fs.writeFile(path.join(root, 'styles/paradoc.css'), '@import "tailwindcss";')
+    await fs.writeFile(path.join(root, 'styles/asterdoc.css'), '@import "tailwindcss";')
     try {
-      expect(stylesheetModule(root, [])).toContain('@import "./styles/paradoc.css"')
+      expect(stylesheetModule(root, [])).toContain('@import "./styles/asterdoc.css"')
     } finally {
       await fs.rm(root, { recursive: true, force: true })
     }
@@ -287,32 +287,32 @@ describe('the running dev server', () => {
     try {
       expect((await fetch(server.url)).status).toBe(200)
 
-      const hostile = await fetch(`${server.url}/@paradoc/dev/pdf`, { method: 'POST', body: '{}' })
+      const hostile = await fetch(`${server.url}/@asterdoc/dev/pdf`, { method: 'POST', body: '{}' })
       expect(hostile.status).toBe(415)
 
-      const crossOrigin = await fetch(`${server.url}/@paradoc/dev/pdf`, {
+      const crossOrigin = await fetch(`${server.url}/@asterdoc/dev/pdf`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://attacker.invalid' }, body: '{}',
       })
       expect(crossOrigin.status).toBe(403)
 
-      const remoteFont = await fetch(`${server.url}/@paradoc/dev/pdf`, {
+      const remoteFont = await fetch(`${server.url}/@asterdoc/dev/pdf`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Origin: server.url },
         body: JSON.stringify({ id: 'compositions/change-order', plan: { breaks: [], repeats: [], fonts: { identity: 'x', css: '', resources: [{ family: 'Remote', source: 'https://attacker.invalid/font.woff2', integrity: 'x' }] } } }),
       })
       expect(remoteFont.status).toBe(403)
 
-      const finding = await fetch(`${server.url}/@paradoc/dev/pdf`, {
+      const finding = await fetch(`${server.url}/@asterdoc/dev/pdf`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Origin: server.url }, body: JSON.stringify({ id: 'missing' }),
       })
       expect(finding.status).toBe(422)
 
-      const badSample = await fetch(`${server.url}/@paradoc/dev/pdf`, {
+      const badSample = await fetch(`${server.url}/@asterdoc/dev/pdf`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Origin: server.url }, body: JSON.stringify({ id: 'compositions/bad-sample' }),
       })
       expect(badSample.status).toBe(500)
 
-      const pdf = await fetch(`${server.url}/@paradoc/dev/pdf`, {
+      const pdf = await fetch(`${server.url}/@asterdoc/dev/pdf`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', Origin: server.url }, body: JSON.stringify({ id: 'compositions/change-order' }),
       })
       expect(pdf.status).toBe(200)

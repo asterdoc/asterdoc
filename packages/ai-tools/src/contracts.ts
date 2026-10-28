@@ -1,4 +1,4 @@
-import { EditionSelectorSchema, VersionSelectorSchema } from '@paradoc/schemas'
+import { EditionSelectorSchema, VersionSelectorSchema } from '@asterdoc/schemas'
 import { z } from 'zod'
 
 /**
@@ -20,13 +20,13 @@ const RegistryReleaseShape = {
 
 export const ArtifactSourceSchema = z.object({
 	source: z.literal('artifact'),
-	artifact: JsonObjectSchema.describe('Paradoc artifact JSON object'),
+	artifact: JsonObjectSchema.describe('Asterdoc artifact JSON object'),
 	base_url: z.string().url().optional().describe('Base URL for file-backed layers'),
 })
 
 export const UrlSourceSchema = z.object({
 	source: z.literal('url'),
-	url: z.string().url().describe('URL to a Paradoc artifact JSON file'),
+	url: z.string().url().describe('URL to an Asterdoc artifact JSON file'),
 })
 
 export const RegistrySourceSchema = z.object({
@@ -48,9 +48,9 @@ export type RegistrySourceInput = z.infer<typeof RegistrySourceSchema>
 export type SourceInput = z.infer<typeof SourceSchema>
 
 const SourceShape = {
-	artifact: JsonObjectSchema.optional().describe('Paradoc artifact JSON object'),
+	artifact: JsonObjectSchema.optional().describe('Asterdoc artifact JSON object'),
 	base_url: z.string().url().optional().describe('Base URL for file-backed layers'),
-	url: z.string().url().optional().describe('URL to a Paradoc artifact JSON file'),
+	url: z.string().url().optional().describe('URL to an Asterdoc artifact JSON file'),
 	registry_url: z.string().url().optional().describe('Registry base URL. Omit it to use the configured default registry.'),
 	artifact_name: z.string().min(1).optional().describe('Artifact name within the registry'),
 	...RegistryReleaseShape,

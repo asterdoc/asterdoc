@@ -2,8 +2,8 @@
  * Tests for code snippets in concepts/rendering.mdx (Layers & Rendering)
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@paradoc/sdk'
-import { UnregisteredLayerRendererError } from '@paradoc/core'
+import { p } from '@asterdoc/sdk'
+import { UnregisteredLayerRendererError } from '@asterdoc/core'
 
 describe('Rendering Concept', () => {
   // ============================================================================

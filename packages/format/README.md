@@ -1,11 +1,11 @@
-# @paradoc/format
+# @asterdoc/format
 
-`@paradoc/format` presents structured Paradoc values as human-readable text. It keeps display policy separate from stored values, localized input parsing, currency conversion, and artifact validation.
+`@asterdoc/format` presents structured Asterdoc values as human-readable text. It keeps display policy separate from stored values, localized input parsing, currency conversion, and artifact validation.
 
 The formatter presents numbers, money, percentage points, people, organizations, parties, phones, postal addresses, coordinates, bounding boxes, identifications, attachments, signatures, dates, datetimes, times, ISO 8601 durations, and the selection values a form field carries: booleans, single choices, multiple choices, and ratings. It is immutable and reusable, so repeated calls under one effective policy reuse bounded Intl formatter caches.
 
 ```ts
-import { createFormatter } from '@paradoc/format'
+import { createFormatter } from '@asterdoc/format'
 
 const formatter = createFormatter({ locale: 'de-DE' })
 
@@ -47,11 +47,11 @@ Coordinates use `latitude; longitude`; bounding boxes use `southWest | northEast
 
 Address country and document locale are independent. The default `layout: 'country'` policy provides layouts for US, GB, DE, FR, and SA and returns an `unsupported` result for another country. Select `layout: 'generic'` when a component-preserving layout is appropriate, or provide a `countryLayouts` object whose ISO country-code keys map to formatter functions for another country. Party values with only the shared `name` member are ambiguous; use `partyType: 'person'` or provide a distinguishing person or organization member.
 
-Money always supplies its currency. A bare amount is never assigned a default currency. Percentage values use Paradoc's percentage-point scale, so `8.25` means `8.25%`, not `825%`.
+Money always supplies its currency. A bare amount is never assigned a default currency. Percentage values use Asterdoc's percentage-point scale, so `8.25` means `8.25%`, not `825%`.
 
 Temporal values keep their declared meaning. A plain `YYYY-MM-DD` date is a calendar date and is never shifted by timezone. A `Date` object and a datetime string with `Z` or a numeric offset are instants and use the configured `timeZone`; an offsetless datetime string is a local calendar/clock value and stays unchanged. Times of day are formatted as clock values in UTC so the host timezone never changes them. All temporal formatters default to Gregorian calendar, UTC for instants, and the selected locale's numbering system. Per-call options can choose a supported `calendar`, `numberingSystem`, `timeZone`, or Intl precision option.
 
-Durations use Paradoc's canonical ISO 8601 syntax (`P[n]Y[n]M[n]W[n]DT[n]H[n]M[n]S`, with fractional seconds allowed). Zero components are omitted and a zero duration is shown as zero seconds. Duration components display with up to nine fractional digits by default; set `maximumFractionDigits` or related Intl number options to choose a different display precision without changing the stored duration. Duration unit labels are supplied for the initial English, German, French, and Arabic resources, and multiple components use the runtime's standard unit-list conventions. Additional locales must provide `duration.<unit>.<plural-category>` messages, such as `duration.day.one: '{value} day'`, or explicitly choose a configured `fallbackLocale` for package messages. The requested locale still controls number and list formatting when a message fallback is used. Without a supplied fallback language, missing package messages return `unsupported`.
+Durations use Asterdoc's canonical ISO 8601 syntax (`P[n]Y[n]M[n]W[n]DT[n]H[n]M[n]S`, with fractional seconds allowed). Zero components are omitted and a zero duration is shown as zero seconds. Duration components display with up to nine fractional digits by default; set `maximumFractionDigits` or related Intl number options to choose a different display precision without changing the stored duration. Duration unit labels are supplied for the initial English, German, French, and Arabic resources, and multiple components use the runtime's standard unit-list conventions. Additional locales must provide `duration.<unit>.<plural-category>` messages, such as `duration.day.one: '{value} day'`, or explicitly choose a configured `fallbackLocale` for package messages. The requested locale still controls number and list formatting when a message fallback is used. Without a supplied fallback language, missing package messages return `unsupported`.
 
 Selection values are presented with what the field declares. A boolean prints the locale's own yes and no words, which `trueLabel` and `falseLabel` replace. An enum and a multiselect print the label of the option that carries the value; a value no option declares is `invalid`, unless `unknownOption: 'value'` explicitly prints it as itself. A multiselect joins those labels with the locale's own list conjunction and separator, in the locale's direction; `listType` (`conjunction`, `disjunction`, `unit`) and `listStyle` (`long`, `short`, `narrow`) choose the relation and its verbosity. A rating prints with the scale it was given on.
 
@@ -64,7 +64,7 @@ formatter.formatMultiselect(['plumbing', 'wiring'], { options: services }) // 'P
 formatter.formatRating(4, { max: 5 }) // '4 von 5' for de-DE
 ```
 
-Two selection presentations can be unavailable rather than wrong, and both return an `unsupported` result the caller decides about. A rating with no `max` has no scale to print; a runtime whose locale data carries no list conjunction cannot join a multiselect. Paradoc's renderers fall back to the plain number and to a comma join respectively, and keep the formatter's outcome on the value. The fallback join uses a plain comma on purpose: it only runs when the runtime holds no list data for the locale, so there is no locale-correct separator left to use.
+Two selection presentations can be unavailable rather than wrong, and both return an `unsupported` result the caller decides about. A rating with no `max` has no scale to print; a runtime whose locale data carries no list conjunction cannot join a multiselect. Asterdoc's renderers fall back to the plain number and to a comma join respectively, and keep the formatter's outcome on the value. The fallback join uses a plain comma on purpose: it only runs when the runtime holds no list data for the locale, so there is no locale-correct separator left to use.
 
 Strict methods return text and throw a `FormatError` for missing, incomplete, invalid, unsupported, or unexpected values. Use the safe methods when a progressive flow needs structured diagnostics:
 

@@ -3,7 +3,7 @@
  *
  * - `not-an-artifact`: the input is not an object with a `kind`.
  * - `missing-version`: the artifact declares no dated version and no source version was named.
- * - `unknown-version`: `$schema` names a version that was never published, or is not a Paradoc schema address.
+ * - `unknown-version`: `$schema` names a version that was never published, or is not an Asterdoc schema address.
  * - `version-conflict`: the named source version disagrees with the version the artifact declares.
  * - `no-migration-path`: no migration step leads from one version to the next.
  * - `unconvertible-value`: a step met a value it cannot convert safely.

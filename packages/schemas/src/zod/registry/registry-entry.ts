@@ -1,8 +1,8 @@
 /**
  * Registry Entry Schemas
  *
- * Shared by the project manifest (paradoc.json) and the global config
- * (~/.paradoc/config.json): per-registry cache settings, registry entries,
+ * Shared by the project manifest (asterdoc.json) and the global config
+ * (~/.asterdoc/config.json): per-registry cache settings, registry entries,
  * and the output format for installed artifacts.
  */
 

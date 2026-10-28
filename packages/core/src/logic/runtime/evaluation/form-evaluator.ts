@@ -13,7 +13,7 @@
  * state of the fields and conditions around it.
  */
 
-import type { Form, FormField, FieldsetField, FormAnnex } from '@paradoc/types'
+import type { Form, FormField, FieldsetField, FormAnnex } from '@asterdoc/types'
 import type {
   FormRuntimeState,
   FieldRuntimeState,

@@ -39,8 +39,8 @@ async function setupProject(
   // Initialize project
   await runCli(['init', '--yes', '--name', projectName], tempDir)
 
-  // Add registry configuration to paradoc.json
-  const manifestPath = path.join(tempDir, 'paradoc.json')
+  // Add registry configuration to asterdoc.json
+  const manifestPath = path.join(tempDir, 'asterdoc.json')
   const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8'))
   manifest.registries = {
     '@acme': {
@@ -61,7 +61,7 @@ function createIntegrationTest(
   it(
     name,
     async () => {
-      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-integration-test-'))
+      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-integration-test-'))
       try {
         await testFn(tempDir)
       } finally {
@@ -207,7 +207,7 @@ describe('Registry Integration Tests', () => {
       await setupProject(tempDir)
       await runCli(['add', '@acme/residential-lease'], tempDir)
 
-      const lockPath = path.join(tempDir, '.paradoc', 'lock.json')
+      const lockPath = path.join(tempDir, '.asterdoc', 'lock.json')
       const lockExists = await fs
         .access(lockPath)
         .then(() => true)
@@ -276,7 +276,7 @@ describe('Registry Integration Tests', () => {
       await setupProject(tempDir)
 
       // Modify manifest to use custom directory
-      const manifestPath = path.join(tempDir, 'paradoc.json')
+      const manifestPath = path.join(tempDir, 'asterdoc.json')
       const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8'))
       manifest.artifacts = { dir: 'custom-artifacts' }
       await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2))

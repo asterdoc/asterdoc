@@ -6,11 +6,11 @@
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { Artifact, ArtifactEdition, Metadata, ContentRef } from '@paradoc/types'
+import type { Artifact, ArtifactEdition, Metadata, ContentRef } from '@asterdoc/types'
 import { validate as validateArtifact, validateDefinition } from '@/validation/artifact'
 import { toYAML } from '@/serialization/serialization'
 import { assertCurrentSchemaVersion } from '@/serialization/schema-version'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 import type { ValidateOptions, SerializationOptions } from '@/types'
 import { deepClone } from '@/utils/clone'
 
@@ -124,7 +124,7 @@ export function snapshotArtifactDefinition<T extends Artifact>(data: T): T {
 function serializableArtifact<T extends Artifact>(data: T, includeSchema: boolean): T {
 	const definition: T = { ...data }
 	delete definition.$schema
-	return includeSchema ? { $schema: PARADOC_SCHEMA_URL, ...definition } : definition
+	return includeSchema ? { $schema: ASTERDOC_SCHEMA_URL, ...definition } : definition
 }
 
 /**

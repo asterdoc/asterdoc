@@ -5,7 +5,7 @@ import {
   DOCS_ORIGIN,
   handleDiscoveryRequest,
   withHomepageLinks,
-} from "@paradoc/agent-discovery";
+} from "@asterdoc/agent-discovery";
 import { getLLMText } from "@/lib/get-llm-text";
 import { createDocsHandler } from "@/lib/docs-delivery";
 import { redirectMovedPage } from "@/lib/moved-pages";

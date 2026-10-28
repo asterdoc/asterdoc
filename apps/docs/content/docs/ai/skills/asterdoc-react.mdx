@@ -1,0 +1,56 @@
+---
+title: React skill
+description: The agent skill for composing, checking, previewing, rendering, and sealing React documents with @asterdoc/react
+ogTitle: asterdoc-react skill
+ogDescription: Teach an AI coding assistant to compose Asterdoc documents in React, check them, and render and seal them as PDF
+---
+
+The `asterdoc-react` skill teaches an AI coding assistant to write a document in React with `@asterdoc/react`, check it, preview it, and render and seal it as PDF with `@asterdoc/react-pdf`. A composition is a React component bound to an Asterdoc form artifact through that artifact's React layer. The same tree is what a browser shows on screen and what the PDF engine renders.
+
+The skill covers the composition. For authoring the artifact itself (fields, parties, defs, logic), install the [`asterdoc` skill](/ai/skills) too.
+
+## When it activates
+
+The assistant loads the skill when it:
+
+- writes or edits a `.tsx`/`.jsx` composition bound to an Asterdoc form artifact, or declares a React layer
+- renders, previews, or seals a React document (`renderPdf`, `reactLayerRenderers`, `asterdoc dev`)
+- installs document components or blocks from the `@asterdoc` registry (`asterdoc add`)
+- runs `asterdoc check` against a composition
+
+## The lifecycle it follows
+
+1. **Install** the components and blocks with `asterdoc add`.
+2. **Compose** the document as the module's default export, with every value taken from the artifact.
+3. **Check** it with [`asterdoc check`](/cli/commands/check) until it exits 0.
+4. **Preview** it with `asterdoc dev`, or with `<Pages>` in your app.
+5. **Render** it to PDF with `renderPdf`.
+6. **Seal** the filled form with the React layer renderers.
+
+## References
+
+| Reference | What it covers |
+|---|---|
+| `components` | The component vocabulary and exact props |
+| `pagination` | Every page-planner rule: keeps, keep-with-next, header repeat, footers, breaks |
+| `safe-classes` | The Tailwind classes the PDF engine renders, common classes it refuses, and the branding tokens |
+| `custom-components` | Writing your own components: keeps, `data-*` attributes, headless hooks, `markDocumentRoot` |
+| `render-and-seal` | The React layer, binding, `renderPdf`, adapters, preview plans, and sealing |
+| `cli` | `asterdoc check`, `asterdoc dev`, `asterdoc add`, and how they find a composition's artifact |
+
+See [Components](/components) for the component reference.
+
+## Installation
+
+```bash
+npx skills add https://github.com/asterdoc/asterdoc --skill asterdoc-react
+```
+
+To install manually:
+
+```bash
+git clone https://github.com/asterdoc/asterdoc.git
+cp -r framework/skills/skills/asterdoc-react ~/.claude/skills/
+```
+
+For Claude.ai and other agents, see [Installation](/ai/skills#installation).

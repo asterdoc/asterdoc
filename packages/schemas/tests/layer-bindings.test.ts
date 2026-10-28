@@ -131,9 +131,9 @@ function expectPublishedDirection(inline: JsonSchema, file: JsonSchema, allOf: J
   expect(inline.properties?.text?.description).toContain("{{fields.fieldName}}");
 
   const bindings = file.properties?.bindings;
-  expect(bindings?.description).toMatch(/AcroForm field name.*Paradoc path/);
+  expect(bindings?.description).toMatch(/AcroForm field name.*Asterdoc path/);
   expect(bindings?.propertyNames?.description).toMatch(/AcroForm field name/);
-  expect(bindings?.additionalProperties?.description).toMatch(/Paradoc path/);
+  expect(bindings?.additionalProperties?.description).toMatch(/Asterdoc path/);
   expect(file.properties?.bindingsFrom?.description).toMatch(/PDF/);
 
   for (const key of ["bindings", "bindingsFrom"]) {
@@ -145,7 +145,7 @@ function expectPublishedDirection(inline: JsonSchema, file: JsonSchema, allOf: J
 }
 
 describe("the published JSON Schema", () => {
-  it("describes bindings as AcroForm name to Paradoc path, on PDF layers only", () => {
+  it("describes bindings as AcroForm name to Asterdoc path, on PDF layers only", () => {
     const json = z.toJSONSchema(LayerSchema, { target: "draft-2020-12" }) as unknown as JsonSchema;
     const file = layerDefinition(json, "file");
     expect(file.properties?.bindings?.propertyNames?.maxLength).toBe(500);
@@ -157,16 +157,8 @@ describe("the published JSON Schema", () => {
     expectPublishedDirection(layerDefinition(json, "inline"), layerDefinition(json, "file"), json.allOf);
   });
 
-  it("ships the corrected text in the current output and keeps 2026-09-22 as migration history", () => {
-    const layerIn = (version: string) => {
-      const source = version === SCHEMA_VERSION ? "schemas" : "snapshots";
-      return (JSON.parse(readFileSync(join(__dirname, "..", source, `${version}.json`), "utf-8")) as { $defs: { Layer: JsonSchema } }).$defs.Layer;
-    };
-
-    const current = layerIn(SCHEMA_VERSION);
+  it("ships the same rule in the current published bundle", () => {
+    const current = (JSON.parse(readFileSync(join(__dirname, "..", "schemas", `${SCHEMA_VERSION}.json`), "utf-8")) as { $defs: { Layer: JsonSchema } }).$defs.Layer;
     expectPublishedDirection(layerDefinition(current, "inline"), layerDefinition(current, "file"), current.allOf);
-
-    const previous = layerIn("2026-09-22");
-    expect(layerDefinition(previous, "inline").properties?.bindings).toBeDefined();
   });
 });

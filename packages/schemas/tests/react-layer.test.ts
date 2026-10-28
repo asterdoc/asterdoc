@@ -72,7 +72,7 @@ describe("React layers by MIME type", () => {
   it("states the exclusion in the published JSON Schema, not only at runtime", () => {
     // A Zod refinement validates and then vanishes from the generated schema, so
     // the rule is attached as a JSON Schema keyword as well. Without this a
-    // consumer validating against schema.paradoc.dev would accept the shape the
+    // consumer validating against schema.asterdoc.com would accept the shape the
     // framework rejects.
     const json = z.toJSONSchema(LayerSchema, { target: "draft-2020-12" }) as unknown as {
       oneOf: Array<{ properties: Record<string, { not?: { pattern?: string } }> }>;

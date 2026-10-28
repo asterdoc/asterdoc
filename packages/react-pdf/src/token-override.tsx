@@ -9,7 +9,7 @@ import {
   type PageFurniture,
   type DocumentTokens,
   type DocumentTokensInput,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 /**
  * What `renderPdf` puts around the element before an engine sees it.
  *

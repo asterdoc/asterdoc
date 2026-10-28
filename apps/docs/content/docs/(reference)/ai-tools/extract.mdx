@@ -1,13 +1,13 @@
 ---
 title: extract
-description: Read a filled PDF form back into Paradoc form data, with a report for each field
-ogTitle: extract — Paradoc AI Tools
-ogDescription: Read the AcroForm fields of a filled PDF back into Paradoc form data
+description: Read a filled PDF form back into Asterdoc form data, with a report for each field
+ogTitle: extract — Asterdoc AI Tools
+ogDescription: Read the AcroForm fields of a filled PDF back into Asterdoc form data
 ---
 
-Reads a filled PDF back into form data through the form's PDF layer bindings. It reads the PDF's AcroForm field values, maps each back to its artifact path, and returns the recovered data with a report for each binding target. It is the same operation as [`form.extract()`](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) in the SDK and [`paradoc data extract`](/cli/commands/data#data-extract) in the CLI, and returns the same result.
+Reads a filled PDF back into form data through the form's PDF layer bindings. It reads the PDF's AcroForm field values, maps each back to its artifact path, and returns the recovered data with a report for each binding target. It is the same operation as [`form.extract()`](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) in the SDK and [`asterdoc data extract`](/cli/commands/data#data-extract) in the CLI, and returns the same result.
 
-The tool reads fillable fields only. A flattened or scanned PDF has no fields to read; use the hosted Paradoc extraction service for those. The tool does not validate the data. Pass `data` to [`fill`](/ai-tools/fill), then use [`get_fill_state`](/ai-tools/get-fill-state) to see what is still missing.
+The tool reads fillable fields only. A flattened or scanned PDF has no fields to read; use the hosted Asterdoc extraction service for those. The tool does not validate the data. Pass `data` to [`fill`](/ai-tools/fill), then use [`get_fill_state`](/ai-tools/get-fill-state) to see what is still missing.
 
 ## Input
 
@@ -62,7 +62,7 @@ Each entry's `sources` lists the PDF fields that carry the path, as `{ field, va
 ## Direct usage
 
 ```typescript
-import { executeExtract, executeFill } from "@paradoc/ai-tools"
+import { executeExtract, executeFill } from "@asterdoc/ai-tools"
 
 // w9 is the W-9 form artifact JSON; filledPdfBase64 is a completed W-9.
 const source = { source: "artifact", artifact: w9 } as const

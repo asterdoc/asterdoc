@@ -13,6 +13,6 @@ describe('framework-cli-seam-017', () => {
     expect(storage.getAbsolutePath('forms\\a.json')).toBe('C:\\proj\\forms\\a.json')
     expect(storage.getAbsolutePath('D:\\forms\\a.json')).toBe('D:\\forms\\a.json')
     expect(storage.getAbsolutePath('C:\\other\\a.json')).toBe('C:\\other\\a.json')
-    expect(storage.joinPath('C:\\proj', '.paradoc')).toBe('C:\\proj\\.paradoc')
+    expect(storage.joinPath('C:\\proj', '.asterdoc')).toBe('C:\\proj\\.asterdoc')
   })
 })

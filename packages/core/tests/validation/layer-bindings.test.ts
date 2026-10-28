@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { LAYER_BINDINGS_RULE } from '@paradoc/schemas'
+import { LAYER_BINDINGS_RULE } from '@asterdoc/schemas'
 import { validate } from '@/validation/artifact'
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

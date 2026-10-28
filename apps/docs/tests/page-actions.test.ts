@@ -11,13 +11,13 @@ describe("page actions", () => {
 
   test("points source links at the public repository", () => {
     expect(pageGitHubUrl("concepts/index.mdx")).toBe(
-      "https://github.com/paradoc-dev/paradoc/blob/main/apps/docs/content/docs/concepts/index.mdx",
+      "https://github.com/asterdoc/asterdoc/blob/main/apps/docs/content/docs/concepts/index.mdx",
     );
     expect(pageGitHubUrl("changelog/index.mdx")).toBe(
-      "https://github.com/paradoc-dev/paradoc/blob/main/CHANGELOG.md",
+      "https://github.com/asterdoc/asterdoc/blob/main/CHANGELOG.md",
     );
     expect(pageGitHubUrl("changelog/v0.6.0.mdx")).toBe(
-      "https://github.com/paradoc-dev/paradoc/blob/main/CHANGELOG.md",
+      "https://github.com/asterdoc/asterdoc/blob/main/CHANGELOG.md",
     );
   });
 
@@ -25,7 +25,7 @@ describe("page actions", () => {
     const markdown = expandComponentMarkdown(
       '<ComponentInstallation name="text" />',
     );
-    expect(markdown).toContain("npx shadcn@4 add @paradoc/text");
+    expect(markdown).toContain("npx shadcn@4 add @asterdoc/text");
     expect(markdown).not.toContain("ComponentInstallation");
   });
 });
@@ -51,10 +51,10 @@ describe.skipIf(!docsUrl)("built documentation routes", () => {
       fetch(new URL("/llms-full.txt", docsUrl)),
     ]);
     expect(index.status).toBe(200);
-    expect(await index.text()).toContain("https://docs.paradoc.dev/concepts.md");
+    expect(await index.text()).toContain("https://docs.asterdoc.com/concepts.md");
     expect(full.status).toBe(200);
     const fullText = await full.text();
-    expect(fullText).toContain("npx shadcn@4 add @paradoc/text");
+    expect(fullText).toContain("npx shadcn@4 add @asterdoc/text");
     expect(fullText).not.toContain("<ComponentInstallation");
   });
 

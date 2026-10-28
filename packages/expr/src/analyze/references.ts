@@ -4,7 +4,7 @@
  * (`fields.age`, `fields.unitPrice.amount`, `isAdult`).
  *
  * This is the load-bearing guarantee behind the dependency-aware fill state in
- * @paradoc/core: gate expressions must expose their field/defs references
+ * @asterdoc/core: gate expressions must expose their field/defs references
  * completely and cheaply. `fullyStatic` is false when a reference path passes
  * through a dynamic segment (an index expression), which the DAG cannot resolve
  * statically; such expressions must be rejected or handled explicitly upstream.

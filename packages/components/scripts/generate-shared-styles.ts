@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { LTR_ISOLATE_STYLESHEET, TYPOGRAPHY_SAFELIST_PATTERNS } from "@paradoc/react";
+import { LTR_ISOLATE_STYLESHEET, TYPOGRAPHY_SAFELIST_PATTERNS } from "@asterdoc/react";
 
 const START = "/* generated:shared-render-vocabulary:start */";
 const END = "/* generated:shared-render-vocabulary:end */";

@@ -13,7 +13,7 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import type { PdfImage } from "@paradoc/react-pdf";
+import type { PdfImage } from "@asterdoc/react-pdf";
 import { PROPOSAL_LOGO_SRC } from "./logo";
 
 let logo: Promise<PdfImage> | undefined;

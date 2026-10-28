@@ -1,8 +1,8 @@
 ---
 title: version
 description: Bump artifact version numbers
-ogTitle: paradoc version
-ogDescription: Update semantic versions in Paradoc artifacts
+ogTitle: asterdoc version
+ogDescription: Update semantic versions in Asterdoc artifacts
 ---
 
 Bumps the semantic version in an artifact file.
@@ -10,7 +10,7 @@ Bumps the semantic version in an artifact file.
 ## Usage
 
 ```bash
-paradoc version <file> <bump-type>
+asterdoc version <file> <bump-type>
 ```
 
 ## Arguments
@@ -42,19 +42,19 @@ The `version` command reads an artifact file, validates it, updates the version 
 Bump patch version:
 
 ```bash
-paradoc version my-form.yaml patch
+asterdoc version my-form.yaml patch
 ```
 
 Bump minor version:
 
 ```bash
-paradoc version my-form.yaml minor
+asterdoc version my-form.yaml minor
 ```
 
 Set specific version:
 
 ```bash
-paradoc version my-form.yaml 2.0.0
+asterdoc version my-form.yaml 2.0.0
 ```
 
 ## Output
@@ -85,4 +85,4 @@ Error: Artifact does not have a version field
 - [validate](/cli/commands/validate) - Validate artifact before versioning
 - [new](/cli/commands/new) - Create new artifacts with initial version
 
-`version` must run inside a Paradoc project.
+`version` must run inside an Asterdoc project.

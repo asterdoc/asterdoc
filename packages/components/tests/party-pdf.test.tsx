@@ -1,4 +1,4 @@
-import { renderPdf } from "@paradoc/react-pdf";
+import { renderPdf } from "@asterdoc/react-pdf";
 import { describe, expect, it } from "vitest";
 
 import { Document, Party } from "../src";

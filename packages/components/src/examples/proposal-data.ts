@@ -16,9 +16,9 @@
 
 import { computeLineAmounts, type LineItemInput } from "./line-items";
 import { sitePhotoAttachment, surveyReportAttachment } from "./sample-image";
-import type { RuntimeParty } from "@paradoc/types";
+import type { RuntimeParty } from "@asterdoc/types";
 
-import type { DocumentData } from "@paradoc/react";
+import type { DocumentData } from "@asterdoc/react";
 
 const CURRENCY = "USD";
 const TAX_RATE_PERCENT = 8.25;

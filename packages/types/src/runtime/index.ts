@@ -1,5 +1,5 @@
 /**
- * Runtime types for filled/executed Paradoc artifacts.
+ * Runtime types for filled/executed Asterdoc artifacts.
  * These types are used when forms are filled with data, not when defining form schemas.
  */
 

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { createFormatter } from "@paradoc/format";
+import { createFormatter } from "@asterdoc/format";
 import { describe, expect, it } from "vitest";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 import { ArtifactProvider, FormatterProvider, useField } from "../src";
 

@@ -31,7 +31,7 @@
  * render time is not known here.
  */
 
-import type { Form, FormField } from '@paradoc/types'
+import type { Form, FormField } from '@asterdoc/types'
 import { acroFields, textFieldDrawing, widgetLayout, type AcroField } from './acroform'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
 import { layoutFieldText, MIN_FONT_SIZE, PdfFieldFillError, type FieldLayout } from './field-appearance'

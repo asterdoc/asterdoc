@@ -42,7 +42,7 @@ catalog:
   cron-schedule: "^5.0.1"
   cronstrue: "^2.55.0"
 
-  # @paradoc/react. The default PDF engine and its JSX bridge are pinned
+  # @asterdoc/react. The default PDF engine and its JSX bridge are pinned
   # exactly: the engine's layout output is what the parity suite measures, so a
   # patch bump would invalidate the recorded numbers.
   takumi-pdf: "0.4.2"
@@ -50,7 +50,7 @@ catalog:
   # Carries the braille codepoints core's flow signature marker is written in.
   # Pinned exactly: its glyph advances sit on the measured line.
   "@fontsource/noto-sans-symbols-2": "5.3.0"
-  # The document typeface. Pinned exactly: @paradoc/react embeds the files the
+  # The document typeface. Pinned exactly: @asterdoc/react embeds the files the
   # preview loads, so a minor bump would change the bytes of every rendered PDF.
   "@fontsource-variable/inter": "5.2.8"
   # Additional registered families use the same files in preview and PDF.

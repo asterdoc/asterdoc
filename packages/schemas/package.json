@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/schemas",
-  "version": "0.8.0",
-  "description": "JSON Schema definitions for Paradoc framework artifacts, blocks, and primitives",
+  "name": "@asterdoc/schemas",
+  "version": "0.9.0",
+  "description": "JSON Schema definitions for Asterdoc framework artifacts, blocks, and primitives",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -22,7 +22,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
+    "asterdoc",
     "forms",
     "json-schema",
     "schemas",
@@ -31,20 +31,20 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/schemas"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -67,13 +67,13 @@
     "export:all": "pnpm export:bundled-schema && pnpm export:individual-schemas && pnpm export:manifest && pnpm export:registry"
   },
   "dependencies": {
-    "@paradoc/types": "workspace:*",
+    "@asterdoc/types": "workspace:*",
     "safe-regex": "^2.1.1",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/safe-regex": "^1.1.6",
     "@vitest/coverage-v8": "catalog:",

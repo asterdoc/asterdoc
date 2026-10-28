@@ -5,7 +5,7 @@ import {
 	createSafeRegex,
 	UnsafePatternError,
 } from '../../src/utils/safe-pattern'
-import { ISO_8601_DURATION_PATTERN } from '@paradoc/schemas'
+import { ISO_8601_DURATION_PATTERN } from '@asterdoc/schemas'
 import { TIME_PATTERN } from '../../src/primitives/time'
 
 describe('safe-pattern', () => {

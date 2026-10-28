@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/core'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/core'
 import { executeFill } from '../src/tools/fill'
 import { registryFetch } from './helpers/registry'
 
@@ -178,7 +178,7 @@ describe('executeFill', () => {
   describe('URL source', () => {
     it('fetches and fills artifact from URL', async () => {
       const artifact = {
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'url-form',
         fields: { x: { type: 'text', label: 'X' } },
@@ -220,7 +220,7 @@ describe('executeFill', () => {
   describe('registry source', () => {
     it('fetches and fills artifact from registry', async () => {
       const artifact = {
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'my-form',
         version: '1.0.0',

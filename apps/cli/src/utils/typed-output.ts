@@ -1,4 +1,4 @@
-import { jsonToDts, jsonToTsModule, type Artifact } from '@paradoc/core'
+import { jsonToDts, jsonToTsModule, type Artifact } from '@asterdoc/core'
 
 import { LocalFileSystem } from './local-fs.js'
 import { serializeArtifactFile } from './artifact-file.js'

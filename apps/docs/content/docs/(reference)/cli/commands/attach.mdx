@@ -1,8 +1,8 @@
 ---
 title: attach
 description: Attach files to artifacts as layers or content references
-ogTitle: paradoc attach
-ogDescription: Add file-backed layers and content references to Paradoc artifacts
+ogTitle: asterdoc attach
+ogDescription: Add file-backed layers and content references to Asterdoc artifacts
 ---
 
 Attaches a file to an artifact as a layer or content reference.
@@ -10,7 +10,7 @@ Attaches a file to an artifact as a layer or content reference.
 ## Usage
 
 ```bash
-paradoc attach <artifact> <file> [options]
+asterdoc attach <artifact> <file> [options]
 ```
 
 ## Arguments
@@ -49,31 +49,31 @@ MIME type is auto-detected from the file extension. Use `--mime-type` to overrid
 Attach a PDF as a layer (interactive):
 
 ```bash
-paradoc attach my-form.yaml ./lease-template.pdf
+asterdoc attach my-form.yaml ./lease-template.pdf
 ```
 
 Attach a layer with explicit options:
 
 ```bash
-paradoc attach my-form.yaml ./lease-template.pdf --name pdf --title "Lease Template" -y
+asterdoc attach my-form.yaml ./lease-template.pdf --name pdf --title "Lease Template" -y
 ```
 
 Attach a file as instructions:
 
 ```bash
-paradoc attach my-form.yaml ./instructions.md --as instructions
+asterdoc attach my-form.yaml ./instructions.md --as instructions
 ```
 
 Attach a file as agent instructions:
 
 ```bash
-paradoc attach my-form.yaml ./agent-guide.md --as agent-instructions
+asterdoc attach my-form.yaml ./agent-guide.md --as agent-instructions
 ```
 
 Preview changes without writing:
 
 ```bash
-paradoc attach my-form.yaml ./lease-template.pdf --dry-run
+asterdoc attach my-form.yaml ./lease-template.pdf --dry-run
 ```
 
 ## Output
@@ -128,6 +128,6 @@ Set "instructions" on: my-form.yaml
 - [fix](/cli/commands/fix) - Compute checksums for attached files
 - [render](/cli/commands/render) - Render artifact layers
 
-An artifact argument may be a file path or an installed `@namespace/name` reference from `.paradoc/lock.json`. An uninstalled reference fails with an error.
+An artifact argument may be a file path or an installed `@namespace/name` reference from `.asterdoc/lock.json`. An uninstalled reference fails with an error.
 
 The attached file must be in the artifact's directory; copy it there first. Layer names use camelCase and default to the camelCased filename (`lease-template.pdf` becomes `leaseTemplate`). MIME detection includes PDF, DOCX, TSX, JSX, common text and image formats, and other known extensions; an unknown extension uses `application/octet-stream` with a warning.

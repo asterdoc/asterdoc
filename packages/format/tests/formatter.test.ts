@@ -11,7 +11,7 @@ import {
 	safeFormatValue,
 } from '../src/index'
 
-describe('@paradoc/format numeric contract', () => {
+describe('@asterdoc/format numeric contract', () => {
 	it('formats numbers, money, and percentage points in each initial locale', () => {
 		const cases = [
 			['en-US', '1,234.5', '$1,234.50', '8.25%'],

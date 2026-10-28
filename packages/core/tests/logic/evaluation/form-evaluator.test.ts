@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { evaluateFormDefs } from '@/logic/runtime/evaluation/form-evaluator'
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import {
   evaluateFieldStates,
   evaluateAnnexStates,

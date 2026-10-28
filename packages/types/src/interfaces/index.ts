@@ -1,5 +1,5 @@
 /**
- * Interfaces: service and plugin contracts for Paradoc
+ * Interfaces: service and plugin contracts for Asterdoc
  */
 
 export type {
@@ -14,8 +14,8 @@ export type {
   DocumentRenderRequest,
   RendererExpressionContext,
   RendererExpressions,
-  ParadocRendererContext,
-  ParadocRenderer,
+  AsterdocRendererContext,
+  AsterdocRenderer,
   SigningMarker,
   SigningMarkerRequest,
 } from "./renderer";

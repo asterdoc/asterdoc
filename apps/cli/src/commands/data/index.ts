@@ -11,7 +11,7 @@ import { createExtractCommand } from './extract.js'
 export function createDataCommand(): Command {
 	const dataCmd = new Command('data')
 
-	dataCmd.description('Data operations for Paradoc artifacts')
+	dataCmd.description('Data operations for Asterdoc artifacts')
 
 	// Add all data subcommands
 	dataCmd.addCommand(createTemplateCommand())

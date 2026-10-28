@@ -37,14 +37,14 @@ The second part is the IRS W-9, filled through its official PDF layer and
 painted by [`PdfPages`](/components/pdf-pages). A PDF already has its own
 pages at its own paper size, so `PdfPages` paints exactly those pages rather
 than planning new ones — the W-9 keeps its own paper even inside a packet
-branded to another. Filling it needs `@paradoc/essentials`, which the block
+branded to another. Filling it needs `@asterdoc/essentials`, which the block
 declares as a dependency even though nothing it ships imports it: the
 packet's sample carries the taxpayer's values, not the form, so a consumer
 does the filling themselves:
 
 ```tsx
-import { w9 } from "@paradoc/essentials";
-import { vendorPacketData } from "@/artifacts/paradoc/vendor-packet.data";
+import { w9 } from "@asterdoc/essentials";
+import { vendorPacketData } from "@/artifacts/asterdoc/vendor-packet.data";
 
 const parsed = w9.safeParseData(vendorPacketData.taxpayer);
 if (!parsed.success) throw new Error("Invalid taxpayer data");
@@ -52,7 +52,7 @@ const draft = w9.fill(parsed.data);
 const taxpayerPdf = await draft.render({ layer: "pdf" });
 ```
 
-No resolver is passed: `@paradoc/essentials` binds each artifact's bundled
+No resolver is passed: `@asterdoc/essentials` binds each artifact's bundled
 resolver when it constructs the form, and every instance derived from it,
 including `draft`, carries it.
 

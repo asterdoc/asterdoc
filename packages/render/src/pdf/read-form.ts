@@ -1,5 +1,5 @@
-import { defaultFormatter } from '@paradoc/format'
-import type { BinaryContent, EnumOption, Form, FormField, Formatter, LayerFormat } from '@paradoc/types'
+import { defaultFormatter } from '@asterdoc/format'
+import type { BinaryContent, EnumOption, Form, FormField, Formatter, LayerFormat } from '@asterdoc/types'
 import { validateFieldBindings } from '../text/field-formatter'
 import { parseBindings, resolveLayerBindings, splitPartIndex } from '../layer-bindings'
 import { pathSegments } from '../path'
@@ -170,7 +170,7 @@ async function loadFormFields(bytes: BinaryContent): Promise<{ model: PdfModel; 
   if (fillable.length === 0) {
     throw new PdfExtractionError(
       'no_form_fields',
-      'The PDF has no AcroForm fields to read. Flattened and scanned documents need the hosted Paradoc extraction service.',
+      'The PDF has no AcroForm fields to read. Flattened and scanned documents need the hosted Asterdoc extraction service.',
     )
   }
   return { model, fields: fillable, names: new Set(fields.map((field) => field.name)) }

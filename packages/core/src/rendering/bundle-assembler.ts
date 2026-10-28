@@ -1,6 +1,6 @@
 // packages/core/src/rendering/bundle-assembler.ts
 
-import type { Bundle, Form, Document, Checklist } from '@paradoc/types'
+import type { Bundle, Form, Document, Checklist } from '@asterdoc/types'
 import type { DraftForm } from '@/artifacts/form'
 import type { DraftChecklist } from '@/artifacts/checklist'
 import type { DraftDocument } from '@/artifacts/document'

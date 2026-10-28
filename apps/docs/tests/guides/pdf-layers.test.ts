@@ -7,10 +7,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { p } from '@paradoc/sdk'
-import { createLayerRenderer } from '@paradoc/render'
-import { inspectAcroFormFields } from '@paradoc/render/pdf'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { p } from '@asterdoc/sdk'
+import { createLayerRenderer } from '@asterdoc/render'
+import { inspectAcroFormFields } from '@asterdoc/render/pdf'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -151,7 +151,7 @@ describe('PDF Layers Guide', () => {
       expect(output.length).toBeGreaterThan(0)
 
       // Write to temp file and verify
-      const tempDir = mkdtempSync(join(tmpdir(), 'paradoc-pdf-test-'))
+      const tempDir = mkdtempSync(join(tmpdir(), 'asterdoc-pdf-test-'))
       try {
         const outputPath = join(tempDir, 'w9-filled.pdf')
         writeFileSync(outputPath, output)

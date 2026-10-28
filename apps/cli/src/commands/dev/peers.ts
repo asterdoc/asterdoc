@@ -1,22 +1,22 @@
 /**
- * The toolchain `paradoc dev` borrows from the project.
+ * The toolchain `asterdoc dev` borrows from the project.
  *
  * The preview compiles the project's own compositions against the project's own
- * React and its own `@paradoc/react`, so the bundler that compiles them is the
- * project's too. All eight are optional peers of `@paradoc/cli`, resolved at the
+ * React and its own `@asterdoc/react`, so the bundler that compiles them is the
+ * project's too. All eight are optional peers of `@asterdoc/cli`, resolved at the
  * project, and a project missing one is told exactly what to install rather than
  * shown a resolution error from inside a dependency.
  *
  * React peers come from the project so the composition and renderer share one React instance.
  *
- * **Where each one is resolved.** `react`, `react-dom`, `@paradoc/react` and
- * `@paradoc/react-pdf` are resolved at the project and nowhere else: a copy of
- * them from `paradoc`'s own installation would be a different React and a
+ * **Where each one is resolved.** `react`, `react-dom`, `@asterdoc/react` and
+ * `@asterdoc/react-pdf` are resolved at the project and nowhere else: a copy of
+ * them from `asterdoc`'s own installation would be a different React and a
  * different component library from the ones the page loads, which is the failure
  * this is meant to prevent. The PDF route renders through the project's
- * `@paradoc/react-pdf` so that it shares the project's `@paradoc/react`. The
+ * `@asterdoc/react-pdf` so that it shares the project's `@asterdoc/react`. The
  * bundler and its plugins have no such identity: they compile, they are not
- * compiled, so those fall back to `paradoc`'s own dependencies, which is what makes
+ * compiled, so those fall back to `asterdoc`'s own dependencies, which is what makes
  * the command work inside this repository, where the packages are linked rather
  * than installed into a consumer project.
  */
@@ -32,10 +32,10 @@ import type { InlineConfig, Plugin, ViteDevServer } from 'vite'
  * The packages whose identity has to be the project's, because the page loads
  * them. They are runtime dependencies of a project that composes documents.
  */
-export const DEV_RUNTIME_PEERS = ['@paradoc/react', '@paradoc/react-pdf', 'react', 'react-dom'] as const
+export const DEV_RUNTIME_PEERS = ['@asterdoc/react', '@asterdoc/react-pdf', 'react', 'react-dom'] as const
 
 /**
- * The packages that only compile. `paradoc`'s own copies serve if the project has
+ * The packages that only compile. `asterdoc`'s own copies serve if the project has
  * none, so these are development dependencies.
  */
 export const DEV_BUILD_PEERS = [
@@ -45,12 +45,12 @@ export const DEV_BUILD_PEERS = [
 	'tailwindcss',
 ] as const
 
-/** Everything `paradoc dev` needs from the project, named the way a person installs it. */
+/** Everything `asterdoc dev` needs from the project, named the way a person installs it. */
 export const DEV_PEERS = [...DEV_BUILD_PEERS, ...DEV_RUNTIME_PEERS] as const
 
 /**
- * The loader `paradoc check` imports a composition through. It only compiles, so
- * it sits in the same tier as the bundler: the project's copy, else `paradoc`'s own.
+ * The loader `asterdoc check` imports a composition through. It only compiles, so
+ * it sits in the same tier as the bundler: the project's copy, else `asterdoc`'s own.
  */
 export const CHECK_LOADER_PEER = 'tsx'
 
@@ -61,18 +61,18 @@ export interface PeerNeed {
 }
 
 const DEV_NEED: PeerNeed = {
-	command: 'paradoc dev',
+	command: 'asterdoc dev',
 	reason:
 		'The preview compiles your compositions against your own React and ' +
-		"your own @paradoc/react, so it uses your project's toolchain.",
+		"your own @asterdoc/react, so it uses your project's toolchain.",
 }
 
-/** What `paradoc check` says when the project cannot supply a package it loads. */
+/** What `asterdoc check` says when the project cannot supply a package it loads. */
 export const CHECK_NEED: PeerNeed = {
-	command: 'paradoc check',
+	command: 'asterdoc check',
 	reason:
 		'The check imports your composition against your own React and your own ' +
-		"@paradoc/react, through your project's TypeScript loader.",
+		"@asterdoc/react, through your project's TypeScript loader.",
 }
 
 /** The install commands each package manager spells, by the lockfile it leaves. */
@@ -165,9 +165,9 @@ export async function importPeer(
 }
 
 /**
- * The loader module `paradoc check` registers, from the project or from `paradoc` itself.
+ * The loader module `asterdoc check` registers, from the project or from `asterdoc` itself.
  *
- * @throws {MissingPeerError} naming `paradoc check` when neither has it.
+ * @throws {MissingPeerError} naming `asterdoc check` when neither has it.
  */
 export async function importCheckLoader(root: string): Promise<Record<string, unknown>> {
 	return importPeer(root, `${CHECK_LOADER_PEER}/esm/api`, CHECK_NEED)

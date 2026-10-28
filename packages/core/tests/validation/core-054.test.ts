@@ -1,16 +1,21 @@
 /**
  * core-054: isForm / validateForm accept an outdated $schema that parseForm and validate reject.
- * Input: a valid form object with $schema = schemaVersionUrl('2026-08-10') (an earlier dated URL).
+ * Input: a valid form object whose $schema names an earlier published version.
  * Expected: isForm false and validateForm fails, matching validate() and parseForm.
  * Actual (screened commit): isForm true, validateForm success, while validate() reports outdated-version.
  */
-import { describe, expect, test } from 'vitest'
-import { schemaVersionUrl } from '@paradoc/schemas'
+import { describe, expect, test, vi } from 'vitest'
 import { isForm } from '@/validation/type-guards'
 import { validateForm } from '@/validation/validators'
 import { validate } from '@/validation/artifact'
+import { EARLIER, earlierUrl } from '../schema-history'
 
-const outdated = { $schema: schemaVersionUrl('2026-08-10'), kind: 'form', name: 'intake', fields: { name: { type: 'text' } } }
+vi.mock('@asterdoc/schemas', async (importOriginal) => {
+	const { withEarlierVersions } = await import('../schema-history')
+	return withEarlierVersions(await importOriginal())
+})
+
+const outdated = { $schema: earlierUrl(EARLIER), kind: 'form', name: 'intake', fields: { name: { type: 'text' } } }
 
 describe('core-054', () => {
 	test('control: validate() rejects the outdated $schema', () => {

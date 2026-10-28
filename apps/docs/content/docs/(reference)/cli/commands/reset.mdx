@@ -1,16 +1,16 @@
 ---
 title: reset
 description: Reset CLI to factory defaults
-ogTitle: paradoc reset
-ogDescription: Reset the Paradoc CLI to factory default settings
+ogTitle: asterdoc reset
+ogDescription: Reset the Asterdoc CLI to factory default settings
 ---
 
-Reset the Paradoc CLI to factory defaults.
+Reset the Asterdoc CLI to factory defaults.
 
 ## Usage
 
 ```bash
-paradoc reset [options]
+asterdoc reset [options]
 ```
 
 ## Options
@@ -25,8 +25,8 @@ paradoc reset [options]
 
 Performs a factory reset of the CLI by:
 
-1. Clearing the registry cache (`~/.paradoc/cache`)
-2. Creating a fresh default configuration (`~/.paradoc/config.json`)
+1. Clearing the registry cache (`~/.asterdoc/cache`)
+2. Creating a fresh default configuration (`~/.asterdoc/config.json`)
 
 You will be prompted for confirmation unless `--yes` is passed.
 
@@ -35,40 +35,40 @@ You will be prompted for confirmation unless `--yes` is passed.
 Full reset:
 
 ```bash
-paradoc reset -y
+asterdoc reset -y
 ```
 
 Reset but keep registries:
 
 ```bash
-paradoc reset --keep-registries
+asterdoc reset --keep-registries
 ```
 
 Reset but keep cache:
 
 ```bash
-paradoc reset --keep-cache
+asterdoc reset --keep-cache
 ```
 
 ## Output
 
 ```
-Paradoc CLI Reset
+Asterdoc CLI Reset
 
 This will:
-  • Create fresh default config (~/.paradoc/config.json)
+  • Create fresh default config (~/.asterdoc/config.json)
     - Registry configurations will be removed
-  • Clear cache (~/.paradoc/cache) - 45.2 KB
+  • Clear cache (~/.asterdoc/cache) - 45.2 KB
 ✓ Cleared 12 cached entries
 ✓ Created default configuration
 
-✓ Paradoc CLI has been reset to factory defaults
+✓ Asterdoc CLI has been reset to factory defaults
 
 Default settings:
   Output format: json
   Artifacts directory: artifacts
   Cache TTL: 3600s (1 hour)
-  Cache directory: ~/.paradoc/cache
+  Cache directory: ~/.asterdoc/cache
   Telemetry: enabled
 ```
 

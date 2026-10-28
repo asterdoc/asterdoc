@@ -1,12 +1,12 @@
 /**
  * Composite value shapes: the object-valued field types and their members.
  *
- * Each shape is the `@paradoc/schemas` primitive of the same name. Everything
+ * Each shape is the `@asterdoc/schemas` primitive of the same name. Everything
  * else that states a composite shape derives from `COMPOSITE_VALUE_SCHEMAS`:
  * the compiled data schema (`compile`), the expression member tables
  * (`COMPLEX_TYPE_PROPERTIES`), and `CANONICAL_SHAPES`, which the
  * form-completion agent reads. `FieldToDataType` uses the matching
- * `@paradoc/types` interfaces, which the schemas package proves equal to these
+ * `@asterdoc/types` interfaces, which the schemas package proves equal to these
  * schemas.
  */
 
@@ -20,11 +20,11 @@ import {
 	OrganizationSchema,
 	PersonSchema,
 	PhoneSchema,
-} from '@paradoc/schemas'
+} from '@asterdoc/schemas'
 import { deepClone } from '@/utils/clone'
 import type { JsonSchema } from './form-payload'
 
-/** The `@paradoc/schemas` primitive behind each composite field type. */
+/** The `@asterdoc/schemas` primitive behind each composite field type. */
 export const COMPOSITE_VALUE_SCHEMAS = {
 	money: MoneySchema,
 	address: AddressSchema,
@@ -73,7 +73,7 @@ export function isCompositeType(type: string | undefined): type is CompositeValu
 }
 
 /**
- * The JSON Schema of a composite value, generated from its `@paradoc/schemas`
+ * The JSON Schema of a composite value, generated from its `@asterdoc/schemas`
  * primitive. Each call returns a fresh copy the caller may extend.
  */
 export function compositeJsonSchema(type: CompositeValueType): JsonSchema {

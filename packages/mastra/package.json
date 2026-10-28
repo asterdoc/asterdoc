@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/mastra",
-  "version": "0.8.0",
-  "description": "Mastra adapter for Paradoc tools — wraps @paradoc/ai-tools with Mastra createTool()",
+  "name": "@asterdoc/mastra",
+  "version": "0.9.0",
+  "description": "Mastra adapter for Asterdoc tools — wraps @asterdoc/ai-tools with Mastra createTool()",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -70,7 +70,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
+    "asterdoc",
     "mastra",
     "ai",
     "tools",
@@ -78,18 +78,18 @@
     "agent"
   ],
   "license": "MIT",
-  "author": "Paradoc (https://paradoc.dev)",
+  "author": "Asterdoc (https://asterdoc.com)",
   "engines": {
     "node": ">=22.13.0"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/paradoc-dev/paradoc.git",
+    "url": "git+https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/mastra"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -108,7 +108,7 @@
     "check": "pnpm lint && pnpm check-types"
   },
   "dependencies": {
-    "@paradoc/ai-tools": "workspace:*"
+    "@asterdoc/ai-tools": "workspace:*"
   },
   "peerDependencies": {
     "@mastra/core": "^1.64.0",
@@ -116,9 +116,9 @@
   },
   "devDependencies": {
     "@mastra/core": "1.64.0",
-    "@paradoc/core": "workspace:*",
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/core": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "tsup": "catalog:",

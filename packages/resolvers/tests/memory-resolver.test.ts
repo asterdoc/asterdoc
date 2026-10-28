@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createMemoryResolver } from '@paradoc/resolvers/memory'
+import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 
 describe('createMemoryResolver', () => {
   test('matches exact keys and encodes UTF-8 text', async () => {

@@ -1,6 +1,6 @@
 import type { FormPayload } from './contracts'
-import type { ParadocToolsConfig } from './config'
-import { createHttpResolver } from '@paradoc/resolvers/http'
+import type { AsterdocToolsConfig } from './config'
+import { createHttpResolver } from '@asterdoc/resolvers/http'
 import { bytesToBase64, fetchPolicyFromConfig, MAX_LAYER_FILE_SIZE, safeFetch } from './registry-client'
 import { truncateContent } from './model-output'
 
@@ -54,9 +54,9 @@ export function contextSnapshot(value: unknown): Record<string, unknown> | undef
 	return structuredClone(value)
 }
 
-export function contextOptions(value: unknown): { context?: import('@paradoc/core').RuntimeContextOptions } | undefined {
+export function contextOptions(value: unknown): { context?: import('@asterdoc/core').RuntimeContextOptions } | undefined {
 	const context = contextSnapshot(value)
-	return context ? { context: { asOf: context.asOf as import('@paradoc/core').RuntimeContextOptions['asOf'] } } : undefined
+	return context ? { context: { asOf: context.asOf as import('@asterdoc/core').RuntimeContextOptions['asOf'] } } : undefined
 }
 
 export function encodeOutput(bytes: Uint8Array | string): { content: string; encoding: 'utf-8' | 'base64'; byte_length: number } {
@@ -65,7 +65,7 @@ export function encodeOutput(bytes: Uint8Array | string): { content: string; enc
 }
 
 /** Resolve layer files beneath the artifact's base URL through the tools' fetch policy. */
-export function makeResolver(base_url: string | undefined, config?: ParadocToolsConfig) {
+export function makeResolver(base_url: string | undefined, config?: AsterdocToolsConfig) {
 	if (!base_url) return undefined
 	const policy = fetchPolicyFromConfig(config)
 	return createHttpResolver({

@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/sdk",
-  "version": "0.8.0",
-  "description": "Umbrella package for the Paradoc framework: re-exports @paradoc/core, @paradoc/format, and @paradoc/sessions, plus the layer renderer, PDF placement helpers, and hosted sealing",
+  "name": "@asterdoc/sdk",
+  "version": "0.9.0",
+  "description": "Umbrella package for the Asterdoc framework: re-exports @asterdoc/core, @asterdoc/format, and @asterdoc/sessions, plus the layer renderer, PDF placement helpers, and hosted sealing",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -20,8 +20,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
-    "paradoc",
+    "asterdoc",
     "sdk",
     "forms",
     "rendering",
@@ -30,20 +29,20 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/sdk"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -61,14 +60,14 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@paradoc/core": "workspace:*",
-    "@paradoc/format": "workspace:*",
-    "@paradoc/render": "workspace:*",
-    "@paradoc/sessions": "workspace:*"
+    "@asterdoc/core": "workspace:*",
+    "@asterdoc/format": "workspace:*",
+    "@asterdoc/render": "workspace:*",
+    "@asterdoc/sessions": "workspace:*"
   },
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "tsup": "catalog:",

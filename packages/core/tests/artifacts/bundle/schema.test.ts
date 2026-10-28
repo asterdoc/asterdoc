@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { bundle, document, form } from '@/artifacts'
 import { validateArtifact, validateBundle } from '@/validation'
-import type { Bundle, BundleContentItem } from '@paradoc/types'
+import type { Bundle, BundleContentItem } from '@asterdoc/types'
 
 describe('Bundle', () => {
   // ============================================================================

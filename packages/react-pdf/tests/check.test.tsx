@@ -5,8 +5,8 @@
 
 import { createElement } from "react";
 import { describe, expect, it } from "vitest";
-import { p } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { p } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 
 import { checkComposition, checkElement } from "../src/check";
 import { Document } from "../../components/src/components/document";
@@ -15,11 +15,11 @@ import { KeepTogether } from "../../components/src/components/keep-together";
 import { Party } from "../../components/src/components/party";
 import { Signature } from "../../components/src/components/signature";
 import { Totals } from "../../components/src/components/totals";
-import type { DocumentData } from "@paradoc/react";
+import type { DocumentData } from "@asterdoc/react";
 import type { ReactLayerComponent } from "../src/layer";
 
 const spec = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "check-fixture",
   version: "1.0.0",
@@ -55,7 +55,7 @@ const fixtureForm: Form = p.form(spec).toJSON() as Form;
 const fixtureData: DocumentData = { fields: { name: "Ada Lovelace" }, parties: {} };
 
 const totalsSpec = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "check-totals-fixture",
   version: "1.0.0",

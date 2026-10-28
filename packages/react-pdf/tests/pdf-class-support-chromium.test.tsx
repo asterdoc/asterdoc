@@ -15,7 +15,7 @@
  *
  * It needs a Chrome, and — like `pdf-chromium.test.tsx` — it does not decide
  * for itself whether to run: a machine with no browser fails loudly rather
- * than silently covering nothing. Set `PARADOC_SKIP_CHROMIUM_TESTS=1` to opt
+ * than silently covering nothing. Set `ASTERDOC_SKIP_CHROMIUM_TESTS=1` to opt
  * out deliberately.
  */
 
@@ -24,9 +24,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { renderPdf } from "../src";
 import { chromiumExecutable, closeChromium } from "../src/adapters/chromium";
 
-const skipped = process.env.PARADOC_SKIP_CHROMIUM_TESTS === "1";
+const skipped = process.env.ASTERDOC_SKIP_CHROMIUM_TESTS === "1";
 if (skipped) {
-  console.log("Skipping the Chromium class re-probe: PARADOC_SKIP_CHROMIUM_TESTS=1.");
+  console.log("Skipping the Chromium class re-probe: ASTERDOC_SKIP_CHROMIUM_TESTS=1.");
 }
 
 /**
@@ -87,7 +87,7 @@ describe.skipIf(skipped)("the re-probed classes against the Chromium adapter", (
       throw new Error(
         "The Chromium class re-probe needs a Chrome. None of the well-known install paths " +
           "exists: set PUPPETEER_EXECUTABLE_PATH to one, or set " +
-          "PARADOC_SKIP_CHROMIUM_TESTS=1 to opt out of this file deliberately."
+          "ASTERDOC_SKIP_CHROMIUM_TESTS=1 to opt out of this file deliberately."
       );
     }
   }, 60_000);

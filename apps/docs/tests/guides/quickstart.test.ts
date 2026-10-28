@@ -5,8 +5,8 @@ import { describe, test, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { p } from '@paradoc/sdk'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { p } from '@asterdoc/sdk'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 import { fillSchemaVersion } from '@/lib/schema-version'
 
 const __filename = fileURLToPath(import.meta.url)

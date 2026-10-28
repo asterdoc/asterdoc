@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { compile, type InferFormPayload } from '@/inference'
 import { deepClone } from '@/utils/clone'
 import { createSafeRegex } from '@/utils/safe-pattern'

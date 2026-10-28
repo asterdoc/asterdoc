@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { promises as fs } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { ConfigManager, ParadocRegistryUnavailableError } from '../../src/utils/config.js'
+import { ConfigManager, AsterdocRegistryUnavailableError } from '../../src/utils/config.js'
 import { configAllowsTelemetry } from '../../src/utils/telemetry.js'
 
 describe('ConfigManager', () => {
@@ -10,7 +10,7 @@ describe('ConfigManager', () => {
   let configManager: ConfigManager
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(join(tmpdir(), 'paradoc-config-test-'))
+    tempDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-config-test-'))
     configManager = new ConfigManager(tempDir)
   })
 
@@ -27,9 +27,9 @@ describe('ConfigManager', () => {
     it('returns custom directory from project config', async () => {
       // Create project with custom artifacts dir
       await fs.writeFile(
-        join(tempDir, 'paradoc.json'),
+        join(tempDir, 'asterdoc.json'),
         JSON.stringify({
-          $schema: 'https://schema.paradoc.dev/manifest.json',
+          $schema: 'https://schema.asterdoc.com/manifest.json',
           name: '@test/test-project',
           title: 'Test Project',
           visibility: 'private',
@@ -45,28 +45,28 @@ describe('ConfigManager', () => {
 
     it('returns nested custom directory from project config', async () => {
       await fs.writeFile(
-        join(tempDir, 'paradoc.json'),
+        join(tempDir, 'asterdoc.json'),
         JSON.stringify({
-          $schema: 'https://schema.paradoc.dev/manifest.json',
+          $schema: 'https://schema.asterdoc.com/manifest.json',
           name: '@test/test-project',
           title: 'Test Project',
           visibility: 'private',
           artifacts: {
-            dir: 'src/paradoc/artifacts',
+            dir: 'src/asterdoc/artifacts',
           },
         })
       )
 
       await configManager.loadProjectManifest(tempDir)
-      expect(configManager.getArtifactsDir()).toBe('src/paradoc/artifacts')
+      expect(configManager.getArtifactsDir()).toBe('src/asterdoc/artifacts')
     })
 
     it('project config takes precedence over global config', async () => {
       // Set up project with custom dir
       await fs.writeFile(
-        join(tempDir, 'paradoc.json'),
+        join(tempDir, 'asterdoc.json'),
         JSON.stringify({
-          $schema: 'https://schema.paradoc.dev/manifest.json',
+          $schema: 'https://schema.asterdoc.com/manifest.json',
           name: '@test/test-project',
           title: 'Test Project',
           visibility: 'private',
@@ -89,9 +89,9 @@ describe('ConfigManager', () => {
 
     it('returns custom format from project config', async () => {
       await fs.writeFile(
-        join(tempDir, 'paradoc.json'),
+        join(tempDir, 'asterdoc.json'),
         JSON.stringify({
-          $schema: 'https://schema.paradoc.dev/manifest.json',
+          $schema: 'https://schema.asterdoc.com/manifest.json',
           name: '@test/test-project',
           title: 'Test Project',
           visibility: 'private',
@@ -109,9 +109,9 @@ describe('ConfigManager', () => {
   describe('registry configuration', () => {
     it('returns null for unconfigured namespace', async () => {
       await fs.writeFile(
-        join(tempDir, 'paradoc.json'),
+        join(tempDir, 'asterdoc.json'),
         JSON.stringify({
-          $schema: 'https://schema.paradoc.dev/manifest.json',
+          $schema: 'https://schema.asterdoc.com/manifest.json',
           name: '@test/test-project',
           title: 'Test Project',
           visibility: 'private',
@@ -125,9 +125,9 @@ describe('ConfigManager', () => {
 
     it('returns simple URL registry', async () => {
       await fs.writeFile(
-        join(tempDir, 'paradoc.json'),
+        join(tempDir, 'asterdoc.json'),
         JSON.stringify({
-          $schema: 'https://schema.paradoc.dev/manifest.json',
+          $schema: 'https://schema.asterdoc.com/manifest.json',
           name: '@test/test-project',
           title: 'Test Project',
           visibility: 'private',
@@ -144,9 +144,9 @@ describe('ConfigManager', () => {
 
     it('returns registry with object config', async () => {
       await fs.writeFile(
-        join(tempDir, 'paradoc.json'),
+        join(tempDir, 'asterdoc.json'),
         JSON.stringify({
-          $schema: 'https://schema.paradoc.dev/manifest.json',
+          $schema: 'https://schema.asterdoc.com/manifest.json',
           name: '@test/test-project',
           title: 'Test Project',
           visibility: 'private',
@@ -167,9 +167,9 @@ describe('ConfigManager', () => {
 
     it('normalizes namespace with and without @ prefix', async () => {
       await fs.writeFile(
-        join(tempDir, 'paradoc.json'),
+        join(tempDir, 'asterdoc.json'),
         JSON.stringify({
-          $schema: 'https://schema.paradoc.dev/manifest.json',
+          $schema: 'https://schema.asterdoc.com/manifest.json',
           name: '@test/test-project',
           title: 'Test Project',
           visibility: 'private',
@@ -196,9 +196,9 @@ describe('ConfigManager', () => {
 
     it('returns true when project loaded', async () => {
       await fs.writeFile(
-        join(tempDir, 'paradoc.json'),
+        join(tempDir, 'asterdoc.json'),
         JSON.stringify({
-          $schema: 'https://schema.paradoc.dev/manifest.json',
+          $schema: 'https://schema.asterdoc.com/manifest.json',
           name: '@test/test-project',
           title: 'Test Project',
           visibility: 'private',
@@ -209,7 +209,7 @@ describe('ConfigManager', () => {
       expect(configManager.isInProject()).toBe(true)
     })
 
-    it('returns false when paradoc.json does not exist', async () => {
+    it('returns false when asterdoc.json does not exist', async () => {
       await configManager.loadProjectManifest(tempDir)
       expect(configManager.isInProject()).toBe(false)
     })
@@ -217,7 +217,7 @@ describe('ConfigManager', () => {
 
   describe('project security settings', () => {
     const manifest = {
-      $schema: 'https://schema.paradoc.dev/manifest.json',
+      $schema: 'https://schema.asterdoc.com/manifest.json',
       name: '@acme/forms',
       title: 'Acme forms',
       visibility: 'private',
@@ -225,12 +225,12 @@ describe('ConfigManager', () => {
     }
 
     it('uses the project content types in place of the global ones', async () => {
-      await fs.mkdir(join(tempDir, '.paradoc'))
+      await fs.mkdir(join(tempDir, '.asterdoc'))
       await fs.writeFile(
-        join(tempDir, '.paradoc', 'config.json'),
+        join(tempDir, '.asterdoc', 'config.json'),
         JSON.stringify({ security: { allowedContentTypes: ['text/x-global'] } }),
       )
-      await fs.writeFile(join(tempDir, 'paradoc.json'), JSON.stringify(manifest))
+      await fs.writeFile(join(tempDir, 'asterdoc.json'), JSON.stringify(manifest))
       await configManager.loadProjectManifest(tempDir)
 
       const allowed = await configManager.getAllowedContentTypes()
@@ -243,20 +243,20 @@ describe('ConfigManager', () => {
   describe('global config', () => {
     const ANONYMOUS_ID = '3f2b8c1e-5d4a-4e6f-9a7b-1c2d3e4f5a6b'
     const savedConfig = {
-      $schema: 'https://schema.paradoc.dev/config.json',
+      $schema: 'https://schema.asterdoc.com/config.json',
       registries: {
         '@acme': { url: 'https://registry.acme.com', headers: { Authorization: 'Bearer ${ACME_TOKEN}' } },
       },
       defaults: { output: 'yaml' as const, artifactsDir: 'forms' },
-      cache: { ttl: 60, directory: '/tmp/paradoc-cache' },
+      cache: { ttl: 60, directory: '/tmp/asterdoc-cache' },
       security: { allowedContentTypes: ['text/csv'] },
       telemetry: { enabled: false },
       anonymousId: ANONYMOUS_ID,
     }
 
-    const configPath = () => join(tempDir, '.paradoc', 'config.json')
+    const configPath = () => join(tempDir, '.asterdoc', 'config.json')
     const writeRaw = async (content: string) => {
-      await fs.mkdir(join(tempDir, '.paradoc'), { recursive: true })
+      await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
       await fs.writeFile(configPath(), content)
     }
     const readRaw = () => fs.readFile(configPath(), 'utf-8')
@@ -265,7 +265,7 @@ describe('ConfigManager', () => {
       await writeRaw(JSON.stringify({ cache: { directory: 'cache-data' } }))
       const globalDirectory = await configManager.getCacheDirectory()
       expect(basename(globalDirectory)).toBe('cache-data')
-      expect(await fs.realpath(dirname(globalDirectory))).toBe(await fs.realpath(join(tempDir, '.paradoc')))
+      expect(await fs.realpath(dirname(globalDirectory))).toBe(await fs.realpath(join(tempDir, '.asterdoc')))
 
       const homePath = new ConfigManager(tempDir)
       await fs.writeFile(configPath(), JSON.stringify({ cache: { directory: '~/cache-data' } }))
@@ -309,7 +309,7 @@ describe('ConfigManager', () => {
       await configManager.saveGlobalConfig({ $schema: 'https://example.com/other.json', cache: { ttl: 5 } })
       const onDisk = JSON.parse(await readRaw())
       expect(Object.keys(onDisk)[0]).toBe('$schema')
-      expect(onDisk.$schema).toBe('https://schema.paradoc.dev/config.json')
+      expect(onDisk.$schema).toBe('https://schema.asterdoc.com/config.json')
     })
 
     it('honors the documented telemetry opt-out', async () => {
@@ -362,7 +362,7 @@ describe('ConfigManager', () => {
   })
 
   describe('project manifest', () => {
-    const manifestPath = () => join(tempDir, 'paradoc.json')
+    const manifestPath = () => join(tempDir, 'asterdoc.json')
 
     it('resolves a relative project cache directory from the project root', async () => {
       await fs.writeFile(manifestPath(), JSON.stringify({ name: '@test/project', title: 'Project', cache: { directory: 'project-cache' } }))
@@ -406,30 +406,30 @@ describe('ConfigManager', () => {
 
   describe('registry namespaces', () => {
     const manifest = (registries?: Record<string, unknown>) => JSON.stringify({
-      $schema: 'https://schema.paradoc.dev/manifest.json',
+      $schema: 'https://schema.asterdoc.com/manifest.json',
       name: '@test/test-project',
       title: 'Test Project',
       visibility: 'private',
       ...(registries ? { registries } : {}),
     })
-    const globalConfigPath = () => join(tempDir, '.paradoc', 'config.json')
+    const globalConfigPath = () => join(tempDir, '.asterdoc', 'config.json')
     const writeGlobal = async (config: unknown) => {
-      await fs.mkdir(join(tempDir, '.paradoc'), { recursive: true })
+      await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
       await fs.writeFile(globalConfigPath(), JSON.stringify(config))
     }
 
-    it('refuses the reserved @paradoc, whose registry is not available yet', async () => {
-      for (const namespace of ['@paradoc', 'paradoc', '@PARADOC']) {
-        await expect(configManager.getRegistryUrl(namespace)).rejects.toThrow(ParadocRegistryUnavailableError)
+    it('refuses the reserved @asterdoc, whose registry is not available yet', async () => {
+      for (const namespace of ['@asterdoc', 'asterdoc', '@ASTERDOC']) {
+        await expect(configManager.getRegistryUrl(namespace)).rejects.toThrow(AsterdocRegistryUnavailableError)
       }
-      await expect(configManager.getRegistryUrl('@paradoc')).rejects.toThrow(
-        'The Paradoc registry is not available yet, so @paradoc cannot be resolved.',
+      await expect(configManager.getRegistryUrl('@asterdoc')).rejects.toThrow(
+        'The Asterdoc registry is not available yet, so @asterdoc cannot be resolved.',
       )
     })
 
     it('fails for an unconfigured namespace, naming it and the add command', async () => {
       await expect(configManager.getRegistryUrl('@acme')).rejects.toThrow(
-        'No registry is configured for @acme. Run: paradoc registry add @acme <url>',
+        'No registry is configured for @acme. Run: asterdoc registry add @acme <url>',
       )
     })
 
@@ -438,42 +438,42 @@ describe('ConfigManager', () => {
       expect(await configManager.getRegistryUrl('@acme')).toBe('https://registry.acme.com')
     })
 
-    it('rejects a global config entry for @paradoc, naming the file', async () => {
-      await writeGlobal({ registries: { '@paradoc': 'https://evil.example' } })
+    it('rejects a global config entry for @asterdoc, naming the file', async () => {
+      await writeGlobal({ registries: { '@asterdoc': 'https://evil.example' } })
       const load = configManager.loadGlobalConfig()
       await expect(load).rejects.toThrow(`Invalid global config in ${globalConfigPath()}`)
       await expect(configManager.loadGlobalConfig()).rejects.toThrow(
-        '"registries.@paradoc": @paradoc is reserved for the Paradoc registry; it cannot be configured',
+        '"registries.@asterdoc": @asterdoc is reserved for the Asterdoc registry; it cannot be configured',
       )
-      await expect(configManager.getRegistryUrl('@paradoc')).rejects.toThrow(globalConfigPath())
+      await expect(configManager.getRegistryUrl('@asterdoc')).rejects.toThrow(globalConfigPath())
     })
 
     it('rejects a reserved entry whatever its case', async () => {
-      await writeGlobal({ registries: { '@Paradoc': { url: 'https://evil.example' } } })
-      await expect(configManager.loadGlobalConfig()).rejects.toThrow('"registries.@Paradoc": @Paradoc is reserved')
+      await writeGlobal({ registries: { '@Asterdoc': { url: 'https://evil.example' } } })
+      await expect(configManager.loadGlobalConfig()).rejects.toThrow('"registries.@Asterdoc": @Asterdoc is reserved')
     })
 
-    it('rejects a project config entry for @paradoc, naming the file', async () => {
-      await fs.writeFile(join(tempDir, 'paradoc.json'), manifest({ '@paradoc': 'https://evil.example' }))
+    it('rejects a project config entry for @asterdoc, naming the file', async () => {
+      await fs.writeFile(join(tempDir, 'asterdoc.json'), manifest({ '@asterdoc': 'https://evil.example' }))
       await expect(configManager.loadProjectManifest(tempDir)).rejects.toThrow(
-        `Invalid project config in ${join(tempDir, 'paradoc.json')}: "registries.@paradoc": @paradoc is reserved`,
+        `Invalid project config in ${join(tempDir, 'asterdoc.json')}: "registries.@asterdoc": @asterdoc is reserved`,
       )
     })
 
-    it('refuses to add @paradoc to the global config and writes nothing', async () => {
-      await expect(configManager.setGlobalRegistry('@paradoc', 'https://evil.example')).rejects.toThrow(
-        '@paradoc is reserved for the Paradoc registry; it cannot be configured',
+    it('refuses to add @asterdoc to the global config and writes nothing', async () => {
+      await expect(configManager.setGlobalRegistry('@asterdoc', 'https://evil.example')).rejects.toThrow(
+        '@asterdoc is reserved for the Asterdoc registry; it cannot be configured',
       )
-      await expect(configManager.setGlobalRegistry('paradoc', 'https://evil.example')).rejects.toThrow('reserved')
+      await expect(configManager.setGlobalRegistry('asterdoc', 'https://evil.example')).rejects.toThrow('reserved')
       await expect(fs.access(globalConfigPath())).rejects.toThrow()
     })
 
-    it('refuses to add @paradoc to the project config and leaves paradoc.json as it is', async () => {
+    it('refuses to add @asterdoc to the project config and leaves asterdoc.json as it is', async () => {
       const original = manifest()
-      await fs.writeFile(join(tempDir, 'paradoc.json'), original)
+      await fs.writeFile(join(tempDir, 'asterdoc.json'), original)
       await configManager.loadProjectManifest(tempDir)
-      await expect(configManager.setProjectRegistry('@paradoc', 'https://evil.example')).rejects.toThrow('reserved')
-      expect(await fs.readFile(join(tempDir, 'paradoc.json'), 'utf-8')).toBe(original)
+      await expect(configManager.setProjectRegistry('@asterdoc', 'https://evil.example')).rejects.toThrow('reserved')
+      expect(await fs.readFile(join(tempDir, 'asterdoc.json'), 'utf-8')).toBe(original)
     })
 
     it('adds any other namespace', async () => {
@@ -483,7 +483,7 @@ describe('ConfigManager', () => {
 
     it('lists the registries of one scope, including a global entry a project entry shadows', async () => {
       await writeGlobal({ registries: { '@acme': 'https://global.acme.com', '@other': 'https://other.example' } })
-      await fs.writeFile(join(tempDir, 'paradoc.json'), manifest({ '@acme': 'https://project.acme.com' }))
+      await fs.writeFile(join(tempDir, 'asterdoc.json'), manifest({ '@acme': 'https://project.acme.com' }))
       await configManager.loadProjectManifest(tempDir)
 
       expect(await configManager.listRegistries('global')).toEqual([

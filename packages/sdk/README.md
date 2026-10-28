@@ -1,27 +1,27 @@
 <p align="center">
-  <a href="https://paradoc.dev?utm_source=github&utm_medium=sdk" target="_blank" rel="noopener noreferrer">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=sdk" target="_blank" rel="noopener noreferrer">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://assets.paradoc.dev/logo-400x400.png" type="image/png">
-      <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Paradoc logo">
+      <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Asterdoc logo">
     </picture>
   </a>
   <br />
 </p>
 
-<h1 align="center">@paradoc/sdk</h1>
+<h1 align="center">@asterdoc/sdk</h1>
 
 <div align="center">
 
-[![Paradoc documentation](https://img.shields.io/badge/Documentation-Paradoc-red.svg)](https://docs.paradoc.dev?utm_source=github&utm_medium=sdk)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/paradochq?style=social)](https://twitter.com/intent/follow?screen_name=paradochq)
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=sdk)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/asterdoc)
 
 </div>
 
-[Paradoc](https://paradoc.dev?utm_source=github&utm_medium=sdk) is **documents as code**. It lets developers and AI agents define, validate, and render business documents using typed, composable schemas. This eliminates template drift, broken mappings, and brittle glue code — while giving AI systems a reliable document layer they can safely read, reason over, and generate against in production workflows.
+[Asterdoc](https://asterdoc.com?utm_source=github&utm_medium=sdk) is **documents as code**. It lets developers and AI agents define, validate, and render business documents using typed, composable schemas. This eliminates template drift, broken mappings, and brittle glue code — while giving AI systems a reliable document layer they can safely read, reason over, and generate against in production workflows.
 
 ## Package overview
 
-The Paradoc SDK includes the default renderer. Install a resolver when layers reference external files.
+The Asterdoc SDK includes the default renderer. Install a resolver when layers reference external files.
 
 - 📦 **Focused packages** - The SDK includes the default renderer; environment adapters stay explicit
 - 🏗️ **Type-safe builders** - Fluent API with full TypeScript support
@@ -30,16 +30,16 @@ The Paradoc SDK includes the default renderer. Install a resolver when layers re
 - 🎯 **Composable artifacts** - Reuse fields, forms, and documents across definitions
 - 🤖 **AI-ready** - Built for agent ingestion and verification
 
-The SDK re-exports everything from `@paradoc/core`, `@paradoc/format`, and `@paradoc/sessions`. It also exports:
+The SDK re-exports everything from `@asterdoc/core`, `@asterdoc/format`, and `@asterdoc/sessions`. It also exports:
 
-- `createLayerRenderer()`, the MIME-selected renderer from `@paradoc/render`, to configure rendering options
-- the PDF placement helpers from `@paradoc/render/pdf`: `locate`, `locator`, `extractFieldsFromPdf`, and the marker encoders
-- `hostedSealAdapter()`, which converts HTML, Markdown, and DOCX layers to PDF through Paradoc's hosted conversion API when you seal
+- `createLayerRenderer()`, the MIME-selected renderer from `@asterdoc/render`, to configure rendering options
+- the PDF placement helpers from `@asterdoc/render/pdf`: `locate`, `locator`, `extractFieldsFromPdf`, and the marker encoders
+- `hostedSealAdapter()`, which converts HTML, Markdown, and DOCX layers to PDF through Asterdoc's hosted conversion API when you seal
 
-The standalone `@paradoc/format` presentation API works on values outside artifact rendering too. Use one formatter for values outside artifact rendering as well as for future renderer configuration:
+The standalone `@asterdoc/format` presentation API works on values outside artifact rendering too. Use one formatter for values outside artifact rendering as well as for future renderer configuration:
 
 ```typescript
-import { createFormatter } from "@paradoc/sdk";
+import { createFormatter } from "@asterdoc/sdk";
 
 const format = createFormatter({ locale: "de-DE" });
 format.formatMoney({ amount: 1500.5, currency: "USD" }); // "1.500,50 $"
@@ -48,7 +48,7 @@ format.formatMoney({ amount: 1500.5, currency: "USD" }); // "1.500,50 $"
 ## Installation
 
 ```bash
-npm install @paradoc/sdk @paradoc/resolvers
+npm install @asterdoc/sdk @asterdoc/resolvers
 ```
 
 ## Usage
@@ -56,8 +56,8 @@ npm install @paradoc/sdk @paradoc/resolvers
 Define forms with parties, fields, and output layers:
 
 ```typescript
-import { p } from "@paradoc/sdk";
-import { createFsResolver } from "@paradoc/resolvers/fs";
+import { p } from "@asterdoc/sdk";
+import { createFsResolver } from "@asterdoc/resolvers/fs";
 
 // A file-backed layer's bytes come from a resolver, bound once when the form
 // is built. Every instance derived from it — every fill, every render —
@@ -247,7 +247,7 @@ const leaseBundle = p
 Get automatic TypeScript types from your form definitions:
 
 ```typescript
-import { type InferFormPayload } from "@paradoc/sdk";
+import { type InferFormPayload } from "@asterdoc/sdk";
 
 type LeaseData = InferFormPayload<typeof leaseAgreement>;
 
@@ -285,28 +285,28 @@ if (result.success) {
 }
 ```
 
-For API reference and advanced patterns, visit [docs.paradoc.dev](https://docs.paradoc.dev).
+For API reference and advanced patterns, visit [docs.asterdoc.com](https://docs.asterdoc.com).
 
 ## Changelog
 
-View the [Changelog](https://github.com/paradoc-dev/paradoc/blob/main/CHANGELOG.md) for updates.
+View the [Changelog](https://github.com/asterdoc/asterdoc/blob/main/CHANGELOG.md) for updates.
 
 ## Related packages
 
-- [`@paradoc/core`](../core) - Core artifacts and builders
-- [`@paradoc/types`](../types) - TypeScript utilities and types
-- [`@paradoc/schemas`](../schemas) - JSON Schema definitions
-- [`@paradoc/format`](../format) - Locale-aware value presentation
-- [`@paradoc/sessions`](../sessions) - Form-completion session engine
-- [`@paradoc/resolvers`](../resolvers) - File and environment resolvers
-- [`@paradoc/render`](../render) - MIME-selected PDF, DOCX, and text rendering
+- [`@asterdoc/core`](../core) - Core artifacts and builders
+- [`@asterdoc/types`](../types) - TypeScript utilities and types
+- [`@asterdoc/schemas`](../schemas) - JSON Schema definitions
+- [`@asterdoc/format`](../format) - Locale-aware value presentation
+- [`@asterdoc/sessions`](../sessions) - Form-completion session engine
+- [`@asterdoc/resolvers`](../resolvers) - File and environment resolvers
+- [`@asterdoc/render`](../render) - MIME-selected PDF, DOCX, and text rendering
 
 ## Contributing
 
-We're open to all community contributions! If you'd like to contribute in any way, please read our [contribution guidelines](https://github.com/paradoc-dev/paradoc/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/paradoc-dev/paradoc/blob/main/CODE_OF_CONDUCT.md).
+We're open to all community contributions! If you'd like to contribute in any way, please read our [contribution guidelines](https://github.com/asterdoc/asterdoc/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/asterdoc/asterdoc/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
 This project is licensed under the MIT license.
 
-See [LICENSE](https://github.com/paradoc-dev/paradoc/blob/main/LICENSE) for more information.
+See [LICENSE](https://github.com/asterdoc/asterdoc/blob/main/LICENSE) for more information.

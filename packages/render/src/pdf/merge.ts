@@ -33,7 +33,7 @@
  * A caller who needs any of them should say so rather than merge.
  */
 
-import type { BinaryContent } from '@paradoc/types'
+import type { BinaryContent } from '@asterdoc/types'
 import { pageRecords, selfContainedPage } from './page-tree'
 import {
   isDict,

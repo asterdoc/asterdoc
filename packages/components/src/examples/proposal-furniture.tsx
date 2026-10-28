@@ -1,6 +1,6 @@
 /** @jsxRuntime classic */
 import React from "react";
-import type { PageFurniture } from "@paradoc/react";
+import type { PageFurniture } from "@asterdoc/react";
 
 import { PageNumber } from "../components/page-number";
 import { shortProposalData } from "./proposal-data";

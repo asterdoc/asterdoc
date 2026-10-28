@@ -30,7 +30,7 @@
 import type { CSSProperties } from "react";
 import type { Node } from "@takumi-rs/helpers";
 
-import { RENDER_ATTRIBUTES, type PagePlan } from "@paradoc/react";
+import { RENDER_ATTRIBUTES, type PagePlan } from "@asterdoc/react";
 import { unsupportedClasses } from "./tailwind";
 
 /** The attribute that marks a pagination unit, shared with the preview. */
@@ -95,7 +95,7 @@ export function recordOnce(into: string[], value: string): void {
  *
  * `@takumi-rs/helpers` turns a literal `<svg>` element into an image node
  * whose `src` is the element's own serialized markup rather than a reference
- * to anything external — the same text `imageFormat` (from `@paradoc/react`)
+ * to anything external — the same text `imageFormat` (from `@asterdoc/react`)
  * already recognizes as the `svg` format. There is nothing to fetch: the
  * "bytes" the render needs are the string that is already sitting in `src`,
  * so asking the caller to hand that same text back as a supplied image would

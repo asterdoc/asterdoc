@@ -6,11 +6,11 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@paradoc/core": ["../core/src/index.ts"],
-      "@paradoc/render": ["../render/src/index.ts"],
-      "@paradoc/render/*": ["../render/src/*"],
-      "@paradoc/client": ["../client/src/index.ts"],
-      "@paradoc/api-surfaces": ["../contracts/src/index.ts"],
+      "@asterdoc/core": ["../core/src/index.ts"],
+      "@asterdoc/render": ["../render/src/index.ts"],
+      "@asterdoc/render/*": ["../render/src/*"],
+      "@asterdoc/client": ["../client/src/index.ts"],
+      "@asterdoc/api-surfaces": ["../contracts/src/index.ts"],
       "@/*": ["../core/src/*"]
     }
   },

@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Paradoc, please **do not** open a public GitHub issue. Instead, please report it responsibly by emailing the maintainers with details of the vulnerability.
+If you discover a security vulnerability in Asterdoc, please **do not** open a public GitHub issue. Instead, report it privately to [hello@asterdoc.com](mailto:hello@asterdoc.com) or through [asterdoc.com/contact](https://asterdoc.com/contact), with details of the vulnerability.
 
 ### What to Include in Your Report
 
@@ -22,7 +22,7 @@ We aim to:
 
 ## Security Best Practices
 
-When using Paradoc:
+When using Asterdoc:
 
 1. **Keep dependencies updated** - Regularly update npm packages using `pnpm update`
 2. **Review changelogs** - Check release notes for security updates
@@ -37,7 +37,7 @@ Security updates are provided for:
 
 ## Security Features
 
-Paradoc includes:
+Asterdoc includes:
 - Full TypeScript type safety
 - Input validation with AJV
 - No hardcoded credentials or secrets
@@ -46,6 +46,6 @@ Paradoc includes:
 
 ## Questions
 
-For security-related questions or clarifications, please contact the maintainers privately rather than using public issue trackers.
+For security-related questions, email [hello@asterdoc.com](mailto:hello@asterdoc.com) rather than using public issue trackers.
 
-Thank you for helping keep Paradoc secure!
+Thank you for helping keep Asterdoc secure!

@@ -1,5 +1,5 @@
 {
-  "extends": "@paradoc/typescript-config/base.json",
+  "extends": "@asterdoc/typescript-config/base.json",
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -7,7 +7,7 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@paradoc/core": ["../../packages/core/src/index.ts"],
+      "@asterdoc/core": ["../../packages/core/src/index.ts"],
       "@/*": ["../../packages/core/src/*"]
     }
   },

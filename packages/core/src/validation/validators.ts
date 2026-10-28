@@ -1,7 +1,7 @@
 /**
  * Runtime Zod Validators
  *
- * Each validator checks a value against its schema in `@paradoc/schemas` and
+ * Each validator checks a value against its schema in `@asterdoc/schemas` and
  * returns a Standard Schema result: `{ value }`, or `{ issues }`.
  */
 
@@ -30,7 +30,7 @@ import {
 	PhoneSchema,
 	RuntimeOrganizationSchema,
 	RuntimePersonSchema,
-} from '@paradoc/schemas'
+} from '@asterdoc/schemas'
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type {
 	Address,
@@ -55,7 +55,7 @@ import type {
 	Person,
 	Phone,
 	Signature,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import type { ZodType } from 'zod'
 import { findSchemaVersionError } from '@/serialization/schema-version'
 import { zodIssues } from './zod-parser'

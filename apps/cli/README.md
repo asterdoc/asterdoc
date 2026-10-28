@@ -1,59 +1,59 @@
 <p align="center">
-  <a href="https://paradoc.dev?utm_source=github&utm_medium=cli" target="_blank" rel="noopener noreferrer">
-    <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Paradoc logo">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=cli" target="_blank" rel="noopener noreferrer">
+    <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Asterdoc logo">
   </a>
 </p>
 
-<h1 align="center">@paradoc/cli</h1>
+<h1 align="center">@asterdoc/cli</h1>
 
-Paradoc treats documents as structured, machine-readable artifacts. The CLI initializes projects, manages artifacts and registries, validates data, and runs local document workflows.
+Asterdoc treats documents as structured, machine-readable artifacts. The CLI initializes projects, manages artifacts and registries, validates data, and runs local document workflows.
 
 ## Installation
 
 Requires Node.js 22 or newer.
 
 ```bash
-npm install -g paradoc-cli
+npm install -g asterdoc
 ```
 
 You can also run it without a global install:
 
 ```bash
-npx paradoc-cli --help
+npx asterdoc --help
 ```
 
-`paradoc-cli` and `@paradoc/cli` publish the same CLI and both register the `paradoc` executable. Install one package, not both.
+`asterdoc` and `@asterdoc/cli` publish the same CLI and both register the `asterdoc` executable. Install one package, not both.
 
 ## Quick start
 
 ```bash
-paradoc init my-project
+asterdoc init my-project
 cd my-project
 
-paradoc registry add @acme https://registry.acme.com
-paradoc search "lease agreement"
-paradoc add @acme/example-form
-paradoc list
-paradoc show @acme/example-form
+asterdoc registry add @acme https://registry.acme.com
+asterdoc search "lease agreement"
+asterdoc add @acme/example-form
+asterdoc list
+asterdoc show @acme/example-form
 ```
 
-A registry reference is `@namespace/name[/edition][@version]`. With no edition and no version, `paradoc add` installs the release the registry states as its default: the current edition, latest version.
+A registry reference is `@namespace/name[/edition][@version]`. With no edition and no version, `asterdoc add` installs the release the registry states as its default: the current edition, latest version.
 
 ```bash
-paradoc add @acme/w-9                  # current edition, latest version
-paradoc add @acme/w-9/2024-03          # latest version of edition 2024-03
-paradoc add @acme/w-9@1.0.0            # version 1.0.0 of the current edition
-paradoc add @acme/w-9/2024-03@1.0.0    # one edition, one version
+asterdoc add @acme/w-9                  # current edition, latest version
+asterdoc add @acme/w-9/2024-03          # latest version of edition 2024-03
+asterdoc add @acme/w-9@1.0.0            # version 1.0.0 of the current edition
+asterdoc add @acme/w-9/2024-03@1.0.0    # one edition, one version
 ```
 
-`paradoc add` checks each file against the SHA-256 in the registry manifest and records the installed edition and version in `.paradoc/lock.json`. `paradoc search` shows every edition and version of an artifact.
+`asterdoc add` checks each file against the SHA-256 in the registry manifest and records the installed edition and version in `.asterdoc/lock.json`. `asterdoc search` shows every edition and version of an artifact.
 
 To publish a registry, list your artifact source files in `registry.config.json` and compile it. Each source file is one release; files with the same `name` become the editions and versions of one artifact.
 
 ```bash
-paradoc registry make                       # writes registry.config.json
-paradoc registry catalog add forms/w-9.json # adds a source file
-paradoc registry compile --output dist      # writes dist/registry.json and each release
+asterdoc registry make                       # writes registry.config.json
+asterdoc registry catalog add forms/w-9.json # adds a source file
+asterdoc registry compile --output dist      # writes dist/registry.json and each release
 ```
 
 `registry compile` writes each release to `<name>/<edition>/<version>/` (or `<name>/<version>/` for an artifact with no editions). The default version is the highest version that is not a pre-release. The default edition is the one that started last and not after today. State another default in `registry.config.json`:
@@ -67,10 +67,10 @@ paradoc registry compile --output dist      # writes dist/registry.json and each
 }
 ```
 
-`paradoc init` prompts for project details. For a non-interactive setup, pass `--yes` and `--name`:
+`asterdoc init` prompts for project details. For a non-interactive setup, pass `--yes` and `--name`:
 
 ```bash
-paradoc init my-project --yes --name "My Project"
+asterdoc init my-project --yes --name "My Project"
 ```
 
 ## Global options
@@ -80,15 +80,15 @@ paradoc init my-project --yes --name "My Project"
 -h, --help      display help for command
 ```
 
-Run `paradoc <command> --help` for command-specific arguments and options. The [CLI command reference](https://docs.paradoc.dev/cli/commands) documents the full command set.
+Run `asterdoc <command> --help` for command-specific arguments and options. The [CLI command reference](https://docs.asterdoc.com/cli/commands) documents the full command set.
 
 ## Project files
 
-A Paradoc project contains `paradoc.json` and a `.paradoc` directory. Installed artifacts and their files are recorded in `.paradoc/lock.json`; commit the lock file with your project.
+An Asterdoc project contains `asterdoc.json` and a `.asterdoc` directory. Installed artifacts and their files are recorded in `.asterdoc/lock.json`; commit the lock file with your project.
 
 ## Related packages
 
-- [`@paradoc/sdk`](../../packages/sdk)
-- [`@paradoc/core`](../../packages/core)
-- [`@paradoc/schemas`](../../packages/schemas)
-- [`@paradoc/render`](../../packages/render)
+- [`@asterdoc/sdk`](../../packages/sdk)
+- [`@asterdoc/core`](../../packages/core)
+- [`@asterdoc/schemas`](../../packages/schemas)
+- [`@asterdoc/render`](../../packages/render)

@@ -7,7 +7,7 @@ import React from "react";
  * an organization prints only its name instead of the default's fuller detail.
  */
 
-import { createFormatter } from "@paradoc/format";
+import { createFormatter } from "@asterdoc/format";
 import { Document } from "../components/document";
 import { Field } from "../components/field";
 import { proposalForm } from "./proposal";

@@ -1,5 +1,5 @@
-import type { Formatter } from '@paradoc/types'
-import type { EvaluationContext, Expr, Value } from '@paradoc/expr'
+import type { Formatter } from '@asterdoc/types'
+import type { EvaluationContext, Expr, Value } from '@asterdoc/expr'
 import { TemplateError, type TemplateDiagnostic } from '../template/errors'
 import { parseTemplate, type ExpressionSlot, type TemplateNode } from '../template/markers'
 import { fromValue, TemplateScope, type Frame } from '../template/scope'

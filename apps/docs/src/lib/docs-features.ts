@@ -1,10 +1,10 @@
-declare const __PARADOC_DOCS_PLATFORM_API__: boolean | undefined;
+declare const __ASTERDOC_DOCS_PLATFORM_API__: boolean | undefined;
 
 export const platformApiDocsEnabled =
-  typeof __PARADOC_DOCS_PLATFORM_API__ !== "undefined"
-    ? __PARADOC_DOCS_PLATFORM_API__
+  typeof __ASTERDOC_DOCS_PLATFORM_API__ !== "undefined"
+    ? __ASTERDOC_DOCS_PLATFORM_API__
     : typeof process !== "undefined" &&
-      process.env.PARADOC_DOCS_PLATFORM_API === "true";
+      process.env.ASTERDOC_DOCS_PLATFORM_API === "true";
 
 export const PLATFORM_API_PAGE = "guides/hosted-sealing-and-conversion.mdx";
 export const PLATFORM_ACCESS_PAGE = "guides/platform-access.mdx";

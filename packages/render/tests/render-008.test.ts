@@ -5,7 +5,7 @@
  * Actual (screened commit): the box holds "read, run" and the entry is `unparseable`
  *   ("A multiselect value written as one piece of text cannot be split back into its options.").
  */
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
 import { extractPdfData, renderPdf } from '../src/pdf'
 import { acroFormPdf } from './pdf-fixtures'

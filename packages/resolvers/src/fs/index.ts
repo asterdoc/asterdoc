@@ -2,7 +2,7 @@
  * Filesystem resolver for Node.js environments.
  */
 
-import type { Resolver } from '@paradoc/types'
+import type { Resolver } from '@asterdoc/types'
 import { readFile, realpath } from 'node:fs/promises'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 import { invalidOptions, outsideRoot } from '../shared/errors'
@@ -27,7 +27,7 @@ export interface FsResolverOptions {
  *
  * @example
  * ```typescript
- * import { createFsResolver } from '@paradoc/resolvers/fs'
+ * import { createFsResolver } from '@asterdoc/resolvers/fs'
  *
  * const resolver = createFsResolver({ root: process.cwd() })
  *

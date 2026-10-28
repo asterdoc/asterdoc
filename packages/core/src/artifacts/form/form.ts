@@ -33,16 +33,16 @@ import type {
 	Expression,
 	ContentRef,
 	Resolver,
-	ParadocRenderer,
+	AsterdocRenderer,
 	Formatter,
 	FormData,
 	RuntimeFormJSON,
 	ArtifactEdition,
-} from '@paradoc/types'
-import { createLayerRenderer } from '@paradoc/render'
-import { flattenPdf, locate as locatePlacements } from '@paradoc/render/pdf'
-import { extractPdfData, selectPdfExtractionLayer } from '@paradoc/render/pdf'
-import type { PdfExtraction } from '@paradoc/render/pdf'
+} from '@asterdoc/types'
+import { createLayerRenderer } from '@asterdoc/render'
+import { flattenPdf, locate as locatePlacements } from '@asterdoc/render/pdf'
+import { extractPdfData, selectPdfExtractionLayer } from '@asterdoc/render/pdf'
+import type { PdfExtraction } from '@asterdoc/render/pdf'
 import { SealConfigError, buildSlotPlan, hasSignatureSlots } from './seal-slots'
 import { partySignerIds } from '@/primitives/party'
 import type { PlacementProvenance, SealPreparation } from './seal-slots'
@@ -223,7 +223,7 @@ export interface SealOptions {
 	 * that, so `prepareSeal` and `seal` refuse the combination rather than
 	 * dropping the markers. See `renderers` for the whole order.
 	 */
-	renderer?: ParadocRenderer<RendererLayer, string | Uint8Array>
+	renderer?: AsterdocRenderer<RendererLayer, string | Uint8Array>
 	/**
 	 * Renderers keyed by layer MIME type, the same registry `render` takes.
 	 *

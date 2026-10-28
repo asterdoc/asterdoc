@@ -1,4 +1,4 @@
-import type { SealAdapter } from '@paradoc/core'
+import type { SealAdapter } from '@asterdoc/core'
 
 /** The Platform API route the adapter calls, under `baseUrl`. */
 export const HOSTED_CONVERT_PATH = '/v1/exec/convert'
@@ -56,13 +56,13 @@ export function decodeBase64(value: string): Uint8Array {
   return Uint8Array.from(binary, (character) => character.charCodeAt(0))
 }
 
-/** Convert non-PDF seal inputs through Paradoc's hosted conversion API. */
+/** Convert non-PDF seal inputs through Asterdoc's hosted conversion API. */
 export function hostedSealAdapter(options: HostedSealAdapterOptions): SealAdapter {
   if (!options.apiKey) throw new Error('hostedSealAdapter requires an API key.')
   if (options.timeoutMs !== undefined && !(Number.isFinite(options.timeoutMs) && options.timeoutMs > 0)) {
     throw new RangeError(`hostedSealAdapter timeoutMs must be a positive number of milliseconds, got ${options.timeoutMs}.`)
   }
-  const baseUrl = (options.baseUrl ?? 'https://api.paradoc.dev').replace(/\/$/, '')
+  const baseUrl = (options.baseUrl ?? 'https://api.asterdoc.com').replace(/\/$/, '')
   const request = options.fetch ?? globalThis.fetch
 
   return {
@@ -85,22 +85,22 @@ export function hostedSealAdapter(options: HostedSealAdapterOptions): SealAdapte
       })
       const text = await response.text()
       if (!response.ok) {
-        throw new HostedConversionError('Paradoc conversion failed', response.status, text || response.statusText)
+        throw new HostedConversionError('Asterdoc conversion failed', response.status, text || response.statusText)
       }
       let result: ConvertResponse
       try {
         result = JSON.parse(text) as ConvertResponse
       } catch {
-        throw new HostedConversionError('Paradoc conversion returned a response that is not JSON', response.status, text)
+        throw new HostedConversionError('Asterdoc conversion returned a response that is not JSON', response.status, text)
       }
       const document = result?.document
       if (document?.mime_type !== 'application/pdf' || !document.content_base64) {
-        throw new HostedConversionError('Paradoc conversion returned an invalid PDF response', response.status, text)
+        throw new HostedConversionError('Asterdoc conversion returned an invalid PDF response', response.status, text)
       }
       try {
         return { pdf: decodeBase64(document.content_base64) }
       } catch {
-        throw new HostedConversionError('Paradoc conversion returned a PDF that is not valid base64', response.status, text)
+        throw new HostedConversionError('Asterdoc conversion returned a PDF that is not valid base64', response.status, text)
       }
     },
   }

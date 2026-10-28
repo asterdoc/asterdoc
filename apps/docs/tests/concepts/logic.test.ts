@@ -2,7 +2,7 @@
  * Tests for code snippets in concepts/logic.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p, validate } from '@paradoc/sdk'
+import { p, validate } from '@asterdoc/sdk'
 
 /** Find an item's runtime state in a draft's fill state, across all buckets. */
 function fieldState(draft: { getFillState: () => ReturnType<DraftFillState> }, key: string) {

@@ -1,5 +1,5 @@
 /**
- * Core shared types for @paradoc/expr: source spans, the expression type
+ * Core shared types for @asterdoc/expr: source spans, the expression type
  * system, and diagnostics. Consumed by the parser, evaluator, and checker.
  */
 

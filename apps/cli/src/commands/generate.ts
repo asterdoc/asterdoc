@@ -132,7 +132,7 @@ export function createGenerateCommand(): Command {
           console.log()
           console.log(kleur.gray('You can now import the artifact with full type safety:'))
           console.log(kleur.cyan(`  import schema from './${baseFileName}.json'`))
-          console.log(kleur.cyan(`  import { p } from '@paradoc/sdk'`))
+          console.log(kleur.cyan(`  import { p } from '@asterdoc/sdk'`))
           console.log(kleur.cyan(`  const ${result.exportName} = p.${artifact.kind}(schema)`))
         }
       } catch (error) {

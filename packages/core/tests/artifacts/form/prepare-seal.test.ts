@@ -1,10 +1,10 @@
-import { createFormatter } from '@paradoc/format'
+import { createFormatter } from '@asterdoc/format'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test, expect } from 'vitest'
 import { form } from '@/artifacts'
-import { containsEncoding, flattenPdf, pdfContainsEncoding } from '@paradoc/render/pdf'
-import type { SealAdapter, SignatureSlot } from '@paradoc/types'
+import { containsEncoding, flattenPdf, pdfContainsEncoding } from '@asterdoc/render/pdf'
+import type { SealAdapter, SignatureSlot } from '@asterdoc/types'
 
 /**
  * prepareSeal(): the plan-returning verb. It resolves the signature map and

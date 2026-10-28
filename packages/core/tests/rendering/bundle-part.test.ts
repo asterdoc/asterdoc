@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, test } from 'vitest'
-import type { Bundle, Formatter, ParadocRenderer, RendererLayer, RenderRequest, SignatureSlot } from '@paradoc/types'
-import { createLayerRenderer } from '@paradoc/render'
+import type { Bundle, Formatter, AsterdocRenderer, RendererLayer, RenderRequest, SignatureSlot } from '@asterdoc/types'
+import { createLayerRenderer } from '@asterdoc/render'
 import { bundle, checklist, document, form } from '@/artifacts'
 import { assembleBundle, BundleSealError, sealBundle, UnregisteredLayerRendererError } from '@/rendering'
 
@@ -19,9 +19,9 @@ const encodedPdf = fixture('auto-encoded.pdf')
 const cleanPdf = fixture('auto-clean.pdf')
 const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 
-const stub: ParadocRenderer<RendererLayer, string> = { id: 'stub', render: () => 'STUB OUTPUT' }
+const stub: AsterdocRenderer<RendererLayer, string> = { id: 'stub', render: () => 'STUB OUTPUT' }
 
-const reactRenderer = (): ParadocRenderer<RendererLayer, Uint8Array> => ({
+const reactRenderer = (): AsterdocRenderer<RendererLayer, Uint8Array> => ({
 	id: 'react-stub',
 	render: (request: RenderRequest<RendererLayer>) =>
 		(request.ctx?.signing?.markers ?? []).length > 0 ? encodedPdf : cleanPdf,
@@ -132,7 +132,7 @@ describe('rendering a document or form part (core-068)', () => {
 describe('what every member receives', () => {
 	test('renderers, formatter and progressive reach a form, a checklist and a document alike', async () => {
 		const seen: { kind: string; formatter?: unknown; progressive?: unknown }[] = []
-		const spy: ParadocRenderer<RendererLayer, string> = {
+		const spy: AsterdocRenderer<RendererLayer, string> = {
 			id: 'spy',
 			render: (request) => {
 				seen.push({ kind: request.kind, formatter: request.ctx?.formatter, progressive: request.ctx?.progressive })

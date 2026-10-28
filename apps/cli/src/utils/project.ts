@@ -1,6 +1,6 @@
 import { LocalFileSystem } from './local-fs.js'
 
-import type { Artifact } from '@paradoc/core'
+import type { Artifact } from '@asterdoc/core'
 import { fileReferencesOf, loadValidatedArtifact } from './artifact-file.js'
 import { PROJECT_REQUIRED_MESSAGE } from './user-copy.js'
 
@@ -9,11 +9,11 @@ import { PROJECT_REQUIRED_MESSAGE } from './user-copy.js'
 // --------------------------------------------
 
 /**
- * Find the root of the project by looking for its `.paradoc` directory and
- * `paradoc.json` together — both are what `paradoc init` writes, and both are
- * required: a `.paradoc` directory alone is not proof of a project, because
+ * Find the root of the project by looking for its `.asterdoc` directory and
+ * `asterdoc.json` together — both are what `asterdoc init` writes, and both are
+ * required: a `.asterdoc` directory alone is not proof of a project, because
  * the CLI also writes one under the user's home directory for its own global
- * config (cache, saved preferences), with no `paradoc.json` beside it. Without
+ * config (cache, saved preferences), with no `asterdoc.json` beside it. Without
  * requiring both, a walk starting anywhere under the user's home directory
  * would stop at that global config directory and report it as the project
  * root.
@@ -25,19 +25,19 @@ export async function findRepoRoot(startDir: string = process.cwd()): Promise<st
   let currentDir = storage.getAbsolutePath(startDir)
 
   while (true) {
-    const paradocPath = storage.joinPath(currentDir, '.paradoc')
-    const manifestPath = storage.joinPath(currentDir, 'paradoc.json')
+    const asterdocPath = storage.joinPath(currentDir, '.asterdoc')
+    const manifestPath = storage.joinPath(currentDir, 'asterdoc.json')
 
     try {
       const [dirStats, manifestExists] = await Promise.all([
-        storage.stat(paradocPath),
+        storage.stat(asterdocPath),
         storage.exists(manifestPath),
       ])
       if (dirStats.isDirectory && manifestExists) {
         return currentDir
       }
     } catch {
-      // .paradoc doesn't exist here, continue searching
+      // .asterdoc doesn't exist here, continue searching
     }
 
     // Move up one directory
@@ -55,12 +55,12 @@ export async function findRepoRoot(startDir: string = process.cwd()): Promise<st
 }
 
 /**
- * Ensure the current working directory is a valid Paradoc repository
+ * Ensure the current working directory is a valid Asterdoc repository
  */
 export async function ensureRepo(): Promise<string> {
   const root = await findRepoRoot()
   if (!root) {
-    throw new Error(`${PROJECT_REQUIRED_MESSAGE} Run 'paradoc init' first.`)
+    throw new Error(`${PROJECT_REQUIRED_MESSAGE} Run 'asterdoc init' first.`)
   }
   return root
 }

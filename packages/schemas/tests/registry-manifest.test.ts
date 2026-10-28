@@ -88,7 +88,7 @@ describe('the approved shapes', () => {
 
 	it('accepts a manifest with both, and the registry fields that did not change', () => {
 		const input = {
-			$schema: 'https://schema.paradoc.dev/registry.json',
+			$schema: 'https://schema.asterdoc.com/registry.json',
 			name: 'acme',
 			homepage: 'https://acme.example.com',
 			description: 'Acme forms',
@@ -126,7 +126,10 @@ describe('rule 1: one shape always', () => {
 
 	it('refuses the old item shape', () => {
 		const result = RegistryItemSummarySchema.safeParse({ name: 'w9', kind: 'form', version: '1.0.0', path: 'w9.json' });
-		expect(issues(result)).toEqual([[[], 'Unrecognized keys: "version", "path"']]);
+		expect(issues(result)).toEqual([
+			[[], 'Unrecognized keys: "version", "path"'],
+			[[], REGISTRY_ITEM_RELEASES_RULE],
+		]);
 	});
 });
 

@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/format",
-  "version": "0.8.0",
-  "description": "Locale-aware presentation formatting for Paradoc artifact values",
+  "name": "@asterdoc/format",
+  "version": "0.9.0",
+  "description": "Locale-aware presentation formatting for Asterdoc artifact values",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -20,7 +20,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
+    "asterdoc",
     "forms",
     "formatting",
     "locale",
@@ -28,20 +28,20 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/format"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -61,11 +61,11 @@
     "benchmark": "pnpm --silent run build >/dev/null && node scripts/benchmark.mjs"
   },
   "dependencies": {
-    "@paradoc/types": "workspace:^"
+    "@asterdoc/types": "workspace:^"
   },
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "tsup": "catalog:",

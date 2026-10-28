@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 export const SOURCE_YAML = `# source formatting must survive compilation
-$schema: https://schema.paradoc.dev/2026-10-02.json
+$schema: https://schema.asterdoc.com/2026-10-28.json
 kind: form
 name: w9
 version: 1.0.0
@@ -21,7 +21,7 @@ layers:
 `
 
 export async function makeCompileFixture(): Promise<string> {
-  const root = await mkdtemp(path.join(tmpdir(), 'paradoc-registry-compile-'))
+  const root = await mkdtemp(path.join(tmpdir(), 'asterdoc-registry-compile-'))
   const forms = path.join(root, 'forms')
   await mkdir(forms)
   await writeFile(path.join(forms, 'w9.yaml'), SOURCE_YAML)

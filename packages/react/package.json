@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/react",
-  "version": "0.8.0",
-  "description": "Headless React bindings, pagination, and document runtime for Paradoc",
+  "name": "@asterdoc/react",
+  "version": "0.9.0",
+  "description": "Headless React bindings, pagination, and document runtime for Asterdoc",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -24,7 +24,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
+    "asterdoc",
     "documents",
     "react",
     "composition",
@@ -32,20 +32,20 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/react"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -74,16 +74,16 @@
     }
   },
   "dependencies": {
-    "@paradoc/core": "workspace:^",
-    "@paradoc/render": "workspace:^",
-    "@paradoc/types": "workspace:^",
-    "@paradoc/format": "workspace:^"
+    "@asterdoc/core": "workspace:^",
+    "@asterdoc/render": "workspace:^",
+    "@asterdoc/types": "workspace:^",
+    "@asterdoc/format": "workspace:^"
   },
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/essentials": "workspace:^",
-    "@paradoc/sessions": "workspace:^",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/essentials": "workspace:^",
+    "@asterdoc/sessions": "workspace:^",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

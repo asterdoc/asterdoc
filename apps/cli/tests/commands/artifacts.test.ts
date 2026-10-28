@@ -4,7 +4,7 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -18,7 +18,7 @@ describe('CLI Artifact Commands', () => {
   let tempDir: string
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-artifact-test-'))
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-artifact-test-'))
   })
 
   afterEach(async () => {
@@ -83,7 +83,7 @@ describe('CLI Artifact Commands', () => {
       // Create a form artifact outside a repo
       const formPath = path.join(tempDir, 'form.json')
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'test-form',
         title: 'Test Form',
@@ -95,7 +95,7 @@ describe('CLI Artifact Commands', () => {
 
       // Should fail because not in a repo
       expect(result.exitCode).toBe(1)
-      expect(result.stderr).toContain('Not in a Paradoc project')
+      expect(result.stderr).toContain('Not in an Asterdoc project')
     })
 
     it('should bump version in initialized repo', async () => {
@@ -107,7 +107,7 @@ describe('CLI Artifact Commands', () => {
       await fs.writeFile(
         formPath,
         JSON.stringify({
-          $schema: PARADOC_SCHEMA_URL,
+          $schema: ASTERDOC_SCHEMA_URL,
           kind: 'form',
           name: 'test-form',
           title: 'Test Form',
@@ -122,7 +122,7 @@ describe('CLI Artifact Commands', () => {
       expect(result.stdout).toContain('1.0.1')
       // No tips for commands that do not exist.
       expect(result.stdout).not.toContain('Next steps')
-      expect(result.stdout).not.toContain('paradoc commit')
+      expect(result.stdout).not.toContain('asterdoc commit')
     })
 
     it('should bump major version', async () => {
@@ -130,7 +130,7 @@ describe('CLI Artifact Commands', () => {
 
       const formPath = path.join(tempDir, 'form.json')
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form', name: 'test-form', title: 'Test', version: '1.2.3', fields: {},
       }))
 
@@ -145,7 +145,7 @@ describe('CLI Artifact Commands', () => {
 
       const formPath = path.join(tempDir, 'form.json')
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form', name: 'test-form', title: 'Test', version: '1.2.3', fields: {},
       }))
 
@@ -160,7 +160,7 @@ describe('CLI Artifact Commands', () => {
 
       const formPath = path.join(tempDir, 'form.json')
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form', name: 'test-form', title: 'Test', version: '1.0.0', fields: {},
       }))
 
@@ -175,7 +175,7 @@ describe('CLI Artifact Commands', () => {
 
       const formPath = path.join(tempDir, 'form.json')
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form', name: 'test-form', title: 'Test', version: '1.0.0', fields: {},
       }))
 
@@ -190,7 +190,7 @@ describe('CLI Artifact Commands', () => {
 
       const formPath = path.join(tempDir, 'form.json')
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form', name: 'test-form', title: 'Test', version: '1.0.0', fields: {},
       }))
 
@@ -205,7 +205,7 @@ describe('CLI Artifact Commands', () => {
 
       const formPath = path.join(tempDir, 'form.yaml')
       await fs.writeFile(formPath, [
-        `$schema: ${PARADOC_SCHEMA_URL}`,
+        `$schema: ${ASTERDOC_SCHEMA_URL}`,
         'kind: form',
         'name: test-form',
         'title: Test',

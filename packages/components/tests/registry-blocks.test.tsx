@@ -35,8 +35,8 @@ import { purchaseOrderData } from "../src/examples/purchase-order-data";
 import { purchaseOrderForm, PURCHASE_ORDER_REACT_LAYER } from "../src/examples/purchase-order";
 import { VENDOR_PACKET_KEYS, vendorPacketBundle } from "../src/examples/vendor-packet";
 import { vendorPacketData, vendorPacketTaxpayerData } from "../src/examples/vendor-packet-data";
-import { PartyIndexOutOfRangeError, planPages, type MeasuredKeep } from "@paradoc/react";
-import { renderPdf } from "@paradoc/react-pdf";
+import { PartyIndexOutOfRangeError, planPages, type MeasuredKeep } from "@asterdoc/react";
+import { renderPdf } from "@asterdoc/react-pdf";
 import { normalizeText, readPdf, treeKeeps, type ReadPage } from "../../react-pdf/tests/pdf-reader";
 
 /** The manifest's source paths for one block, relative to `src/`. */

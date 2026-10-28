@@ -43,7 +43,7 @@ import type {
 	Person,
 	Organization,
 	Identification,
-} from '@paradoc/types';
+} from '@asterdoc/types';
 
 import { parseFormField } from '@/validation/artifact-parsers';
 import { type Buildable, resolveBuildable } from '@/artifacts/shared/buildable';

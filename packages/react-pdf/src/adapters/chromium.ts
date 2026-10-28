@@ -10,7 +10,7 @@
  * files.
  *
  * It is Node-only and it is not the default. `puppeteer` is an optional peer
- * dependency and is reached through a dynamic import, so `@paradoc/react-pdf`
+ * dependency and is reached through a dynamic import, so `@asterdoc/react-pdf`
  * still loads with no browser driver installed and a caller who never names
  * this adapter never pays for one.
  *
@@ -53,7 +53,7 @@ import {
   PAGE_COUNTER_ATTRIBUTE,
   imageMediaType,
   type FurnitureBandSlot,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import { imageFormat, type PdfFontFile } from "../resources";
 import { CONTINUED_LABEL_ATTRIBUTE, KEEP_ID_ATTRIBUTE, KEEP_REPEAT_ATTRIBUTE } from "../tree";
 import {
@@ -206,7 +206,7 @@ function documentHtml(markup: string, css: string, lang: string, dir: string): s
     // a backdrop, and the page box supplies both here. It isolates, as the
     // preview's sheet does, so a stamp's layer below the content is painted
     // above the page's white ground rather than behind it.
-    `<body><div class="paradoc-document relative" style="isolation: isolate">${markup}</div></body>`,
+    `<body><div class="asterdoc-document relative" style="isolation: isolate">${markup}</div></body>`,
     "</html>",
   ].join("\n");
 }
@@ -308,7 +308,7 @@ function applyInPage(
   });
 
   const configured = new Set(faces.map((face) => face.family));
-  const fontsLoaded = [...document.querySelectorAll<HTMLElement>(".paradoc-document, .paradoc-document *")]
+  const fontsLoaded = [...document.querySelectorAll<HTMLElement>(".asterdoc-document, .asterdoc-document *")]
     .filter((element) => (element.textContent?.length ?? 0) > 0)
     .every((element) => {
       const style = getComputedStyle(element);
@@ -392,7 +392,7 @@ export const chromiumAdapter: PdfAdapter = {
 
     // The page is written outside the repository, because it is a render's
     // scratch file and not an artefact of it.
-    const directory = await mkdtemp(join(tmpdir(), "paradoc-paper-chromium-"));
+    const directory = await mkdtemp(join(tmpdir(), "asterdoc-paper-chromium-"));
     const file = join(directory, "document.html");
     const browser = await chromium();
     const page = await browser.newPage();

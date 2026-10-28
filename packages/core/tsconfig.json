@@ -7,7 +7,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@paradoc/expr": ["../expr/dist/index.d.ts"]
+      "@asterdoc/expr": ["../expr/dist/index.d.ts"]
     }
   },
   "include": ["src", "tests", "scripts"],

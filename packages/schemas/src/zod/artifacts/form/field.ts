@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { IDENTIFIER_PATTERN } from '../../primitives/name';
-import type { FieldsetField, FormField, ListField } from '@paradoc/types';
+import type { FieldsetField, FormField, ListField } from '@asterdoc/types';
 import { BaseFieldSchema } from './base-field';
 import { CoordinateSchema } from '../../primitives/coordinate';
 import { BboxSchema } from '../../primitives/bbox';

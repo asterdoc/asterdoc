@@ -1,7 +1,7 @@
-import { CANONICAL_SHAPES } from "@paradoc/core";
+import { CANONICAL_SHAPES } from "@asterdoc/core";
 import { describe, expect, it } from "vitest";
 import { ADDRESS_ALIASES } from "./coerce";
-import { createParadocRuntime } from "./paradoc-runtime";
+import { createAsterdocRuntime } from "./asterdoc-runtime";
 
 const fields = {
 	count: { type: "number" },
@@ -19,10 +19,10 @@ const fields = {
 	id: { type: "identification" },
 };
 
-function runtime(options?: Parameters<typeof createParadocRuntime>[1]) {
-	return createParadocRuntime(
+function runtime(options?: Parameters<typeof createAsterdocRuntime>[1]) {
+	return createAsterdocRuntime(
 		{
-			$schema: "https://schema.paradoc.dev/2026-10-02.json",
+			$schema: "https://schema.asterdoc.com/2026-10-28.json",
 			kind: "form",
 			name: "coerce",
 			version: "1.0.0",

@@ -26,13 +26,13 @@ numbers itself.
 It belongs in a page-furniture slot: the `furniture` prop of
 [`Pages`](/components/pages) or [`Paper`](/components/paper). Hand the same
 object to `renderPdf(element, { plan, furniture })` from
-[`@paradoc/react-pdf`](/sdk/react-pdf) and the PDF carries the footer the
+[`@asterdoc/react-pdf`](/sdk/react-pdf) and the PDF carries the footer the
 preview drew, page for page.
 
 ```tsx
-import { renderPdf } from "@paradoc/react-pdf";
-import { PageNumber } from "@/components/paradoc/page-number";
-import { Pages } from "@/components/paradoc/pages";
+import { renderPdf } from "@asterdoc/react-pdf";
+import { PageNumber } from "@/components/asterdoc/page-number";
+import { Pages } from "@/components/asterdoc/pages";
 
 const furniture = { footer: <PageNumber /> };
 

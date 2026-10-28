@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { PartyIndexOutOfRangeError, UnknownFieldPathError, UnknownPartyRoleError } from "@paradoc/react";
+import { PartyIndexOutOfRangeError, UnknownFieldPathError, UnknownPartyRoleError } from "@asterdoc/react";
 import { Document, Party } from "../src";
 import { buyerPaths, partyFixtureData as data, partyFixtureForm as artifact, witnessPaths } from "./party-fixture";
 

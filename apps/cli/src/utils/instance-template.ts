@@ -14,7 +14,7 @@ import type {
   Organization,
   Person,
   Phone,
-} from '@paradoc/core'
+} from '@asterdoc/core'
 
 /**
  * Instance template structure for form data

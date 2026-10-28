@@ -3,8 +3,8 @@ import { join } from 'node:path'
 import { describe, test, expect, vi } from 'vitest'
 import { form, runtimeFormFromJSON, SealConfigError } from '@/artifacts'
 import type { SealOptions, SignableForm } from '@/artifacts'
-import type { SealAdapter, SealAdapterRequest, SealLocator, SigningField, Signer, SignatureSlot } from '@paradoc/types'
-import { flattenPdf } from '@paradoc/render/pdf'
+import type { SealAdapter, SealAdapterRequest, SealLocator, SigningField, Signer, SignatureSlot } from '@asterdoc/types'
+import { flattenPdf } from '@asterdoc/render/pdf'
 import { fromYAML } from '@/serialization'
 
 /**

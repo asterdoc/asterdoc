@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/core'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/core'
 import { executeGetArtifact } from '../src/tools/get-artifact'
 import { registryFetch } from './helpers/registry'
 
 describe('executeGetArtifact instruction resolution', () => {
   it('returns inline instructions and inline agent instructions', async () => {
     const artifact = {
-      $schema: PARADOC_SCHEMA_URL,
+      $schema: ASTERDOC_SCHEMA_URL,
       kind: 'form',
       name: 'pet-addendum',
       version: '1.0.0',
@@ -20,10 +20,10 @@ describe('executeGetArtifact instruction resolution', () => {
       },
     }
 
-    const mockFetch = vi.fn(registryFetch('https://public.paradoc.dev', [{ artifact }]))
+    const mockFetch = vi.fn(registryFetch('https://public.asterdoc.com', [{ artifact }]))
 
     const result = await executeGetArtifact(
-      { registry_url: 'https://public.paradoc.dev', artifact_name: 'pet-addendum' },
+      { registry_url: 'https://public.asterdoc.com', artifact_name: 'pet-addendum' },
       { fetch: mockFetch },
     )
 
@@ -36,7 +36,7 @@ describe('executeGetArtifact instruction resolution', () => {
 
   it('fetches file-backed instructions and agent instructions', async () => {
     const artifact = {
-      $schema: PARADOC_SCHEMA_URL,
+      $schema: ASTERDOC_SCHEMA_URL,
       kind: 'form',
       name: 'pet-addendum',
       version: '1.0.0',
@@ -52,13 +52,13 @@ describe('executeGetArtifact instruction resolution', () => {
       },
     }
 
-    const mockFetch = vi.fn(registryFetch('https://public.paradoc.dev', [{ artifact }], {
+    const mockFetch = vi.fn(registryFetch('https://public.asterdoc.com', [{ artifact }], {
       'pet-addendum/1.0.0/instructions.md': '# Instructions',
       'pet-addendum/1.0.0/agent-instructions.md': '# Agent Instructions',
     }))
 
     const result = await executeGetArtifact(
-      { registry_url: 'https://public.paradoc.dev', artifact_name: 'pet-addendum' },
+      { registry_url: 'https://public.asterdoc.com', artifact_name: 'pet-addendum' },
       { fetch: mockFetch },
     )
 
@@ -73,7 +73,7 @@ describe('executeGetArtifact instruction resolution', () => {
 
   it('returns an error when referenced instruction file cannot be fetched', async () => {
     const artifact = {
-      $schema: PARADOC_SCHEMA_URL,
+      $schema: ASTERDOC_SCHEMA_URL,
       kind: 'form',
       name: 'pet-addendum',
       version: '1.0.0',
@@ -84,10 +84,10 @@ describe('executeGetArtifact instruction resolution', () => {
       },
     }
 
-    const mockFetch = vi.fn(registryFetch('https://public.paradoc.dev', [{ artifact }]))
+    const mockFetch = vi.fn(registryFetch('https://public.asterdoc.com', [{ artifact }]))
 
     const result = await executeGetArtifact(
-      { registry_url: 'https://public.paradoc.dev', artifact_name: 'pet-addendum' },
+      { registry_url: 'https://public.asterdoc.com', artifact_name: 'pet-addendum' },
       { fetch: mockFetch },
     )
 

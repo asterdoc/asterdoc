@@ -7,7 +7,7 @@ const BACKGROUND_URL = "https://assets.paradoc.dev/paradoc-og-docs-background.pn
 // OG image is never a blank 200.
 const FALLBACK_OG_URL = "https://assets.paradoc.dev/paradoc-og-docs.png";
 // Fetched cross-origin from the assets bucket. It must NOT come from
-// docs.paradoc.dev: fetching this Worker's own domain is a self-request that
+// docs.asterdoc.com: fetching this Worker's own domain is a self-request that
 // returns the app's HTML instead of the font, which crashes the renderer
 // (Satori: "Unsupported OpenType signature") and yields a blank image.
 const GEIST_FONT_URL =
@@ -53,7 +53,7 @@ export const Route = createFileRoute("/api/og/docs/$")({
           const title =
             (pageData?.ogTitle as string) ??
             (pageData?.title as string) ??
-            "Paradoc Documentation";
+            "Asterdoc Documentation";
           const description =
             (pageData?.ogDescription as string) ??
             (pageData?.description as string) ??
@@ -70,7 +70,7 @@ export const Route = createFileRoute("/api/og/docs/$")({
                   ${description ? `<p style="font-size: 26px; color: #d6d3d1; margin: 0; max-width: 900px; font-weight: 400; line-height: 1.4; text-wrap: balance;">${escapeHtml(description)}</p>` : ""}
                 </div>
                 <div style="display: flex; align-items: center;">
-                  <span style="font-size: 18px; color: #d6d3d1;">docs.paradoc.dev</span>
+                  <span style="font-size: 18px; color: #d6d3d1;">docs.asterdoc.com</span>
                 </div>
               </div>
             </div>

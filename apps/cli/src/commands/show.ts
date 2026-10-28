@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
 import { resolve } from 'node:path'
-import { formatArtifactCoordinate, parseArtifactCoordinate } from '@paradoc/schemas'
+import { formatArtifactCoordinate, parseArtifactCoordinate } from '@asterdoc/schemas'
 import { LocalFileSystem } from '../utils/local-fs.js'
 import { resolveArtifactTarget } from '../utils/io.js'
 

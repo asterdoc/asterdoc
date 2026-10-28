@@ -183,7 +183,7 @@ describe("the walk over the resolved tree", () => {
 
   it("keeps every keep together, which is the preview's rule in the engine's words", async () => {
     const { node } = await fromJsx(<ProposalDocument data={shortProposalData} />);
-    const prepared = preparePdfTree(node, { imageSources: ["paradoc-react:proposal-logo.png"] });
+    const prepared = preparePdfTree(node, { imageSources: ["asterdoc-react:proposal-logo.png"] });
 
     const keeps = flatten(prepared.node).filter((each) => each.attributes?.["data-keep-id"]);
     expect(keeps.length).toBeGreaterThan(10);
@@ -194,7 +194,7 @@ describe("the walk over the resolved tree", () => {
 
   it("translates the KeepTogether wrapper the preview declares its units with", async () => {
     const { node } = await fromJsx(<ProposalDocument data={shortProposalData} />);
-    const prepared = preparePdfTree(node, { imageSources: ["paradoc-react:proposal-logo.png"] });
+    const prepared = preparePdfTree(node, { imageSources: ["asterdoc-react:proposal-logo.png"] });
     const keeps = flatten(prepared.node).filter((each) => each.attributes?.["data-keep-id"]);
 
     // `KeepTogether` renders unconditionally outside a page context, so the PDF sees
@@ -206,7 +206,7 @@ describe("the walk over the resolved tree", () => {
 
   it("carries no repeated header copies, because the PDF renders the plain document", async () => {
     const { node } = await fromJsx(<ProposalDocument data={overflowProposalData} />);
-    const prepared = preparePdfTree(node, { imageSources: ["paradoc-react:proposal-logo.png"] });
+    const prepared = preparePdfTree(node, { imageSources: ["asterdoc-react:proposal-logo.png"] });
 
     // `data-keep-repeat` marks a copy the preview's plan put on a continued
     // page. The PDF path renders the document, not `Pages`, so a copy here
@@ -221,7 +221,7 @@ describe("the walk over the resolved tree", () => {
     const { node } = await fromJsx(<ProposalDocument data={shortProposalData} />);
     const prepared = preparePdfTree(node, {
       plan: { breaks: ["line-items:2", "totals"], repeats: [[], [], []] },
-      imageSources: ["paradoc-react:proposal-logo.png"],
+      imageSources: ["asterdoc-react:proposal-logo.png"],
     });
 
     expect(prepared.appliedBreaks).toEqual(["line-items:2", "totals"]);
@@ -234,7 +234,7 @@ describe("the walk over the resolved tree", () => {
     const { node } = await fromJsx(<ProposalDocument data={shortProposalData} />);
     const prepared = preparePdfTree(node, {
       plan: { breaks: ["totals", "line-items:900"], repeats: [[], [], []] },
-      imageSources: ["paradoc-react:proposal-logo.png"],
+      imageSources: ["asterdoc-react:proposal-logo.png"],
     });
 
     expect(prepared.appliedBreaks).toEqual(["totals"]);

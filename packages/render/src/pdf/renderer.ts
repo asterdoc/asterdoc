@@ -1,10 +1,10 @@
-import { defaultFormatter } from '@paradoc/format'
+import { defaultFormatter } from '@asterdoc/format'
 import type {
   Formatter,
-  ParadocRenderer,
+  AsterdocRenderer,
   RendererLayer,
   RenderRequest,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import { requestRenderData } from '../render-data'
 import type { PdfFont } from './drawing-fonts'
 import { renderPdf } from './render'
@@ -20,7 +20,7 @@ export interface PdfRendererOptions {
 
 type PdfLayer = RendererLayer & { type: 'pdf'; content: Uint8Array }
 
-export function pdfRenderer(options: PdfRendererOptions = {}): ParadocRenderer<PdfLayer, Uint8Array> {
+export function pdfRenderer(options: PdfRendererOptions = {}): AsterdocRenderer<PdfLayer, Uint8Array> {
   const formatter = options.formatter ?? defaultFormatter
   // What the layer declares travels with its template: its font, and the
   // presentation its template requires, applied over the caller's formatter.

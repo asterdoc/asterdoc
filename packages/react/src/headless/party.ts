@@ -1,4 +1,4 @@
-import { formatParties } from "@paradoc/render/text/field-formatter";
+import { formatParties } from "@asterdoc/render/text/field-formatter";
 
 import { useUnresolvedPathCollector } from "../components/check-context";
 import { useArtifact, useDocumentFormatting, useFields, useParty, usePartialPlaceholder, type FieldBinding } from "./artifact";

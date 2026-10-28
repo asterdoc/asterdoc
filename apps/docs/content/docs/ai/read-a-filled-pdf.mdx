@@ -7,14 +7,14 @@ ogDescription: Extract the values from a filled PDF form, check them, and find t
 
 A person often has the form already, partly filled in a PDF reader. `extract` reads the values out of the PDF's form fields, so the agent asks only for what is missing.
 
-`extract` works on a fillable PDF: one with form fields, made from the same form as the artifact's PDF layer. A scanned or flattened PDF has no fields to read. For those, use the hosted Paradoc extraction service.
+`extract` works on a fillable PDF: one with form fields, made from the same form as the artifact's PDF layer. A scanned or flattened PDF has no fields to read. For those, use the hosted Asterdoc extraction service.
 
 ## Do it in your app, not in the model
 
-A PDF is too large to pass through the model. Read it in your app code with the execute functions of `@paradoc/ai-tools`, then give the agent the draft.
+A PDF is too large to pass through the model. Read it in your app code with the execute functions of `@asterdoc/ai-tools`, then give the agent the draft.
 
 ```bash
-npm install @paradoc/ai-tools
+npm install @asterdoc/ai-tools
 ```
 
 ```typescript title="draft-from-pdf.ts"
@@ -22,10 +22,10 @@ import {
   executeExtract,
   executeFill,
   executeGetFillState,
-  type ParadocToolsConfig,
-} from "@paradoc/ai-tools"
+  type AsterdocToolsConfig,
+} from "@asterdoc/ai-tools"
 
-const config: ParadocToolsConfig = { defaultRegistryUrl: "https://public.paradoc.dev" } // a demo registry
+const config: AsterdocToolsConfig = { defaultRegistryUrl: "https://public.asterdoc.com" } // a demo registry
 const source = { source: "registry", artifact_name: "pet-addendum" } as const
 
 export async function draftFromPdf(pdf: Uint8Array) {

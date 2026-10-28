@@ -32,7 +32,7 @@
 export class MissingPdfPainterError extends Error {
   constructor(cause?: unknown) {
     super(
-      "Cannot paint a PDF: `pdfjs-dist` is not installed. It is an optional peer of @paradoc/react, " +
+      "Cannot paint a PDF: `pdfjs-dist` is not installed. It is an optional peer of @asterdoc/react, " +
         "needed only to show a PDF part of a bundle on screen. Install it, or render that part as an attachment.",
       cause === undefined ? undefined : { cause }
     );

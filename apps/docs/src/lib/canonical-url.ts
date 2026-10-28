@@ -1,6 +1,6 @@
 import { pageMarkdownUrl } from "@/lib/page-actions";
 
-const DOCS_ORIGIN = "https://docs.paradoc.dev";
+const DOCS_ORIGIN = "https://docs.asterdoc.com";
 
 /** Return the single public URL form used for canonical metadata and discovery. */
 export function canonicalDocsUrl(path: string): string {

@@ -11,7 +11,7 @@ import { Document, Field, Part, QRCode, Signature, Table, Totals } from "../src"
 it("renders a configurable URL QR code as SVG", () => {
   const html = renderToStaticMarkup(
     <QRCode
-      url="https://docs.paradoc.dev/forms/123"
+      url="https://docs.asterdoc.com/forms/123"
       size={192}
       color="#123456"
       backgroundColor="#f4f1ea"
@@ -25,10 +25,10 @@ it("renders a configurable URL QR code as SVG", () => {
   expect(html).toContain('fill="#123456"');
   expect(html).toContain('fill="#f4f1ea"');
   expect(html).toContain('class="place-self-end"');
-  expect(html).toContain('aria-label="QR code for https://docs.paradoc.dev/forms/123"');
+  expect(html).toContain('aria-label="QR code for https://docs.asterdoc.com/forms/123"');
 });
 
-it("renders copy-owned markup through public @paradoc/react bindings", async () => {
+it("renders copy-owned markup through public @asterdoc/react bindings", async () => {
   const element = (
     <Document artifact={purchaseOrderForm} data={purchaseOrderData}>
       <Field path="orderNumber" />

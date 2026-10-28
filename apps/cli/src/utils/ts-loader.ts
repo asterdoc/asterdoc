@@ -1,25 +1,25 @@
 /**
  * Registers a TypeScript/JSX-aware ESM loader for this process, on demand.
  *
- * The built `paradoc` binary is plain compiled JavaScript with no TypeScript
+ * The built `asterdoc` binary is plain compiled JavaScript with no TypeScript
  * loader of its own, so importing a `.tsx`/`.jsx` module directly — binding
  * a composition's React layer, in `check.ts` today — fails with "Unknown
  * file extension". `tsx` exposes exactly this as a programmatic API:
  * `register()` installs Node's module hooks for the rest of the process, the
  * same hooks the `tsx` CLI installs for itself, so a plain dynamic
- * `import()` anywhere afterward — including one inside `@paradoc/react`'s
+ * `import()` anywhere afterward — including one inside `@asterdoc/react`'s
  * own `bindComponent` — transforms a `.tsx`/`.jsx` file instead of failing
  * on its extension.
  *
- * `tsx` is not a dependency of `@paradoc/cli`: it wraps esbuild, roughly 10 MB
- * that most `paradoc` installs never touch. It is an optional peer, resolved at
- * the composition's project first and at `paradoc`'s own installation second,
- * the way `paradoc dev` resolves its bundler. A project with neither is told
+ * `tsx` is not a dependency of `@asterdoc/cli`: it wraps esbuild, roughly 10 MB
+ * that most `asterdoc` installs never touch. It is an optional peer, resolved at
+ * the composition's project first and at `asterdoc`'s own installation second,
+ * the way `asterdoc dev` resolves its bundler. A project with neither is told
  * what to install. Whichever copy registers, the hooks are process-wide.
  *
  * **The tsconfig has to be resolved explicitly.** Left to its own defaults,
  * `register()` resolves one from `process.cwd()`, which is wherever the
- * shell that ran `paradoc` happens to be sitting rather than the composition's
+ * shell that ran `asterdoc` happens to be sitting rather than the composition's
  * own project — a composition checked from outside its project directory
  * would then transform under whatever `jsx` setting an unrelated tsconfig
  * that happens to govern the caller's cwd declares (or the classic
@@ -61,7 +61,7 @@ let registered = false
  * `root` is the project the loader is resolved from; `fromDir` is where tsconfig
  * discovery starts — the composition's own directory.
  *
- * @throws {MissingPeerError} when neither the project nor `paradoc` has `tsx`.
+ * @throws {MissingPeerError} when neither the project nor `asterdoc` has `tsx`.
  */
 export async function ensureTsLoader(root: string, fromDir: string): Promise<void> {
   if (registered) return

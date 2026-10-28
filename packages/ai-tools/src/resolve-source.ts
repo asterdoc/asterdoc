@@ -1,4 +1,4 @@
-import type { ParadocToolsConfig } from './config'
+import type { AsterdocToolsConfig } from './config'
 import { SourceSchema, type SourceInput } from './contracts'
 import {
 	fetchPolicyFromConfig,
@@ -18,7 +18,7 @@ class MissingRegistryUrlError extends Error {
 	readonly code = 'missing_registry_url'
 }
 
-function requireRegistryUrl(input: string | undefined, config?: ParadocToolsConfig): string {
+function requireRegistryUrl(input: string | undefined, config?: AsterdocToolsConfig): string {
 	const registryUrl = registryUrlFromConfig(input, config)
 	if (!registryUrl) throw new MissingRegistryUrlError('registry_url is required, or configure defaultRegistryUrl.')
 	return registryUrl
@@ -37,21 +37,21 @@ function artifactBaseUrl(artifactUrl: string): string {
  * applies. An artifact read from a URL or a registry is a file, so its
  * `$schema` must name the current schema version. An inline artifact is an
  * object, as with `loadFromObject`: it may omit `$schema`, but one it declares
- * must be current. Loading never migrates; the error points to `paradoc migrate`.
+ * must be current. Loading never migrates; the error points to `asterdoc migrate`.
  */
 export async function resolveSource(
 	input: SourceInput | Record<string, unknown>,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<ResolvedSource> {
 	const resolved = await resolveUncheckedSource(input, config)
-	const { assertCurrentSchemaVersion } = await import('@paradoc/core')
+	const { assertCurrentSchemaVersion } = await import('@asterdoc/core')
 	assertCurrentSchemaVersion(resolved.artifact, { required: resolved.artifact_url !== undefined })
 	return resolved
 }
 
 async function resolveUncheckedSource(
 	input: SourceInput | Record<string, unknown>,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<ResolvedSource> {
 	const source = SourceSchema.parse(input)
 	if (source.source === 'artifact') {

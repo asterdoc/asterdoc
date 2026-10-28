@@ -6,8 +6,8 @@ import type {
   FormAnnex,
   FormParty,
   RulesSection,
-} from '@paradoc/types'
-import { createTypeEnv, T, type TypeEnv } from '@paradoc/expr'
+} from '@asterdoc/types'
+import { createTypeEnv, T, type TypeEnv } from '@asterdoc/expr'
 import {
   buildFormRuleTypeAcc,
   buildFormTypeAcc,
@@ -460,7 +460,7 @@ function typeCheckPartyExpressions(
  * Validates all defs expressions in a Form artifact.
  *
  * Checks:
- * 1. Expression syntax using the @paradoc/expr parser
+ * 1. Expression syntax using the @asterdoc/expr parser
  * 2. Variable references exist (field paths or defs keys)
  * 3. Expressions in boolean contexts return boolean type
  *

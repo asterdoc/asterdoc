@@ -1,5 +1,5 @@
 /**
- * Commands, views, and the payload against the real @paradoc/core runtime.
+ * Commands, views, and the payload against the real @asterdoc/core runtime.
  *
  * The fakes in `execute.test.ts` and `derive.test.ts` hold the engine's own
  * rules. These hold what only core decides: the index a party role accepts,
@@ -12,7 +12,7 @@ import { project } from "../event-log/projector";
 import type { Actor } from "../event-log/types";
 import { deriveView } from "./derive";
 import { execute } from "./execute";
-import { createParadocRuntime } from "./paradoc-runtime";
+import { createAsterdocRuntime } from "./asterdoc-runtime";
 import { sessionPayload } from "./payload";
 import type { ArtifactRuntime, Command, FormSession } from "./types";
 
@@ -20,7 +20,7 @@ const USER: Actor = { kind: "user" };
 
 function artifact(extra: Record<string, unknown>): Record<string, unknown> {
 	return {
-		$schema: "https://schema.paradoc.dev/2026-10-02.json",
+		$schema: "https://schema.asterdoc.com/2026-10-28.json",
 		kind: "form",
 		name: "session-runtime",
 		version: "1.0.0",
@@ -63,7 +63,7 @@ const party = (roleId: string, name: string, index?: number): Command => ({
 });
 
 describe("answerParty", () => {
-	const runtime = createParadocRuntime(
+	const runtime = createAsterdocRuntime(
 		artifact({
 			parties: {
 				signer: { label: "Signer", partyType: "person" },
@@ -149,7 +149,7 @@ describe("answerParty", () => {
 });
 
 describe("annexes", () => {
-	const runtime = createParadocRuntime(
+	const runtime = createAsterdocRuntime(
 		artifact({
 			fields: { name: { type: "text", required: true } },
 			annexes: {
@@ -215,7 +215,7 @@ describe("annexes", () => {
 });
 
 describe("progress", () => {
-	const runtime = createParadocRuntime(
+	const runtime = createAsterdocRuntime(
 		artifact({
 			fields: {
 				name: { type: "text", required: true },
@@ -247,7 +247,7 @@ describe("progress", () => {
 });
 
 describe("fields", () => {
-	const runtime = createParadocRuntime(
+	const runtime = createAsterdocRuntime(
 		artifact({
 			fields: {
 				age: { type: "number", required: true },

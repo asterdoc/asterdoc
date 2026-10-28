@@ -175,12 +175,12 @@ describe("the emitted files", () => {
     expect(signature).toContain(
       `import {\n  scaleTextClasses,\n  useDocumentTokens,\n  useSignature,\n  type SigningMarkType,\n} from "${SUBSTRATE_PACKAGE}";`
     );
-    expect(signature.match(/from "@paradoc\/react";/g)).toHaveLength(1);
+    expect(signature.match(/from "@asterdoc\/react";/g)).toHaveLength(1);
   });
 
   it("keeps the paper's public runtime import", () => {
     const paper = byName.get("paper")?.files[0]?.content ?? "";
-    expect(paper).toMatch(/import \{[\s\S]*?\} from "@paradoc\/react";/);
+    expect(paper).toMatch(/import \{[\s\S]*?\} from "@asterdoc\/react";/);
   });
 
   it("moves the module comment below the imports, where the CLI keeps it", () => {
@@ -224,23 +224,23 @@ describe("the emitted files", () => {
   });
 
   it("names its registry dependencies in the namespace consumers registered", () => {
-    expect(byName.get("field")?.registryDependencies).toEqual(["@paradoc/keep-together"]);
+    expect(byName.get("field")?.registryDependencies).toEqual(["@asterdoc/keep-together"]);
     expect(byName.get("keep-together")?.registryDependencies).toEqual([]);
   });
 
-  it("pins every paradoc dependency to this package's version", () => {
+  it("pins every asterdoc dependency to this package's version", () => {
     const version = packageVersion(packageRoot);
     expect(byName.get("field")?.dependencies).toEqual([`${SUBSTRATE_PACKAGE}@^${version}`]);
     expect(byName.get("document")?.dependencies).toEqual([
       `${SUBSTRATE_PACKAGE}@^${version}`,
-      `@paradoc/types@^${version}`,
+      `@asterdoc/types@^${version}`,
     ]);
 
     // A consumer installing today and again in three releases would otherwise
     // get components written against two different substrates.
     for (const item of registry.items) {
       for (const dependency of item.dependencies) {
-        if (dependency.startsWith("@paradoc/")) {
+        if (dependency.startsWith("@asterdoc/")) {
           expect(dependency).toContain(`@^${version}`);
         }
       }
@@ -270,7 +270,7 @@ describe("an item whose files do not install side by side", () => {
           {
             path: "blocks/purchase-order.json",
             type: "registry:file",
-            target: "artifacts/paradoc/purchase-order.json",
+            target: "artifacts/asterdoc/purchase-order.json",
           },
         ],
       },
@@ -278,7 +278,7 @@ describe("an item whose files do not install side by side", () => {
     version: packageVersion(packageRoot),
     readSource: (relPath) =>
       relPath.endsWith(".tsx")
-        ? 'import { useArtifact } from "@paradoc/react";\nimport artifact from "./purchase-order.json";\n'
+        ? 'import { useArtifact } from "@asterdoc/react";\nimport artifact from "./purchase-order.json";\n'
         : '{ "kind": "form" }\n',
   });
 
@@ -286,7 +286,7 @@ describe("an item whose files do not install side by side", () => {
 
   it("names a sibling by where the two land, not by how they were authored", () => {
     expect(files.get(`${INSTALL_DIR}/purchase-order.tsx`)?.content).toContain(
-      'from "../../artifacts/paradoc/purchase-order.json";'
+      'from "../../artifacts/asterdoc/purchase-order.json";'
     );
   });
 
@@ -297,12 +297,12 @@ describe("an item whose files do not install side by side", () => {
   });
 
   it("ships a file that is not code exactly as it is authored", () => {
-    expect(files.get("artifacts/paradoc/purchase-order.json")?.content).toBe('{ "kind": "form" }\n');
+    expect(files.get("artifacts/asterdoc/purchase-order.json")?.content).toBe('{ "kind": "form" }\n');
   });
 
   it("keeps each file's own shadcn type", () => {
     expect(files.get(`${INSTALL_DIR}/purchase-order.tsx`)?.type).toBe("registry:block");
-    expect(files.get("artifacts/paradoc/purchase-order.json")?.type).toBe("registry:file");
+    expect(files.get("artifacts/asterdoc/purchase-order.json")?.type).toBe("registry:file");
   });
 });
 
@@ -389,7 +389,7 @@ describe("the generator refuses what would not compile", () => {
   it("rejects a file installed under an item's name outside the components folder", () => {
     // The one failure the emitted JSON does not show and the install does: the
     // CLI resolves an import by the item it appears to name, so this artifact
-    // would be reached at `@/components/paradoc/keep-together`.
+    // would be reached at `@/components/asterdoc/keep-together`.
     expect(() =>
       generateRegistry({
         srcDir,

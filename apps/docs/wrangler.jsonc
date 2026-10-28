@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "paradoc-docs-prod",
+  "name": "asterdoc-docs-prod",
   "compatibility_date": "2025-10-30",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
@@ -12,6 +12,6 @@
     "run_worker_first": ["/*", "!/assets/*", "!/fonts/*", "!/r/*", "!/favicon.ico"]
   },
   "routes": [
-    { "pattern": "docs.paradoc.dev", "custom_domain": true }
+    { "pattern": "docs.asterdoc.com", "custom_domain": true }
   ]
 }

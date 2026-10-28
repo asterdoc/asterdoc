@@ -15,7 +15,7 @@
  */
 
 import {
-  createParadocRuntime,
+  createAsterdocRuntime,
   deriveView,
   execute,
   project,
@@ -23,7 +23,7 @@ import {
   type ArtifactRuntime,
   type FormSession,
   type SessionPayload,
-} from "@paradoc/sessions";
+} from "@asterdoc/sessions";
 
 /** Fixed instant every event in a scripted fill is stamped with. */
 export const SCRIPT_AT = "1970-01-01T00:00:00.000Z";
@@ -50,7 +50,7 @@ export function emptySession(name: string): FormSession {
 
 /** The engine's runtime over a raw artifact definition. */
 export function runtimeFor(spec: unknown): ArtifactRuntime {
-  return createParadocRuntime(spec as Record<string, unknown>);
+  return createAsterdocRuntime(spec as Record<string, unknown>);
 }
 
 /** What one step of a fill did. */

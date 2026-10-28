@@ -1,8 +1,8 @@
 ---
 title: Overview
 description: Install the document components into your own project with the shadcn CLI
-ogTitle: Paradoc document components
-ogDescription: A shadcn registry of React components that compose a document bound to a Paradoc artifact
+ogTitle: Asterdoc document components
+ogDescription: A shadcn registry of React components that compose a document bound to an Asterdoc artifact
 ---
 
 A document composed in React is a tree of small components: a section, a field, a
@@ -11,7 +11,7 @@ to you, so they are not shipped as sealed exports. They are shipped as source, i
 the [shadcn registry format](https://ui.shadcn.com/docs/registry): you install a
 component, the file lands in your project, and from then on it is yours to edit.
 
-What stays in `@paradoc/react` is the part that is not a design decision — the
+What stays in `@asterdoc/react` is the part that is not a design decision — the
 document, page, token and signing contexts, the page plan, the measuring pass,
 the serializers that turn a value into the text a field prints. The installed
 files import it from there. Editing a copied field changes how a field looks; it
@@ -25,7 +25,7 @@ scale and block spacing.
 
 | Item | What it is |
 |------|------------|
-| [`document-styles`](https://docs.paradoc.dev/r/document-styles.json) | Tailwind, the structural rules the components need, and every class the [typography](/components/typography) token can produce. |
+| [`document-styles`](https://docs.asterdoc.com/r/document-styles.json) | Tailwind, the structural rules the components need, and every class the [typography](/components/typography) token can produce. |
 | [`bundle`](/components/bundle) | Groups the documents of one composition. |
 | [`document`](/components/document) | Binds one form artifact and its data to everything beneath it. |
 | [`field`](/components/field) | One labelled value at a path into the artifact, printed by the artifact's serializers. |
@@ -44,8 +44,8 @@ scale and block spacing.
 | [`signature`](/components/signature) | A party's signing block, with the rule the seal measures a signature field from. |
 | [`table`](/components/table) | A list field as rows, with a header that repeats on every page it continues onto. |
 | [`text`](/components/text) | Static prose in a named role — heading, body, caption, or small — sized by the typography token. |
-| [`totals`](/components/totals) | The artifact's computed amounts, evaluated by `@paradoc/core`. |
-| [`priced-line-items`](https://docs.paradoc.dev/r/priced-line-items.json) | Sample line-item arithmetic installed with the worked invoice and purchase-order blocks. |
+| [`totals`](/components/totals) | The artifact's computed amounts, evaluated by `@asterdoc/core`. |
+| [`priced-line-items`](https://docs.asterdoc.com/r/priced-line-items.json) | Sample line-item arithmetic installed with the worked invoice and purchase-order blocks. |
 
 All 19 components link to a full reference page: a live preview,
 installation, usage, the composition it was rendered from, and a few
@@ -66,11 +66,11 @@ composition that binds it, and sample data to see it with.
 | [`vendor-packet`](/components/blocks/vendor-packet) | A packet of three documents: the purchase order composed live, a filled W-9 painted from its PDF layer, and a certificate of insurance as an annex, whose bytes it ships. |
 
 ```bash
-paradoc add purchase-order
+asterdoc add purchase-order
 ```
 
-The composition lands in `components/paradoc/` beside the components; the
-artifact and its data land in `artifacts/paradoc/`, because they are not
+The composition lands in `components/asterdoc/` beside the components; the
+artifact and its data land in `artifacts/asterdoc/`, because they are not
 components. `vendor-packet` brings `purchase-order` with it: the order is one of
 the packet's parts.
 
@@ -79,14 +79,14 @@ two breaks. The repeated header on a continued page comes from the page plan:
 you see it in the preview, and in a PDF rendered with the preview's plan passed
 as hints. The engine paginating on its own does not copy one.
 
-**`vendor-packet` needs `@paradoc/essentials`**, and declares it. Nothing the
+**`vendor-packet` needs `@asterdoc/essentials`**, and declares it. Nothing the
 block ships imports it, but the packet's second part is the IRS W-9: filling and
 sealing it needs that artifact. The block's sample carries the taxpayer's
 values, not the form.
 
 ```tsx
-import { w9 } from "@paradoc/essentials";
-import { vendorPacketData } from "@/artifacts/paradoc/vendor-packet.data";
+import { w9 } from "@asterdoc/essentials";
+import { vendorPacketData } from "@/artifacts/asterdoc/vendor-packet.data";
 
 const parsed = w9.safeParseData(vendorPacketData.taxpayer);
 if (!parsed.success) throw new Error("Invalid taxpayer data");
@@ -94,7 +94,7 @@ const draft = w9.fill(parsed.data);
 const taxpayerPdf = await draft.render({ layer: "pdf" });
 ```
 
-No resolver is passed: `@paradoc/essentials` binds each artifact's bundled
+No resolver is passed: `@asterdoc/essentials` binds each artifact's bundled
 resolver when it constructs the form, and every instance derived from it,
 including `draft`, carries it.
 
@@ -103,7 +103,7 @@ The certificate of insurance is not yours to supply: the block installs it as
 browser project has no engine to draw one with. The composition still takes both
 PDFs as props.
 
-The index of all of them is [`/r/registry.json`](https://docs.paradoc.dev/r/registry.json).
+The index of all of them is [`/r/registry.json`](https://docs.asterdoc.com/r/registry.json).
 
 ## For agents
 
@@ -114,13 +114,13 @@ to scrape. Fetch it to enumerate what is installable, then fetch
 auth.
 
 Before rendering a newly authored or edited composition, run
-`paradoc check <composition-or-artifact-file>` — it walks the same tree the
+`asterdoc check <composition-or-artifact-file>` — it walks the same tree the
 default PDF path walks and reports every unsupported class, unresolved field
 path, and missing image in one pass, without producing PDF bytes or needing a
-browser. See [`paradoc check`](/cli/commands/check) and
-[`paradoc add`](/cli/commands/add).
+browser. See [`asterdoc check`](/cli/commands/check) and
+[`asterdoc add`](/cli/commands/add).
 
-The [`paradoc-react` agent skill](/ai/skills/paradoc-react) packages this page's
+The [`asterdoc-react` agent skill](/ai/skills/asterdoc-react) packages this page's
 content plus the component props, the pagination rule, the verified Tailwind
 class subset, and the render and seal flow for an agent authoring a
 composition end to end.
@@ -128,10 +128,10 @@ composition end to end.
 ## Using them
 
 ```tsx
-import { Document } from "@/components/paradoc/document";
-import { Field } from "@/components/paradoc/field";
-import { Pages } from "@/components/paradoc/pages";
-import { Section } from "@/components/paradoc/section";
+import { Document } from "@/components/asterdoc/document";
+import { Field } from "@/components/asterdoc/field";
+import { Pages } from "@/components/asterdoc/pages";
+import { Section } from "@/components/asterdoc/section";
 
 export function Proposal({ artifact, data }) {
   return (
@@ -149,15 +149,15 @@ export function Proposal({ artifact, data }) {
 
 `Field` names a path and prints nothing of its own: the label comes from the
 artifact and the text comes from the serializer the field's type names. The same
-tree renders to PDF through `@paradoc/react-pdf`.
+tree renders to PDF through `@asterdoc/react-pdf`.
 
 ## How the registry is built
 
 The items are generated from the component sources by `pnpm registry:build` in
-the private `@paradoc/components` workspace, never written by hand. The generator rewrites every import so
+the private `@asterdoc/components` workspace, never written by hand. The generator rewrites every import so
 the file compiles where it is installed: a sibling item becomes
-`@/components/paradoc/<name>`, and anything else in the package becomes
-`@paradoc/react`, pinned to the public runtime version the item targets. A binding
+`@/components/asterdoc/<name>`, and anything else in the package becomes
+`@asterdoc/react`, pinned to the public runtime version the item targets. A binding
 the package does not export publicly, or an npm package the item does not
 declare, fails the build rather than shipping a file you cannot compile, and the
 emitted files are installed into a scratch project and type-checked on every

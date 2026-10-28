@@ -26,9 +26,9 @@ import {
   planPages,
   type MeasuredKeep,
   type PageContextValue,
-} from "@paradoc/react";
-import { renderPdf } from "@paradoc/react-pdf";
-import { checkElement } from "@paradoc/react-pdf/check";
+} from "@asterdoc/react";
+import { renderPdf } from "@asterdoc/react-pdf";
+import { checkElement } from "@asterdoc/react-pdf/check";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeAll, describe, expect, it } from "vitest";
 

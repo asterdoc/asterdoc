@@ -11,5 +11,5 @@ export default defineConfig({
   splitting: false,
   sourcemap: false,
   clean: true,
-  external: ['@paradoc/types'],
+  external: ['@asterdoc/types'],
 })

@@ -1,11 +1,11 @@
 ---
 title: Registries
-description: Consuming and creating Paradoc artifact registries
-ogTitle: Paradoc Registries
+description: Consuming and creating Asterdoc artifact registries
+ogTitle: Asterdoc Registries
 ogDescription: Learn how to use artifact registries and host your own
 ---
 
-A registry is a hosted collection of Paradoc artifacts. Registries can be public or private. You find an artifact in a registry, install it into your project, and fill and render it there. The [CLI](/cli) and the [AI tools](/ai-tools/get-registry) both read registries; the examples on this page use the CLI.
+A registry is a hosted collection of Asterdoc artifacts. Registries can be public or private. You find an artifact in a registry, install it into your project, and fill and render it there. The [CLI](/cli) and the [AI tools](/ai-tools/get-registry) both read registries; the examples on this page use the CLI.
 
 ## Using registries
 
@@ -13,13 +13,13 @@ A registry is a hosted collection of Paradoc artifacts. Registries can be public
 
 Every artifact reference names a registry namespace, as in `@acme/residential-lease`.
 
-- **There is no default registry.** The CLI resolves a namespace only through your configuration. An unconfigured namespace fails with a message that names it and tells you to run `paradoc registry add @<ns> <url>`.
-- **`@paradoc` is reserved.** It is kept for the Paradoc registry, which is not available yet. Using it fails with `The Paradoc registry is not available yet`. `paradoc registry add @paradoc <url>` is refused, and a global or project config that sets a URL for `@paradoc` is an error.
+- **There is no default registry.** The CLI resolves a namespace only through your configuration. An unconfigured namespace fails with a message that names it and tells you to run `asterdoc registry add @<ns> <url>`.
+- **`@asterdoc` is reserved.** It is kept for the Asterdoc registry, which is not available yet. Using it fails with `The Asterdoc registry is not available yet`. `asterdoc registry add @asterdoc <url>` is refused, and a global or project config that sets a URL for `@asterdoc` is an error.
 - **Every other namespace is yours to add.** Anyone can host a registry and give it any other namespace.
 
 ### Adding a registry
 
-Add a registry to your project by editing `paradoc.json`:
+Add a registry to your project by editing `asterdoc.json`:
 
 ```json
 {
@@ -32,7 +32,7 @@ Add a registry to your project by editing `paradoc.json`:
 Or add one globally so it's available across all projects:
 
 ```bash
-paradoc registry add @acme https://registry.acme.com --global
+asterdoc registry add @acme https://registry.acme.com --global
 ```
 
 For registries that require authentication, use the extended format:
@@ -58,28 +58,28 @@ For registries that require authentication, use the extended format:
 
 ### Searching for artifacts
 
-Use [`paradoc search`](/cli/commands/search) to query a registry. Without `--registry` it searches your one configured registry; with none or several configured, pass `--registry`:
+Use [`asterdoc search`](/cli/commands/search) to query a registry. Without `--registry` it searches your one configured registry; with none or several configured, pass `--registry`:
 
 ```bash
-paradoc search lease
-paradoc search --kind form --tags legal
-paradoc search --registry @acme "tax"
+asterdoc search lease
+asterdoc search --kind form --tags legal
+asterdoc search --registry @acme "tax"
 ```
 
 The query matches against artifact names, titles, and descriptions. Filter by `--kind` or `--tags` to narrow results.
 
 ### Installing artifacts
 
-Use [`paradoc add`](/cli/commands/add) to install an artifact. The CLI resolves the namespace to a registry, downloads the definition, writes it to your artifacts directory, and updates the lock file:
+Use [`asterdoc add`](/cli/commands/add) to install an artifact. The CLI resolves the namespace to a registry, downloads the definition, writes it to your artifacts directory, and updates the lock file:
 
 ```bash
-paradoc add @acme/residential-lease
+asterdoc add @acme/residential-lease
 ```
 
 Download layers alongside the definition:
 
 ```bash
-paradoc add @acme/residential-lease --layers all
+asterdoc add @acme/residential-lease --layers all
 ```
 
 A reference is `@namespace/name`, with an optional edition and an optional version. See [Editions and versions](#editions-and-versions) for the difference.
@@ -100,7 +100,7 @@ The CLI checks the downloaded file against the checksum in the registry manifest
 View metadata for an installed artifact:
 
 ```bash
-paradoc registry view @acme/residential-lease
+asterdoc registry view @acme/residential-lease
 ```
 
 ### Direct URL installs
@@ -108,7 +108,7 @@ paradoc registry view @acme/residential-lease
 Install from a URL directly, bypassing namespace resolution:
 
 ```bash
-paradoc add https://example.com/artifacts/my-form.yaml
+asterdoc add https://example.com/artifacts/my-form.yaml
 ```
 
 ### Private registries
@@ -130,7 +130,7 @@ For private registries, configure authentication headers with environment variab
 
 ```bash
 export REGISTRY_TOKEN="your-token-here"
-paradoc add @private/internal-form
+asterdoc add @private/internal-form
 ```
 
 Local development registries may use HTTP:
@@ -147,17 +147,17 @@ Local development registries may use HTTP:
 
 ### Managing registries
 
-List all configured registries (project and global). The built-in `@paradoc` is not listed, because it is never configured:
+List all configured registries (project and global). The built-in `@asterdoc` is not listed, because it is never configured:
 
 ```bash
-paradoc registry list
+asterdoc registry list
 ```
 
 Remove a registry. Without a namespace, the command lets you pick from a list. `--global` or `--project` limits the list to that config:
 
 ```bash
-paradoc registry remove @acme --global
-paradoc registry remove --project
+asterdoc registry remove @acme --global
+asterdoc registry remove --project
 ```
 
 See the [`registry`](/cli/commands/registry) command reference for all subcommands.
@@ -168,7 +168,7 @@ See the [`registry`](/cli/commands/registry) command reference for all subcomman
 
 ### Registry structure
 
-You write two things: the artifact files, and `registry.config.json`, which lists them. [`paradoc registry compile`](/cli/commands/registry/compile) builds the registry from them: one manifest file, `registry.json`, and a folder for each release.
+You write two things: the artifact files, and `registry.config.json`, which lists them. [`asterdoc registry compile`](/cli/commands/registry/compile) builds the registry from them: one manifest file, `registry.json`, and a folder for each release.
 
 ```
 my-registry/
@@ -212,7 +212,7 @@ An artifact has an edition in every release or in none. When an artifact that ha
 
 ### Registry config
 
-`registry.config.json` is the publisher's source file. [`paradoc registry make`](/cli/commands/registry/make) creates it, and [`paradoc registry catalog`](/cli/commands/registry/catalog) adds and removes source files.
+`registry.config.json` is the publisher's source file. [`asterdoc registry make`](/cli/commands/registry/make) creates it, and [`asterdoc registry catalog`](/cli/commands/registry/catalog) adds and removes source files.
 
 ```json
 {
@@ -234,7 +234,7 @@ An artifact has an edition in every release or in none. When an artifact that ha
 | `description` | string | No | Registry description |
 | `homepage` | string | No | Registry homepage URL |
 | `enableTelemetry` | boolean | No | Set `false` to turn off install telemetry for this registry |
-| `enableDirectory` | boolean | No | Set `false` to keep this registry out of the Paradoc Hub |
+| `enableDirectory` | boolean | No | Set `false` to keep this registry out of the Asterdoc Hub |
 | `sources` | array | Yes | Paths of the artifact files, relative to this file. Each file is in this folder or below it |
 | `tags` | object | No | Search tags, keyed by artifact name |
 | `defaults` | object | No | The default edition and version of an artifact, keyed by artifact name. See below |
@@ -266,7 +266,7 @@ When the files cannot decide, compile fails and names the `defaults` entry to se
 
 ```json
 {
-  "$schema": "https://schema.paradoc.dev/registry.json",
+  "$schema": "https://schema.asterdoc.com/registry.json",
   "name": "acme",
   "description": "Official forms and documents for Acme Corp",
   "homepage": "https://acme.com/forms",
@@ -366,16 +366,16 @@ The key of a version is a semantic version with no build metadata, such as `1.2.
 
 ### Workflow
 
-1. **Create the config** — [`paradoc registry make`](/cli/commands/registry/make) writes `registry.config.json` with your registry name and metadata.
+1. **Create the config** — [`asterdoc registry make`](/cli/commands/registry/make) writes `registry.config.json` with your registry name and metadata.
 
-2. **Add source files** — [`paradoc registry catalog add`](/cli/commands/registry/catalog) adds one artifact file, which is one release.
+2. **Add source files** — [`asterdoc registry catalog add`](/cli/commands/registry/catalog) adds one artifact file, which is one release.
 
-3. **Compile** — [`paradoc registry compile`](/cli/commands/registry/compile) validates every source file, computes checksums, and writes `registry.json` and the release folders. One error stops the build, and nothing is written.
+3. **Compile** — [`asterdoc registry compile`](/cli/commands/registry/compile) validates every source file, computes checksums, and writes `registry.json` and the release folders. One error stops the build, and nothing is written.
 
 ```bash
-paradoc registry make --name acme --description "Official forms and documents for Acme Corp"
-paradoc registry catalog add forms/w-9-2024-03-1.0.0.json
-paradoc registry compile --output dist
+asterdoc registry make --name acme --description "Official forms and documents for Acme Corp"
+asterdoc registry catalog add forms/w-9-2024-03-1.0.0.json
+asterdoc registry compile --output dist
 ```
 
 ### Hosting
@@ -414,17 +414,17 @@ Then configure the local registry:
 ```json
 {
   "registries": {
-    "@myorg": "https://myorg.github.io/paradoc-registry"
+    "@myorg": "https://myorg.github.io/asterdoc-registry"
   }
 }
 ```
 
-The CLI fetches `https://myorg.github.io/paradoc-registry/registry.json` to discover available artifacts.
+The CLI fetches `https://myorg.github.io/asterdoc-registry/registry.json` to discover available artifacts.
 
 ### Best practices
 
 1. **Version your artifacts** — use semantic versioning, and publish a new version for every change
 2. **Add descriptive tags** — help users discover artifacts through search
 3. **Include descriptions** — add descriptions to the registry, artifacts, and fields
-4. **Validate before publishing** — run `paradoc validate` on your artifacts. Compile validates them again
+4. **Validate before publishing** — run `asterdoc validate` on your artifacts. Compile validates them again
 5. **Use HTTPS** — always use HTTPS in production (HTTP only for local development)

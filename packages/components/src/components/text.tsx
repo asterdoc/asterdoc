@@ -21,8 +21,8 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { scaleTextClasses, useDocumentTokens } from "@paradoc/react";
-import type { TypographyLevel } from "@paradoc/react";
+import { scaleTextClasses, useDocumentTokens } from "@asterdoc/react";
+import type { TypographyLevel } from "@asterdoc/react";
 import type { ElementType, ReactNode } from "react";
 import { KeepTogether } from "./keep-together";
 

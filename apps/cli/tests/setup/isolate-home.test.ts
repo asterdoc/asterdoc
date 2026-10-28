@@ -2,7 +2,7 @@ import { execFileSync } from 'node:child_process'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, inject, it } from 'vitest'
-import { paradocHomePath, userHomeDir } from '../../src/utils/home'
+import { asterdocHomePath, userHomeDir } from '../../src/utils/home'
 
 const root = inject('testHomeRoot')
 
@@ -20,9 +20,9 @@ describe('test home isolation', () => {
     expect(isUnderRoot(process.env.XDG_CACHE_HOME ?? '')).toBe(true)
   })
 
-  it('resolves the CLI home and ~/.paradoc inside the temporary home', () => {
+  it('resolves the CLI home and ~/.asterdoc inside the temporary home', () => {
     expect(userHomeDir()).toBe(homedir())
-    expect(isUnderRoot(paradocHomePath('config.json'))).toBe(true)
+    expect(isUnderRoot(asterdocHomePath('config.json'))).toBe(true)
   })
 
   it('passes the temporary home to spawned processes', () => {
@@ -46,7 +46,7 @@ describe('userHomeDir', () => {
     try {
       process.env.HOME = other
       expect(userHomeDir()).toBe(other)
-      expect(paradocHomePath('cache')).toBe(path.join(other, '.paradoc', 'cache'))
+      expect(asterdocHomePath('cache')).toBe(path.join(other, '.asterdoc', 'cache'))
     } finally {
       process.env.HOME = original
     }

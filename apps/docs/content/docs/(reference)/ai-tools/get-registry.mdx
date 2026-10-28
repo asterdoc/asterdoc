@@ -1,8 +1,8 @@
 ---
 title: get_registry
-description: Discover the artifacts available in a Paradoc registry
-ogTitle: get_registry — Paradoc AI Tools
-ogDescription: Fetch a Paradoc registry index to discover the artifacts it lists
+description: Discover the artifacts available in an Asterdoc registry
+ogTitle: get_registry — Asterdoc AI Tools
+ogDescription: Fetch an Asterdoc registry index to discover the artifacts it lists
 ---
 
 Fetches a registry's `registry.json` and returns the artifacts it lists, with the editions and versions of each.
@@ -42,7 +42,7 @@ An edition is the issuer's revision of a form, such as IRS W-9 Rev. March 2024. 
 ## Direct usage
 
 ```typescript
-import { executeGetRegistry } from "@paradoc/ai-tools"
+import { executeGetRegistry } from "@asterdoc/ai-tools"
 
 const result = await executeGetRegistry({
   registry_url: "https://registry.acme.com",

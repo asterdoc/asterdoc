@@ -1,7 +1,7 @@
 /**
  * Validate a form data payload the way the SDK does: `form.fill(data).validate()`.
  *
- * `paradoc data validate` and `paradoc data fill` both use this, so the CLI
+ * `asterdoc data validate` and `asterdoc data fill` both use this, so the CLI
  * accepts and rejects exactly what the SDK accepts and rejects.
  */
 
@@ -11,8 +11,8 @@ import {
   type Form,
   type FormValidationResult,
   type ValidationError,
-} from '@paradoc/core'
-import type { FormData } from '@paradoc/types'
+} from '@asterdoc/core'
+import type { FormData } from '@asterdoc/types'
 
 type RuleValidationResult = FormValidationResult['rules']['errors'][number]
 

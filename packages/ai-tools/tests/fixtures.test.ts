@@ -2,7 +2,7 @@
  * Fixture-based tests for ai-tools execute functions.
  *
  * Fixtures sourced from:
- * - artifacts/staging/ — real production artifacts (pet-addendum, w-9)
+ * - the public registry — real production artifacts (pet-addendum, w-9)
  * - apps/docs/tests/   — docs test vectors (lease, purchase agreement, checklist)
  *
  * Each artifact has a corresponding .data.json with valid fill data.
@@ -20,7 +20,7 @@ import { registryFixture } from './helpers/registry'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const fixturesDir = join(__dirname, 'fixtures')
-const PUBLIC_REGISTRY_URL = 'https://public.paradoc.dev'
+const PUBLIC_REGISTRY_URL = 'https://public.asterdoc.com'
 
 function loadFixture(name: string) {
   const artifact = JSON.parse(readFileSync(join(fixturesDir, `${name}.json`), 'utf-8'))
@@ -58,7 +58,7 @@ function createPetAddendumRegistryFetch(artifact: Record<string, unknown>): type
 }
 
 // ---------------------------------------------------------------------------
-// Pet Addendum — real production artifact from artifacts/staging/.
+// Pet Addendum — real production artifact from the public registry.
 // Has file-backed PDF + markdown layers, signature blocks, bindings.
 // ---------------------------------------------------------------------------
 
@@ -146,7 +146,7 @@ describe('pet-addendum fixture (production artifact)', () => {
     expect(result.encoding).toBe('utf-8')
     expect(result.mime_type).toBe('text/markdown')
 
-    // Content from the Paradoc template
+    // Content from the Asterdoc template
     expect(result.content).toContain('Pet Addendum')
     expect(result.content).toContain('Bella')
     expect(result.content).toContain('dog')
@@ -203,7 +203,7 @@ describe('pet-addendum fixture (production artifact)', () => {
 
 // ---------------------------------------------------------------------------
 // Lease Agreement — complex form: address, money, duration, enum, boolean,
-// multiple parties, conditionals in a Paradoc template (inline layer)
+// multiple parties, conditionals in an Asterdoc template (inline layer)
 // ---------------------------------------------------------------------------
 
 describe('lease-agreement fixture', () => {
@@ -284,7 +284,7 @@ describe('lease-agreement fixture', () => {
 
 // ---------------------------------------------------------------------------
 // Purchase Agreement — simpler form: number, money, date, parties with
-// signatures, inline Paradoc template
+// signatures, inline Asterdoc template
 // ---------------------------------------------------------------------------
 
 describe('purchase-agreement fixture', () => {

@@ -1,10 +1,10 @@
-import { defaultFormatter } from '@paradoc/format'
+import { defaultFormatter } from '@asterdoc/format'
 import type {
   Formatter,
-  ParadocRenderer,
+  AsterdocRenderer,
   RendererLayer,
   RenderRequest,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import { requestRenderData } from '../render-data'
 import { renderDocx } from './render'
 import type { DocxSignatureOptions } from './signatures'
@@ -19,7 +19,7 @@ export interface DocxRendererOptions {
 
 type DocxLayer = RendererLayer & { type: 'docx'; content: Uint8Array }
 
-export function docxRenderer(options: DocxRendererOptions = {}): ParadocRenderer<DocxLayer, Uint8Array> {
+export function docxRenderer(options: DocxRendererOptions = {}): AsterdocRenderer<DocxLayer, Uint8Array> {
   const formatter = options.formatter ?? defaultFormatter
   return {
     id: 'docx',

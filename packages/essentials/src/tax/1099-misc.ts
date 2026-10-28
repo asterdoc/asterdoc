@@ -1,11 +1,11 @@
-// Generated from Paradoc's forms library (Fab release d1177485-b5d3-4574-94f8-cfeb122b816b). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release d1177485-b5d3-4574-94f8-cfeb122b816b). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@paradoc/core";
-import { createMemoryResolver } from "@paradoc/resolvers/memory";
+import { p } from "@asterdoc/core";
+import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.paradoc.dev/2026-10-02.json",
+  "$schema": "https://schema.asterdoc.com/2026-10-28.json",
   "kind": "form",
   "name": "1099-misc",
   "version": "1.0.0",

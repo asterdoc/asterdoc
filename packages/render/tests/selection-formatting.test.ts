@@ -1,5 +1,5 @@
-import { createFormatter } from '@paradoc/format'
-import type { FormatResult, Form, Formatter } from '@paradoc/types'
+import { createFormatter } from '@asterdoc/format'
+import type { FormatResult, Form, Formatter } from '@asterdoc/types'
 import { unzipSync, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 

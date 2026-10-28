@@ -9,7 +9,7 @@ import type {
   Formatter,
   FormatterProgressivePolicy,
   Layer,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import type { RuntimeForm } from '@/artifacts/form'
 import type { RuntimeChecklist } from '@/artifacts/checklist'
 import type { RuntimeDocument } from '@/artifacts/document'
@@ -21,7 +21,7 @@ import { getExtensionForMime, nestPartOutputs, normalizeMimeType, producedMimeTy
  * Content a bundle part carries as bytes rather than as an artifact to render.
  *
  * An annex is the case this exists for: a certificate, a scan, a statement the
- * packet includes but nothing in Paradoc produced. It has no layer, no fields
+ * packet includes but nothing in Asterdoc produced. It has no layer, no fields
  * and nothing to fill, so it arrives already final and assembly passes it
  * through.
  */

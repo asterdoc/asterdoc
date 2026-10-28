@@ -170,7 +170,7 @@ export type {
   LayerBuilderType,
   AnnexAPI,
   AnnexBuilder,
-  Paradoc,
+  Asterdoc,
 } from "./artifacts";
 
 // ============================================================================
@@ -207,7 +207,7 @@ export { assembleBundle, isAssemblyBytesEntry, producedMimeType, sealBundle } fr
 export { BundleSealError } from "./rendering";
 
 // Reading filled PDF forms back into data
-export { PdfEncryptedError, PdfExtractionError } from "@paradoc/render/pdf";
+export { PdfEncryptedError, PdfExtractionError } from "@asterdoc/render/pdf";
 export type {
   PdfExtractedData,
   PdfExtractionEntry,
@@ -216,7 +216,7 @@ export type {
   PdfExtractionSource,
   PdfExtractionStatus,
   PdfUnboundField,
-} from "@paradoc/render/pdf";
+} from "@asterdoc/render/pdf";
 
 export {
   InlineReactLayerError,
@@ -365,14 +365,14 @@ export * from "./serialization";
 // ============================================================================
 
 export {
-  PARADOC_SCHEMA_URL,
+  ASTERDOC_SCHEMA_URL,
   SCHEMA_VERSION,
   SCHEMA_VERSIONS,
   schemaVersionUrl,
   isSchemaVersion,
   readSchemaAddress,
-} from "@paradoc/schemas";
-export type { SchemaVersion, SchemaAddress } from "@paradoc/schemas";
+} from "@asterdoc/schemas";
+export type { SchemaVersion, SchemaAddress } from "@asterdoc/schemas";
 
 // ============================================================================
 // SCHEMA MIGRATION
@@ -401,12 +401,12 @@ export * from "./logic";
 
 // The expression engine (parser, evaluator, type checker, exact decimal) is
 // surfaced under the `expr` namespace. Namespaced rather than flat-re-exported
-// because @paradoc/expr and core's own logic surface share names (e.g.
+// because @asterdoc/expr and core's own logic surface share names (e.g.
 // EvaluationContext); a flat `export *` would silently drop the collisions.
-export * as expr from "@paradoc/expr";
+export * as expr from "@asterdoc/expr";
 
 // ============================================================================
-// SCHEMAS (Type re-exports from @paradoc/types)
+// SCHEMAS (Type re-exports from @asterdoc/types)
 // ============================================================================
 
 // Artifact types
@@ -427,7 +427,7 @@ export type {
   ValidationRule,
   RulesSection,
   RuleSeverity,
-} from "@paradoc/types";
+} from "@asterdoc/types";
 
 // Block types (fields, fieldsets, annexes, parties)
 export type {
@@ -450,7 +450,7 @@ export type {
   FormAnnex,
   Party,
   Bindings,
-} from "@paradoc/types";
+} from "@asterdoc/types";
 
 // Primitive types
 export type {
@@ -464,10 +464,10 @@ export type {
   Identification,
   Bbox,
   Metadata,
-} from "@paradoc/types";
+} from "@asterdoc/types";
 
 // Artifact union type and kind
-export type { Artifact } from "@paradoc/types";
+export type { Artifact } from "@asterdoc/types";
 export type ArtifactKind = "form" | "document" | "checklist" | "bundle";
 
 // ============================================================================
@@ -503,12 +503,12 @@ export type {
 	InstanceTemplate,
 } from "./types";
 
-// Re-export from @paradoc/types
+// Re-export from @asterdoc/types
 export type {
   ChecklistData,
-} from "@paradoc/types";
+} from "@asterdoc/types";
 
-// Re-export sealing types from @paradoc/types
+// Re-export sealing types from @asterdoc/types
 export type {
   SigningFieldType,
   SigningField,
@@ -521,7 +521,7 @@ export type {
   AnchorLocateQuery,
   LocateHit,
   SealLocator,
-} from "@paradoc/types";
+} from "@asterdoc/types";
 
 // ============================================================================
 // UTILITIES

@@ -5,7 +5,7 @@
  * Expected: data.fields.area.southWest.lat is the number 12.5 (as a coordinate member `spot.lat` is).
  * Actual (screened commit): the string "12.5".
  */
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
 import { extractPdfData, renderPdf } from '../src/pdf'
 import { acroFormPdf } from './pdf-fixtures'

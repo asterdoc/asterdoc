@@ -1,11 +1,11 @@
-// Generated from Paradoc's forms library (Fab release 9e4c3ddc-3390-4ceb-a443-be167cf7dc19). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release 9e4c3ddc-3390-4ceb-a443-be167cf7dc19). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@paradoc/core";
-import { createMemoryResolver } from "@paradoc/resolvers/memory";
+import { p } from "@asterdoc/core";
+import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.paradoc.dev/2026-10-02.json",
+  "$schema": "https://schema.asterdoc.com/2026-10-28.json",
   "kind": "form",
   "name": "ach-direct-deposit",
   "version": "1.0.0",

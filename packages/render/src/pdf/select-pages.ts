@@ -10,7 +10,7 @@
  * becomes `null` anywhere else.
  */
 
-import type { BinaryContent } from '@paradoc/types'
+import type { BinaryContent } from '@asterdoc/types'
 import { pageRecords, selfContainedPage, type PageRecord } from './page-tree'
 import { isDict, isName, isRef, PdfModel, type PdfObject, type PdfRef, type PdfValue } from './syntax'
 import { collectRefs, renumber, writePdf } from './writer'

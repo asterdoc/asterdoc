@@ -1,4 +1,4 @@
-import { config } from "@paradoc/eslint-config/base";
+import { config } from "@asterdoc/eslint-config/base";
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [

@@ -2,7 +2,7 @@
  * The conventions that connect a composition to its artifact and its sample.
  *
  * They are tested here, in the package that owns them, because two commands
- * read them — `paradoc dev` builds a preview from every answer, `paradoc check`
+ * read them — `asterdoc dev` builds a preview from every answer, `asterdoc check`
  * checks one — and a rule proved in one command's tests would be a rule the
  * other could quietly disagree with.
  */
@@ -25,7 +25,7 @@ let root: string;
 /** A form artifact declaring one React layer at `path`. */
 function artifact(name: string, path: string): string {
   return JSON.stringify({
-    $schema: "https://schema.paradoc.dev/2026-10-02.json",
+    $schema: "https://schema.asterdoc.com/2026-10-28.json",
     kind: "form",
     name,
     version: "1.0.0",
@@ -45,7 +45,7 @@ async function write(relativePath: string, content: string): Promise<void> {
 }
 
 beforeEach(async () => {
-  root = await fs.realpath(await fs.mkdtemp(join(tmpdir(), "paradoc-discovery-")));
+  root = await fs.realpath(await fs.mkdtemp(join(tmpdir(), "asterdoc-discovery-")));
 });
 
 afterEach(async () => {
@@ -179,7 +179,7 @@ describe("pairing a composition with its artifact", () => {
     await write(
       "broken.json",
       JSON.stringify({
-        $schema: "https://schema.paradoc.dev/2026-10-02.json",
+        $schema: "https://schema.asterdoc.com/2026-10-28.json",
         kind: "form",
         name: "broken",
         version: "1.0.0",
@@ -197,16 +197,16 @@ describe("pairing a composition with its artifact", () => {
     expect(entry?.problems.join(" ")).toContain("is not valid");
   });
 
-  it("reports an artifact written for an earlier schema version", async () => {
-    await write("compositions/older.tsx", "export default () => null");
-    const older = JSON.parse(artifact("older", "compositions/older.tsx"));
-    await write("older.json", JSON.stringify({ ...older, $schema: "https://schema.paradoc.dev/2026-08-10.json" }));
+  it("reports an artifact written for another schema version", async () => {
+    await write("compositions/other.tsx", "export default () => null");
+    const other = JSON.parse(artifact("other", "compositions/other.tsx"));
+    await write("other.json", JSON.stringify({ ...other, $schema: "https://schema.asterdoc.com/2025-01-01.json" }));
 
     const [entry] = await discoverCompositions(root);
 
-    expect(entry?.artifact?.name).toBe("older");
-    expect(entry?.problems.join(" ")).toContain("schema version 2026-08-10");
-    expect(entry?.problems.join(" ")).toContain("paradoc migrate");
+    expect(entry?.artifact?.name).toBe("other");
+    expect(entry?.problems.join(" ")).toContain("schema version 2025-01-01");
+    expect(entry?.problems.join(" ")).toContain("asterdoc migrate");
   });
 });
 

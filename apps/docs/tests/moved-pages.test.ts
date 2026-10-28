@@ -44,7 +44,7 @@ describe("moved pages", () => {
 
   test.each([
     ["/skill", "/ai/skills"],
-    ["/skill/paradoc-react", "/ai/skills/paradoc-react"],
+    ["/skill/asterdoc-react", "/ai/skills/asterdoc-react"],
     ["/ai/tools", "/ai-tools"],
     ["/ai/tools/fill", "/ai-tools/fill"],
     ["/ai/tools/fill.md", "/ai-tools/fill.md"],
@@ -68,7 +68,7 @@ describe("moved pages", () => {
 
   test("a GET answers with a permanent redirect that keeps the query", () => {
     const response = redirectMovedPage(
-      new Request("https://docs.paradoc.dev/ai/tools/render?ref=x"),
+      new Request("https://docs.asterdoc.com/ai/tools/render?ref=x"),
     );
     expect(response?.status).toBe(301);
     expect(response?.headers.get("Location")).toBe("/ai-tools/render?ref=x");
@@ -76,8 +76,8 @@ describe("moved pages", () => {
 
   test("other methods and unmoved pages pass through", () => {
     expect(
-      redirectMovedPage(new Request("https://docs.paradoc.dev/skill", { method: "POST" })),
+      redirectMovedPage(new Request("https://docs.asterdoc.com/skill", { method: "POST" })),
     ).toBeUndefined();
-    expect(redirectMovedPage(new Request("https://docs.paradoc.dev/sdk"))).toBeUndefined();
+    expect(redirectMovedPage(new Request("https://docs.asterdoc.com/sdk"))).toBeUndefined();
   });
 });

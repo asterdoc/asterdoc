@@ -23,7 +23,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { KeepTogether } from "../../components/src/components/keep-together";
 import { PageBreak } from "../../components/src/components/page-break";
 import { ProposalDocument, overflowProposalData } from "../../components/src/examples";
-import { planPages, type MeasuredKeep, type PagePlan } from "@paradoc/react";
+import { planPages, type MeasuredKeep, type PagePlan } from "@asterdoc/react";
 import { preparePdfTree, renderPdf, type PageBreakPlan } from "../src";
 import { proposalLogoImage } from "../../components/src/examples/pdf";
 import { normalizeText as normalize, nodeByKeepId, readPdf, textOf, treeKeeps, type ReadPage } from "./pdf-reader";

@@ -4,19 +4,19 @@
 	"tasks": {
 		"test": {
 			// `tests/pdf-class-vocabulary-docs.test.ts` and
-			// `tests/skill-example-classes.test.ts` read the `paradoc-react` skill
+			// `tests/skill-example-classes.test.ts` read the `asterdoc-react` skill
 			// from outside this package, and `$TURBO_DEFAULT$` only tracks files
 			// under the package's own directory. Without this, a commit that
 			// touches only the skill would replay a cached pass instead of
 			// re-running the comparison. The tests also render the sample documents
-			// from `@paradoc/components` source and drive a session through
-			// `@paradoc/react`'s test driver, so those count as inputs too.
+			// from `@asterdoc/components` source and drive a session through
+			// `@asterdoc/react`'s test driver, so those count as inputs too.
 			"inputs": [
 				"$TURBO_DEFAULT$",
-				"$TURBO_ROOT$/paradoc/packages/components/src/**",
-				"$TURBO_ROOT$/paradoc/packages/react/tests/session-driver.ts",
-				"$TURBO_ROOT$/paradoc/skills/skills/paradoc-react/SKILL.md",
-				"$TURBO_ROOT$/paradoc/skills/skills/paradoc-react/references/**"
+				"$TURBO_ROOT$/framework/packages/components/src/**",
+				"$TURBO_ROOT$/framework/packages/react/tests/session-driver.ts",
+				"$TURBO_ROOT$/framework/skills/skills/asterdoc-react/SKILL.md",
+				"$TURBO_ROOT$/framework/skills/skills/asterdoc-react/references/**"
 			]
 		}
 	}

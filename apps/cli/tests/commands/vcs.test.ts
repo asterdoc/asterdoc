@@ -16,7 +16,7 @@ describe('CLI Project Commands', () => {
   let tempDir: string
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-project-test-'))
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-project-test-'))
   })
 
   afterEach(async () => {
@@ -40,31 +40,31 @@ describe('CLI Project Commands', () => {
 
       expect(result.exitCode).toBe(0)
 
-      // Check that .paradoc directory was created
-      const paradocDir = path.join(tempDir, '.paradoc')
-      const stats = await fs.stat(paradocDir)
+      // Check that .asterdoc directory was created
+      const asterdocDir = path.join(tempDir, '.asterdoc')
+      const stats = await fs.stat(asterdocDir)
       expect(stats.isDirectory()).toBe(true)
     })
 
-    it('should create an empty .paradoc directory with no version-control scaffolding', async () => {
+    it('should create an empty .asterdoc directory with no version-control scaffolding', async () => {
       const result = await executeCliCommand(['init', '--yes', '--name', 'Test Project'], { cwd: tempDir })
 
       expect(result.exitCode).toBe(0)
-      // .paradoc marks the project root and later holds lock.json; init writes nothing into it.
-      expect(await fs.readdir(path.join(tempDir, '.paradoc'))).toEqual([])
+      // .asterdoc marks the project root and later holds lock.json; init writes nothing into it.
+      expect(await fs.readdir(path.join(tempDir, '.asterdoc'))).toEqual([])
     })
 
-    it('should not create .paradoc in dry-run mode', async () => {
+    it('should not create .asterdoc in dry-run mode', async () => {
       const result = await executeCliCommand(['init', '--yes', '--name', 'Test Project', '--dry-run'], { cwd: tempDir })
 
       expect(result.exitCode).toBe(0)
-      await expect(fs.stat(path.join(tempDir, '.paradoc'))).rejects.toThrow()
+      await expect(fs.stat(path.join(tempDir, '.asterdoc'))).rejects.toThrow()
     })
 
-    it('should create paradoc.json manifest', async () => {
+    it('should create asterdoc.json manifest', async () => {
       await executeCliCommand(['init', '--yes', '--name', 'Test Project'], { cwd: tempDir })
 
-      const manifestPath = path.join(tempDir, 'paradoc.json')
+      const manifestPath = path.join(tempDir, 'asterdoc.json')
       const stats = await fs.stat(manifestPath)
       expect(stats.isFile()).toBe(true)
 
@@ -103,7 +103,7 @@ describe('CLI Project Commands', () => {
 
     it('should read a bare name as a document component', async () => {
       // `field` is a component, not an artifact, so it needs a shadcn project
-      // rather than a Paradoc one.
+      // rather than an Asterdoc one.
       const result = await executeCliCommand(['add', 'field'], { cwd: tempDir })
 
       expect(result.exitCode).toBe(1)
@@ -116,7 +116,7 @@ describe('CLI Project Commands', () => {
 
       expect(result.exitCode).toBe(1)
       const output = result.stdout + result.stderr
-      expect(output).toContain('Not in a Paradoc project')
+      expect(output).toContain('Not in an Asterdoc project')
     })
 
     it('should support layers option', async () => {

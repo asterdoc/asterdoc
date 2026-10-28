@@ -8,14 +8,14 @@ import {
   type Artifact,
   type Layer,
   type Form,
-} from '@paradoc/core'
+} from '@asterdoc/core'
 import { LocalFileSystem } from '../utils/local-fs.js'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 import { readTextInput, resolveArtifactTarget } from '../utils/io.js'
 import { parseDataInput, toFormPayload } from '../utils/data-input.js'
 import { loadValidatedArtifact } from '../utils/artifact-file.js'
-import { createLayerRenderer } from '@paradoc/render'
+import { createLayerRenderer } from '@asterdoc/render'
 import { formatPayloadErrors, validateFormPayload } from '../utils/validate-data.js'
 
 type OutputFormat = 'json' | 'pretty'

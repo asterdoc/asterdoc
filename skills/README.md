@@ -1,31 +1,31 @@
-# Paradoc Skills
+# Asterdoc Skills
 
-Agent skills for [Paradoc](https://paradoc.dev), the documents-as-code framework. A skill is a package of instructions and references that teaches an AI coding agent how to use Paradoc's APIs, CLI and file formats.
+Agent skills for [Asterdoc](https://asterdoc.com), the documents-as-code framework. A skill is a package of instructions and references that teaches an AI coding agent how to use Asterdoc's APIs, CLI and file formats.
 
 ## Available skills
 
 | Skill | Use it for |
 |---|---|
-| [paradoc](skills/paradoc/) | Authoring, filling, validating, rendering and sealing artifacts with the TypeScript SDK, the `paradoc` CLI, raw JSON/YAML, the AI agent tools, or the hosted MCP server. Includes a staged workflow for creating a form or converting a PDF form. |
-| [paradoc-react](skills/paradoc-react/) | Composing, checking, previewing, rendering and sealing documents written in React with `@paradoc/react` and `@paradoc/react-pdf`. |
+| [asterdoc](skills/asterdoc/) | Authoring, filling, validating, rendering and sealing artifacts with the TypeScript SDK, the `asterdoc` CLI, raw JSON/YAML, the AI agent tools, or the hosted MCP server. Includes a staged workflow for creating a form or converting a PDF form. |
+| [asterdoc-react](skills/asterdoc-react/) | Composing, checking, previewing, rendering and sealing documents written in React with `@asterdoc/react` and `@asterdoc/react-pdf`. |
 
-Install `paradoc-react` on its own when composing documents in React is the only Paradoc work in play. Install both when you also author the artifacts.
+Install `asterdoc-react` on its own when composing documents in React is the only Asterdoc work in play. Install both when you also author the artifacts.
 
 ## Installation
 
 ### Claude Code
 
 ```bash
-npx skills add https://github.com/paradoc-dev/paradoc --skill paradoc
-npx skills add https://github.com/paradoc-dev/paradoc --skill paradoc-react
+npx skills add https://github.com/asterdoc/asterdoc --skill asterdoc
+npx skills add https://github.com/asterdoc/asterdoc --skill asterdoc-react
 ```
 
 Or copy them by hand:
 
 ```bash
-git clone https://github.com/paradoc-dev/paradoc.git
-cp -r paradoc/skills/skills/paradoc ~/.claude/skills/
-cp -r paradoc/skills/skills/paradoc-react ~/.claude/skills/
+git clone https://github.com/asterdoc/asterdoc.git
+cp -r framework/skills/skills/asterdoc ~/.claude/skills/
+cp -r framework/skills/skills/asterdoc-react ~/.claude/skills/
 ```
 
 ### Claude.ai
@@ -34,7 +34,7 @@ Upload `SKILL.md` and the relevant files from `references/` to your project know
 
 ### From the website
 
-Both public sites publish an [Agent Skills discovery index](https://github.com/cloudflare/agent-skills-discovery-rfc) at `/.well-known/agent-skills/index.json`, for example `https://docs.paradoc.dev/.well-known/agent-skills/index.json`. Each entry is a `.tar.gz` archive with `SKILL.md` and every reference, and a `sha256` digest of the archive bytes.
+Both public sites publish an [Agent Skills discovery index](https://github.com/cloudflare/agent-skills-discovery-rfc) at `/.well-known/agent-skills/index.json`, for example `https://docs.asterdoc.com/.well-known/agent-skills/index.json`. Each entry is a `.tar.gz` archive with `SKILL.md` and every reference, and a `sha256` digest of the archive bytes.
 
 ### Other agents
 
@@ -44,7 +44,7 @@ The skills follow the [Agent Skills specification](https://agentskills.io/specif
 
 ```text
 skills/
-  paradoc/
+  asterdoc/
     SKILL.md            # Manifest: rules, package map, dispatch
     metadata.json
     references/
@@ -53,7 +53,7 @@ skills/
       layers.md templates.md pdf.md rendering.md formatting.md
       instructions.md filling.md sealing.md essentials.md
       workflow-author-form.md                               # Workflow
-  paradoc-react/
+  asterdoc-react/
     SKILL.md            # Manifest: the compose-to-seal lifecycle
     metadata.json
     references/

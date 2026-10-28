@@ -6,7 +6,7 @@
  * render, and it is generated so nobody has to keep an opaque binary in step
  * with the composition beside it by hand.
  *
- *   pnpm --filter @paradoc/components regenerate:annex
+ *   pnpm --filter @asterdoc/components regenerate:annex
  */
 import { writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";

@@ -1,5 +1,5 @@
 /**
- * Core expression evaluation, backed by @paradoc/expr.
+ * Core expression evaluation, backed by @asterdoc/expr.
  *
  * This module evaluates expressions at runtime with actual form data:
  * `evaluateExpression` for a value, and `evaluateGate` for every boolean gate
@@ -21,7 +21,7 @@ import {
 	type HostFunction,
 	type Value,
 	type EvalResult,
-} from '@paradoc/expr'
+} from '@asterdoc/expr'
 import { EVALUATION_CLOCK, FUNCTION_REGISTRY, HOST_FUNCTIONS, PARTY_ENTRIES, ROW_ORIGINS, ROW_VISIBILITY, WITNESS_ENTRIES, type EvaluationContext, type ExpressionResult, type PartyContextEntry } from './types'
 import { resolveRowListPath, type RowOrigin } from '../../shared/list-paths'
 
@@ -78,7 +78,7 @@ function anyWitnessSigned(context: EvaluationContext): boolean {
 	return (context[WITNESS_ENTRIES] ?? []).some((w) => w.signed)
 }
 
-/** Extract a role-id string argument from an @paradoc/expr call. */
+/** Extract a role-id string argument from an @asterdoc/expr call. */
 function roleArg(args: readonly Value[]): string {
 	const a = args[0]
 	if (!a) return ''
@@ -86,7 +86,7 @@ function roleArg(args: readonly Value[]): string {
 }
 
 /**
- * Adapt the runtime EvaluationContext into an @paradoc/expr context: bare
+ * Adapt the runtime EvaluationContext into an @asterdoc/expr context: bare
  * references resolve against the context object, and the party/witness
  * predicates are host-injected.
  */
@@ -145,7 +145,7 @@ export function withRowReferences(context: EvaluationContext, rows: RowReference
 	return scoped
 }
 
-/** The @paradoc/expr context for a runtime context: its roots, predicates, clock, and row visibility. */
+/** The @asterdoc/expr context for a runtime context: its roots, predicates, clock, and row visibility. */
 export function toExpressionContext(context: EvaluationContext): ExprContext {
 	return buildExprContext(context)
 }

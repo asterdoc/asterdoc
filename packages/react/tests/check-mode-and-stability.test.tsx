@@ -4,7 +4,7 @@ import { act, memo, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import type { Form, Party } from "@paradoc/types";
+import type { Form, Party } from "@asterdoc/types";
 
 import { ArtifactProvider, CheckModeProvider, useField, useList, useParty, usePartyContact, useSignature } from "../src";
 

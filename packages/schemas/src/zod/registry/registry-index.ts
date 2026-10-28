@@ -323,7 +323,7 @@ export const RegistryIndexSchema = z.object({
 		.optional(),
 	enableDirectory: z.boolean()
 		.default(true)
-		.describe('Allow this registry to appear in the Paradoc Hub directory. Defaults to true.')
+		.describe('Allow this registry to appear in the Asterdoc Hub directory. Defaults to true.')
 		.optional(),
 	items: z.array(RegistryItemSummarySchema)
 		.describe('Every artifact in the registry, one item for each artifact name. No two items have the same name, and no two versions in the manifest have the same path.'),
@@ -358,7 +358,7 @@ export const RegistryIndexSchema = z.object({
 		}
 	});
 }).meta({
-	title: 'Paradoc Registry Manifest',
+	title: 'Asterdoc Registry Manifest',
 	description: 'Schema for registry.json, the manifest of a file registry. It lists every artifact the registry serves, with every edition and version of each. Every path is relative to the registry base address: the address of the folder that holds registry.json.',
 });
 

@@ -5,7 +5,7 @@ import type {
 	NumericFormatKind,
 	SelectionFormatKind,
 	TemporalFormatKind,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 
 /** The value families the formatter groups its kinds into. */
 export type FormatFamily = 'numeric' | 'contact' | 'temporal' | 'capture' | 'selection'
@@ -23,7 +23,7 @@ type FamilyOf<K extends FormatKind> = K extends NumericFormatKind
 					: never
 
 /**
- * The family of every format kind. A kind that `@paradoc/types` adds and this
+ * The family of every format kind. A kind that `@asterdoc/types` adds and this
  * table leaves out, or a kind filed under the wrong family, fails type-checking.
  */
 export const FORMAT_KIND_FAMILIES = {
@@ -57,4 +57,4 @@ export function isFormatKind(kind: unknown): kind is FormatKind {
 	return typeof kind === 'string' && Object.hasOwn(FORMAT_KIND_FAMILIES, kind)
 }
 
-export type * from '@paradoc/types'
+export type * from '@asterdoc/types'

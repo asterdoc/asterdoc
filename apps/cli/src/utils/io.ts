@@ -35,7 +35,7 @@ export async function resolveArtifactTarget(target: string): Promise<string> {
 	const projectRoot = await findRepoRoot();
 	if (!projectRoot) {
 		throw new Error(
-			`Cannot resolve "${target}": ${PROJECT_REQUIRED_MESSAGE}\n  Run 'paradoc init' to initialize a project first.`,
+			`Cannot resolve "${target}": ${PROJECT_REQUIRED_MESSAGE}\n  Run 'asterdoc init' to initialize a project first.`,
 		);
 	}
 
@@ -43,7 +43,7 @@ export async function resolveArtifactTarget(target: string): Promise<string> {
 	const locked = lockFileManager.getArtifact(target);
 	if (!locked) {
 		throw new Error(
-			`Artifact "${target}" is not installed.\n  Run 'paradoc add ${target}' to install it first.`,
+			`Artifact "${target}" is not installed.\n  Run 'asterdoc add ${target}' to install it first.`,
 		);
 	}
 

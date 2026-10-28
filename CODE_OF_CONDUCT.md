@@ -2,7 +2,7 @@
 
 ## Our Pledge
 
-We are committed to providing a welcoming and inspiring community for all. We pledge that everyone participating in the Paradoc project and its community will be treated with respect and dignity, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, nationality, personal appearance, political beliefs, race, religion, sexual identity and orientation, or socioeconomic status.
+We are committed to providing a welcoming and inspiring community for all. We pledge that everyone participating in the Asterdoc project and its community will be treated with respect and dignity, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, nationality, personal appearance, political beliefs, race, religion, sexual identity and orientation, or socioeconomic status.
 
 ## Our Standards
 
@@ -53,4 +53,4 @@ For more information about the Contributor Covenant, see https://www.contributor
 
 If you have questions about this Code of Conduct, please reach out to the maintainers.
 
-Thank you for helping make Paradoc a welcoming, inclusive community!
+Thank you for helping make Asterdoc a welcoming, inclusive community!

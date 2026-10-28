@@ -1,6 +1,6 @@
-# @paradoc/docs
+# @asterdoc/docs
 
-The public Paradoc framework documentation at [docs.paradoc.dev](https://docs.paradoc.dev). It uses Fumadocs, TanStack Start, Tailwind CSS, Vite, and a Cloudflare Worker.
+The public Asterdoc framework documentation at [docs.asterdoc.com](https://docs.asterdoc.com). It uses Fumadocs, TanStack Start, Tailwind CSS, Vite, and a Cloudflare Worker.
 
 ## Development
 
@@ -14,7 +14,7 @@ pnpm test         # run the docs and snippet tests
 pnpm preview      # serve the production build locally
 ```
 
-Pages live in `content/docs/`. `PARADOC_DOCS_PLATFORM_API=true` includes the
+Pages live in `content/docs/`. `ASTERDOC_DOCS_PLATFORM_API=true` includes the
 gated Platform API guides; they are excluded by default and from the public
 production build.
 
@@ -22,10 +22,10 @@ production build.
 
 `predev`, `prebuild`, `precheck-types`, and `pretest` run `pnpm sync`. The sync writes two ignored inputs:
 
-- `sync:changelog` converts `paradoc/CHANGELOG.md` to the changelog page.
+- `sync:changelog` converts `framework/CHANGELOG.md` to the changelog page.
 - `sync:component-docs` reads the component examples and `public/r/*.json` into `src/generated/component-docs-content.ts`.
 
-Refresh `public/r/*.json` first with `pnpm --filter @paradoc/components registry:build` when component registry content changes. `pnpm changelog:draft` previews public framework commits for the next changelog entry.
+Refresh `public/r/*.json` first with `pnpm --filter @asterdoc/components registry:build` when component registry content changes. `pnpm changelog:draft` previews public framework commits for the next changelog entry.
 
 ## Operations
 

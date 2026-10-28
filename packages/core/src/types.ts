@@ -1,7 +1,7 @@
 /**
- * @paradoc/core - Public Type Definitions
+ * @asterdoc/core - Public Type Definitions
  *
- * This file contains all public interfaces and types for the @paradoc/core package.
+ * This file contains all public interfaces and types for the @asterdoc/core package.
  * Centralizing types here provides:
  * - Easy documentation generation
  * - Better discoverability for developers
@@ -13,18 +13,18 @@ import type {
   Document,
   Bundle,
   Checklist,
-  ParadocRenderer,
+  AsterdocRenderer,
   RendererLayer,
   Formatter,
   FormatterProgressivePolicy,
   FormData,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 
 import type { RendererRegistry } from './rendering/renderer-registry'
 import type { DeepReadonly } from './artifacts/shared/definition-types'
 
 // Re-export RendererLayer for convenience
-export type { RendererLayer } from '@paradoc/types'
+export type { RendererLayer } from '@asterdoc/types'
 
 // ============================================================================
 // VALIDATION TYPES
@@ -150,7 +150,7 @@ export interface SerializationOptions {
  */
 export interface RenderOptions<Output = string | Uint8Array> {
   /** Custom renderer override. Supported layer MIME types use the built-in renderer by default. */
-  renderer?: ParadocRenderer<RendererLayer, Output>
+  renderer?: AsterdocRenderer<RendererLayer, Output>
 
   /** Formatter policy applied throughout this artifact render. */
   formatter?: Formatter
@@ -176,7 +176,7 @@ export interface RenderOptions<Output = string | Uint8Array> {
   layer?: string
 
   /**
-   * PDF layers only: AcroForm field name -> Paradoc path, laid over the
+   * PDF layers only: AcroForm field name -> Asterdoc path, laid over the
    * layer's own bindings. Refused for any other layer.
    */
   bindings?: Record<string, string>
@@ -201,7 +201,7 @@ export interface RenderOptions<Output = string | Uint8Array> {
  */
 export interface RuntimeFormRenderOptions<Output = string | Uint8Array> {
   /** Custom renderer override. Supported layer MIME types use the built-in renderer by default. */
-  renderer?: ParadocRenderer<RendererLayer, Output>
+  renderer?: AsterdocRenderer<RendererLayer, Output>
 
   /** Formatter policy applied throughout this artifact render. */
   formatter?: Formatter
@@ -220,7 +220,7 @@ export interface RuntimeFormRenderOptions<Output = string | Uint8Array> {
   layer?: string
 
   /**
-   * PDF layers only: AcroForm field name -> Paradoc path, laid over the
+   * PDF layers only: AcroForm field name -> Asterdoc path, laid over the
    * layer's own bindings. Refused for any other layer.
    */
   bindings?: Record<string, string>
@@ -248,7 +248,7 @@ export interface RuntimeFormRenderOptions<Output = string | Uint8Array> {
  */
 export interface RuntimeChecklistRenderOptions<Output = unknown> {
   /** Custom renderer override. Supported layer MIME types use the built-in renderer by default. */
-  renderer?: ParadocRenderer<RendererLayer, Output>
+  renderer?: AsterdocRenderer<RendererLayer, Output>
 
   /** Formatter policy applied throughout this artifact render. */
   formatter?: Formatter

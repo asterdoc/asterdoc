@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const bindings = vi.hoisted(() => ({ usePdfPages: vi.fn() }));
 
-vi.mock("@paradoc/react", async (load) => {
-  const actual = await load<typeof import("@paradoc/react")>();
+vi.mock("@asterdoc/react", async (load) => {
+  const actual = await load<typeof import("@asterdoc/react")>();
   return {
     ...actual,
     usePdfPages: bindings.usePdfPages,

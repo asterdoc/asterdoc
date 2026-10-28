@@ -3,18 +3,18 @@ title: Formatting
 description: Locale-aware presentation of artifact values
 ---
 
-`@paradoc/format` presents structured Paradoc values as localized text. Stored values remain unchanged. The same formatter can be passed to text, PDF, DOCX, and React renderers.
+`@asterdoc/format` presents structured Asterdoc values as localized text. Stored values remain unchanged. The same formatter can be passed to text, PDF, DOCX, and React renderers.
 
 ## Installation
 
 ```bash
-npm install @paradoc/format
+npm install @asterdoc/format
 ```
 
 The SDK also exports the formatter API:
 
 ```ts
-import { createFormatter } from '@paradoc/sdk'
+import { createFormatter } from '@asterdoc/sdk'
 ```
 
 ## Create a formatter
@@ -22,7 +22,7 @@ import { createFormatter } from '@paradoc/sdk'
 Use a precise locale. The initial documented locales are `en-US`, `en-GB`, `de-DE`, `fr-FR`, and `ar-SA`.
 
 ```ts
-import { createFormatter } from '@paradoc/format'
+import { createFormatter } from '@asterdoc/format'
 
 const formatter = createFormatter({ locale: 'de-DE' })
 
@@ -39,7 +39,7 @@ Money always carries its currency. Percentages use percentage points, so `8.25` 
 Booleans, single choices, multiple choices, and ratings go through the same formatter. Each call takes the options the field declares.
 
 ```ts
-import { createFormatter } from '@paradoc/format'
+import { createFormatter } from '@asterdoc/format'
 
 const formatter = createFormatter({ locale: 'en-US' })
 const options = [
@@ -74,7 +74,7 @@ Two `unsupported` outcomes have exported codes, so you can key a fallback off th
 - `UNSUPPORTED_LIST_JOIN`: the runtime has no list conjunction for the locale.
 
 ```ts
-import { MISSING_RATING_SCALE } from '@paradoc/format'
+import { MISSING_RATING_SCALE } from '@asterdoc/format'
 
 const result = formatter.safeFormatRating(4)
 if (!result.success && result.issues[0]?.code === MISSING_RATING_SCALE) {
@@ -130,12 +130,12 @@ const marked = await draft.render({ progressive: { missing: '___' } })
 // 'Ada / ___'
 ```
 
-React compositions use the `partial` option instead; see [@paradoc/react](/sdk/react).
+React compositions use the `partial` option instead; see [@asterdoc/react](/sdk/react).
 
 ## Use one formatter for an artifact
 
 ```ts
-import { createFormatter, p, createLayerRenderer } from '@paradoc/sdk'
+import { createFormatter, p, createLayerRenderer } from '@asterdoc/sdk'
 
 const formatter = createFormatter({ locale: 'fr-FR' })
 const output = await p.form(formDefinition).fill(data).render({

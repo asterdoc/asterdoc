@@ -8,7 +8,7 @@
  * breaks the other fails here.
  */
 
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
 import { extractPdfData, PdfEncryptedError, PdfExtractionError, renderPdf, selectPdfExtractionLayer } from '../src/pdf'
 import { acroFormPdf, pagePdf, type AcroFormFixtureField } from './pdf-fixtures'
@@ -285,7 +285,7 @@ describe('extractPdfData', () => {
     it('refuses a PDF with no form fields and points to hosted extraction', async () => {
       const error = await codeOf(pagePdf([[300, 300]]))
       expect(error.code).toBe('no_form_fields')
-      expect(error.message).toMatch(/hosted Paradoc extraction service/)
+      expect(error.message).toMatch(/hosted Asterdoc extraction service/)
     })
 
     it('refuses an encrypted PDF with the shared encryption error', async () => {

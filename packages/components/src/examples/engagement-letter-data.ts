@@ -9,14 +9,14 @@
  * clauses asks both: it runs past the end of the first page, so the plan has a
  * break to place, and it ends in two `Signature` keeps that must not be split.
  *
- * The clause count is asserted in `@paradoc/react`'s `tests/engagement-letter-artifact.test.ts`,
+ * The clause count is asserted in `@asterdoc/react`'s `tests/engagement-letter-artifact.test.ts`,
  * so shortening the letter fails rather than quietly making the second page
  * disappear.
  */
 
-import type { RuntimeParty } from "@paradoc/types";
+import type { RuntimeParty } from "@asterdoc/types";
 
-import type { DocumentData } from "@paradoc/react";
+import type { DocumentData } from "@asterdoc/react";
 
 const firm = {
   name: "Ashgrove Rowan",

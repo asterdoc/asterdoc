@@ -13,12 +13,12 @@
  *
  * The scratch project is outside the repository, and its dependencies are
  * symlinked from this package's own `node_modules` rather than installed from
- * the network. `@paradoc/react` resolves to this working tree, so the suite
+ * the network. `@asterdoc/react` resolves to this working tree, so the suite
  * measures the components as they are now, against the `dist` the turbo task
  * builds first.
  *
  * The one step that is stubbed is the package manager. An item declares its
- * substrate at a version (`@paradoc/react@^0.6.0`), and the CLI installs a
+ * substrate at a version (`@asterdoc/react@^0.6.0`), and the CLI installs a
  * versioned dependency rather than skipping it even when the project already
  * has it, so leaving it real would make this suite depend on a public npm
  * registry to test something that is not npm's. A recording stub stands in, and
@@ -66,9 +66,9 @@ const LINKED = [
   "typescript",
   "@types/react",
   "@types/react-dom",
-  "@paradoc/react",
-  "@paradoc/core",
-  "@paradoc/types",
+  "@asterdoc/react",
+  "@asterdoc/core",
+  "@asterdoc/types",
   "qrcode.react",
 ] as const;
 
@@ -104,7 +104,7 @@ function serveRegistry(directory: string): Promise<{ server: Server; origin: str
 function linkTarget(name: string): string {
   // The substrate is this working tree, so the suite measures the components as
   // they are now rather than a published version of them.
-  if (name === "@paradoc/react") return path.resolve(packageRoot, "../react");
+  if (name === "@asterdoc/react") return path.resolve(packageRoot, "../react");
   return realpathSync(path.join(packageRoot, "node_modules", name));
 }
 
@@ -118,14 +118,14 @@ function scaffold(directory: string, registryOrigin: string, alias = "@"): void 
     path.join(directory, "package.json"),
     `${JSON.stringify(
       {
-        name: "paradoc-registry-consumer",
+        name: "asterdoc-registry-consumer",
         private: true,
         version: "0.0.0",
         type: "module",
         dependencies: {
-          "@paradoc/core": "workspace:*",
-          "@paradoc/react": "workspace:*",
-          "@paradoc/types": "workspace:*",
+          "@asterdoc/core": "workspace:*",
+          "@asterdoc/react": "workspace:*",
+          "@asterdoc/types": "workspace:*",
           "qrcode.react": "4.2.0",
           react: "^19",
           "react-dom": "^19",
@@ -197,7 +197,7 @@ function scaffold(directory: string, registryOrigin: string, alias = "@"): void 
   writeFileSync(path.join(directory, "src/index.css"), '@import "tailwindcss";\n');
 
   const modules = path.join(directory, "node_modules");
-  mkdirSync(path.join(modules, "@paradoc"), { recursive: true });
+  mkdirSync(path.join(modules, "@asterdoc"), { recursive: true });
   mkdirSync(path.join(modules, "@types"), { recursive: true });
   for (const name of LINKED) {
     symlinkSync(linkTarget(name), path.join(modules, name), "dir");
@@ -244,7 +244,7 @@ function stubPackageManagers(directory: string, log: string): void {
 }
 
 beforeAll(async () => {
-  workspace = mkdtempSync(path.join(realpathSync(tmpdir()), "paradoc-registry-"));
+  workspace = mkdtempSync(path.join(realpathSync(tmpdir()), "asterdoc-registry-"));
 
   // The suite installs from a fresh build rather than the committed output, so
   // a component change is measured before it is committed, not after.
@@ -299,7 +299,7 @@ describe("the registry installs into a fresh project", () => {
   it("installs a block's artifact under a name no item answers to", () => {
     // shadcn resolves an import by the item it appears to name, so an artifact
     // installed as `purchase-order.ts` would be reached at
-    // `@/components/paradoc/purchase-order`, which is the composition. The
+    // `@/components/asterdoc/purchase-order`, which is the composition. The
     // generator refuses that; this is the install it would have broken.
     const packet = readFileSync(
       path.join(project, "src", ARTIFACT_DIR, "vendor-packet.artifact.ts"),
@@ -349,11 +349,11 @@ describe("the registry installs into a fresh project", () => {
     const asked = existsSync(installLog) ? readFileSync(installLog, "utf8") : "";
     const version = packageVersion(packageRoot);
 
-    expect(asked).toContain(`@paradoc/react@^${version}`);
-    expect(asked).toContain(`@paradoc/core@^${version}`);
+    expect(asked).toContain(`@asterdoc/react@^${version}`);
+    expect(asked).toContain(`@asterdoc/core@^${version}`);
     // The packet block declares it without importing it: the W-9 is one of the
     // packet's parts, and nothing can fill or seal it without that artifact.
-    expect(asked).toContain(`@paradoc/essentials@^${version}`);
+    expect(asked).toContain(`@asterdoc/essentials@^${version}`);
   });
 
   it("keeps each component's own explanation in the installed file", () => {
@@ -386,7 +386,7 @@ describe("the registry installs into a fresh project", () => {
     await shadcn(["add", `${REGISTRY_NAMESPACE}/field`, "--yes"], alternate);
 
     const field = readFileSync(path.join(alternate, "src", INSTALL_DIR, "field.tsx"), "utf8");
-    expect(field).toContain('from "~/components/paradoc/keep-together"');
+    expect(field).toContain('from "~/components/asterdoc/keep-together"');
     const check = await node(path.join(packageRoot, "node_modules/typescript/bin/tsc"), ["--noEmit"], alternate);
     expect(`${check.stdout}${check.stderr}`.trim()).toBe("");
   });
@@ -400,7 +400,7 @@ describe("the registry installs into a fresh project", () => {
     cpSync(path.join(packageRoot, "src/components/keep-together.tsx"), path.join(target, "keep-together.tsx"));
     writeFileSync(
       path.join(manual, "src/manual.tsx"),
-      'import { Field } from "@/components/paradoc/field";\nexport const example = <Field path="name" />;\n'
+      'import { Field } from "@/components/asterdoc/field";\nexport const example = <Field path="name" />;\n'
     );
 
     const check = await node(path.join(packageRoot, "node_modules/typescript/bin/tsc"), ["--noEmit"], manual);
@@ -422,7 +422,7 @@ describe("the registry installs into a fresh project", () => {
     await run("/usr/bin/tar", ["-xzf", path.join(packed, archive), "-C", packed]);
 
     const extracted = path.join(packed, "package");
-    const installedRuntime = path.join(project, "node_modules/@paradoc/react");
+    const installedRuntime = path.join(project, "node_modules/@asterdoc/react");
     rmSync(installedRuntime, { recursive: true, force: true });
     cpSync(extracted, installedRuntime, { recursive: true });
 

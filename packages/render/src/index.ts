@@ -1,10 +1,10 @@
 import type {
   Formatter,
   FormatterProgressivePolicy,
-  ParadocRenderer,
+  AsterdocRenderer,
   RendererLayer,
   RenderRequest,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import type { DocxSignatureOptions } from './docx/signatures'
 import type { PdfFont } from './pdf/drawing-fonts'
 import type { TextSignatureOptions } from './text/signatures'
@@ -39,7 +39,7 @@ function unsupportedMimeType(template: RendererLayer): never {
   const mimeType = template.mimeType ?? '(missing)'
   throw new Error(
     `Unsupported render layer MIME type: ${mimeType}. ` +
-      'Use @paradoc/render/text, @paradoc/render/pdf, or @paradoc/render/docx for an explicit renderer.',
+      'Use @asterdoc/render/text, @asterdoc/render/pdf, or @asterdoc/render/docx for an explicit renderer.',
   )
 }
 
@@ -68,7 +68,7 @@ function requireContent(template: RendererLayer): void {
  * The selected renderer is imported only when it is needed. Import a format
  * subpath directly when an application needs format-specific operations.
  */
-export function createLayerRenderer(options: CreateLayerRendererOptions = {}): ParadocRenderer<RendererLayer, string | Uint8Array> {
+export function createLayerRenderer(options: CreateLayerRendererOptions = {}): AsterdocRenderer<RendererLayer, string | Uint8Array> {
   return {
     id: 'render-layer',
     async render(request: RenderRequest<RendererLayer>): Promise<string | Uint8Array> {

@@ -1,6 +1,6 @@
 import slugify from 'slugify'
-import { PARADOC_SCHEMA_URL } from '@paradoc/core'
-import { FORM_FIELD_TYPES, SCHEMA_BASE, type FormFieldType } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/core'
+import { FORM_FIELD_TYPES, SCHEMA_BASE, type FormFieldType } from '@asterdoc/schemas'
 
 export interface ManifestTemplate {
   $schema: string
@@ -24,7 +24,7 @@ export interface ArtifactTemplate {
 }
 
 /**
- * Generate paradoc.json manifest template (new format)
+ * Generate asterdoc.json manifest template (new format)
  */
 export function generateManifestTemplate(
   title: string,
@@ -60,7 +60,7 @@ export function generateBundleTemplate(
   } = {}
 ): ArtifactTemplate {
   return {
-    $schema: PARADOC_SCHEMA_URL,
+    $schema: ASTERDOC_SCHEMA_URL,
     kind: 'bundle',
     name: slug,
     title,
@@ -86,7 +86,7 @@ export function generateDocumentTemplate(
   } = {}
 ): ArtifactTemplate {
   return {
-    $schema: PARADOC_SCHEMA_URL,
+    $schema: ASTERDOC_SCHEMA_URL,
     kind: 'document',
     name: slug,
     title,
@@ -112,7 +112,7 @@ export function generateFormTemplate(
   } = {}
 ): ArtifactTemplate {
   return {
-    $schema: PARADOC_SCHEMA_URL,
+    $schema: ASTERDOC_SCHEMA_URL,
     kind: 'form',
     name: slug,
     title,
@@ -137,7 +137,7 @@ export function generateChecklistTemplate(
   } = {}
 ): ArtifactTemplate {
   return {
-    $schema: PARADOC_SCHEMA_URL,
+    $schema: ASTERDOC_SCHEMA_URL,
     kind: 'checklist',
     name: slug,
     title,
@@ -171,7 +171,7 @@ export function isValidFieldType(type: string): type is FormFieldType {
  * Create a field object from name and type.
  *
  * `type` must be a value from `FORM_FIELD_TYPES` (checked by the caller); the
- * result always passes `paradoc validate` on its own, so every type that
+ * result always passes `asterdoc validate` on its own, so every type that
  * requires more than `type`/`label` is scaffolded with the keys it needs.
  */
 export function createField(name: string, type: FormFieldType): Record<string, unknown> {

@@ -25,7 +25,7 @@ import type {
   Person,
   Phone,
   Layer,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import {
   validateForm,
   validateDocument,

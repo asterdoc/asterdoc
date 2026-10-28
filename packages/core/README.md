@@ -1,23 +1,23 @@
 <p align="center">
-  <a href="https://paradoc.dev?utm_source=github&utm_medium=core" target="_blank" rel="noopener noreferrer">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=core" target="_blank" rel="noopener noreferrer">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://assets.paradoc.dev/logo-400x400.png" type="image/png">
-      <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Paradoc logo">
+      <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Asterdoc logo">
     </picture>
   </a>
   <br />
 </p>
 
-<h1 align="center">@paradoc/core</h1>
+<h1 align="center">@asterdoc/core</h1>
 
 <div align="center">
 
-[![Paradoc documentation](https://img.shields.io/badge/Documentation-Paradoc-red.svg)](https://docs.paradoc.dev?utm_source=github&utm_medium=core)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/paradochq?style=social)](https://twitter.com/intent/follow?screen_name=paradochq)
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=core)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/intent/follow?screen_name=asterdoc)
 
 </div>
 
-[Paradoc](https://paradoc.dev?utm_source=github&utm_medium=core) is **documents as code**. It lets developers and AI agents define, validate, and render business documents using typed, composable schemas. This eliminates template drift, broken mappings, and brittle glue code — while giving AI systems a reliable document layer they can safely read, reason over, and generate against in production workflows.
+[Asterdoc](https://asterdoc.com?utm_source=github&utm_medium=core) is **documents as code**. It lets developers and AI agents define, validate, and render business documents using typed, composable schemas. This eliminates template drift, broken mappings, and brittle glue code — while giving AI systems a reliable document layer they can safely read, reason over, and generate against in production workflows.
 
 ## Package overview
 
@@ -27,19 +27,19 @@ Fundamental package for modeling business documents as typed, versioned artifact
 - 📋 **Four artifact types** - Form, Document, Checklist, and Bundle builders
 - ✅ **Schema-driven validation** - Built-in structure and constraint validation
 - 🎯 **Composable design** - Reuse fields and artifacts across definitions
-- 📦 **Standalone library** - Use independently or with @paradoc/sdk
+- 📦 **Standalone library** - Use independently or with @asterdoc/sdk
 
-JSON Schema exports are maintained by `@paradoc/schemas`. To regenerate the
+JSON Schema exports are maintained by `@asterdoc/schemas`. To regenerate the
 latest and versioned bundles, run:
 
 ```bash
-pnpm --filter @paradoc/schemas export:bundled-schema
+pnpm --filter @asterdoc/schemas export:bundled-schema
 ```
 
 ## Installation
 
 ```bash
-npm install @paradoc/core
+npm install @asterdoc/core
 ```
 
 ## Usage
@@ -47,7 +47,7 @@ npm install @paradoc/core
 Define forms with parties, fields, and validation rules:
 
 ```typescript
-import { p } from "@paradoc/core";
+import { p } from "@asterdoc/core";
 
 const leaseAgreement = p
   .form()
@@ -232,7 +232,7 @@ const leaseBundle = p
 Extract TypeScript types from artifacts:
 
 ```typescript
-import { type InferFormPayload } from "@paradoc/core";
+import { type InferFormPayload } from "@asterdoc/core";
 
 type LeaseData = InferFormPayload<typeof leaseAgreement>;
 
@@ -277,26 +277,26 @@ if (result.success) {
 }
 ```
 
-Forms render PDF, DOCX, HTML, Markdown, and text layers with the built-in MIME-selected renderer. Pass a custom renderer to `.render()` or `.seal()` only when overriding that default. For API reference and advanced patterns, visit [docs.paradoc.dev](https://docs.paradoc.dev).
+Forms render PDF, DOCX, HTML, Markdown, and text layers with the built-in MIME-selected renderer. Pass a custom renderer to `.render()` or `.seal()` only when overriding that default. For API reference and advanced patterns, visit [docs.asterdoc.com](https://docs.asterdoc.com).
 
 ## Changelog
 
-View the [Changelog](https://github.com/paradoc-dev/paradoc/blob/main/CHANGELOG.md) for updates.
+View the [Changelog](https://github.com/asterdoc/asterdoc/blob/main/CHANGELOG.md) for updates.
 
 ## Related packages
 
-- [`@paradoc/sdk`](../sdk) - Complete framework with renderers
-- [`@paradoc/types`](../types) - TypeScript utilities and types
-- [`@paradoc/schemas`](../schemas) - JSON Schema definitions
-- [`@paradoc/render`](../render) - MIME-selected PDF, DOCX, and text rendering
-- [`@paradoc/resolvers`](../resolvers) - File and environment resolvers
+- [`@asterdoc/sdk`](../sdk) - Complete framework with renderers
+- [`@asterdoc/types`](../types) - TypeScript utilities and types
+- [`@asterdoc/schemas`](../schemas) - JSON Schema definitions
+- [`@asterdoc/render`](../render) - MIME-selected PDF, DOCX, and text rendering
+- [`@asterdoc/resolvers`](../resolvers) - File and environment resolvers
 
 ## Contributing
 
-We're open to all community contributions! If you'd like to contribute in any way, please read our [contribution guidelines](https://github.com/paradoc-dev/paradoc/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/paradoc-dev/paradoc/blob/main/CODE_OF_CONDUCT.md).
+We're open to all community contributions! If you'd like to contribute in any way, please read our [contribution guidelines](https://github.com/asterdoc/asterdoc/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/asterdoc/asterdoc/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
 This project is licensed under the MIT license.
 
-See [LICENSE](https://github.com/paradoc-dev/paradoc/blob/main/LICENSE) for more information.
+See [LICENSE](https://github.com/asterdoc/asterdoc/blob/main/LICENSE) for more information.

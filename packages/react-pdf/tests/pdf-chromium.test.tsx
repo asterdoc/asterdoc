@@ -15,7 +15,7 @@
  * It needs a Chrome, and it does not decide for itself whether to run. A
  * machine with no browser fails these tests loudly, because a suite that skips
  * on its own subject covers nothing and says so quietly. Set
- * `PARADOC_SKIP_CHROMIUM_TESTS=1` to opt out deliberately.
+ * `ASTERDOC_SKIP_CHROMIUM_TESTS=1` to opt out deliberately.
  */
 
 import { fromJsx } from "@takumi-rs/helpers/jsx";
@@ -29,7 +29,7 @@ import {
   shortProposalData,
 } from "../../components/src/examples";
 import { Table } from "../../components/src/components/table";
-import { PAPER_HEIGHT_PX, PAPER_WIDTH_PX, planPages, type MeasuredKeep } from "@paradoc/react";
+import { PAPER_HEIGHT_PX, PAPER_WIDTH_PX, planPages, type MeasuredKeep } from "@asterdoc/react";
 import { proposalLogoImage } from "../../components/src/examples/pdf";
 import { renderPdf, type PdfImage } from "../src";
 import { chromiumExecutable, closeChromium } from "../src/adapters/chromium";
@@ -57,9 +57,9 @@ const HEADER_TEXT = "DESCRIPTION";
  * package refuses. So a missing browser fails, and a run that genuinely has no
  * business driving one says so in the environment.
  */
-const skipped = process.env.PARADOC_SKIP_CHROMIUM_TESTS === "1";
+const skipped = process.env.ASTERDOC_SKIP_CHROMIUM_TESTS === "1";
 if (skipped) {
-  console.log("Skipping the Chromium adapter tests: PARADOC_SKIP_CHROMIUM_TESTS=1.");
+  console.log("Skipping the Chromium adapter tests: ASTERDOC_SKIP_CHROMIUM_TESTS=1.");
 }
 
 let logo: PdfImage;
@@ -71,7 +71,7 @@ describe.skipIf(skipped)("the Chromium adapter", () => {
       throw new Error(
         "The Chromium adapter tests need a Chrome. None of the well-known install paths " +
           "exists: set PUPPETEER_EXECUTABLE_PATH to one, or set " +
-          "PARADOC_SKIP_CHROMIUM_TESTS=1 to opt out of this file deliberately."
+          "ASTERDOC_SKIP_CHROMIUM_TESTS=1 to opt out of this file deliberately."
       );
     }
     logo = await proposalLogoImage();
@@ -147,7 +147,7 @@ describe.skipIf(skipped)("the Chromium adapter", () => {
 
   it("breaks a paragraphed field between the paragraphs the plan broke it between", async () => {
     // The other adapter's side of the same claim, checked on the default
-    // engine in `@paradoc/components`' `field-prose` suite: `paragraphs` makes
+    // engine in `@asterdoc/components`' `field-prose` suite: `paragraphs` makes
     // each paragraph a keep, so a break named between two of them is a break
     // this adapter can honour. Without the prop there is one keep and the
     // break would be a hint the tree cannot carry.

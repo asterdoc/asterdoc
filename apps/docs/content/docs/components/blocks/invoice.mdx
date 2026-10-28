@@ -48,7 +48,7 @@ carry either. A [`Page Number`](/components/page-number) in the footer,
 exported as `invoiceFurniture`, numbers every page of the preview and the
 PDF alike. The line-item [`Table`](/components/table) sits in the
 same section as the [`Totals`](/components/totals) that follows it, and
-neither carries a copy of the subtotal, tax, or total — `@paradoc/core`
+neither carries a copy of the subtotal, tax, or total — `@asterdoc/core`
 evaluates each from the artifact's own `defs`. The subtotal is
 `sum(fields.lineItems.amount).amount`, and the taxable subtotal is
 `coalesce(sum(fields.lineItems.amount, fields.lineItems.taxable).amount, 0)`, using the rows marked
@@ -58,7 +58,7 @@ Like the purchase order, the composition renders bare, with no self-wrapping
 [`Pages`](/components/pages): it is meant to sit inside whatever pagination
 or packet a caller supplies. This page's Preview wraps it in `Pages` exactly
 the way a consumer's own page would. Install `pages` explicitly for that
-wrapper; the block still brings `@paradoc/core`, which evaluates its defs.
+wrapper; the block still brings `@asterdoc/core`, which evaluates its defs.
 
 ## Variants
 

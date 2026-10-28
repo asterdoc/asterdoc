@@ -1,4 +1,4 @@
-import type { Form, Layer, RuntimeParty, SignatureSlot, SigningField } from '@paradoc/types'
+import type { Form, Layer, RuntimeParty, SignatureSlot, SigningField } from '@asterdoc/types'
 import { partySignerIds } from '@/primitives/party'
 
 /**

@@ -5,8 +5,8 @@ import {
   validateLayers,
   type Artifact,
   type Layer,
-} from '@paradoc/core'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+} from '@asterdoc/core'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 import { readTextInput, resolveArtifactTarget } from '../utils/io.js'
 import { LocalFileSystem } from '../utils/local-fs.js'
@@ -57,7 +57,7 @@ export function createValidateCommand(): Command {
 
   validate
     .argument('<artifacts...>', 'One or more artifact files (JSON/YAML), or "-" for stdin')
-    .description('Validate one or more Paradoc artifacts against the core schema')
+    .description('Validate one or more Asterdoc artifacts against the core schema')
     .option('--json', 'Output machine-readable JSON result')
     .option('--silent', 'Suppress console output (exit code only)')
     .option('--expect-kind <kind>', 'Assert artifact kind (form, document, checklist, bundle)')
@@ -208,14 +208,14 @@ async function validateOneFile(artifactTarget: string, options: ValidateOptions)
           check.checksumMatch = matches
           if (!matches) {
             check.issues.push({
-              message: `Checksum mismatch. Run \`paradoc fix\` to update.`,
+              message: `Checksum mismatch. Run \`asterdoc fix\` to update.`,
               path: ['layers', layerKey, 'checksum'],
               severity: 'error',
             })
           }
         } else if (fileExists && !layer.checksum) {
           check.issues.push({
-            message: `No checksum set. Run \`paradoc fix\` to add one.`,
+            message: `No checksum set. Run \`asterdoc fix\` to add one.`,
             path: ['layers', layerKey, 'checksum'],
             severity: 'warning',
           })
@@ -264,14 +264,14 @@ async function validateOneFile(artifactTarget: string, options: ValidateOptions)
         check.checksumMatch = matches
         if (!matches) {
           check.issues.push({
-            message: `Checksum mismatch. Run \`paradoc fix\` to update.`,
+            message: `Checksum mismatch. Run \`asterdoc fix\` to update.`,
             path: [field, 'checksum'],
             severity: 'error',
           })
         }
       } else {
         check.issues.push({
-          message: `No checksum set. Run \`paradoc fix\` to add one.`,
+          message: `No checksum set. Run \`asterdoc fix\` to add one.`,
           path: [field, 'checksum'],
           severity: 'warning',
         })
@@ -306,9 +306,9 @@ async function validateOneFile(artifactTarget: string, options: ValidateOptions)
       } else if (exists && reference.checksum) {
         const matches = await verifyHashFromFile(storage.getAbsolutePath(reference.path), reference.checksum)
         check.checksumMatch = matches
-        if (!matches) check.issues.push({ message: 'Checksum mismatch. Run `paradoc fix` to update.', path: [...reference.propertyPath, 'checksum'], severity: 'error' })
+        if (!matches) check.issues.push({ message: 'Checksum mismatch. Run `asterdoc fix` to update.', path: [...reference.propertyPath, 'checksum'], severity: 'error' })
       } else if (exists && reference.propertyPath[0] !== 'contents') {
-        check.issues.push({ message: 'No checksum set. Run `paradoc fix` to add one.', path: [...reference.propertyPath, 'checksum'], severity: 'warning' })
+        check.issues.push({ message: 'No checksum set. Run `asterdoc fix` to add one.', path: [...reference.propertyPath, 'checksum'], severity: 'warning' })
       }
       contentRefChecks.push(check)
     }

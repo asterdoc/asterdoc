@@ -3,18 +3,18 @@ title: Sessions
 description: Deterministic, event-sourced engine for form-completion sessions
 ---
 
-A form-completion session is a back-and-forth: someone answers fields, defers others, revises earlier answers, and you track what's still open. `@paradoc/sessions` models this as an event-sourced engine. Every change is a command; the session's state is derived by replaying its event log. The engine is deterministic and storage-agnostic, so the same events always produce the same view, and you persist them wherever you like.
+A form-completion session is a back-and-forth: someone answers fields, defers others, revises earlier answers, and you track what's still open. `@asterdoc/sessions` models this as an event-sourced engine. Every change is a command; the session's state is derived by replaying its event log. The engine is deterministic and storage-agnostic, so the same events always produce the same view, and you persist them wherever you like.
 
 ## Installation
 
 ```bash
-npm install @paradoc/sessions
+npm install @asterdoc/sessions
 ```
 
 Or use via the SDK:
 
 ```ts
-import { execute, deriveView, createParadocRuntime, sessionPayload } from '@paradoc/sdk'
+import { execute, deriveView, createAsterdocRuntime, sessionPayload } from '@asterdoc/sdk'
 ```
 
 ## Core flow
@@ -23,12 +23,12 @@ There are three moving parts: a **runtime** that knows the artifact, a **session
 
 ### 1. Build a runtime
 
-`createParadocRuntime` wraps an artifact definition in an `ArtifactRuntime`: the read-only interface the engine uses to look up fields, validate values, and compute fill-state. It's built from `@paradoc/core` and recomputed cheaply on every command.
+`createAsterdocRuntime` wraps an artifact definition in an `ArtifactRuntime`: the read-only interface the engine uses to look up fields, validate values, and compute fill-state. It's built from `@asterdoc/core` and recomputed cheaply on every command.
 
 ```ts
-import { createParadocRuntime } from '@paradoc/sessions'
+import { createAsterdocRuntime } from '@asterdoc/sessions'
 
-const runtime = createParadocRuntime(definition) // the artifact as a plain object
+const runtime = createAsterdocRuntime(definition) // the artifact as a plain object
 ```
 
 ### 2. Start a session
@@ -36,7 +36,7 @@ const runtime = createParadocRuntime(definition) // the artifact as a plain obje
 A `FormSession` is a plain object. Its `events` array is the only state it holds.
 
 ```ts
-import type { FormSession } from '@paradoc/sessions'
+import type { FormSession } from '@asterdoc/sessions'
 
 let session: FormSession = {
   formSessionId: 'session-1',
@@ -52,7 +52,7 @@ let session: FormSession = {
 A `Command` is the only way to change a session. `execute(session, runtime, command, actor, options?)` decides which events to append. It never mutates in place; it returns a new `FormSession` plus the events it emitted. The `actor` records who issued the command: `{ kind: 'user' }`, `{ kind: 'agent', model }`, or `{ kind: 'system', reason }`.
 
 ```ts
-import { execute } from '@paradoc/sessions'
+import { execute } from '@asterdoc/sessions'
 
 const result = execute(
   session,
@@ -76,7 +76,7 @@ Commands cover the full lifecycle: `start`, `prefill`, `answer`, `revise`, `clea
 
 `start` opens the log with a `SessionStarted` event; it rejects with `session-already-started` on a session that has events. `prefill` takes `values` (field path to value) and optional `lockedPaths` (field paths). Each value must be a field the artifact defines and pass its schema, and is stored with source `prefill`; an unknown path, an invalid value, or a path already answered or locked rejects the whole command. To prefill a party, send `answerParty` with source `prefill`. `answer` and `revise` both take a `source`, so a revised value records where it came from.
 
-`answer`, `revise`, and `prefill` store the value the field's schema returns. Before validation, the runtime coerces an input only when it has one reading: a decimal string for a number (`"1,250.5"`, not `"1e5"` or `"1,5"`), yes/no for a boolean, a JSON string for a list or composite value, a string for a phone number, person, or organization, and an amount such as `"25"` or `"25 EUR"` for money. Money takes the currency given or the field's declared `currency`, and never invents one. Dates are not parsed: a date field takes `YYYY-MM-DD`, so `"March 4, 2025"` rejects with `invalid-value`. A phone number without a leading `+` gets a calling code only from `createParadocRuntime(definition, { defaultCallingCode: '+1' })`.
+`answer`, `revise`, and `prefill` store the value the field's schema returns. Before validation, the runtime coerces an input only when it has one reading: a decimal string for a number (`"1,250.5"`, not `"1e5"` or `"1,5"`), yes/no for a boolean, a JSON string for a list or composite value, a string for a phone number, person, or organization, and an amount such as `"25"` or `"25 EUR"` for money. Money takes the currency given or the field's declared `currency`, and never invents one. Dates are not parsed: a date field takes `YYYY-MM-DD`, so `"March 4, 2025"` rejects with `invalid-value`. A phone number without a leading `+` gets a calling code only from `createAsterdocRuntime(definition, { defaultCallingCode: '+1' })`.
 
 `answerParty` takes an `index` for a role that accepts more than one party (`max` above 1). Answer the indices in order, starting at 0: an index that skips a position rejects with `party-index-out-of-order`, and an index at or past `max` rejects with `invalid-value`. Answering an index again replaces that party. `answerAnnex` takes an `annexId` and an attachment (`{ name, mimeType, checksum? }`) and replaces any attachment already in that slot.
 
@@ -89,7 +89,7 @@ A field locked by prefill rejects `answer`, `revise`, and `clear` with `field-lo
 State lives only in the event log. To read it, call `deriveView`, which replays the events into a `SessionView`.
 
 ```ts
-import { deriveView } from '@paradoc/sessions'
+import { deriveView } from '@asterdoc/sessions'
 
 const view = deriveView(session, runtime)
 
@@ -106,14 +106,14 @@ A `SessionView` also carries `projected` (the replayed session), `pendingParties
 
 The session is `ready` only when no required field, party, or annex is open. `progress` counts fields as core reports them: `requiredTotal` and `optionalTotal` count each field by its current status, whether answered or not, and a field that is now hidden counts toward neither.
 
-`phase` is one of `collecting-required`, `revisit-deferred`, `collecting-optional`, `unresolved`, `ready`, `rendered`, or `abandoned`. The engine reads visibility and required cascades straight from `@paradoc/core`, so they resolve the same way they do everywhere else.
+`phase` is one of `collecting-required`, `revisit-deferred`, `collecting-optional`, `unresolved`, `ready`, `rendered`, or `abandoned`. The engine reads visibility and required cascades straight from `@asterdoc/core`, so they resolve the same way they do everywhere else.
 
 ## Fill, render, and seal from a session
 
 `sessionPayload` turns a projected session into the artifact's own shape: nested `fields`, `parties` by role, and `annexes` by id. It takes the runtime too, because a role with `max` above 1 is always an array, even with one party. Pass the payload to `fill`, then render or seal the draft like any other. It is valid part-way through a fill: a field, party, or annex nobody has answered is absent.
 
 ```ts
-import { p, deriveView, sessionPayload } from '@paradoc/sdk'
+import { p, deriveView, sessionPayload } from '@asterdoc/sdk'
 
 const form = p.form(definition)
 

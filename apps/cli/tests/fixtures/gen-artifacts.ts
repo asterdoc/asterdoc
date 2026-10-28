@@ -9,7 +9,7 @@ async function writeFile(path: string, content: string | Buffer) {
 	await fs.promises.writeFile(path, content);
 }
 
-import { p, toYAML } from '@paradoc/core';
+import { p, toYAML } from '@asterdoc/core';
 
 (async () => {
 	const c1 = `# Pet Addendum

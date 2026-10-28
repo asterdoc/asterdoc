@@ -1,4 +1,4 @@
-import type { Form, FormData, RendererLayer, RenderRequest } from '@paradoc/types'
+import type { Form, FormData, RendererLayer, RenderRequest } from '@asterdoc/types'
 
 /**
  * The reserved `FormData` roots that sit beside `fields` in render data.

@@ -42,7 +42,7 @@ import {
   PROPOSAL_FURNITURE_STAMP,
 } from "../../../components/src/examples";
 import { proposalLogoImage } from "../../../components/src/examples/pdf";
-import { type PageFurniture, pageGeometry, resolveDocumentTokens, DEFAULT_TYPOGRAPHY } from "@paradoc/react";
+import { type PageFurniture, pageGeometry, resolveDocumentTokens, DEFAULT_TYPOGRAPHY } from "@asterdoc/react";
 import { renderPdf, type PdfAdapterName, type PdfImage } from "../../src";
 import { closeChromium } from "../../src/adapters/chromium";
 import { readPdf, type ReadPage } from "../pdf-reader";

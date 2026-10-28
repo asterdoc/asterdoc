@@ -30,11 +30,11 @@ function cli(cwd: string, args: string[]) {
 async function project(output: string): Promise<string> {
   await fs.mkdir(T, { recursive: true })
   const dir = await fs.mkdtemp(path.join(T, `s012-${output}-`))
-  await fs.mkdir(path.join(dir, '.paradoc'))
+  await fs.mkdir(path.join(dir, '.asterdoc'))
   await fs.writeFile(
-    path.join(dir, 'paradoc.json'),
+    path.join(dir, 'asterdoc.json'),
     JSON.stringify({
-      $schema: 'https://schema.paradoc.dev/manifest.json',
+      $schema: 'https://schema.asterdoc.com/manifest.json',
       name: '@test/s012',
       title: 'S012',
       visibility: 'private',

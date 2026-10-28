@@ -1,4 +1,4 @@
-import type { BinaryContent } from '@paradoc/types'
+import type { BinaryContent } from '@asterdoc/types'
 import { acroFields, type AcroWidget } from './acroform'
 import { addPageResource, appendPageContent, documentPages, type PageRecord } from './page-tree'
 import {

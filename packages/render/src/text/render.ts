@@ -1,5 +1,5 @@
-import { defaultFormatter } from '@paradoc/format'
-import type { Form, Formatter } from '@paradoc/types'
+import { defaultFormatter } from '@asterdoc/format'
+import type { Form, Formatter } from '@asterdoc/types'
 import { formatFieldData, type FieldFormattingOptions } from './field-formatter'
 import { createTextSignatureDirectives, type TextSignatureOptions } from './signatures'
 import { escapeHtml, renderTemplate } from './template'

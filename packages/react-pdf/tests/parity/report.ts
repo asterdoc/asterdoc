@@ -16,7 +16,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { type PageDimensions, type Typography } from "@paradoc/react";
+import { type PageDimensions, type Typography } from "@asterdoc/react";
 
 /** The rhythm a run was drawn at, as the suffix its name carries; empty for `regular`. */
 export function rhythmLabel(rhythm: Typography | undefined): string {

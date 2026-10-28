@@ -1,11 +1,11 @@
 ---
 title: validate_artifact
-description: Validate a Paradoc artifact definition against the schema and logic rules
-ogTitle: validate_artifact — Paradoc AI Tools
-ogDescription: Validate a Paradoc artifact definition against the schema and logic rules
+description: Validate an Asterdoc artifact definition against the schema and logic rules
+ogTitle: validate_artifact — Asterdoc AI Tools
+ogDescription: Validate an Asterdoc artifact definition against the schema and logic rules
 ---
 
-Checks an artifact definition (form, document, bundle, or checklist) against the Paradoc schema and its logic rules, including the template expressions in its text and DOCX layers. Inline layers are always checked; file-backed layers are read relative to the source's base URL (with an [artifact source](/ai-tools#sources), set `base_url`). Use it after an agent writes or edits an artifact. To check a value a user gives, use [`validate_input`](/ai-tools/validate-input).
+Checks an artifact definition (form, document, bundle, or checklist) against the Asterdoc schema and its logic rules, including the template expressions in its text and DOCX layers. Inline layers are always checked; file-backed layers are read relative to the source's base URL (with an [artifact source](/ai-tools#sources), set `base_url`). Use it after an agent writes or edits an artifact. To check a value a user gives, use [`validate_input`](/ai-tools/validate-input).
 
 ## Input
 
@@ -29,7 +29,7 @@ Takes a [source](/ai-tools#sources) plus:
 ## Direct usage
 
 ```typescript
-import { executeValidateArtifact } from "@paradoc/ai-tools"
+import { executeValidateArtifact } from "@asterdoc/ai-tools"
 
 const result = await executeValidateArtifact({
   source: "artifact",

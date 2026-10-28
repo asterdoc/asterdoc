@@ -10,9 +10,9 @@ export default defineConfig({
   sourcemap: false,
   clean: true,
   external: [
-    "@paradoc/react",
-    "@paradoc/render",
-    "@paradoc/types",
+    "@asterdoc/react",
+    "@asterdoc/render",
+    "@asterdoc/types",
     "@takumi-rs/helpers",
     "puppeteer",
     "react",

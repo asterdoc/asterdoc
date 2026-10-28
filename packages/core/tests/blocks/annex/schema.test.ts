@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { annex } from '@/artifacts';
-import type { FormAnnex } from '@paradoc/types';
+import type { FormAnnex } from '@asterdoc/types';
 
 describe('Annex', () => {
 	// ============================================================================

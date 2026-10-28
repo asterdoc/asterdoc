@@ -9,14 +9,14 @@
  * the part it came from, one signer holds one index however many slots they
  * fill, and the W-9's filled values survived into the merged document.
  *
- * The W-9 comes from `@paradoc/essentials`, a development dependency here. The
+ * The W-9 comes from `@asterdoc/essentials`, a development dependency here. The
  * package does not depend on the registry, and neither does the packet: the
  * bundle names the part by slug and the caller hands in the filled draft.
  */
 
-import { w9 } from "@paradoc/essentials";
-import { BundleSealError } from "@paradoc/core";
-import { pageTextRuns } from "@paradoc/render/pdf";
+import { w9 } from "@asterdoc/essentials";
+import { BundleSealError } from "@asterdoc/core";
+import { pageTextRuns } from "@asterdoc/render/pdf";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   purchaseOrderData,
@@ -30,8 +30,8 @@ import {
   sealVendorPacket,
   vendorPacketRenderers,
 } from "../../components/src/examples/pdf";
-import { inspectPdf } from "@paradoc/render/pdf";
-import { sealBundle } from "@paradoc/core";
+import { inspectPdf } from "@asterdoc/render/pdf";
+import { sealBundle } from "@asterdoc/core";
 
 /** The W-9's own sample vector, with a signatory bound to the taxpayer party. */
 function taxpayerDraft() {

@@ -8,7 +8,7 @@
  * order, the person who signs for each party, and the annex's bytes.
  *
  * The W-9 arrives from the caller rather than from here. The components package
- * uses `@paradoc/essentials` in its browser preview, while this Node-only seal
+ * uses `@asterdoc/essentials` in its browser preview, while this Node-only seal
  * helper accepts any filled draft the caller resolved. The test and the lab
  * each hand in their own filled draft.
  */
@@ -16,11 +16,11 @@
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { sealBundle, type DraftForm, type SealedBundle } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { sealBundle, type DraftForm, type SealedBundle } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 
-import { reactLayerRenderers, type ReactLayerRendererOptions } from "@paradoc/react-pdf";
-import { renderPdf, type RenderPdfOptions } from "@paradoc/react-pdf";
+import { reactLayerRenderers, type ReactLayerRendererOptions } from "@asterdoc/react-pdf";
+import { renderPdf, type RenderPdfOptions } from "@asterdoc/react-pdf";
 import {
   InsuranceCertificateDocument,
   insuranceCertificateData,
@@ -90,7 +90,7 @@ export async function insuranceCertificateFixture(): Promise<Uint8Array> {
  * The annex, redrawn.
  *
  * This is what generated the checked-in file, and the way to regenerate it:
- * `pnpm --filter @paradoc/components regenerate:annex`. The packet treats the bytes
+ * `pnpm --filter @asterdoc/components regenerate:annex`. The packet treats the bytes
  * exactly as it would treat an upload either way.
  */
 export async function insuranceCertificatePdf(options: RenderPdfOptions = {}): Promise<Uint8Array> {

@@ -8,7 +8,7 @@
  * config, the same Tailwind, the same font files — and drives it.
  *
  * Chrome is the machine's own. Puppeteer is already the workspace's browser
- * driver (`@paradoc-platform/documents-service` renders with it), and the workspace
+ * driver (`@platform/documents-service` renders with it), and the workspace
  * already passes it a browser through `PUPPETEER_EXECUTABLE_PATH`, so nothing
  * here downloads one. When neither that variable nor a well-known install path
  * points at a browser, the suite says so rather than failing obscurely.
@@ -46,7 +46,7 @@ export async function freePort(): Promise<number> {
 }
 
 /** The workspace package this suite drives. */
-const LAB_PACKAGE = "@paradoc/react-lab";
+const LAB_PACKAGE = "@incubator/react-lab";
 
 /** Where that package sits, relative to the workspace root. */
 const LAB_DIRECTORY = "incubator/apps/react-lab";
@@ -55,7 +55,7 @@ const LAB_DIRECTORY = "incubator/apps/react-lab";
  * The workspace root the lab is a package of.
  *
  * The outermost `pnpm-workspace.yaml` inside this Git work tree, not the
- * nearest one: `paradoc/` is itself a workspace root, the one projected to the
+ * nearest one: `framework/` is itself a workspace root, the one projected to the
  * public repository, and the lab is a sibling of that projection rather than a
  * member of it. Stopping at the nearest marker would look for the lab in a
  * workspace that does not contain it.

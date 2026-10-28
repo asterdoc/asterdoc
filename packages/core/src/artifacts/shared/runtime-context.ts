@@ -1,7 +1,7 @@
-import type { AsOf } from '@paradoc/expr'
-import type { RuntimeContext } from '@paradoc/types'
+import type { AsOf } from '@asterdoc/expr'
+import type { RuntimeContext } from '@asterdoc/types'
 
-export type { RuntimeContext } from '@paradoc/types'
+export type { RuntimeContext } from '@asterdoc/types'
 
 /** A caller-supplied instant accepted by runtime artifact creation methods. */
 export type RuntimeAsOfInput = string | AsOf

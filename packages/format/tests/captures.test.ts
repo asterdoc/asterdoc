@@ -32,7 +32,7 @@ const signature = {
 	method: 'drawn' as const,
 }
 
-describe('@paradoc/format geography and capture values', () => {
+describe('@asterdoc/format geography and capture values', () => {
 	it('formats every capture family through direct, dynamic, and standalone operations', () => {
 		const formatter = createFormatter()
 
@@ -145,7 +145,7 @@ describe('@paradoc/format geography and capture values', () => {
 	})
 })
 
-describe('@paradoc/format capture messages and nested options', () => {
+describe('@asterdoc/format capture messages and nested options', () => {
 	const signature = { timestamp: '2026-09-04T15:30:00Z', method: 'drawn' as const }
 	const identification = { type: 'passport', number: 'A1', issueDate: '2020-01-15' }
 

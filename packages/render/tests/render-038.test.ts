@@ -1,6 +1,6 @@
 // render-038: an aggregate over a loop row asks row visibility about the list
 // the row came from, with the loop's own indices first.
-import { createContext } from '@paradoc/expr'
+import { createContext } from '@asterdoc/expr'
 import { describe, expect, it } from 'vitest'
 import { renderText } from '../src/text/render'
 

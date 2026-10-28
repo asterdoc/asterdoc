@@ -28,23 +28,23 @@ import {
 	encode as encodeMarker,
 	locate as locatePlacements,
 	pageTextRuns,
-} from '@paradoc/render/pdf'
-import type { LocateHit } from '@paradoc/render/pdf'
+} from '@asterdoc/render/pdf'
+import type { LocateHit } from '@asterdoc/render/pdf'
 import type {
 	Layer,
-	ParadocRenderer,
+	AsterdocRenderer,
 	RendererLayer,
 	RenderRequest,
 	SignatureSlot,
 	SigningField,
 	SigningMarker,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import { findRegisteredRenderer, isReactLayerMimeType, type RendererRegistry } from '@/rendering/renderer-registry'
-import type { TextSignatureOptions } from '@paradoc/render/text'
+import type { TextSignatureOptions } from '@asterdoc/render/text'
 import { SealConfigError } from './seal-slots'
 
 /** A renderer the seal drives directly. */
-export type SealRenderer = ParadocRenderer<RendererLayer, string | Uint8Array>
+export type SealRenderer = AsterdocRenderer<RendererLayer, string | Uint8Array>
 
 /** The four codepoints a marker is drawn from. */
 const MARKER_ALPHABET = /[⠀⠁⠂⠄]/

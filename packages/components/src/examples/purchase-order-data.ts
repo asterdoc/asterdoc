@@ -17,9 +17,9 @@
  */
 
 import { computeLineAmounts, type LineItem, type LineItemInput } from "./line-items";
-import type { RuntimeParty } from "@paradoc/types";
+import type { RuntimeParty } from "@asterdoc/types";
 
-import type { DocumentData } from "@paradoc/react";
+import type { DocumentData } from "@asterdoc/react";
 
 const CURRENCY = "USD";
 const TAX_RATE_PERCENT = 8.25;
@@ -136,7 +136,7 @@ export const purchaseOrderData: PurchaseOrderData = {
 /**
  * What a session has answered, in the artifact's own shape.
  *
- * `@paradoc/sessions` publishes exactly this from `sessionPayload`, and this
+ * `@asterdoc/sessions` publishes exactly this from `sessionPayload`, and this
  * module states the shape rather than importing it so that a document package
  * does not depend on a session engine to render a document.
  */

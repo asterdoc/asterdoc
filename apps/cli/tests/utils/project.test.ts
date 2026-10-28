@@ -8,46 +8,46 @@ describe('findRepoRoot', () => {
   let tempDir: string
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(join(tmpdir(), 'paradoc-project-test-'))
+    tempDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-project-test-'))
   })
 
   afterEach(async () => {
     await fs.rm(tempDir, { recursive: true, force: true })
   })
 
-  it('finds a directory that carries both .paradoc and paradoc.json', async () => {
-    await fs.mkdir(join(tempDir, '.paradoc'))
-    await fs.writeFile(join(tempDir, 'paradoc.json'), '{}')
+  it('finds a directory that carries both .asterdoc and asterdoc.json', async () => {
+    await fs.mkdir(join(tempDir, '.asterdoc'))
+    await fs.writeFile(join(tempDir, 'asterdoc.json'), '{}')
 
     expect(await findRepoRoot(tempDir)).toBe(tempDir)
   })
 
   it('walks up from a nested directory to find the project root', async () => {
-    await fs.mkdir(join(tempDir, '.paradoc'))
-    await fs.writeFile(join(tempDir, 'paradoc.json'), '{}')
+    await fs.mkdir(join(tempDir, '.asterdoc'))
+    await fs.writeFile(join(tempDir, 'asterdoc.json'), '{}')
     const nested = join(tempDir, 'compositions', 'deep')
     await fs.mkdir(nested, { recursive: true })
 
     expect(await findRepoRoot(nested)).toBe(tempDir)
   })
 
-  it('does not treat a bare .paradoc directory as a project root', async () => {
-    // This is the CLI's own global config shape: a `.paradoc` directory with
-    // no `paradoc.json` beside it, as it writes under the user's home
+  it('does not treat a bare .asterdoc directory as a project root', async () => {
+    // This is the CLI's own global config shape: a `.asterdoc` directory with
+    // no `asterdoc.json` beside it, as it writes under the user's home
     // directory. It must not be mistaken for a project.
-    await fs.mkdir(join(tempDir, '.paradoc'))
+    await fs.mkdir(join(tempDir, '.asterdoc'))
 
     expect(await findRepoRoot(tempDir)).toBeNull()
   })
 
   it('skips a global-config-shaped ancestor and keeps looking further up', async () => {
-    // A home directory carrying only `.paradoc` (global config), with a real
+    // A home directory carrying only `.asterdoc` (global config), with a real
     // project nested inside it.
-    await fs.mkdir(join(tempDir, '.paradoc'))
+    await fs.mkdir(join(tempDir, '.asterdoc'))
     const project = join(tempDir, 'projects', 'my-project')
     await fs.mkdir(project, { recursive: true })
-    await fs.mkdir(join(project, '.paradoc'))
-    await fs.writeFile(join(project, 'paradoc.json'), '{}')
+    await fs.mkdir(join(project, '.asterdoc'))
+    await fs.writeFile(join(project, 'asterdoc.json'), '{}')
 
     expect(await findRepoRoot(project)).toBe(project)
     // Starting from a sibling with no project marker of its own, the walk

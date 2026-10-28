@@ -4,7 +4,7 @@ import {
   evaluateGate,
 } from '@/logic/runtime/evaluation/expression-evaluator'
 import { FUNCTION_REGISTRY, HOST_FUNCTIONS, type EvaluationContext } from '@/logic/runtime/evaluation/types'
-import { Values, buildRegistry, T } from '@paradoc/expr'
+import { Values, buildRegistry, T } from '@asterdoc/expr'
 import { evaluateMultipleExpressions, isCondExpr } from '../helpers/evaluation-helpers'
 import { buildFormContext } from '@/logic/runtime/evaluation/context-builder'
 

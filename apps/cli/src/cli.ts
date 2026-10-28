@@ -15,8 +15,8 @@ checkForUpdate()
 const program = new Command()
 
 program
-	.name('paradoc')
-	.description(brandColorBold('Paradoc CLI') + kleur.gray(' — Registry-first artifact manager'))
+	.name('asterdoc')
+	.description(brandColorBold('Asterdoc CLI') + kleur.gray(' — Registry-first artifact manager'))
 	.version(VERSION, '-v, --version', 'Display version number')
 	.helpOption('-h, --help', 'Display help for command')
 	.option('--no-telemetry', 'Disable telemetry for this invocation')
@@ -72,7 +72,7 @@ program.on('command:*', (operands) => {
 	console.log()
 	console.log(
 		kleur.gray(
-			`Run ${kleur.white('paradoc -h')} to see a list of available commands.`,
+			`Run ${kleur.white('asterdoc -h')} to see a list of available commands.`,
 		),
 	)
 	process.exit(1)
@@ -81,7 +81,7 @@ program.on('command:*', (operands) => {
 // Bridge --no-telemetry flag to env var before commands run
 program.hook('preAction', () => {
 	if (program.opts().telemetry === false) {
-		process.env.PARADOC_TELEMETRY_DISABLED = '1'
+		process.env.ASTERDOC_TELEMETRY_DISABLED = '1'
 	}
 })
 

@@ -8,7 +8,7 @@ import type {
 	Attestation,
 	SignatureCapture,
 	WitnessParty,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import { buildFormContext, evaluateExpression, type EvaluationContext } from '@/logic/runtime/evaluation'
 import { EVALUATION_CLOCK } from '@/logic/runtime/evaluation/types'
 import { signingStateOf } from '@/logic/runtime/evaluation/signing-state'

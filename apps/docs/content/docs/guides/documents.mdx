@@ -1,7 +1,7 @@
 ---
 title: Documents
 description: Create and render static documents with layers
-ogTitle: Create a document with Paradoc
+ogTitle: Create a document with Asterdoc
 ogDescription: Build static documents with multiple layers for different output formats
 ---
 
@@ -16,7 +16,7 @@ This guide walks through creating a static document with multiple layers and ren
 A document needs a name, version, and title. Unlike forms, documents don't have fields or parties—they're static content with one or more layers.
 
 ```ts tab="Object Pattern"
-import { p } from '@paradoc/sdk'
+import { p } from '@asterdoc/sdk'
 
 const privacyPolicy = p.document({
   name: 'privacy-policy',
@@ -28,7 +28,7 @@ const privacyPolicy = p.document({
 ```
 
 ```ts tab="Builder Pattern"
-import { p } from '@paradoc/sdk'
+import { p } from '@asterdoc/sdk'
 
 const privacyPolicy = p
   .document()
@@ -118,7 +118,7 @@ layer's bytes come from a resolver, and the resolver is bound once, when the
 document is constructed — every instance derived from it afterward carries it.
 
 ```ts tab="Object Pattern"
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: process.cwd() })
 
@@ -143,7 +143,7 @@ const privacyPolicy = p.document({
 ```
 
 ```ts tab="Builder Pattern"
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: process.cwd() })
 
@@ -187,7 +187,7 @@ renders the same way — no resolver in the render call:
 const pdfBytes = await privacyPolicy.render()
 ```
 
-Render a file layer with no resolver bound and Paradoc throws
+Render a file layer with no resolver bound and Asterdoc throws
 `UnboundResolverError`, naming the layer and the path it wanted.
 </Step>
 
@@ -203,7 +203,7 @@ const yaml = privacyPolicy.toYAML()
 
 ```json tab="JSON"
 {
-  "$schema": "https://schema.paradoc.dev/__SCHEMA_VERSION__.json",
+  "$schema": "https://schema.asterdoc.com/__SCHEMA_VERSION__.json",
   "kind": "document",
   "name": "privacy-policy",
   "version": "1.0.0",
@@ -222,7 +222,7 @@ const yaml = privacyPolicy.toYAML()
 ```
 
 ```yaml tab="YAML"
-$schema: https://schema.paradoc.dev/__SCHEMA_VERSION__.json
+$schema: https://schema.asterdoc.com/__SCHEMA_VERSION__.json
 kind: document
 name: privacy-policy
 version: 1.0.0

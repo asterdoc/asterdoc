@@ -1,6 +1,6 @@
 /** @jsxRuntime classic */
 import React from "react";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 import {
   ArtifactProvider,
   DocumentTokensProvider,
@@ -12,7 +12,7 @@ import {
   type DocumentData,
   type DocumentTokensInput,
   type FormatOptions,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import type { ReactNode } from "react";
 
 export interface DocumentProps {

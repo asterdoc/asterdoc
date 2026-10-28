@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { FormParty } from '@paradoc/types'
+import type { FormParty } from '@asterdoc/types'
 import { isParty } from '@/validation/type-guards'
 import {
 	expectsArrayFormat,

@@ -1,7 +1,7 @@
 /**
- * @paradoc/types
+ * @asterdoc/types
  *
- * Core types for the Paradoc framework.
+ * Core types for the Asterdoc framework.
  */
 
 // Re-export all schemas (definition-time types)

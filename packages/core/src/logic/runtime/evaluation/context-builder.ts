@@ -13,7 +13,7 @@ import type {
   Expression,
   DefsSection,
   WitnessParty,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import { inferPartyType } from '@/primitives/party'
 import type { SigningState } from './signing-state'
 import { EVALUATION_CLOCK, FUNCTION_REGISTRY, HOST_FUNCTIONS, PARTY_ENTRIES, ROW_VISIBILITY, WITNESS_ENTRIES, type ContextRowVisibility, type EvaluationContext, type EvaluationIssue, type NestedFieldValues, type PartyContextEntry } from './types'
@@ -23,8 +23,8 @@ import { isRowVisible } from '../../shared/list-paths'
 import { defsDependencyExpressions } from '../../shared/defs-dependencies'
 import { isScalarExpressionType } from '../../shared/expression-types'
 import { evaluateGate, evaluateExpressionValue, withRowReferences, fromExpressionValue, markEvaluationContextReusable, toExpressionContext, wrapExpressionValue } from './expression-evaluator'
-import { Values, type Value } from '@paradoc/expr'
-import type { EvaluationContext as ExprEvaluationContext, HostFunction, Registry } from '@paradoc/expr'
+import { Values, type Value } from '@asterdoc/expr'
+import type { EvaluationContext as ExprEvaluationContext, HostFunction, Registry } from '@asterdoc/expr'
 
 /**
  * Data payload structure (matches form data shape).

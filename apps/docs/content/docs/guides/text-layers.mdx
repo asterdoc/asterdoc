@@ -1,18 +1,18 @@
 ---
 title: Text layers
-description: Create dynamic documents with Paradoc templates
+description: Create dynamic documents with Asterdoc templates
 ogTitle: Text layers
-ogDescription: Generate Markdown, HTML, and plain text documents using Paradoc templates
+ogDescription: Generate Markdown, HTML, and plain text documents using Asterdoc templates
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-In this guide, we'll use Paradoc to create a residential lease agreement. The lease is a perfect example because it combines field values (rent amount, dates), party information (landlord and tenants), conditionals (smoking allowed?), and loops (multiple tenants) — all common patterns in document generation.
+In this guide, we'll use Asterdoc to create a residential lease agreement. The lease is a perfect example because it combines field values (rent amount, dates), party information (landlord and tenants), conditionals (smoking allowed?), and loops (multiple tenants) — all common patterns in document generation.
 
 **About Text Layers**
 
-Text layers use Paradoc templates to generate documents. You write placeholders
-like `{{fields.monthlyRent}}`, and Paradoc fills them with your data. Everything
+Text layers use Asterdoc templates to generate documents. You write placeholders
+like `{{fields.monthlyRent}}`, and Asterdoc fills them with your data. Everything
 inside `{{ }}` is an [artifact expression](/concepts/logic), the same language
 as field conditions and computed values, so Markdown, HTML, plain text, and
 DOCX templates follow the same rules as the rest of the artifact.
@@ -59,7 +59,7 @@ Your project structure should look like this:
 ```
 my-lease-project/
 ├── layers/
-│   └── lease.md          # Your Paradoc template
+│   └── lease.md          # Your Asterdoc template
 ├── src/                  # Your code goes here
 ├── output/               # Generated documents
 └── package.json
@@ -74,22 +74,22 @@ Install the SDK, unified renderer, and filesystem resolver.
 <Tabs items={['npm', 'pnpm', 'yarn', 'bun']} groupId="package-manager" persist>
   <Tab value="npm">
     ```bash
-    npm install @paradoc/sdk @paradoc/render @paradoc/resolvers
+    npm install @asterdoc/sdk @asterdoc/render @asterdoc/resolvers
     ```
   </Tab>
   <Tab value="pnpm">
     ```bash
-    pnpm add @paradoc/sdk @paradoc/render @paradoc/resolvers
+    pnpm add @asterdoc/sdk @asterdoc/render @asterdoc/resolvers
     ```
   </Tab>
   <Tab value="yarn">
     ```bash
-    yarn add @paradoc/sdk @paradoc/render @paradoc/resolvers
+    yarn add @asterdoc/sdk @asterdoc/render @asterdoc/resolvers
     ```
   </Tab>
   <Tab value="bun">
     ```bash
-    bun add @paradoc/sdk @paradoc/render @paradoc/resolvers
+    bun add @asterdoc/sdk @asterdoc/render @asterdoc/resolvers
     ```
   </Tab>
 </Tabs>
@@ -98,7 +98,7 @@ Install the SDK, unified renderer, and filesystem resolver.
 <Step>
 ## Create the Template
 
-Create a Paradoc template at `layers/lease.md`:
+Create an Asterdoc template at `layers/lease.md`:
 
 ```markdown
 # RESIDENTIAL LEASE AGREEMENT
@@ -188,8 +188,8 @@ file-backed, so bind a resolver when you construct the form — every instance
 you derive from `leaseAgreement` later carries the same resolver.
 
 ```ts
-import { p } from '@paradoc/sdk'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { p } from '@asterdoc/sdk'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: '.' })
 
@@ -285,7 +285,7 @@ to `leaseAgreement` travels with `filled`, so the render call doesn't repeat
 it:
 
 ```ts
-import { createLayerRenderer } from '@paradoc/render'
+import { createLayerRenderer } from '@asterdoc/render'
 import { writeFileSync } from 'node:fs'
 
 const output = await filled.render({
@@ -300,7 +300,7 @@ The output is a string containing your rendered Markdown document with all place
 </Step>
 </Steps>
 
-You've now created a form that generates lease agreements from a Paradoc
+You've now created a form that generates lease agreements from an Asterdoc
 template. The same rendering entry point works for HTML, plain text, PDF, and
 DOCX layers because selection follows the layer's `mimeType`.
 

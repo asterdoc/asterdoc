@@ -1,7 +1,7 @@
 ---
 title: Bundles
 description: Compose multiple artifacts into a distributable package
-ogTitle: Create a bundle with Paradoc
+ogTitle: Create a bundle with Asterdoc
 ogDescription: Package forms, documents, and checklists into a single distributable unit
 ---
 
@@ -16,7 +16,7 @@ Bundles group forms, documents, and checklists into a single package. This guide
 A lease transaction needs multiple artifacts. Start with the form from the previous guide, then add a disclosure document and a move-in checklist.
 
 ```ts tab="Object Pattern"
-import { p } from '@paradoc/sdk'
+import { p } from '@asterdoc/sdk'
 
 // Lease Agreement Form
 const lease = p.form({
@@ -67,7 +67,7 @@ const moveInChecklist = p.checklist({
 ```
 
 ```ts tab="Builder Pattern"
-import { p } from '@paradoc/sdk'
+import { p } from '@asterdoc/sdk'
 
 // Lease Agreement Form
 const lease = p
@@ -232,7 +232,7 @@ console.log(JSON.stringify(json, null, 2))
 
 ```json tab="JSON"
 {
-  "$schema": "https://schema.paradoc.dev/__SCHEMA_VERSION__.json",
+  "$schema": "https://schema.asterdoc.com/__SCHEMA_VERSION__.json",
   "kind": "bundle",
   "name": "lease-transaction",
   "version": "1.0.0",
@@ -246,8 +246,8 @@ console.log(JSON.stringify(json, null, 2))
 ```
 
 ```yaml tab="YAML"
-# yaml-language-server: $schema=https://schema.paradoc.dev/__SCHEMA_VERSION__.json
-$schema: https://schema.paradoc.dev/__SCHEMA_VERSION__.json
+# yaml-language-server: $schema=https://schema.asterdoc.com/__SCHEMA_VERSION__.json
+$schema: https://schema.asterdoc.com/__SCHEMA_VERSION__.json
 kind: bundle
 name: lease-transaction
 version: 1.0.0

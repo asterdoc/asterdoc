@@ -1,7 +1,7 @@
 import type { InferToolInput, InferToolOutput } from '@tanstack/ai'
 import {
 	getRegistry,
-	paradocTools,
+	asterdocTools,
 	validateArtifact,
 	validateInput,
 } from '../src/index'
@@ -31,7 +31,7 @@ async function assertPreciseExecutionResult() {
 	void invalidContentLength
 }
 
-const tools = paradocTools()
+const tools = asterdocTools()
 const firstToolName: 'get_registry' = tools[0].name
 const lastToolName: 'extract' = tools[9].name
 void firstToolName

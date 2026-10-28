@@ -107,7 +107,7 @@ describe("the headless package boundary", () => {
     ]) {
       expect(isEngineSpecifier(engine), engine).toBe(true);
     }
-    for (const allowed of ["pdfjs-dist", "react", "@paradoc/render", "puppeteer-extra-helpers", "tailwind-merge"]) {
+    for (const allowed of ["pdfjs-dist", "react", "@asterdoc/render", "puppeteer-extra-helpers", "tailwind-merge"]) {
       expect(isEngineSpecifier(allowed), allowed).toBe(false);
     }
   });
@@ -140,10 +140,10 @@ describe("the headless package boundary", () => {
     expect(dependencies).not.toHaveProperty("pdfjs-dist");
   });
 
-  it("imports no PDF engine and no part of @paradoc/react-pdf from any source file", () => {
+  it("imports no PDF engine and no part of @asterdoc/react-pdf from any source file", () => {
     const offenders = sourceFiles(resolve(packageRoot, "src")).flatMap((path) =>
       importsOf(path)
-        .filter((specifier) => isEngineSpecifier(specifier) || specifier.startsWith("@paradoc/react-pdf"))
+        .filter((specifier) => isEngineSpecifier(specifier) || specifier.startsWith("@asterdoc/react-pdf"))
         .map((specifier) => `${path.slice(packageRoot.length + 1)} imports ${specifier}`)
     );
     expect(offenders).toEqual([]);

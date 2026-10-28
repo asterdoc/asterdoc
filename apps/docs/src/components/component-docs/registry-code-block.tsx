@@ -13,7 +13,7 @@ export function RegistryCodeBlock({
 }: {
   lang: string;
   code: string;
-  /** File path caption shown above the block, e.g. "components/paradoc/field.tsx". */
+  /** File path caption shown above the block, e.g. "components/asterdoc/field.tsx". */
   path?: string;
 }) {
   return (

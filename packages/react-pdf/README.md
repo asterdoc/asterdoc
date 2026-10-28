@@ -1,21 +1,21 @@
-# @paradoc/react-pdf
+# @asterdoc/react-pdf
 
-Explicit Node integration for rendering `@paradoc/react` compositions to PDF and checking them before rendering. The default entry installs Takumi. Install the optional `puppeteer` and `tailwindcss` peers only when using `@paradoc/react-pdf/chromium`.
+Explicit Node integration for rendering `@asterdoc/react` compositions to PDF and checking them before rendering. The default entry installs Takumi. Install the optional `puppeteer` and `tailwindcss` peers only when using `@asterdoc/react-pdf/chromium`.
 
-The headless `@paradoc/react` package does not install a PDF engine, browser driver, CSS compiler, or font files.
+The headless `@asterdoc/react` package does not install a PDF engine, browser driver, CSS compiler, or font files.
 
 ```sh
-pnpm add @paradoc/react-pdf
+pnpm add @asterdoc/react-pdf
 ```
 
 | Entry | Purpose |
 | --- | --- |
-| `@paradoc/react-pdf` | `renderPdf`, PDF adapter types, Takumi, resources, and React layer renderers |
-| `@paradoc/react-pdf/check` | `checkComposition` and `checkElement` without producing PDF bytes |
-| `@paradoc/react-pdf/chromium` | The Chromium adapter; requires the optional `puppeteer` and `tailwindcss` peers |
+| `@asterdoc/react-pdf` | `renderPdf`, PDF adapter types, Takumi, resources, and React layer renderers |
+| `@asterdoc/react-pdf/check` | `checkComposition` and `checkElement` without producing PDF bytes |
+| `@asterdoc/react-pdf/chromium` | The Chromium adapter; requires the optional `puppeteer` and `tailwindcss` peers |
 
 ```tsx
-import { renderPdf, type PdfAdapter } from "@paradoc/react-pdf";
+import { renderPdf, type PdfAdapter } from "@asterdoc/react-pdf";
 
 const result = await renderPdf(<Invoice data={data} />);
 

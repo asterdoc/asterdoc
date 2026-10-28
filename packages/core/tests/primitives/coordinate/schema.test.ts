@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { coordinate } from '@/primitives/coordinate';
-import type { Coordinate } from '@paradoc/types';
+import type { Coordinate } from '@asterdoc/types';
 
 describe('Coordinate', () => {
 	// ============================================================================

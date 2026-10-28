@@ -8,7 +8,7 @@ import {
   markDocumentRoot,
   useDocumentRootTokens,
   type DocumentTokensInput,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 
 export interface BundleProps {
   /**

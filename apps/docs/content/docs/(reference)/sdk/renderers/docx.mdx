@@ -1,9 +1,9 @@
 ---
 title: docxRenderer
-description: Render Paradoc artifacts to Word documents
+description: Render Asterdoc artifacts to Word documents
 ---
 
-Render forms to DOCX (Word) documents with Paradoc's dependency-light Open XML
+Render forms to DOCX (Word) documents with Asterdoc's dependency-light Open XML
 implementation. It supports placeholders, conditionals, loops, custom
 delimiters, split Word runs, and automatic field formatting. Every condition,
 loop source, and placeholder is an [artifact expression](/concepts/logic), so a
@@ -12,9 +12,9 @@ condition means the same thing in a Word layer as in a field rule.
 ## Example
 
 ```ts
-import { p } from '@paradoc/core'
-import { docxRenderer } from '@paradoc/render/docx'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { p } from '@asterdoc/core'
+import { docxRenderer } from '@asterdoc/render/docx'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 import { writeFileSync } from 'node:fs'
 
 const resolver = createFsResolver({ root: process.cwd() })
@@ -60,7 +60,7 @@ writeFileSync('contract-filled.docx', output)
 From the unified package's DOCX entry point:
 
 ```ts
-import { docxRenderer } from '@paradoc/render/docx'
+import { docxRenderer } from '@asterdoc/render/docx'
 ```
 
 ## API
@@ -70,7 +70,7 @@ import { docxRenderer } from '@paradoc/render/docx'
 Factory function that creates a configured DOCX renderer instance.
 
 ```ts
-function docxRenderer(options?: DocxRendererOptions): ParadocRenderer<
+function docxRenderer(options?: DocxRendererOptions): AsterdocRenderer<
   RendererLayer & { type: 'docx'; content: Uint8Array },
   Uint8Array
 >
@@ -99,7 +99,7 @@ function docxRenderer(options?: DocxRendererOptions): ParadocRenderer<
 
 #### Returns
 
-Returns an `ParadocRenderer` object with:
+Returns an `AsterdocRenderer` object with:
 
 <PropertiesTable properties={[
   { name: 'id', type: '"docx"', description: 'Renderer identifier' },
@@ -204,8 +204,8 @@ When a form schema is provided, field values are automatically formatted:
 Use a formatter for different locales:
 
 ```ts
-import { renderDocx } from '@paradoc/render/docx'
-import { createFormatter } from '@paradoc/format'
+import { renderDocx } from '@asterdoc/render/docx'
+import { createFormatter } from '@asterdoc/format'
 
 const output = await renderDocx({
   template: templateBytes,
@@ -220,7 +220,7 @@ Formatting failures reject the render with the field path and status. Invalid va
 
 ## Values in templates
 
-A DOCX template names each value by its path, such as `{{fields.clientFullName}}`. A DOCX layer takes no `bindings` or `bindingsFrom`, and validation rejects them there: bindings belong to [PDF layers](/sdk/renderers/pdf), where they map AcroForm field names to Paradoc paths.
+A DOCX template names each value by its path, such as `{{fields.clientFullName}}`. A DOCX layer takes no `bindings` or `bindingsFrom`, and validation rejects them there: bindings belong to [PDF layers](/sdk/renderers/pdf), where they map AcroForm field names to Asterdoc paths.
 
 ## Related
 

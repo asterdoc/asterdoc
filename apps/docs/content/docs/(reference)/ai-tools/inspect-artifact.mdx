@@ -1,8 +1,8 @@
 ---
 title: inspect_artifact
 description: Return a bounded description of an artifact's schema, targets, and layers
-ogTitle: inspect_artifact — Paradoc AI Tools
-ogDescription: Give an agent a bounded, selectable view of a Paradoc artifact's fields, parties, annexes, items, and layers
+ogTitle: inspect_artifact — Asterdoc AI Tools
+ogDescription: Give an agent a bounded, selectable view of an Asterdoc artifact's fields, parties, annexes, items, and layers
 ---
 
 Returns a compact description of an artifact, so an agent can see what to collect without reading the full JSON. You choose the sections, and each section is capped at `max_items` entries.
@@ -43,7 +43,7 @@ Values nested deeper than four levels are replaced with `"[nested value omitted]
 ## Direct usage
 
 ```typescript
-import { executeInspectArtifact } from "@paradoc/ai-tools"
+import { executeInspectArtifact } from "@asterdoc/ai-tools"
 
 const result = await executeInspectArtifact({
   source: "registry",

@@ -9,8 +9,8 @@
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { ContentRef, Layer, Resolver } from '@paradoc/types'
-import { isReactLayerMimeType } from '@paradoc/schemas'
+import type { ContentRef, Layer, Resolver } from '@asterdoc/types'
+import { isReactLayerMimeType } from '@asterdoc/schemas'
 
 const CONTENT_FIELDS = ['instructions', 'agentInstructions'] as const
 

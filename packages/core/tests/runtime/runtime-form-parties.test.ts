@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test, expect } from 'vitest'
 import { form, runtimeFormFromJSON, FormValidationError } from '@/artifacts'
-import type { SealAdapter, SealAdapterRequest, SigningField } from '@paradoc/types'
+import type { SealAdapter, SealAdapterRequest, SigningField } from '@asterdoc/types'
 
 const fixturePdf = new Uint8Array(
 	readFileSync(join(__dirname, '..', 'artifacts', 'form', 'fixtures', 'one-field-form.pdf')),

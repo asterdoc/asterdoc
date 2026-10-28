@@ -8,7 +8,7 @@
  * criterion is an image in the PDF of every pass.
  */
 
-import type { Attachment } from "@paradoc/types";
+import type { Attachment } from "@asterdoc/types";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { Document } from "../../components/src/components/document";

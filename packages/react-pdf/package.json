@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/react-pdf",
-  "version": "0.8.0",
-  "description": "PDF rendering and composition checks for @paradoc/react",
+  "name": "@asterdoc/react-pdf",
+  "version": "0.9.0",
+  "description": "PDF rendering and composition checks for @asterdoc/react",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -28,6 +28,14 @@
     "LICENSE"
   ],
   "license": "MIT",
+  "author": {
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
+  },
+  "homepage": "https://asterdoc.com",
+  "bugs": {
+    "url": "https://github.com/asterdoc/asterdoc/issues"
+  },
   "engines": {
     "node": ">=18"
   },
@@ -36,7 +44,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/react-pdf"
   },
   "scripts": {
@@ -51,9 +59,9 @@
   },
   "dependencies": {
     "@fontsource/noto-sans-symbols-2": "catalog:",
-    "@paradoc/react": "workspace:^",
-    "@paradoc/render": "workspace:^",
-    "@paradoc/types": "workspace:^",
+    "@asterdoc/react": "workspace:^",
+    "@asterdoc/render": "workspace:^",
+    "@asterdoc/types": "workspace:^",
     "@takumi-rs/helpers": "catalog:",
     "takumi-pdf": "catalog:"
   },
@@ -75,12 +83,12 @@
     "@fontsource-variable/inter": "catalog:",
     "@fontsource-variable/noto-sans-arabic": "catalog:",
     "@fontsource-variable/source-serif-4": "catalog:",
-    "@paradoc/core": "workspace:^",
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/essentials": "workspace:^",
-    "@paradoc/format": "workspace:^",
-    "@paradoc/sessions": "workspace:^",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/core": "workspace:^",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/essentials": "workspace:^",
+    "@asterdoc/format": "workspace:^",
+    "@asterdoc/sessions": "workspace:^",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

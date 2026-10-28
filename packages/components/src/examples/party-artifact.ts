@@ -9,11 +9,11 @@
  * other sample artifact in this package takes, rather than a cast past the
  * real `Form` type.
  */
-import { p } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { p } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 
 const partyDemoSpec = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "party-demo",
   version: "1.0.0",

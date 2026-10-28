@@ -18,9 +18,9 @@ describe('CLI configure command', () => {
   })
 
   it('stops on a malformed global config, naming the file and key, and leaves it as it is', async () => {
-    const home = await fs.mkdtemp(path.join(tmpdir(), 'paradoc-home-'))
+    const home = await fs.mkdtemp(path.join(tmpdir(), 'asterdoc-home-'))
     try {
-      const configPath = path.join(home, '.paradoc', 'config.json')
+      const configPath = path.join(home, '.asterdoc', 'config.json')
       const malformed = '{ "registries": {}, "enableTelemetry": false }'
       await fs.mkdir(path.dirname(configPath), { recursive: true })
       await fs.writeFile(configPath, malformed)
@@ -38,10 +38,10 @@ describe('CLI configure command', () => {
   })
 
   it('stops on a global config that still sets the removed defaults.registry', async () => {
-    const home = await fs.mkdtemp(path.join(tmpdir(), 'paradoc-home-'))
+    const home = await fs.mkdtemp(path.join(tmpdir(), 'asterdoc-home-'))
     try {
-      const configPath = path.join(home, '.paradoc', 'config.json')
-      const stale = '{ "defaults": { "output": "json", "registry": "@paradoc" } }'
+      const configPath = path.join(home, '.asterdoc', 'config.json')
+      const stale = '{ "defaults": { "output": "json", "registry": "@asterdoc" } }'
       await fs.mkdir(path.dirname(configPath), { recursive: true })
       await fs.writeFile(configPath, stale)
 

@@ -5,7 +5,7 @@ import { formatGroupedHelp } from '../../src/utils/help-formatter.js'
 
 describe('formatGroupedHelp', () => {
   it('aligns descriptions after command names of different lengths', () => {
-    const program = new Command('paradoc').description('Documents').usage('<command>')
+    const program = new Command('asterdoc').description('Documents').usage('<command>')
     const short = new Command('add').description('Add one')
     const long = new Command('configure').description('Configure one')
     const output = stripVTControlCharacters(formatGroupedHelp(program, [{ name: 'Work', commands: [short, long] }]))

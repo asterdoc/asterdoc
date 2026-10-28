@@ -1,11 +1,11 @@
-# @paradoc/react
+# @asterdoc/react
 
-Headless React bindings for Paradoc artifacts, document settings, pagination, signing, and packet previews. The package supplies maintained behavior without choosing visible markup or shipping a stylesheet.
+Headless React bindings for Asterdoc artifacts, document settings, pagination, signing, and packet previews. The package supplies maintained behavior without choosing visible markup or shipping a stylesheet.
 
 ## Install
 
 ```sh
-npm install @paradoc/react react
+npm install @asterdoc/react react
 ```
 
 The root entry requires no Tailwind setup, font package, PDF engine, viewer, or external state library. It uses React context to scope each document store and `useSyncExternalStore` for focused subscriptions.
@@ -13,8 +13,8 @@ The root entry requires no Tailwind setup, font package, PDF engine, viewer, or 
 ## Headless document markup
 
 ```tsx
-import { ArtifactProvider, useField, type DocumentData } from "@paradoc/react";
-import type { Form } from "@paradoc/types";
+import { ArtifactProvider, useField, type DocumentData } from "@asterdoc/react";
+import type { Form } from "@asterdoc/types";
 
 function Name() {
   const name = useField("name");
@@ -40,23 +40,23 @@ Inputs are immutable snapshots. A provider update publishes only selectors whose
 
 ## Copyable document components
 
-Visible document components are source you own. Configure the Paradoc component collection in `components.json`, then use the stock shadcn CLI:
+Visible document components are source you own. Configure the Asterdoc component collection in `components.json`, then use the stock shadcn CLI:
 
 ```sh
-npx shadcn@latest add @paradoc/document-styles @paradoc/pages @paradoc/document @paradoc/field
+npx shadcn@latest add @asterdoc/document-styles @asterdoc/pages @asterdoc/document @asterdoc/field
 ```
 
-The optional `document-styles` preset installs at `styles/paradoc.css`; import it from the application entry when you want the default Tailwind presentation. Install `pages` for the preview wrapper used by `paradoc dev`. You may instead copy the canonical files from `packages/components/src/components` and provide all markup and styles yourself.
+The optional `document-styles` preset installs at `styles/asterdoc.css`; import it from the application entry when you want the default Tailwind presentation. Install `pages` for the preview wrapper used by `asterdoc dev`. You may instead copy the canonical files from `packages/components/src/components` and provide all markup and styles yourself.
 
-Installed components import maintained logic from `@paradoc/react` and local sibling components. Updating the runtime can therefore fix bindings without replacing customized source. The CLI never overwrites an edited component unless you pass `--overwrite` explicitly.
+Installed components import maintained logic from `@asterdoc/react` and local sibling components. Updating the runtime can therefore fix bindings without replacing customized source. The CLI never overwrites an edited component unless you pass `--overwrite` explicitly.
 
 ## Rendering integrations
 
-Install `@paradoc/react-pdf` only when an application needs composition checks, PDF rendering, layer renderers, or the experimental Chromium adapter:
+Install `@asterdoc/react-pdf` only when an application needs composition checks, PDF rendering, layer renderers, or the experimental Chromium adapter:
 
 ```ts
-import { renderPdf } from "@paradoc/react-pdf";
-import { checkComposition } from "@paradoc/react-pdf/check";
+import { renderPdf } from "@asterdoc/react-pdf";
+import { checkComposition } from "@asterdoc/react-pdf/check";
 ```
 
-The root package remains browser-safe and does not load rendering engines or font files. Composition discovery remains available from `@paradoc/react/discovery` for authoring tools.
+The root package remains browser-safe and does not load rendering engines or font files. Composition discovery remains available from `@asterdoc/react/discovery` for authoring tools.

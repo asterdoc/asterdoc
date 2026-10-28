@@ -30,7 +30,7 @@ written. An image with neither fails with `MissingImageSourceError`.
 A `src` string is passed through untouched, because it is a key rather than a
 URL: the PDF path is handed its images as `{ src, data }` pairs and matches
 them by that string, while a browser preview loads whatever the string
-resolves to. The two agree on the key, not on a URL. `paradoc check` reports
+resolves to. The two agree on the key, not on a URL. `asterdoc check` reports
 every `src` that is not a `data:` URI, because a render needs bytes behind each
 one.
 
@@ -59,7 +59,7 @@ filled data carries one `Attachment` per slot. `Field` with `as="image"` draws
 the attachment at `annexes.<slot>` at the declared size, taking its heading
 from the slot's own title. Its `src` is where a browser preview loads the
 picture from; the default is the attachment's own file name, which is the key
-the PDF path supplies its bytes under, and which `paradoc check` reports as a
+the PDF path supplies its bytes under, and which `asterdoc check` reports as a
 missing image until a render supplies them. `width` and `height` are required
 whatever the slot holds — omitting either throws `MissingImageSizeError`, so a
 composition cannot pass a check on a sample with nothing attached and then fail
@@ -70,7 +70,7 @@ on the day a real photograph arrives.
 ### Attachment that is not a picture
 
 The same `Field` prints the attachment's file name when its MIME type is not
-an image, and `paradoc check` reports the mismatch as `image:<path>`. Nothing
+an image, and `asterdoc check` reports the mismatch as `image:<path>`. Nothing
 is drawn and nothing throws: the document still says truthfully what is
 attached.
 

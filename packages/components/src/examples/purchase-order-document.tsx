@@ -20,12 +20,12 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 import { Document } from "../components/document";
-import { markDocumentRoot, type PageFurniture } from "@paradoc/react";
-import type { FormatOptions } from "@paradoc/react";
-import type { DocumentData } from "@paradoc/react";
+import { markDocumentRoot, type PageFurniture } from "@asterdoc/react";
+import type { FormatOptions } from "@asterdoc/react";
+import type { DocumentData } from "@asterdoc/react";
 import { Field } from "../components/field";
 import { PageNumber } from "../components/page-number";
 import { Section } from "../components/section";
@@ -33,7 +33,7 @@ import { Signature } from "../components/signature";
 import { Table } from "../components/table";
 import { Text } from "../components/text";
 import { Totals } from "../components/totals";
-import type { DocumentTokensInput } from "@paradoc/react";
+import type { DocumentTokensInput } from "@asterdoc/react";
 import { purchaseOrderForm } from "./purchase-order";
 
 /**

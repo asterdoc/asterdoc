@@ -21,7 +21,7 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { imageSource } from "@paradoc/react";
+import { imageSource } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface ImageProps {

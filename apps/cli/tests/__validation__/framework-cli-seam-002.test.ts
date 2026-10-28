@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 import { runCli } from '../setup/spawn-cli.js'
 
 describe('framework-cli-seam-002: attach layer identifiers', () => {
@@ -11,7 +11,7 @@ describe('framework-cli-seam-002: attach layer identifiers', () => {
     const artifactPath = path.join(root, 'form.json')
     try {
       await writeFile(artifactPath, `${JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'attach-names',
         version: '1.0.0',

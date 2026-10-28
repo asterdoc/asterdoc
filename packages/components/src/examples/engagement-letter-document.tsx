@@ -37,11 +37,11 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 import { Document } from "../components/document";
-import { markDocumentRoot } from "@paradoc/react";
-import { useList, type DocumentData, type PageFurniture } from "@paradoc/react";
+import { markDocumentRoot } from "@asterdoc/react";
+import { useList, type DocumentData, type PageFurniture } from "@asterdoc/react";
 import { Field } from "../components/field";
 import { List, type ListItem } from "../components/list";
 import { PageNumber } from "../components/page-number";
@@ -49,8 +49,8 @@ import { Party } from "../components/party";
 import { Section } from "../components/section";
 import { Signature } from "../components/signature";
 import { Text } from "../components/text";
-import type { FormatOptions } from "@paradoc/react";
-import type { DocumentTokensInput } from "@paradoc/react";
+import type { FormatOptions } from "@asterdoc/react";
+import type { DocumentTokensInput } from "@asterdoc/react";
 import { engagementLetterForm } from "./engagement-letter";
 
 /** Stable keep prefix for the numbered clauses. The PDF is hinted with the same ids. */

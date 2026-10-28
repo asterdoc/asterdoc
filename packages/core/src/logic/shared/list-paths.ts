@@ -9,7 +9,7 @@
  * so a path into them depends on the list field itself).
  */
 
-import type { CondExpr, FormField } from '@paradoc/types'
+import type { CondExpr, FormField } from '@asterdoc/types'
 import { parseExpression } from '../design-time/validation/expression-parser'
 
 type Fields = Record<string, FormField> | undefined

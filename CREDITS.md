@@ -1,6 +1,6 @@
 # Credits
 
-Paradoc is built on the shoulders of excellent open source projects.
+Asterdoc is built on the shoulders of excellent open source projects.
 
 ## Core Dependencies
 
@@ -9,4 +9,4 @@ Paradoc is built on the shoulders of excellent open source projects.
 
 ## Thank You
 
-We're grateful to the maintainers and contributors of these projects for making Paradoc possible.
+We're grateful to the maintainers and contributors of these projects for making Asterdoc possible.

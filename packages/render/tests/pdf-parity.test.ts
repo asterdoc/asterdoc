@@ -1,7 +1,7 @@
-import { createFormatter } from '@paradoc/format'
+import { createFormatter } from '@asterdoc/format'
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { flattenPdf, inspectAcroFormFields, inspectPdf, pdfRenderer, renderPdf, selectPdfPages } from '../src/pdf'
 import { compressedCheckboxPdf, pagePdf, textFieldsPdf } from './pdf-fixtures'
 
@@ -207,7 +207,7 @@ describe('PDF renderer behavior', () => {
     })
   })
 
-  it('matches the Paradoc renderer adapter data shape', async () => {
+  it('matches the Asterdoc renderer adapter data shape', async () => {
     const template = new Uint8Array(await readFile(new URL('./fixtures/pet-addendum-2.pdf', import.meta.url)))
     const form = {
       kind: 'form', name: 'pet', version: '1.0.0', title: 'Pet', fields: { name: { type: 'text' } },

@@ -11,6 +11,6 @@ export default defineConfig({
 	clean: true,
 	external: [
 		// Workspace dependencies are installed separately by consumers.
-		'@paradoc/types',
+		'@asterdoc/types',
 	],
 })

@@ -3,9 +3,9 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
 import { layer, p } from '@/artifacts'
-import { createMemoryResolver } from '@paradoc/resolvers/memory'
-import { createLayerRenderer } from '@paradoc/render'
-import { LayerSchema } from '@paradoc/schemas'
+import { createMemoryResolver } from '@asterdoc/resolvers/memory'
+import { createLayerRenderer } from '@asterdoc/render'
+import { LayerSchema } from '@asterdoc/schemas'
 
 /**
  * A PDF layer's declared font travels with the artifact: the bound resolver
@@ -54,7 +54,7 @@ describe('a PDF layer that declares a font', () => {
 	test('renders text only the font covers, embedding the font', async () => {
 		const output = await filled({ path: 'fonts/cyrillic.ttf' }).render({ renderer: createLayerRenderer() }) as Uint8Array
 		const source = latin1.decode(output)
-		expect(source).toContain('/BaseFont /ParadocTestCyrillic')
+		expect(source).toContain('/BaseFont /AsterdocTestCyrillic')
 		expect(source).toContain('/FontFile2')
 	})
 
@@ -73,7 +73,7 @@ describe('a PDF layer that declares a font', () => {
 			.addSignatory('signer', 'signer-0', { signerId: 'ada' })
 			.seal()
 		const [first, second] = [await seal(), await seal()]
-		expect(latin1.decode(first.canonicalPdfBytes)).toContain('/BaseFont /ParadocTestCyrillic')
+		expect(latin1.decode(first.canonicalPdfBytes)).toContain('/BaseFont /AsterdocTestCyrillic')
 		expect(second.canonicalPdfHash).toBe(first.canonicalPdfHash)
 	})
 

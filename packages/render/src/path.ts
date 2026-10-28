@@ -1,6 +1,6 @@
 const blockedSegments = new Set(['__proto__', 'prototype', 'constructor'])
 
-/** Parse Paradoc paths with object dots and zero-based list brackets. */
+/** Parse Asterdoc paths with object dots and zero-based list brackets. */
 export function pathSegments(path: string): string[] {
   const normalized = path.replace(/\[(\d+)\]/g, '.$1')
   if (normalized.includes('[') || normalized.includes(']')) return []

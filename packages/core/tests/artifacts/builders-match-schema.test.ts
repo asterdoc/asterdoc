@@ -16,9 +16,9 @@ import {
 	FormPartySchema,
 	FormSchema,
 	LayerSchema,
-} from '@paradoc/schemas'
+} from '@asterdoc/schemas'
 import { annex, bundle, checklist, document, field, form, layer, party } from '@/artifacts'
-import type { Form, RulesSection, SignatureSlot } from '@paradoc/types'
+import type { Form, RulesSection, SignatureSlot } from '@asterdoc/types'
 import type { FormRulesValidationResult } from '@/logic'
 
 // ============================================================================

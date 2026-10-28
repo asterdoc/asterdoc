@@ -1,8 +1,8 @@
 ---
 title: validate_input
 description: Validate and normalize one field, party, annex, or checklist item value
-ogTitle: validate_input — Paradoc AI Tools
-ogDescription: Check one value against a Paradoc form or checklist before it goes into a draft
+ogTitle: validate_input — Asterdoc AI Tools
+ogDescription: Check one value against an Asterdoc form or checklist before it goes into a draft
 ---
 
 Validates one value against the artifact that owns it, without touching a draft. Use it to check each answer as a user gives it, then pass the accepted values to [`fill`](/ai-tools/fill) or [`update_fill`](/ai-tools/update-fill).
@@ -37,7 +37,7 @@ Takes a [source](/ai-tools#sources) plus:
 ## Direct usage
 
 ```typescript
-import { executeValidateInput } from "@paradoc/ai-tools"
+import { executeValidateInput } from "@asterdoc/ai-tools"
 
 const source = {
   source: "registry",

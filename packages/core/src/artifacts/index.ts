@@ -1,5 +1,5 @@
 /**
- * Artifacts: closure-based implementations of Paradoc's form, document,
+ * Artifacts: closure-based implementations of Asterdoc's form, document,
  * bundle, and checklist artifacts, built from factory functions and
  * composition rather than class inheritance.
  *
@@ -225,7 +225,7 @@ import {
 } from '../primitives'
 
 /**
- * The `p` namespace provides a unified API for building Paradoc artifacts.
+ * The `p` namespace provides a unified API for building Asterdoc artifacts.
  *
  * This is the recommended entry point. It exposes:
  * - Artifact builders: `p.form()`, `p.document()`, `p.checklist()`, `p.bundle()`
@@ -235,7 +235,7 @@ import {
  *
  * @example Build a form
  * ```ts
- * import { p } from '@paradoc/core';
+ * import { p } from '@asterdoc/core';
  *
  * const leaseForm = p.form()
  *   .name('lease-agreement')
@@ -299,4 +299,4 @@ export const p = {
 	time,
 } as const
 
-export type Paradoc = typeof p
+export type Asterdoc = typeof p

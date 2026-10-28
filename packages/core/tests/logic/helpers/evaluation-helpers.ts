@@ -5,7 +5,7 @@
  * but are not part of the public API or production runtime.
  */
 
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import type {
   EvaluationContext,
   NestedFieldValues,

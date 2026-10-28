@@ -1,9 +1,9 @@
 /**
- * `@paradoc/react/discovery` — the conventions that connect a composition to
+ * `@asterdoc/react/discovery` — the conventions that connect a composition to
  * its artifact and its sample data.
  *
- * Two commands ask the same three questions of a project. `paradoc dev` asks them
- * of every composition it can find, to build a preview; `paradoc check` asks them
+ * Two commands ask the same three questions of a project. `asterdoc dev` asks them
+ * of every composition it can find, to build a preview; `asterdoc check` asks them
  * of one, to check it. If each answered for itself the two would drift, and a
  * composition that previews would fail a check for a reason that is about the
  * tools rather than the document. So the answers live here, once, in the
@@ -40,8 +40,8 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { dirname, extname, relative, resolve, sep } from "node:path";
 
-import { assertCurrentSchemaVersion, parse, reactLayersOf, validate } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { assertCurrentSchemaVersion, parse, reactLayersOf, validate } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 import { isOutside } from "../lib/paths";
 
 /** The directory name a composition has to live under. */
@@ -60,7 +60,7 @@ export const ARTIFACT_EXTENSIONS = [".yaml", ".yml", ".json"] as const;
 export const IGNORED_DIRECTORIES = [
   "node_modules",
   ".git",
-  ".paradoc",
+  ".asterdoc",
   "dist",
   "build",
   ".next",
@@ -79,7 +79,7 @@ const NOT_AN_ARTIFACT = new Set([
   "tsconfig.json",
   "jsconfig.json",
   "components.json",
-  "paradoc.json",
+  "asterdoc.json",
   "registry.json",
   ".eslintrc.json",
 ]);

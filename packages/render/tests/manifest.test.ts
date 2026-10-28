@@ -7,19 +7,19 @@ const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.
 }
 
 const siblings = (section: Record<string, string> = {}) =>
-  Object.entries(section).filter(([name]) => name.startsWith('@paradoc/'))
+  Object.entries(section).filter(([name]) => name.startsWith('@asterdoc/'))
 
 describe('package manifest', () => {
   // Packages release in lockstep. A literal range goes stale when the release
   // bumps only `version`; the workspace protocol makes pnpm publish write the
   // released version into the published manifest.
-  it('peers on sibling @paradoc packages through the workspace protocol', () => {
+  it('peers on sibling @asterdoc packages through the workspace protocol', () => {
     const peers = siblings(manifest.peerDependencies)
-    expect(peers.map(([name]) => name)).toContain('@paradoc/types')
+    expect(peers.map(([name]) => name)).toContain('@asterdoc/types')
     for (const [name, range] of peers) expect({ name, range }).toEqual({ name, range: 'workspace:^' })
   })
 
-  it('depends on sibling @paradoc packages through the workspace protocol', () => {
+  it('depends on sibling @asterdoc packages through the workspace protocol', () => {
     for (const [name, range] of siblings(manifest.dependencies)) expect({ name, range }).toEqual({ name, range: 'workspace:^' })
   })
 })

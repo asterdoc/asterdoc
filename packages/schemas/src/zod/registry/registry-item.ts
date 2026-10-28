@@ -127,7 +127,7 @@ export const RegistryItemSchema = z.looseObject({
 		.optional(),
 	// Additional properties carry the artifact-specific keys (fields, items, etc.)
 }).meta({
-	title: 'Paradoc Registry Item',
+	title: 'Asterdoc Registry Item',
 	description: 'Schema for registry item files (r/{name}.json)',
 });
 

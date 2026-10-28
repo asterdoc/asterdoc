@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { resolvePartyPayment } from '@/logic/runtime/evaluation/payment-resolver'
-import type { Form, FormPayment } from '@paradoc/types'
+import type { Form, FormPayment } from '@asterdoc/types'
 
 /**
  * Tests for payment-resolver.ts — resolving a declared `FormParty.payment` to a

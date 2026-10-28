@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/core'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/core'
 import { executeValidateArtifact } from '../src/tools/validate'
 import { registryFetch } from './helpers/registry'
 
@@ -143,7 +143,7 @@ describe('executeValidateArtifact', () => {
 
   describe('URL source', () => {
     it('fetches and validates artifact from URL', async () => {
-      const artifact = { $schema: PARADOC_SCHEMA_URL, kind: 'form', name: 'url-form', fields: { x: { type: 'text', label: 'X' } } }
+      const artifact = { $schema: ASTERDOC_SCHEMA_URL, kind: 'form', name: 'url-form', fields: { x: { type: 'text', label: 'X' } } }
       const mockFetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(artifact)))
 
       const result = await executeValidateArtifact(
@@ -171,7 +171,7 @@ describe('executeValidateArtifact', () => {
 
   describe('registry source', () => {
     it('fetches and validates artifact from registry', async () => {
-      const artifact = { $schema: PARADOC_SCHEMA_URL, kind: 'form', name: 'my-form', version: '1.0.0', fields: { x: { type: 'text', label: 'X' } } }
+      const artifact = { $schema: ASTERDOC_SCHEMA_URL, kind: 'form', name: 'my-form', version: '1.0.0', fields: { x: { type: 'text', label: 'X' } } }
 
       const mockFetch = vi.fn(registryFetch('https://example.com', [{ artifact }]))
 

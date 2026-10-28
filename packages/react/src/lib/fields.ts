@@ -10,8 +10,8 @@
  * so `resolveField` throws rather than letting a typo render as an em dash.
  */
 
-import type { Attachment, Form, FormAnnex, FormField } from "@paradoc/types";
-import { pathSegments as parsePathSegments } from "@paradoc/render";
+import type { Attachment, Form, FormAnnex, FormField } from "@asterdoc/types";
+import { pathSegments as parsePathSegments } from "@asterdoc/render";
 
 /** Raised when a component names a path the artifact does not declare. */
 export class UnknownFieldPathError extends Error {
@@ -42,7 +42,7 @@ export class CompositeFieldPathError extends Error {
   }
 }
 
-/** Raised when a path does not use Paradoc's explicit dot-path grammar. */
+/** Raised when a path does not use Asterdoc's explicit dot-path grammar. */
 export class InvalidFieldPathError extends Error {
   constructor(readonly path: string) {
     super(`Invalid field path "${path}". Use non-empty dot-separated own-property names and numeric list indexes.`);
@@ -52,7 +52,7 @@ export class InvalidFieldPathError extends Error {
 
 const FORBIDDEN_SEGMENTS = new Set(["__proto__", "constructor", "prototype"]);
 
-/** Splits and validates a Paradoc field path. */
+/** Splits and validates an Asterdoc field path. */
 export function pathSegments(path: string): string[] {
   const segments = parsePathSegments(path);
   if (segments.length === 0 || segments.some((segment) => FORBIDDEN_SEGMENTS.has(segment))) {

@@ -6,7 +6,7 @@ import type {
   SignaturePlaceholderContext,
   SignaturePlaceholderValue,
   Signer,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import { escapeHtml, Markup, type SigningDirective } from './template'
 
 export interface TextSignatureOptions {

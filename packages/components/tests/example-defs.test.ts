@@ -1,4 +1,4 @@
-import { p } from "@paradoc/core";
+import { p } from "@asterdoc/core";
 import { describe, expect, it } from "vitest";
 
 import {

@@ -3,7 +3,7 @@
 import { act, memo, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
-import { createFormatter } from "@paradoc/format";
+import { createFormatter } from "@asterdoc/format";
 import { describe, expect, it, vi } from "vitest";
 
 import {

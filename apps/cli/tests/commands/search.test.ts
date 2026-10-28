@@ -30,16 +30,16 @@ describe('CLI search command', () => {
     )
 
     expect(result.exitCode).toBe(1)
-    expect(result.stderr).toContain('No registry is configured for @nonexistent. Run: paradoc registry add @nonexistent <url>')
+    expect(result.stderr).toContain('No registry is configured for @nonexistent. Run: asterdoc registry add @nonexistent <url>')
   })
 
   /** Run `search` in a fresh home whose global config holds these registries. */
   async function searchInHome(args: string[], registries?: Record<string, string>) {
-    const home = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-search-home-'))
+    const home = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-search-home-'))
     try {
       if (registries) {
-        await fs.mkdir(path.join(home, '.paradoc'), { recursive: true })
-        await fs.writeFile(path.join(home, '.paradoc', 'config.json'), JSON.stringify({ registries }))
+        await fs.mkdir(path.join(home, '.asterdoc'), { recursive: true })
+        await fs.writeFile(path.join(home, '.asterdoc', 'config.json'), JSON.stringify({ registries }))
       }
       return await executeCliCommand(['search', ...args], {
         cwd: home,
@@ -55,9 +55,9 @@ describe('CLI search command', () => {
 
     expect(result.exitCode).toBe(1)
     expect(result.stderr).toContain(
-      'No registry to search. Pass --registry @<namespace>, or add one first: paradoc registry add @<namespace> <url>',
+      'No registry to search. Pass --registry @<namespace>, or add one first: asterdoc registry add @<namespace> <url>',
     )
-    expect(result.stderr).not.toContain('registry.paradoc.dev')
+    expect(result.stderr).not.toContain('public.asterdoc.com')
   })
 
   it('searches the one configured registry without --registry', async () => {
@@ -78,11 +78,11 @@ describe('CLI search command', () => {
     expect(result.stderr).not.toContain('Cannot reach')
   })
 
-  it('refuses the reserved @paradoc: its registry is not available yet', async () => {
-    const result = await searchInHome(['lease', '--registry', '@paradoc'])
+  it('refuses the reserved @asterdoc: its registry is not available yet', async () => {
+    const result = await searchInHome(['lease', '--registry', '@asterdoc'])
 
     expect(result.exitCode).toBe(1)
-    expect(result.stderr).toContain('The Paradoc registry is not available yet')
+    expect(result.stderr).toContain('The Asterdoc registry is not available yet')
     expect(result.stderr).not.toContain('Cannot reach')
   })
 
@@ -131,12 +131,12 @@ describe('CLI search and registry info cache configuration', () => {
   })
 
   async function setup(cache: Record<string, unknown>) {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-search-cache-'))
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-search-cache-'))
     const home = path.join(root, 'home')
     const cwd = path.join(root, 'work')
-    await fs.mkdir(path.join(home, '.paradoc'), { recursive: true })
+    await fs.mkdir(path.join(home, '.asterdoc'), { recursive: true })
     await fs.mkdir(cwd, { recursive: true })
-    await fs.writeFile(path.join(home, '.paradoc', 'config.json'), JSON.stringify({
+    await fs.writeFile(path.join(home, '.asterdoc', 'config.json'), JSON.stringify({
       registries: { '@test': registryUrl },
       cache,
     }))
@@ -158,7 +158,7 @@ describe('CLI search and registry info cache configuration', () => {
 
       const info = await executeCliCommand(['registry', 'info', '@test', '--json'], { cwd, env: { HOME: home } })
       expect(info.exitCode, info.stderr).toBe(0)
-      const defaultCache = path.join(home, '.paradoc', 'cache')
+      const defaultCache = path.join(home, '.asterdoc', 'cache')
       expect(existsSync(defaultCache) ? await fs.readdir(defaultCache) : []).toEqual([])
     } finally {
       await fs.rm(root, { recursive: true, force: true })
@@ -166,12 +166,12 @@ describe('CLI search and registry info cache configuration', () => {
   })
 
   it('writes search results only to the configured cache directory', async () => {
-    const customCache = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-custom-cache-'))
+    const customCache = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-custom-cache-'))
     const { root, home, cwd } = await setup({ directory: customCache })
     try {
       const result = await executeCliCommand(['search', '--registry', '@test', '--json'], { cwd, env: { HOME: home } })
       expect(result.exitCode, result.stderr).toBe(0)
-      const defaultCache = path.join(home, '.paradoc', 'cache')
+      const defaultCache = path.join(home, '.asterdoc', 'cache')
       expect(existsSync(defaultCache) ? await fs.readdir(defaultCache) : []).toEqual([])
       expect((await fs.readdir(customCache)).length).toBeGreaterThan(0)
     } finally {

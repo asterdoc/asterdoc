@@ -18,8 +18,8 @@ function installation(name: string): string {
   const item = getRegistryItem(name);
   const targets = item.files.map((file) => file.target).filter(Boolean).join(", ");
   return [
-    fence("bash", `npx shadcn@4 add @paradoc/${name}`),
-    fence("bash", `paradoc add ${name}`),
+    fence("bash", `npx shadcn@4 add @asterdoc/${name}`),
+    fence("bash", `asterdoc add ${name}`),
     targets ? `\nInstalls to ${targets}.\n` : "",
   ].join("\n");
 }

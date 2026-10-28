@@ -8,7 +8,7 @@ export function pageGitHubUrl(filePath: string): string {
     filePath === "changelog/index.mdx" ||
     /^changelog\/v\d+\.\d+\.\d+\.mdx$/.test(filePath)
   ) {
-    return "https://github.com/paradoc-dev/paradoc/blob/main/CHANGELOG.md";
+    return "https://github.com/asterdoc/asterdoc/blob/main/CHANGELOG.md";
   }
-  return `https://github.com/paradoc-dev/paradoc/blob/main/apps/docs/content/docs/${filePath}`;
+  return `https://github.com/asterdoc/asterdoc/blob/main/apps/docs/content/docs/${filePath}`;
 }

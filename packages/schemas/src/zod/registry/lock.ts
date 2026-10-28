@@ -1,7 +1,7 @@
 /**
  * Lock File Schema
  *
- * Defines the schema for .paradoc/lock.json
+ * Defines the schema for .asterdoc/lock.json
  * Tracks installed artifacts for reproducibility.
  */
 
@@ -55,7 +55,7 @@ export const LockedArtifactSchema = z.object({
 });
 
 /**
- * Lock file schema for .paradoc/lock.json
+ * Lock file schema for .asterdoc/lock.json
  *
  * The format `version` stays 1. A locked artifact's `edition` is one new
  * optional field: every lock file written before it is still valid and means
@@ -77,8 +77,8 @@ export const LockFileSchema = z.object({
 		LockedArtifactSchema,
 	).describe('Installed artifacts by reference'),
 }).strict().meta({
-	title: 'Paradoc Lock File',
-	description: 'Schema for .paradoc/lock.json lock file',
+	title: 'Asterdoc Lock File',
+	description: 'Schema for .asterdoc/lock.json lock file',
 });
 
 /**

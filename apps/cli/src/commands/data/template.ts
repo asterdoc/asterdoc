@@ -1,6 +1,6 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
-import { toYAML, isForm, type Form } from '@paradoc/core'
+import { toYAML, isForm, type Form } from '@asterdoc/core'
 import { LocalFileSystem } from '../../utils/local-fs.js'
 
 import { readTextInput, resolveArtifactTarget } from '../../utils/io.js'

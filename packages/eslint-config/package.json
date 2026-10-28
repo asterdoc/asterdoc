@@ -1,8 +1,8 @@
 {
-  "name": "@paradoc/eslint-config",
+  "name": "@asterdoc/eslint-config",
   "version": "0.1.0",
   "private": true,
-  "description": "Shared ESLint configuration for Paradoc framework packages",
+  "description": "Shared ESLint configuration for Asterdoc framework packages",
   "type": "module",
   "files": [
     "*.js",
@@ -10,28 +10,27 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
-    "paradoc",
+    "asterdoc",
     "eslint",
     "eslint-config",
     "config"
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/eslint-config"
   },
-  "homepage": "https://www.paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "exports": {
     "./base": "./base.js",

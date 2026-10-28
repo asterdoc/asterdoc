@@ -1,6 +1,6 @@
-import { Document, Totals } from '@paradoc/components'
-import type { DocumentData } from '@paradoc/react'
-import type { Form } from '@paradoc/types'
+import { Document, Totals } from '@asterdoc/components'
+import type { DocumentData } from '@asterdoc/react'
+import type { Form } from '@asterdoc/types'
 
 export default function TotalsBadDataComposition({ artifact, data }: { artifact: Form; data: DocumentData }) {
   return (

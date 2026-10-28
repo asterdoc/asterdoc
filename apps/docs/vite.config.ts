@@ -13,7 +13,7 @@ import * as MdxConfig from "./source.config";
 const require = createRequire(import.meta.url);
 
 // The font packages resolve into the pnpm store of the enclosing monorepo,
-// which sits above the nearest workspace root (paradoc/ carries its own
+// which sits above the nearest workspace root (framework/ carries its own
 // pnpm-workspace.yaml for the public repo). Vite's serving allow list stops at
 // that nearer root, so the store paths are added explicitly.
 function packageDir(name: string): string {
@@ -67,16 +67,16 @@ const optimizedDeps = [
   "zod",
   // Pulled in through linked workspace packages, so they resolve from those
   // packages rather than from this app.
-  "@paradoc/components > qrcode.react",
-  "@paradoc/core > safe-regex",
-  "@paradoc/core > yaml",
-  "@paradoc/render > fflate",
+  "@asterdoc/components > qrcode.react",
+  "@asterdoc/core > safe-regex",
+  "@asterdoc/core > yaml",
+  "@asterdoc/render > fflate",
 ];
 
 const config = defineConfig({
   define: {
-    __PARADOC_DOCS_PLATFORM_API__: JSON.stringify(
-      process.env.PARADOC_DOCS_PLATFORM_API === "true",
+    __ASTERDOC_DOCS_PLATFORM_API__: JSON.stringify(
+      process.env.ASTERDOC_DOCS_PLATFORM_API === "true",
     ),
   },
   server: {

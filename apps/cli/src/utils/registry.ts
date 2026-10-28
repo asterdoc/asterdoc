@@ -4,7 +4,7 @@
  * Handles parsing artifact references and resolving registry URLs.
  */
 
-import { ARTIFACT_NAME_PATTERN, REGISTRY_NAMESPACE_PATTERN, parseRegistryReference } from '@paradoc/schemas'
+import { ARTIFACT_NAME_PATTERN, REGISTRY_NAMESPACE_PATTERN, parseRegistryReference } from '@asterdoc/schemas'
 import { configManager, normalizeNamespace } from './config.js'
 import type { ArtifactRef, ResolvedRegistry } from '../types.js'
 

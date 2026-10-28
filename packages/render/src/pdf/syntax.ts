@@ -192,7 +192,7 @@ export class PdfEncryptedError extends Error {
   readonly code = 'encrypted_pdf' as const
 
   constructor() {
-    super('The PDF is encrypted. Paradoc reads and writes unencrypted PDFs only; remove the encryption and try again.')
+    super('The PDF is encrypted. Asterdoc reads and writes unencrypted PDFs only; remove the encryption and try again.')
     this.name = 'PdfEncryptedError'
   }
 }

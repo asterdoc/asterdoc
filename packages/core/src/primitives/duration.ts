@@ -1,5 +1,5 @@
 import { parseDuration } from '@/validation/parsers';
-import type { Duration } from '@paradoc/types';
+import type { Duration } from '@asterdoc/types';
 
 export interface DurationBuilder {
 	from(value: Duration): DurationBuilder;

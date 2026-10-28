@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'vitest'
 import { form, p, renderLayer, UnboundResolverError } from '@/artifacts'
 import { BundleResolverError, LoadError, load, safeLoad, loadFromObject } from '@/serialization'
-import { createMemoryResolver } from '@paradoc/resolvers/memory'
+import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 
 /**
  * The resolver is bound when the form is constructed, so every instance

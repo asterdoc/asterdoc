@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { UnregisteredLayerRendererError } from "@paradoc/core";
+import { UnregisteredLayerRendererError } from "@asterdoc/core";
 
 import {
   proposal,
@@ -53,12 +53,12 @@ let bindingRoot: string;
 let bindingBase: string;
 let bindingBaseLink: string;
 
-const OUTSIDE_FILE_EXECUTED = "__paradocOutsideFileExecuted";
-const OUTSIDE_DIRECTORY_EXECUTED = "__paradocOutsideDirectoryExecuted";
-const CWD_IMPORT_EXECUTED = "__paradocCwdImportExecuted";
+const OUTSIDE_FILE_EXECUTED = "__asterdocOutsideFileExecuted";
+const OUTSIDE_DIRECTORY_EXECUTED = "__asterdocOutsideDirectoryExecuted";
+const CWD_IMPORT_EXECUTED = "__asterdocCwdImportExecuted";
 
 beforeAll(async () => {
-  bindingRoot = await mkdtemp(join(tmpdir(), "paradoc-react-binding-"));
+  bindingRoot = await mkdtemp(join(tmpdir(), "asterdoc-react-binding-"));
   bindingBase = join(bindingRoot, "base");
   bindingBaseLink = join(bindingRoot, "base-link");
   await mkdir(join(bindingBase, "inside"), { recursive: true });
@@ -194,7 +194,7 @@ describe("choosing between the two binding routes", () => {
 
 describe("a layer that cannot be bound", () => {
   it("turns the import route off when baseDir is not set, and never falls back to the working directory", async () => {
-    const cwdDir = await mkdtemp(join(tmpdir(), "paradoc-react-cwd-"));
+    const cwdDir = await mkdtemp(join(tmpdir(), "asterdoc-react-cwd-"));
     await writeFile(
       join(cwdDir, "component.mjs"),
       `globalThis.${CWD_IMPORT_EXECUTED} = true; export default function FromCwd() {}\n`

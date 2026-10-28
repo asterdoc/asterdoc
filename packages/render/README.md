@@ -1,6 +1,6 @@
-# @paradoc/render
+# @asterdoc/render
 
-Dependency-light text, PDF, and DOCX rendering for Paradoc. It works in modern
+Dependency-light text, PDF, and DOCX rendering for Asterdoc. It works in modern
 browsers and on the server. Forms use the MIME-selected renderer automatically
 and load only the selected layer engine.
 
@@ -12,7 +12,7 @@ Pass `createLayerRenderer()` explicitly when configuring the built-in renderer o
 provide any compatible custom renderer as an override.
 
 ```ts
-import { createLayerRenderer } from '@paradoc/render'
+import { createLayerRenderer } from '@asterdoc/render'
 
 const output = await filled.render({
   renderer: createLayerRenderer({ serializers }),
@@ -24,9 +24,9 @@ Use a format-specific entry point for inspection, overlays, or other
 format-specific operations so an application only bundles that implementation.
 
 ```ts
-import { renderText } from '@paradoc/render/text'
-import { renderPdf } from '@paradoc/render/pdf'
-import { renderDocx } from '@paradoc/render/docx'
+import { renderText } from '@asterdoc/render/text'
+import { renderPdf } from '@asterdoc/render/pdf'
+import { renderDocx } from '@asterdoc/render/docx'
 ```
 
 `createLayerRenderer()` supports `text/plain`, `text/markdown`, `text/html`,
@@ -37,7 +37,7 @@ MIME type rather than guessing.
 
 Text templates keep the block markers `{{#if}}`, `{{#unless}}`, `{{else}}`, and
 `{{#each}}`. Everything inside a marker is an artifact expression from
-`@paradoc/expr`, the language field logic uses, so a condition means the same in
+`@asterdoc/expr`, the language field logic uses, so a condition means the same in
 a template as in a rule. Templates do not execute arbitrary JavaScript.
 
 ```text
@@ -119,7 +119,7 @@ yourself.
 `extractPdfData()` reads a filled PDF's AcroForm fields back through a layer's
 bindings into artifact data, with a report for each binding target. Combined
 bindings are reported as not recoverable rather than split. Most callers use
-`form.extract()` from `@paradoc/core`, which also chooses the PDF layer.
+`form.extract()` from `@asterdoc/core`, which also chooses the PDF layer.
 
 ```ts
 const { data, report } = await extractPdfData({ pdf: filled, form, bindings })
@@ -183,12 +183,12 @@ const signed = embedPdfSignature(prepared, createCmsSignature(signedBytes(prepar
 
 ## Signature placement
 
-The `@paradoc/render/pdf` subpath locates signature positions in converter-
+The `@asterdoc/render/pdf` subpath locates signature positions in converter-
 produced PDFs without a PDF rendering engine. It reads the PDF text layer with
 a built-in content-stream scanner, so it runs anywhere the renderer runs.
 
 ```ts
-import { locate, extractFieldsFromPdf, encode, FieldType } from '@paradoc/render/pdf'
+import { locate, extractFieldsFromPdf, encode, FieldType } from '@asterdoc/render/pdf'
 
 // Find invisible markers injected during rendering, and literal anchor text.
 const hits = await locate(pdf, [
@@ -242,7 +242,7 @@ From a repository checkout, run `pnpm benchmark` from this package to record
 current text, PDF, and DOCX timings. The benchmark is
 intentionally separate from the unit-test gate, so timing variance does not
 make ordinary tests flaky. Set
-`PARADOC_BENCHMARK_ITERATIONS` to change the number of measured iterations.
-Set `PARADOC_BINARY_BENCHMARK_ITERATIONS` for PDF and DOCX iterations. Use
+`ASTERDOC_BENCHMARK_ITERATIONS` to change the number of measured iterations.
+Set `ASTERDOC_BINARY_BENCHMARK_ITERATIONS` for PDF and DOCX iterations. Use
 `pnpm size-report` to verify browser bundles, server imports, and the exact npm
 tarball contents and sizes without publishing.

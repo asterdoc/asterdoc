@@ -1,4 +1,4 @@
-import type { DocumentData } from '@paradoc/react'
+import type { DocumentData } from '@asterdoc/react'
 import type { SampleSource } from './discovery.js'
 
 export type SampleModuleLoader = (source: SampleSource) => Promise<Record<string, unknown>>

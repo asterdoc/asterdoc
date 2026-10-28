@@ -1,11 +1,11 @@
 /**
- * Schemas: data structure definitions for Paradoc
+ * Schemas: data structure definitions for Asterdoc
  *
- * These types correspond to JSON schemas defined in @paradoc/schemas.
+ * These types correspond to JSON schemas defined in @asterdoc/schemas.
  * For runtime types (filled forms, parties, etc.), see ../runtime
  */
 
-// Primitives (correspond to schemas in @paradoc/schemas)
+// Primitives (correspond to schemas in @asterdoc/schemas)
 export type {
   Money,
   Address,

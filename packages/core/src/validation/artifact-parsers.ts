@@ -1,7 +1,7 @@
 /**
  * Artifact Parsers
  *
- * Ready-to-use parse functions for all Paradoc artifacts and blocks.
+ * Ready-to-use parse functions for all Asterdoc artifacts and blocks.
  * These use Zod schemas directly for strict validation.
  */
 
@@ -16,7 +16,7 @@ import type {
 	Document,
 	Checklist,
 	ChecklistItem,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import {
 	FormSchema,
 	DocumentSchema,
@@ -28,7 +28,7 @@ import {
 	LayerSchema,
 	BundleContentItemSchema,
 	ChecklistItemSchema,
-} from '@paradoc/schemas'
+} from '@asterdoc/schemas'
 import type { ZodType } from 'zod'
 import { assertCurrentSchemaVersion } from '@/serialization/schema-version'
 import { createParser } from './zod-parser'

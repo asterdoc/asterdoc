@@ -5,7 +5,7 @@
  * defs, which sum these amounts with `sum(fields.lineItems.amount)`.
  */
 
-import type { Money } from "@paradoc/types";
+import type { Money } from "@asterdoc/types";
 
 /** One priced row of the proposal, before its amount is computed. */
 export interface LineItemInput {

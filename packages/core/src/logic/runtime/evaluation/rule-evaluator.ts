@@ -1,14 +1,14 @@
 /**
  * Rule Evaluator - evaluates form-level validation rules.
  *
- * Rules use @paradoc/expr expressions with a flat context where:
+ * Rules use @asterdoc/expr expressions with a flat context where:
  * - Field values are directly accessible: `ssn` instead of `fields.ssn`
  * - Defs values are accessible by name: `isIndividual`
  * - Everything else the form context carries is available: `fields.ssn`,
  *   `today()`, configured host functions, and the party predicates
  */
 
-import type { Form, ValidationRule, RulesSection, RuleSeverity } from '@paradoc/types'
+import type { Form, ValidationRule, RulesSection, RuleSeverity } from '@asterdoc/types'
 import { evaluateGate } from './expression-evaluator'
 import type { EvaluationContext } from './types'
 

@@ -5,9 +5,9 @@
  * file using closures and composition.
  */
 
-import type { ArtifactEdition, Checklist, ChecklistData, ChecklistItem, ChecklistPhase, Layer, Metadata, ContentRef, Resolver, RuntimeChecklistJSON } from '@paradoc/types'
-import { createContext } from '@paradoc/expr'
-import { resolveLayerBindings } from '@paradoc/render'
+import type { ArtifactEdition, Checklist, ChecklistData, ChecklistItem, ChecklistPhase, Layer, Metadata, ContentRef, Resolver, RuntimeChecklistJSON } from '@asterdoc/types'
+import { createContext } from '@asterdoc/expr'
+import { resolveLayerBindings } from '@asterdoc/render'
 import { buildRendererLayer, resolveLayerKey, selectLayerRenderer } from '../shared/render-layer'
 import type { ArtifactInstanceOptions } from '../shared/render-layer'
 import { parseChecklist, parseChecklistItem, parseLayer } from '@/validation/artifact-parsers'

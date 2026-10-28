@@ -28,7 +28,7 @@
 import type { Browser, Page } from "puppeteer";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import type { PageDimensions } from "@paradoc/react";
+import type { PageDimensions } from "@asterdoc/react";
 
 const require = createRequire(import.meta.url);
 

@@ -6,8 +6,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { createMemoryResolver } from '@paradoc/resolvers/memory'
-import type { SignatureSlot } from '@paradoc/types'
+import { createMemoryResolver } from '@asterdoc/resolvers/memory'
+import type { SignatureSlot } from '@asterdoc/types'
 import { form, validate, validateLayers } from '@/index'
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'

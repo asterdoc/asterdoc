@@ -10,7 +10,7 @@ import React from "react";
  * way `Table` itself does.
  */
 
-import { useList } from "@paradoc/react";
+import { useList } from "@asterdoc/react";
 import { Document } from "../components/document";
 import { KeepTogether } from "../components/keep-together";
 import { PageBreak } from "../components/page-break";

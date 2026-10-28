@@ -17,9 +17,9 @@
  */
 
 import { getDocument, OPS } from "pdfjs-dist/legacy/build/pdf.mjs";
-import { renderPdf } from "@paradoc/react-pdf";
-import { chromiumExecutable, closeChromium } from "@paradoc/react-pdf/chromium";
-import { checkElement } from "@paradoc/react-pdf/check";
+import { renderPdf } from "@asterdoc/react-pdf";
+import { chromiumExecutable, closeChromium } from "@asterdoc/react-pdf/chromium";
+import { checkElement } from "@asterdoc/react-pdf/check";
 import jsQR from "jsqr";
 import puppeteer, { type Browser } from "puppeteer";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -32,7 +32,7 @@ import { rasterizePdfPage } from "./pdf-raster";
 import { readPdf } from "../../react-pdf/tests/pdf-reader";
 
 /** The URL every fixture in this file encodes. */
-const ENCODED_URL = "https://docs.paradoc.dev/forms/123";
+const ENCODED_URL = "https://docs.asterdoc.com/forms/123";
 
 /**
  * Device pixels per PDF point the decode proof rasterizes at.
@@ -113,9 +113,9 @@ describe("QRCode", () => {
   // somewhere, and a headless Chrome tab is what this suite paints with. The
   // default engine's presence is already proven above with no browser; only
   // the stronger, scannable-decode proof needs one, on both engines.
-  const skipDecoding = process.env.PARADOC_SKIP_CHROMIUM_TESTS === "1";
+  const skipDecoding = process.env.ASTERDOC_SKIP_CHROMIUM_TESTS === "1";
   if (skipDecoding) {
-    console.log("Skipping the QR decode proof on both engines: PARADOC_SKIP_CHROMIUM_TESTS=1.");
+    console.log("Skipping the QR decode proof on both engines: ASTERDOC_SKIP_CHROMIUM_TESTS=1.");
   }
 
   describe.skipIf(skipDecoding)("decodes on the PDF path", () => {
@@ -128,7 +128,7 @@ describe("QRCode", () => {
           "The QR decode proof needs a Chrome to rasterize the page it decodes, on both " +
             "engines: neither engine embeds the code as a raster image, so pixels have to be " +
             "painted somewhere. None of the well-known install paths exists: set " +
-            "PUPPETEER_EXECUTABLE_PATH to one, or set PARADOC_SKIP_CHROMIUM_TESTS=1 to opt " +
+            "PUPPETEER_EXECUTABLE_PATH to one, or set ASTERDOC_SKIP_CHROMIUM_TESTS=1 to opt " +
             "out of this file's decode proof deliberately."
         );
       }

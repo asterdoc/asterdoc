@@ -1,6 +1,6 @@
-import { Document, Totals } from '@paradoc/components'
-import type { DocumentData } from '@paradoc/react'
-import type { Form } from '@paradoc/types'
+import { Document, Totals } from '@asterdoc/components'
+import type { DocumentData } from '@asterdoc/react'
+import type { Form } from '@asterdoc/types'
 
 /**
  * No `sample` export and no sibling `.sample.ts` — the check runs with

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { TYPOGRAPHY_SAFELIST_PATTERNS, flowGapClasses, scaleTextClasses } from "@paradoc/react";
+import { TYPOGRAPHY_SAFELIST_PATTERNS, flowGapClasses, scaleTextClasses } from "@asterdoc/react";
 import { replaceSharedRenderStyles, sharedRenderStyles } from "../scripts/generate-shared-styles";
 
 const css = readFileSync(fileURLToPath(new URL("../src/styles.css", import.meta.url)), "utf8");

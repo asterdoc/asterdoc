@@ -1,8 +1,8 @@
 ---
 title: search
 description: Search for artifacts in registries
-ogTitle: paradoc search
-ogDescription: Discover Paradoc artifacts across registries
+ogTitle: asterdoc search
+ogDescription: Discover Asterdoc artifacts across registries
 ---
 
 Searches for artifacts in a registry.
@@ -10,7 +10,7 @@ Searches for artifacts in a registry.
 ## Usage
 
 ```bash
-paradoc search [query] [options]
+asterdoc search [query] [options]
 ```
 
 ## Arguments
@@ -32,46 +32,46 @@ paradoc search [query] [options]
 
 The `search` command queries a registry's index to find matching artifacts. You can filter results by kind, tags, or a text query that matches against artifact names, titles, and descriptions. Each result shows the release you get by default, and the editions and versions the registry lists for the artifact. To install one of them, see the reference forms in [add](/cli/commands/add).
 
-There is no default registry. Without `--registry`, it searches the one registry you have configured. With no registry configured, it fails and tells you to pass `--registry` or run [`paradoc registry add`](/cli/commands/registry/add). With several configured, it fails and lists them so you can pick one with `--registry`.
+There is no default registry. Without `--registry`, it searches the one registry you have configured. With no registry configured, it fails and tells you to pass `--registry` or run [`asterdoc registry add`](/cli/commands/registry/add). With several configured, it fails and lists them so you can pick one with `--registry`.
 
-A namespace must be configured first with `paradoc registry add`; an unconfigured one fails and prints the command to run. `@paradoc` is reserved for the Paradoc registry, which is not available yet. When the registry host cannot be reached, the command fails and names it.
+A namespace must be configured first with `asterdoc registry add`; an unconfigured one fails and prints the command to run. `@asterdoc` is reserved for the Asterdoc registry, which is not available yet. When the registry host cannot be reached, the command fails and names it.
 
 ## Examples
 
 Search all artifacts:
 
 ```bash
-paradoc search
+asterdoc search
 ```
 
 Search with a query:
 
 ```bash
-paradoc search "lease agreement"
+asterdoc search "lease agreement"
 ```
 
 Filter by kind:
 
 ```bash
-paradoc search --kind form
+asterdoc search --kind form
 ```
 
 Filter by tags:
 
 ```bash
-paradoc search --tags legal,real-estate
+asterdoc search --tags legal,real-estate
 ```
 
 Search a specific registry:
 
 ```bash
-paradoc search --registry @acme "tax"
+asterdoc search --registry @acme "tax"
 ```
 
 Output as JSON:
 
 ```bash
-paradoc search --json
+asterdoc search --json
 ```
 
 ## Output
@@ -98,7 +98,7 @@ Found 3 artifacts:
     2024 (current)  2024: 1.1.0 (latest), 1.0.0
     2025  2025: 1.0.0 (latest)
 
-Run paradoc add @acme/<name> to install an artifact, or @acme/<name>/<edition>@<version> for one release.
+Run asterdoc add @acme/<name> to install an artifact, or @acme/<name>/<edition>@<version> for one release.
 ```
 
 The first line of a result is the release you get by default. An artifact that has editions lists each one with its key, the issuer's label, and its versions.

@@ -11,12 +11,12 @@ import {
 	describePatternProblem,
 	findPatternProblem,
 	type PatternProblem,
-} from '@paradoc/schemas'
+} from '@asterdoc/schemas'
 import { TIME_PATTERN } from '@/primitives/time'
 
 /**
  * Schema-defined patterns known to be safe despite safe-regex false positives.
- * These come from Paradoc's own schema definitions, not user input.
+ * These come from Asterdoc's own schema definitions, not user input.
  * Each is manually verified: quantified character classes (\d) don't overlap
  * with their literal separators, so no catastrophic backtracking is possible.
  */
@@ -45,8 +45,8 @@ export class UnsafePatternError extends Error {
 }
 
 /**
- * Find why a pattern is refused. The rule is `@paradoc/schemas`' field pattern
- * rule, so a pattern the schema accepts compiles here. Paradoc's own patterns
+ * Find why a pattern is refused. The rule is `@asterdoc/schemas`' field pattern
+ * rule, so a pattern the schema accepts compiles here. Asterdoc's own patterns
  * in `KNOWN_SAFE_PATTERNS` skip the ReDoS check.
  */
 function findProblem(pattern: string): PatternProblem | undefined {

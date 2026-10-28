@@ -46,7 +46,7 @@ import {
   useDocumentTokens,
   useField,
   usePage,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 /**

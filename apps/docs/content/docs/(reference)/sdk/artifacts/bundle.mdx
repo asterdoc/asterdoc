@@ -63,7 +63,7 @@ if (result.success) {
 `assemble()` renders a set of filled content entries into their target
 layers and returns the output for each. A content entry is either a filled
 artifact instance (`DraftForm`, `DraftChecklist`, or `DraftDocument`) or raw
-bytes for content nothing in Paradoc produced, like a scanned certificate.
+bytes for content nothing in Asterdoc produced, like a scanned certificate.
 
 There's no resolver option: each artifact-instance entry already carries the
 resolver it was constructed with, so assembly never needs one of its own.
@@ -283,7 +283,7 @@ directly, or a bundle nested in this one:
 
 <PropertiesTable properties={[
   { name: 'DraftForm | DraftChecklist | DraftDocument', type: 'artifact instance', description: 'Rendered through its target layer' },
-  { name: '{ kind: \'bytes\', content, mimeType, filename? }', type: 'AssemblyBytesEntry', description: 'Content that already has its final bytes, like an annex the packet includes but Paradoc did not produce' },
+  { name: '{ kind: \'bytes\', content, mimeType, filename? }', type: 'AssemblyBytesEntry', description: 'Content that already has its final bytes, like an annex the packet includes but Asterdoc did not produce' },
   { name: 'DraftBundle', type: 'nested bundle', description: 'Contributes every one of its parts, keyed as a folder under its content key' },
 ]} />
 
@@ -301,7 +301,7 @@ names its outputs the same way.
 `sealBundle(bundle, options)` turns a bundle into one signable PDF packet. It seals each part that declares signature slots, renders the rest, flattens and merges every part's pages in bundle order, and returns one signature map in packet page space.
 
 ```ts
-import { sealBundle } from '@paradoc/core'
+import { sealBundle } from '@asterdoc/core'
 
 const packet = await sealBundle(bundle, {
   contents: {
@@ -386,7 +386,7 @@ completion time of a checklist or document. `runtimeBundleFromJSON(json)`
 rebuilds it:
 
 ```ts
-import { runtimeBundleFromJSON, runtimeContentFromJSON } from '@paradoc/sdk'
+import { runtimeBundleFromJSON, runtimeContentFromJSON } from '@asterdoc/sdk'
 
 const reloaded = runtimeBundleFromJSON(JSON.parse(stored))
 // Bind a resolver for file-backed layers:

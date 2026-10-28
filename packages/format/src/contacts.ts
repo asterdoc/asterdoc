@@ -1,4 +1,4 @@
-import type { Address, Organization, Person } from '@paradoc/types'
+import type { Address, Organization, Person } from '@asterdoc/types'
 
 import { resolveMessage, type MessageContext } from './messages'
 import { isMissing, isRecord, issue, statusForIssues, type Validation } from './shared'

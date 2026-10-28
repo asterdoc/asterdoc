@@ -12,7 +12,7 @@ import {
   useFurnitureFit,
   usePaperGeometry,
   type PageFurniture,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import { useRef, type CSSProperties, type ReactNode, type Ref } from "react";
 
 export interface SheetProps { page?: number; className?: string; style?: CSSProperties; ref?: Ref<HTMLDivElement>; children: ReactNode }
@@ -27,7 +27,7 @@ export interface SheetProps { page?: number; className?: string; style?: CSSProp
  */
 export function Sheet({ page, className, style, ref, children }: SheetProps) {
   const geometry = usePaperGeometry();
-  return <div ref={ref} data-paper-sheet="true" data-page={page} data-page-size={`${geometry.widthPx}x${geometry.heightPx}`} className={className ?? "paradoc-document relative bg-white shadow-md"} style={{ width: geometry.widthPx, minHeight: geometry.heightPx, padding: geometry.marginPx, isolation: "isolate", ...style }}>{children}</div>;
+  return <div ref={ref} data-paper-sheet="true" data-page={page} data-page-size={`${geometry.widthPx}x${geometry.heightPx}`} className={className ?? "asterdoc-document relative bg-white shadow-md"} style={{ width: geometry.widthPx, minHeight: geometry.heightPx, padding: geometry.marginPx, isolation: "isolate", ...style }}>{children}</div>;
 }
 
 export interface PageFurnitureBandsProps {
@@ -83,7 +83,7 @@ export interface PageFurnitureMeasureProps {
 export function PageFurnitureMeasure({ furniture, measureRef, style }: PageFurnitureMeasureProps) {
   const geometry = usePaperGeometry();
   if (furniture?.header === undefined && furniture?.footer === undefined) return null;
-  return <div ref={measureRef} data-furniture-measure="true" className="paradoc-document" aria-hidden="true" style={{ ...style, position: "fixed", insetInlineStart: -10000, top: 0, visibility: "hidden", pointerEvents: "none", width: geometry.widthPx, height: geometry.heightPx }}>
+  return <div ref={measureRef} data-furniture-measure="true" className="asterdoc-document" aria-hidden="true" style={{ ...style, position: "fixed", insetInlineStart: -10000, top: 0, visibility: "hidden", pointerEvents: "none", width: geometry.widthPx, height: geometry.heightPx }}>
     <PageFurnitureBands furniture={{ header: furniture.header, footer: furniture.footer }} />
   </div>;
 }

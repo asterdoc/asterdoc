@@ -10,13 +10,13 @@ import { promises as fs, readFileSync } from 'node:fs'
 import semver from 'semver'
 import kleur from 'kleur'
 import { VERSION } from '../constants.js'
-import { paradocHomePath } from './home.js'
+import { asterdocHomePath } from './home.js'
 
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000 // 24 hours
 const FETCH_TIMEOUT_MS = 5_000
-const CLI_PACKAGE = process.env.PARADOC_CLI_PACKAGE === 'paradoc-cli'
-	? 'paradoc-cli'
-	: '@paradoc/cli'
+const CLI_PACKAGE = process.env.ASTERDOC_CLI_PACKAGE === 'asterdoc'
+	? 'asterdoc'
+	: '@asterdoc/cli'
 const NPM_REGISTRY_URL = `https://registry.npmjs.org/${CLI_PACKAGE}/latest`
 
 interface UpdateCache {
@@ -27,14 +27,14 @@ interface UpdateCache {
 function shouldSkipCheck(): boolean {
 	if (VERSION === 'dev') return true
 	if (process.env.CI) return true
-	if (process.env.PARADOC_NO_UPDATE_CHECK) return true
+	if (process.env.ASTERDOC_NO_UPDATE_CHECK) return true
 	if (!process.stdout.isTTY) return true
 	return false
 }
 
 async function readCache(): Promise<UpdateCache | null> {
 	try {
-		const content = await fs.readFile(paradocHomePath('update-check.json'), 'utf-8')
+		const content = await fs.readFile(asterdocHomePath('update-check.json'), 'utf-8')
 		return JSON.parse(content) as UpdateCache
 	} catch {
 		return null
@@ -43,8 +43,8 @@ async function readCache(): Promise<UpdateCache | null> {
 
 async function writeCache(cache: UpdateCache): Promise<void> {
 	try {
-		await fs.mkdir(paradocHomePath(), { recursive: true })
-		await fs.writeFile(paradocHomePath('update-check.json'), JSON.stringify(cache))
+		await fs.mkdir(asterdocHomePath(), { recursive: true })
+		await fs.writeFile(asterdocHomePath('update-check.json'), JSON.stringify(cache))
 	} catch {
 		// Silently ignore write errors
 	}
@@ -109,7 +109,7 @@ export function printUpdateNotice(): void {
 	if (shouldSkipCheck()) return
 
 	try {
-		const content = readFileSync(paradocHomePath('update-check.json'), 'utf-8')
+		const content = readFileSync(asterdocHomePath('update-check.json'), 'utf-8')
 		const cache = JSON.parse(content) as UpdateCache
 
 		if (cache.latestVersion && semver.gt(cache.latestVersion, VERSION)) {

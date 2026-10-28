@@ -4,13 +4,13 @@
  * The criterion the specification sets is a signature map with a location for
  * every party, so these assertions read the map core returned and check the
  * boxes land on a real page of the document the seal produced. Nothing here
- * reaches inside the seal: `@paradoc/core` runs it, and this package supplies
+ * reaches inside the seal: `@asterdoc/core` runs it, and this package supplies
  * only the renderer its React layer is registered under. There is no auxiliary
  * layer and no converter; the composition is the seal target.
  */
 
-import { containsEncoding } from "@paradoc/render/pdf";
-import type { SigningField } from "@paradoc/types";
+import { containsEncoding } from "@asterdoc/render/pdf";
+import type { SigningField } from "@asterdoc/types";
 import { beforeAll, describe, expect, it } from "vitest";
 import {
   ProposalDocument,
@@ -27,7 +27,7 @@ import {
   proposalRenderers,
   sealProposal,
 } from "../../components/src/examples/pdf";
-import { SIGNATURE_RULE } from "@paradoc/react";
+import { SIGNATURE_RULE } from "@asterdoc/react";
 import { readPdf, type ReadPage } from "./pdf-reader";
 
 /** CSS pixels at 96 dpi to the PDF's points at 72 dpi. */

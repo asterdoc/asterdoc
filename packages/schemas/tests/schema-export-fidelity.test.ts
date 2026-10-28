@@ -80,7 +80,7 @@ describe('published schema references resolve', () => {
 
 		for (const file of files) {
 			const schema = readPublished(SCHEMA_VERSION, file);
-			expect(schema.$id).toBe(`https://schema.paradoc.dev/${SCHEMA_VERSION}/${file}`);
+			expect(schema.$id).toBe(`https://schema.asterdoc.com/${SCHEMA_VERSION}/${file}`);
 
 			for (const ref of collectRefs(schema)) {
 				const url = new URL(ref, schema.$id as string);

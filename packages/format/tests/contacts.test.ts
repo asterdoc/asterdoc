@@ -27,7 +27,7 @@ const address = {
 	country: 'GB',
 }
 
-describe('@paradoc/format contact values', () => {
+describe('@asterdoc/format contact values', () => {
 	it('formats people, organizations, phones, and parties through the common API', () => {
 		const formatter = createFormatter({ locale: 'en-GB' })
 
@@ -155,7 +155,7 @@ describe('@paradoc/format contact values', () => {
 	})
 })
 
-describe('@paradoc/format contact messages and option guards', () => {
+describe('@asterdoc/format contact messages and option guards', () => {
 	const phone = { number: '+34911234567', extension: '12' }
 	const organization = { name: 'Acme', legalName: 'Acme GmbH', taxId: 'X1' }
 
@@ -221,7 +221,7 @@ describe('@paradoc/format contact messages and option guards', () => {
 	})
 })
 
-describe('@paradoc/format address layouts', () => {
+describe('@asterdoc/format address layouts', () => {
 	const address = { line1: '1 Main', locality: 'Town', region: 'CA', postalCode: '12345', country: 'US' }
 	const french = { ...address, country: 'FR' }
 	const formatter = createFormatter({ address: { countryLayouts: { US: () => 'CONFIG-US' } } })

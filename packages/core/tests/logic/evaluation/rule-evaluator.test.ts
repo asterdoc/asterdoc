@@ -7,7 +7,7 @@ import {
   type FormRulesValidationResult,
 } from '@/logic/runtime/evaluation/rule-evaluator'
 import type { EvaluationContext } from '@/logic/runtime/evaluation/types'
-import type { ValidationRule, RulesSection } from '@paradoc/types'
+import type { ValidationRule, RulesSection } from '@asterdoc/types'
 
 /**
  * Tests for rule-evaluator.ts - Form-level validation rules

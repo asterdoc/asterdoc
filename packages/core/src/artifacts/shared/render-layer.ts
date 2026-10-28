@@ -12,12 +12,12 @@ import type {
 	FormatterProgressivePolicy,
 	Formatter,
 	Layer,
-	ParadocRenderer,
+	AsterdocRenderer,
 	RendererLayer,
 	Resolver,
-} from '@paradoc/types'
-import { isPdfMimeType } from '@paradoc/schemas'
-import { createLayerRenderer, resolveLayerBindings } from '@paradoc/render'
+} from '@asterdoc/types'
+import { isPdfMimeType } from '@asterdoc/schemas'
+import { createLayerRenderer, resolveLayerBindings } from '@asterdoc/render'
 import {
 	findRegisteredRenderer,
 	InlineReactLayerError,
@@ -316,25 +316,25 @@ export async function resolveAndRenderArtifactLayer(
 export function selectLayerRenderer<Output>(
 	layerKey: string,
 	layerSpec: Layer,
-	override: ParadocRenderer<RendererLayer, Output> | undefined,
+	override: AsterdocRenderer<RendererLayer, Output> | undefined,
 	registry: RendererRegistry | undefined,
-): ParadocRenderer<RendererLayer, Output> {
+): AsterdocRenderer<RendererLayer, Output> {
 	if (override) return override
 	const registered = findRegisteredRenderer(registry, layerSpec.mimeType)
-	if (registered) return registered as ParadocRenderer<RendererLayer, Output>
+	if (registered) return registered as AsterdocRenderer<RendererLayer, Output>
 	if (isReactLayerMimeType(layerSpec.mimeType)) {
 		throw new UnregisteredLayerRendererError(layerKey, layerSpec.mimeType)
 	}
 	// The built-in engines render `string | Uint8Array`; the call site's Output
 	// is whatever the caller asked the renderer for. One cast, here.
-	return createLayerRenderer() as ParadocRenderer<RendererLayer, Output>
+	return createLayerRenderer() as AsterdocRenderer<RendererLayer, Output>
 }
 
 /**
  * The bindings a PDF layer renders with: its own (or those it reuses through
  * `bindingsFrom`), with the caller's `bindings` render option laid over them.
  *
- * Bindings map AcroForm field names to Paradoc paths, so the option applies to
+ * Bindings map AcroForm field names to Asterdoc paths, so the option applies to
  * PDF layers only. Any other layer's template names values as `{{fields.x}}`,
  * and passing the option for one is refused rather than ignored.
  *
@@ -351,7 +351,7 @@ export function renderBindings(
 	if (!isPdfMimeType(layerSpec.mimeType)) {
 		throw new Error(
 			`Layer "${layerKey}" is not a PDF layer, so the bindings render option does not apply: bindings map ` +
-				'AcroForm field names to Paradoc paths. A text, HTML or DOCX template names a value as {{fields.x}}.',
+				'AcroForm field names to Asterdoc paths. A text, HTML or DOCX template names a value as {{fields.x}}.',
 		)
 	}
 	return { ...bindings, ...override }

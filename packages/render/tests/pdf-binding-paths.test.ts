@@ -1,5 +1,5 @@
 /**
- * A PDF binding value is a Paradoc path, written bare (`petName`) or with the
+ * A PDF binding value is an Asterdoc path, written bare (`petName`) or with the
  * `fields.` prefix (`fields.petName`). Binding validation accepts both, so
  * filling reads both: a prefixed value must not leave its PDF field blank.
  *
@@ -10,7 +10,7 @@
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { inspectAcroFormFields, PdfBindingKeyError, PdfBindingSyntaxError, renderPdf } from '../src/pdf'
 import { acroFormPdf, pagePdf, textFieldsPdf } from './pdf-fixtures'
 

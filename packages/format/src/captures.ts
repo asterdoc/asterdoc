@@ -1,4 +1,4 @@
-import type { Attachment, Bbox, Coordinate, Identification, Signature } from '@paradoc/types'
+import type { Attachment, Bbox, Coordinate, Identification, Signature } from '@asterdoc/types'
 
 import { resolveMessage, type MessageContext } from './messages'
 import { isMissing, isRecord, issue, statusForIssues, type Validation } from './shared'

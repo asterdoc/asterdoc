@@ -1,12 +1,12 @@
 /**
  * Builds the reference types of an artifact's expressions, from which both
- * the valid-variable set and the @paradoc/expr type environment come, and
+ * the valid-variable set and the @asterdoc/expr type environment come, and
  * topologically sorts defs keys for circular-dependency detection.
  *
  * Field reference paths (fields.<id>, nested complex-type properties such as
- * fields.rent.amount, and fieldset children) are mapped to their @paradoc/expr
+ * fields.rent.amount, and fieldset children) are mapped to their @asterdoc/expr
  * types. Defs key types are INFERRED from their value expressions (via the
- * @paradoc/expr checker) in dependency order, so a key declared one type whose
+ * @asterdoc/expr checker) in dependency order, so a key declared one type whose
  * expression returns another is detected transitively where it is used.
  */
 
@@ -19,8 +19,8 @@ import type {
   EnumOption,
   Expression,
   DefsSection,
-} from '@paradoc/types'
-import { check, createTypeEnv, T, type ExprType, type TypeEnv } from '@paradoc/expr'
+} from '@asterdoc/types'
+import { check, createTypeEnv, T, type ExprType, type TypeEnv } from '@asterdoc/expr'
 import { parseExpression } from '../validation/expression-parser'
 import { isInlineBundleArtifact, isFormArtifact, isBundleArtifact } from '../validation/shared'
 import { topologicalSort } from '../../shared/topological-sort'
@@ -29,7 +29,7 @@ import { isScalarExpressionType } from '../../shared/expression-types'
 import { COMPLEX_TYPE_PROPERTIES } from '../../shared/complex-type-properties'
 
 // ============================================================================
-// Field type mapping (Paradoc field types -> @paradoc/expr ExprType)
+// Field type mapping (Asterdoc field types -> @asterdoc/expr ExprType)
 // ============================================================================
 
 const FIELD_TYPE_TO_EXPR: Record<string, ExprType> = {

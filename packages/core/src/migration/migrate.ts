@@ -1,12 +1,12 @@
 import { isMap, isScalar, parseDocument, type Document } from 'yaml'
 import {
-	PARADOC_SCHEMA_URL,
+	ASTERDOC_SCHEMA_URL,
 	SCHEMA_VERSION,
 	SCHEMA_VERSIONS,
 	readSchemaAddress,
 	schemaVersionUrl,
 	type SchemaVersion,
-} from '@paradoc/schemas'
+} from '@asterdoc/schemas'
 import { validate } from '@/validation/artifact'
 import { findSchemaVersionError } from '@/serialization/schema-version'
 import { deepClone } from '@/utils/clone'
@@ -16,7 +16,7 @@ import { MIGRATION_STEPS, type ArtifactObject, type MigrationStep } from './step
 export interface MigrateOptions {
 	/**
 	 * The version to migrate from when `$schema` names no published version:
-	 * it is missing, undated (`schema.json`), unpublished, or not a Paradoc address.
+	 * it is missing, undated (`schema.json`), unpublished, or not an Asterdoc address.
 	 */
 	from?: SchemaVersion
 	/** The ordered steps to apply. Defaults to `MIGRATION_STEPS`. */
@@ -46,15 +46,16 @@ function sourceVersion(artifact: ArtifactObject, from: SchemaVersion | undefined
 		if (from) return { version: from, declared: false }
 		throw new SchemaMigrationError(
 			'missing-version',
-			`The artifact has no $schema. Name its version with paradoc migrate --from <version>; the current version is ${SCHEMA_VERSION}.`,
+			`The artifact has no $schema. Name its version with asterdoc migrate --from <version>; the current version is ${SCHEMA_VERSION}.`,
 		)
 	}
 	const read = typeof address === 'string' ? readSchemaAddress(address) : ({ kind: 'foreign' } as const)
 	if (read.kind === 'known') {
-		if (from && from !== read.version) {
+		const declared: string = read.version
+		if (from && from !== declared) {
 			throw new SchemaMigrationError(
 				'version-conflict',
-				`$schema declares ${read.version}, but ${from} was named as the source version.`,
+				`$schema declares ${declared}, but ${from} was named as the source version.`,
 			)
 		}
 		return { version: read.version, declared: true }
@@ -65,17 +66,17 @@ function sourceVersion(artifact: ArtifactObject, from: SchemaVersion | undefined
 		case 'undated':
 			throw new SchemaMigrationError(
 				'missing-version',
-				`$schema ${String(address)} names no schema version. Name its version with paradoc migrate --from <version>; the current version is ${SCHEMA_VERSION}.`,
+				`$schema ${String(address)} names no schema version. Name its version with asterdoc migrate --from <version>; the current version is ${SCHEMA_VERSION}.`,
 			)
 		case 'unknown-version':
 			throw new SchemaMigrationError(
 				'unknown-version',
-				`$schema names schema version ${read.version}, which does not exist. Known versions: ${SCHEMA_VERSIONS.join(', ')}; name the right one with paradoc migrate --from <version>.`,
+				`$schema names schema version ${read.version}, which does not exist. Known versions: ${SCHEMA_VERSIONS.join(', ')}; name the right one with asterdoc migrate --from <version>.`,
 			)
 		case 'foreign':
 			throw new SchemaMigrationError(
 				'unknown-version',
-				`$schema ${JSON.stringify(address)} is not a Paradoc schema address. Name its version with paradoc migrate --from <version>.`,
+				`$schema ${JSON.stringify(address)} is not an Asterdoc schema address. Name its version with asterdoc migrate --from <version>.`,
 			)
 	}
 }
@@ -154,12 +155,12 @@ function inlinePartVersion(part: ArtifactObject, key: string, bundleVersion: Sch
 function stampCurrentVersion(artifact: ArtifactObject): ArtifactObject {
 	stampInlineParts(artifact)
 	const { $schema: _previous, ...rest } = artifact
-	return { $schema: PARADOC_SCHEMA_URL, ...rest }
+	return { $schema: ASTERDOC_SCHEMA_URL, ...rest }
 }
 
 function stampInlineParts(artifact: ArtifactObject): void {
 	for (const { part } of inlineParts(artifact)) {
-		if (part.$schema !== undefined) part.$schema = PARADOC_SCHEMA_URL
+		if (part.$schema !== undefined) part.$schema = ASTERDOC_SCHEMA_URL
 		stampInlineParts(part)
 	}
 }
@@ -284,8 +285,8 @@ function patchYaml(document: Document, path: (string | number)[], before: unknow
 	else document.setIn(path, document.createNode(after))
 }
 
-/** The editor's schema comment, pointed at a Paradoc schema address. */
-const LANGUAGE_SERVER_SCHEMA = /^(#\s*yaml-language-server:\s*\$schema=)https:\/\/schema\.paradoc\.dev\/\S+/m
+/** The editor's schema comment, pointed at an Asterdoc schema address. */
+const LANGUAGE_SERVER_SCHEMA = /^(#\s*yaml-language-server:\s*\$schema=)https:\/\/schema\.asterdoc\.com\/\S+/m
 
 function writeYaml(document: Document, before: unknown, after: ArtifactObject): string {
 	patchYaml(document, [], before, after)
@@ -305,7 +306,7 @@ function writeYaml(document: Document, before: unknown, after: ArtifactObject): 
 			root.items.unshift(pair)
 		}
 	}
-	return document.toString().replace(LANGUAGE_SERVER_SCHEMA, `$1${PARADOC_SCHEMA_URL}`)
+	return document.toString().replace(LANGUAGE_SERVER_SCHEMA, `$1${ASTERDOC_SCHEMA_URL}`)
 }
 
 function writeJson(original: string, after: ArtifactObject): string {

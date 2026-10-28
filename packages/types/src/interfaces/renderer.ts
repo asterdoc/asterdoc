@@ -1,7 +1,7 @@
 /**
- * Renderer types for Paradoc
+ * Renderer types for Asterdoc
  *
- * These interfaces define the contract for Paradoc renderer plugins.
+ * These interfaces define the contract for Asterdoc renderer plugins.
  */
 
 import type { Checklist, Document, Form } from "../schemas/artifacts";
@@ -54,7 +54,7 @@ export interface RendererLayer {
   path?: string;
 
   /**
-   * A PDF layer's bindings: AcroForm field name -> Paradoc path. Other layers
+   * A PDF layer's bindings: AcroForm field name -> Asterdoc path. Other layers
    * carry none; their templates name values as `{{fields.x}}`.
    */
   bindings?: Bindings;
@@ -101,7 +101,7 @@ export interface RenderRequestBase<Input extends RendererLayer = RendererLayer> 
   /** The layer to render. */
   template: Input;
   /** What the caller supplies beside the artifact: formatter, expressions, signing markers. */
-  ctx?: ParadocRendererContext;
+  ctx?: AsterdocRendererContext;
 }
 
 /** A request to render a form's layer. */
@@ -133,16 +133,16 @@ export interface DocumentRenderRequest<Input extends RendererLayer = RendererLay
 }
 
 /**
- * The expression context template expressions read, as `@paradoc/core` builds
- * it with `@paradoc/expr`'s `createContext`. A renderer passes it to
- * `@paradoc/expr` unchanged; it never builds one itself.
+ * The expression context template expressions read, as `@asterdoc/core` builds
+ * it with `@asterdoc/expr`'s `createContext`. A renderer passes it to
+ * `@asterdoc/expr` unchanged; it never builds one itself.
  */
 export interface RendererExpressionContext {
   /** Resolve a top-level identifier (`fields`, `parties`, a defs key), or undefined. */
   lookup(name: string): unknown;
 }
 
-/** What a template's expressions read, supplied by `@paradoc/core`. */
+/** What a template's expressions read, supplied by `@asterdoc/core`. */
 export interface RendererExpressions {
   /** The artifact's expression context, the same one its field logic reads. */
   context: RendererExpressionContext;
@@ -197,7 +197,7 @@ export interface SigningMarkerRequest {
  * Context passed to renderers beside the artifact and its payload. Every member
  * is optional; a key it does not declare is a type error.
  */
-export interface ParadocRendererContext {
+export interface AsterdocRendererContext {
   /**
    * Formatter selected for the artifact render. Renderers must use this
    * policy for field-aware value presentation instead of constructing their
@@ -213,7 +213,7 @@ export interface ParadocRendererContext {
   signing?: SigningMarkerRequest;
   /**
    * What template expressions read: the artifact's expression context, supplied
-   * by `@paradoc/core`. Renderers without templates ignore it.
+   * by `@asterdoc/core`. Renderers without templates ignore it.
    */
   expressions?: RendererExpressions;
 }
@@ -222,11 +222,11 @@ export interface ParadocRendererContext {
  * Renderer plugin interface.
  *
  * Implement this in packages like:
- *   - @paradoc/render/text
- *   - @paradoc/render/docx
- *   - @paradoc/render/pdf
+ *   - @asterdoc/render/text
+ *   - @asterdoc/render/docx
+ *   - @asterdoc/render/pdf
  */
-export interface ParadocRenderer<
+export interface AsterdocRenderer<
   Input extends RendererLayer = RendererLayer,
   Output = unknown
 > {

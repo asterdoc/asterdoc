@@ -47,7 +47,7 @@ import {
   type FurnitureBandSlot,
   type PageFurniture,
   type StampMeasure,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import type { PdfPageGeometry } from "../adapter";
 import { PAGE_COUNTER_CLASSES } from "./counters";
 
@@ -236,7 +236,7 @@ export async function prepareBandsInPage(
   const missingImages: string[] = [];
   const hosts = bands.map((band) => {
     const host = document.createElement("div");
-    host.className = "paradoc-document";
+    host.className = "asterdoc-document";
     host.style.cssText = [
       "position: absolute",
       "left: 0",
@@ -358,7 +358,7 @@ export function bandTemplate(
     "html, body { margin: 0; padding: 0; background: transparent; " +
       "-webkit-print-color-adjust: exact; print-color-adjust: exact; }",
     "</style>",
-    `<div class="paradoc-document" lang="${options.lang}" dir="${options.dir}" ` +
+    `<div class="asterdoc-document" lang="${options.lang}" dir="${options.dir}" ` +
       `data-page-${slot}="true" style="${style}">${html}</div>`,
   ].join("\n");
 }

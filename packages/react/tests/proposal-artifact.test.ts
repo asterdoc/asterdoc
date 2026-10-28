@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evaluateFormDefs } from "@paradoc/core";
+import { evaluateFormDefs } from "@asterdoc/core";
 import {
   proposal,
   proposalForm,

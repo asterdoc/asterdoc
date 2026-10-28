@@ -1,4 +1,4 @@
-import type { DocumentData } from '@paradoc/react'
+import type { DocumentData } from '@asterdoc/react'
 
 /** Discovered by the CLI's sibling `*.sample.ts` convention. */
 const sample: DocumentData = {

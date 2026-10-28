@@ -2,10 +2,11 @@ import { Command } from 'commander'
 import kleur from 'kleur'
 import prompts from 'prompts'
 
-import type { GlobalConfig } from '@paradoc/schemas'
+import type { GlobalConfig } from '@asterdoc/schemas'
 import type { OutputFormat } from '../types.js'
 import { configManager } from '../utils/config.js'
 import { DEFAULT_CACHE_TTL } from '../utils/cache.js'
+import { brandColorBold } from '../constants.js'
 
 /**
  * Format TTL to human-readable string
@@ -30,11 +31,11 @@ export function createConfigureCommand(): Command {
   const configure = new Command('configure')
 
   configure
-    .description('Interactive configuration wizard for Paradoc CLI')
+    .description('Interactive configuration wizard for Asterdoc CLI')
     .alias('config')
     .action(async () => {
       console.log()
-      console.log(kleur.bold().cyan('Paradoc CLI Configuration'))
+      console.log(brandColorBold('Asterdoc CLI Configuration'))
       console.log(kleur.gray('Walk through each setting to configure the CLI.'))
       console.log(kleur.gray('Press Enter to keep the current value, or select a new one.'))
       console.log()
@@ -107,7 +108,7 @@ export function createConfigureCommand(): Command {
       console.log()
       console.log(kleur.bold().white('2. Artifacts Directory'))
       console.log(kleur.gray('   Where downloaded artifacts are stored in your projects.'))
-      console.log(kleur.gray('   Relative to project root (where paradoc.json is).'))
+      console.log(kleur.gray('   Relative to project root (where asterdoc.json is).'))
       console.log()
 
       const { artifactsDir } = await prompts({
@@ -283,7 +284,7 @@ export function createConfigureCommand(): Command {
       await configManager.saveGlobalConfig(newConfig)
 
       console.log()
-      console.log(kleur.green('✓') + ' Configuration saved to ' + kleur.gray('~/.paradoc/config.json'))
+      console.log(kleur.green('✓') + ' Configuration saved to ' + kleur.gray('~/.asterdoc/config.json'))
     })
 
   return configure

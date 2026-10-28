@@ -16,7 +16,7 @@ import {
   shortProposalData,
   PROPOSAL_LOGO_SRC,
 } from "../../components/src/examples";
-import { PAPER_HEIGHT_PX, PAPER_WIDTH_PX } from "@paradoc/react";
+import { PAPER_HEIGHT_PX, PAPER_WIDTH_PX } from "@asterdoc/react";
 import { proposalLogoImage } from "../../components/src/examples/pdf";
 import { FontResourceIdentityMismatchError, renderPdf, resolveFontResource, UnsupportedApplicationTypographyError, UnsupportedPdfContentError } from "../src";
 import type { PdfAdapter, PreparedPdfInput } from "../src";

@@ -2,32 +2,32 @@
  * The MIME-keyed renderer registry core dispatches through.
  *
  * Core renders the layer formats it ships with — text, PDF, DOCX — through
- * `@paradoc/render`. Everything else arrives as an injection: a caller hands
+ * `@asterdoc/render`. Everything else arrives as an injection: a caller hands
  * core a renderer keyed by the layer's MIME type and core selects it the way it
  * selects a built-in one. That keeps a format's engine out of core. A React
- * composition is the case this exists for: `@paradoc/react` depends on
- * `@paradoc/render`, so registering the React renderer inside render would be a
+ * composition is the case this exists for: `@asterdoc/react` depends on
+ * `@asterdoc/render`, so registering the React renderer inside render would be a
  * cycle, and core must not depend on React to dispatch to it.
  *
  * The registry lives here rather than beside bundle assembly because form
  * rendering, document rendering, checklist rendering and bundle assembly all
  * read it.
  *
- * What counts as a React layer is not restated here. `@paradoc/schemas` owns
+ * What counts as a React layer is not restated here. `@asterdoc/schemas` owns
  * that rule, because it is the rule validation enforces, and dispatch reads the
  * same definition so the two cannot drift.
  */
 
-import { isReactLayerMimeType, REACT_LAYER_MIME_TYPES, REACT_LAYER_RULE } from '@paradoc/schemas'
-import type { Artifact, Layer, ParadocRenderer, ReactLayerMimeType, RendererLayer } from '@paradoc/types'
+import { isReactLayerMimeType, REACT_LAYER_MIME_TYPES, REACT_LAYER_RULE } from '@asterdoc/schemas'
+import type { Artifact, Layer, AsterdocRenderer, ReactLayerMimeType, RendererLayer } from '@asterdoc/types'
 
 export { isReactLayerMimeType, REACT_LAYER_MIME_TYPES, REACT_LAYER_RULE }
 
 /**
  * Renderers keyed by layer MIME type.
  *
- * `reactLayerRenderers` in `@paradoc/react-pdf` builds the entries for a React
- * composition; anything implementing `ParadocRenderer` can be an entry.
+ * `reactLayerRenderers` in `@asterdoc/react-pdf` builds the entries for a React
+ * composition; anything implementing `AsterdocRenderer` can be an entry.
  *
  * @example
  * ```typescript
@@ -37,7 +37,7 @@ export { isReactLayerMimeType, REACT_LAYER_MIME_TYPES, REACT_LAYER_RULE }
  * await form.render({ layer: 'composition', renderers })
  * ```
  */
-export type RendererRegistry = Record<string, ParadocRenderer<RendererLayer, unknown>>
+export type RendererRegistry = Record<string, AsterdocRenderer<RendererLayer, unknown>>
 
 /**
  * The renderer registered for a MIME type.
@@ -48,7 +48,7 @@ export type RendererRegistry = Record<string, ParadocRenderer<RendererLayer, unk
 export function findRegisteredRenderer(
 	registry: RendererRegistry | undefined,
 	mimeType: string | undefined,
-): ParadocRenderer<RendererLayer, unknown> | undefined {
+): AsterdocRenderer<RendererLayer, unknown> | undefined {
 	if (!registry || mimeType === undefined) return undefined
 	const direct = registry[mimeType]
 	if (direct) return direct
@@ -106,7 +106,7 @@ export class UnregisteredLayerRendererError extends Error {
 			`Layer "${layer}" has MIME type ${mimeType} and no renderer is registered for it. ` +
 				'Core renders text, PDF and DOCX layers itself; every other format arrives as an injection. ' +
 				'Pass one in the `renderers` option, keyed by MIME type — for a React composition, ' +
-				'`reactLayerRenderers({ baseDir })` or `reactLayerRenderers({ components })` from @paradoc/react-pdf builds the entries.',
+				'`reactLayerRenderers({ baseDir })` or `reactLayerRenderers({ components })` from @asterdoc/react-pdf builds the entries.',
 		)
 		this.name = 'UnregisteredLayerRendererError'
 		this.layer = layer

@@ -3,7 +3,7 @@
  * data. Static dependency extraction lives in `./dependency-graph`.
  */
 
-import type { Form, FormField, FieldsetField, Party, WitnessParty } from '@paradoc/types'
+import type { Form, FormField, FieldsetField, Party, WitnessParty } from '@asterdoc/types'
 import type {
 	FillTarget,
 	FillTargetOptions,

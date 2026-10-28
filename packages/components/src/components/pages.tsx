@@ -12,7 +12,7 @@ import {
   type PageContextValue,
   type PageFurniture,
   type PagePlan,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import { useMemo, useRef, type ReactNode } from "react";
 import { PageFurnitureBands, PageFurnitureMeasure, Sheet } from "./paper";
 
@@ -72,7 +72,7 @@ export function Pages({ className, onPaginate, furniture, children }: PagesProps
         </div>
       </div>
     </div>
-    <div ref={pagination.measureRef} data-paper-measure="true" className="paradoc-document" aria-hidden="true" style={{ position: "fixed", insetInlineStart: -10000, top: 0, visibility: "hidden", pointerEvents: "none", width: geometry.contentWidthPx }}>{children}</div>
+    <div ref={pagination.measureRef} data-paper-measure="true" className="asterdoc-document" aria-hidden="true" style={{ position: "fixed", insetInlineStart: -10000, top: 0, visibility: "hidden", pointerEvents: "none", width: geometry.contentWidthPx }}>{children}</div>
     <PageFurnitureMeasure furniture={furniture} measureRef={bands.measureRef} />
   </DrawnPaperProvider>;
 }

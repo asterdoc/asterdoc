@@ -6,10 +6,10 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { fileReferencesOf } from '../../src/utils/artifact-file.js'
 import { runCli } from '../setup/spawn-cli.js'
 
-const schema = 'https://schema.paradoc.dev/2026-10-02.json'
+const schema = 'https://schema.asterdoc.com/2026-10-28.json'
 const roots: string[] = []
 const scratch = () => {
-  const root = mkdtempSync(path.join(tmpdir(), 'paradoc-walker-'))
+  const root = mkdtempSync(path.join(tmpdir(), 'asterdoc-walker-'))
   roots.push(root)
   return root
 }

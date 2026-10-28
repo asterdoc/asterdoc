@@ -1,4 +1,4 @@
-import type { LocateHit } from '@paradoc/types'
+import type { LocateHit } from '@asterdoc/types'
 import { type FieldTypeValue, fieldTypeToString } from './encoding'
 import { fieldsFromPageRuns, pageTextRuns } from './extract'
 import type { TextRun } from './scanner'
@@ -17,7 +17,7 @@ export type LocateQuery = { id: string } & (
 )
 
 /** A resolved placement. Coordinates are PDF points, y from the top edge. */
-export type { LocateHit } from '@paradoc/types'
+export type { LocateHit } from '@asterdoc/types'
 
 /**
  * Factory returning a locator object for core's `seal({ locate })` option.

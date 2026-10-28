@@ -9,8 +9,8 @@ import {
 } from '@/rendering'
 import { buildRendererLayer, renderLayer } from '@/artifacts/shared/render-layer'
 import { validate } from '@/validation/artifact'
-import { REACT_LAYER_FORM_ONLY_RULE } from '@paradoc/schemas'
-import type { Form, ParadocRenderer, RendererLayer, RenderRequest } from '@paradoc/types'
+import { REACT_LAYER_FORM_ONLY_RULE } from '@asterdoc/schemas'
+import type { Form, AsterdocRenderer, RendererLayer, RenderRequest } from '@asterdoc/types'
 
 const COMPOSITION_PATH = 'src/compositions/purchase-order.tsx'
 
@@ -28,10 +28,10 @@ function purchaseOrder(mimeType = 'text/tsx') {
 	} as never)
 }
 
-/** A stand-in for `@paradoc/react-pdf`: it records the layer core handed it. */
+/** A stand-in for `@asterdoc/react-pdf`: it records the layer core handed it. */
 function recordingRenderer() {
 	const seen: RendererLayer[] = []
-	const renderer: ParadocRenderer<RendererLayer, string> = {
+	const renderer: AsterdocRenderer<RendererLayer, string> = {
 		id: 'react-test',
 		render(request: RenderRequest<RendererLayer>) {
 			seen.push(request.template)
@@ -106,7 +106,7 @@ describe('React layers dispatch by MIME type', () => {
 	test('an explicit renderer override still wins over the registry', async () => {
 		const { renderer: registered } = recordingRenderer()
 		const render = vi.fn(async () => 'override output')
-		const override: ParadocRenderer<RendererLayer, string> = { id: 'override', render }
+		const override: AsterdocRenderer<RendererLayer, string> = { id: 'override', render }
 
 		await expect(
 			purchaseOrder().render({
@@ -126,7 +126,7 @@ describe('React layers dispatch by MIME type', () => {
 		)
 		await expect(definition.render({ data: { fields: {} } })).rejects.toThrow(/`renderers` option/)
 		await expect(definition.render({ data: { fields: {} } })).rejects.toThrow(
-			/`reactLayerRenderers\(\{ baseDir \}\)` or `reactLayerRenderers\(\{ components \}\)` from @paradoc\/react-pdf builds the entries/,
+			/`reactLayerRenderers\(\{ baseDir \}\)` or `reactLayerRenderers\(\{ components \}\)` from @asterdoc\/react-pdf builds the entries/,
 		)
 	})
 

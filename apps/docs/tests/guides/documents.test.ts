@@ -2,7 +2,7 @@
  * Tests for code snippets in guides/documents.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p, UnboundResolverError } from '@paradoc/core'
+import { p, UnboundResolverError } from '@asterdoc/core'
 
 describe('Documents Guide', () => {
   // ============================================================================

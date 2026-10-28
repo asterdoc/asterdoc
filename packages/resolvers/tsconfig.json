@@ -7,9 +7,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-      "@paradoc/resolvers/fs": ["src/fs/index.ts"],
-      "@paradoc/resolvers/http": ["src/http/index.ts"],
-      "@paradoc/resolvers/memory": ["src/memory/index.ts"]
+      "@asterdoc/resolvers/fs": ["src/fs/index.ts"],
+      "@asterdoc/resolvers/http": ["src/http/index.ts"],
+      "@asterdoc/resolvers/memory": ["src/memory/index.ts"]
     }
   },
   "include": ["src", "tests"],

@@ -16,9 +16,9 @@
  * resolved.
  */
 
-import { w9 } from "@paradoc/essentials";
-import { pageTextRuns } from "@paradoc/render/pdf";
-import type { Party } from "@paradoc/types";
+import { w9 } from "@asterdoc/essentials";
+import { pageTextRuns } from "@asterdoc/render/pdf";
+import type { Party } from "@asterdoc/types";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import {

@@ -1,9 +1,15 @@
-import { describe, expect, test } from 'vitest'
-import { PARADOC_SCHEMA_URL, SCHEMA_VERSION, schemaVersionUrl } from '@paradoc/schemas'
+import { describe, expect, test, vi } from 'vitest'
+import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION } from '@asterdoc/schemas'
 import { bundle, checklist, document, form, runtimeChecklistFromJSON, runtimeDocumentFromJSON, runtimeFormFromJSON } from '@/artifacts'
 import { SchemaVersionError, load, loadFromObject } from '@/serialization'
-import { SchemaMigrationError, migrateArtifact } from '@/migration'
+import { SchemaMigrationError, migrateArtifact, type ArtifactObject, type MigrationStep } from '@/migration'
 import { validate } from '@/validation/artifact'
+import { EARLIER, earlierUrl } from './schema-history'
+
+vi.mock('@asterdoc/schemas', async (importOriginal) => {
+	const history = await import('./schema-history')
+	return history.withEarlierVersions(await importOriginal(), [history.EARLIER])
+})
 
 /**
  * One schema version rule for every entry point of every artifact kind.
@@ -11,7 +17,27 @@ import { validate } from '@/validation/artifact'
  * here every entry point is held to the same outcome, kind by kind.
  */
 
-const OUTDATED = schemaVersionUrl('2026-08-10')
+const OUTDATED = earlierUrl(EARLIER)
+
+function dropPartyMultiple(artifact: ArtifactObject): void {
+	for (const party of Object.values((artifact.parties ?? {}) as Record<string, Record<string, unknown>>)) delete party.multiple
+	if (artifact.kind !== 'bundle' || !Array.isArray(artifact.contents)) return
+	for (const item of artifact.contents as { type?: string; artifact?: ArtifactObject }[]) {
+		if (item.type === 'inline' && item.artifact) dropPartyMultiple(item.artifact)
+	}
+}
+
+const steps: MigrationStep[] = [
+	{
+		from: EARLIER,
+		to: SCHEMA_VERSION,
+		summary: 'Drops the party key multiple.',
+		apply: (artifact) => {
+			dropPartyMultiple(artifact)
+			return artifact
+		},
+	},
+]
 
 const bodies = {
 	form: { kind: 'form', name: 'intake', fields: { name: { type: 'text' } } },
@@ -62,21 +88,21 @@ function versionError(run: () => unknown): SchemaVersionError {
 
 describe('every entry point of every kind applies the schema version rule', () => {
 	test.each(cases)('%s via %s accepts the current $schema', (kind, entry) => {
-		expect(entryPoints[entry]!(kind, withSchema(kind, PARADOC_SCHEMA_URL)).name).toBe(bodies[kind].name)
+		expect(entryPoints[entry]!(kind, withSchema(kind, ASTERDOC_SCHEMA_URL)).name).toBe(bodies[kind].name)
 	})
 
 	test.each(cases)('%s via %s refuses an outdated $schema, naming both versions and migrate', (kind, entry) => {
 		const error = versionError(() => entryPoints[entry]!(kind, withSchema(kind, OUTDATED)))
 		expect(error.code).toBe('outdated-version')
 		expect(error.found).toBe(OUTDATED)
-		expect(error.message).toContain('2026-08-10')
+		expect(error.message).toContain(EARLIER)
 		expect(error.message).toContain(SCHEMA_VERSION)
-		expect(error.message).toContain('paradoc migrate')
+		expect(error.message).toContain('asterdoc migrate')
 	})
 
 	test.each([
-		['an unpublished', 'https://schema.paradoc.dev/2030-01-01.json'],
-		['an undated', 'https://schema.paradoc.dev/schema.json'],
+		['an unpublished', 'https://schema.asterdoc.com/2030-01-01.json'],
+		['an undated', 'https://schema.asterdoc.com/schema.json'],
 		['a foreign', 'https://example.com/form.json'],
 	])('%s $schema is refused by every entry point of every kind', (_label, address) => {
 		for (const [kind, entry] of cases) {
@@ -87,7 +113,7 @@ describe('every entry point of every kind applies the schema version rule', () =
 
 	test.each(KINDS)('an in-memory %s without $schema is built, and serializes as current', (kind) => {
 		const instance = apis[kind](bodies[kind])
-		expect(instance.toJSON().$schema).toBe(PARADOC_SCHEMA_URL)
+		expect(instance.toJSON().$schema).toBe(ASTERDOC_SCHEMA_URL)
 	})
 })
 
@@ -112,18 +138,18 @@ describe('validate() reports the version', () => {
 		expect(result.issues).toHaveLength(1)
 		expect(result.issues?.[0]?.path).toEqual(['$schema'])
 		expect(result.issues?.[0]?.message).toContain(SCHEMA_VERSION)
-		expect(result.issues?.[0]?.message).toContain('paradoc migrate')
+		expect(result.issues?.[0]?.message).toContain('asterdoc migrate')
 	})
 
 	test.each(KINDS)('a current %s, or one without $schema, is valid', (kind) => {
-		expect(validate(withSchema(kind, PARADOC_SCHEMA_URL)).issues).toBeUndefined()
+		expect(validate(withSchema(kind, ASTERDOC_SCHEMA_URL)).issues).toBeUndefined()
 		expect(validate(bodies[kind]).issues).toBeUndefined()
 	})
 })
 
 describe('a bundle holds its inline parts to the rule', () => {
 	const packet = (child: Record<string, unknown>) => ({
-		$schema: PARADOC_SCHEMA_URL,
+		$schema: ASTERDOC_SCHEMA_URL,
 		kind: 'bundle',
 		name: 'packet',
 		contents: [
@@ -157,7 +183,7 @@ describe('a bundle holds its inline parts to the rule', () => {
 	})
 
 	test('current inline parts, with or without $schema, are accepted', () => {
-		const current = packet({ $schema: PARADOC_SCHEMA_URL, ...bodies.document })
+		const current = packet({ $schema: ASTERDOC_SCHEMA_URL, ...bodies.document })
 		expect(bundle.from(current).name).toBe('packet')
 		expect(loadFromObject(current).name).toBe('packet')
 		expect(validate(current).issues).toBeUndefined()
@@ -166,8 +192,8 @@ describe('a bundle holds its inline parts to the rule', () => {
 
 describe('migrate stays the one path that accepts an older version', () => {
 	test.each(KINDS)('an outdated %s migrates, and the result loads through every entry point', (kind) => {
-		const result = migrateArtifact(withSchema(kind, OUTDATED))
-		expect(result).toMatchObject({ status: 'migrated', from: '2026-08-10', to: SCHEMA_VERSION })
+		const result = migrateArtifact(withSchema(kind, OUTDATED), { steps })
+		expect(result).toMatchObject({ status: 'migrated', from: EARLIER, to: SCHEMA_VERSION })
 		for (const entry of Object.keys(entryPoints)) {
 			expect(entryPoints[entry]!(kind, result.artifact as Record<string, unknown>).name).toBe(bodies[kind].name)
 		}
@@ -180,13 +206,12 @@ describe('migrate stays the one path that accepts an older version', () => {
 			name: 'packet',
 			contents: [{ type: 'inline', key: 'notice', artifact: { $schema: OUTDATED, ...bodies.document } }],
 		}
-		const result = migrateArtifact(source)
+		const result = migrateArtifact(source, { steps })
 		expect(result.status).toBe('migrated')
 		expect(bundle.from(result.artifact).name).toBe('packet')
 	})
 
-	/** A form whose party carries `multiple`, which the 2026-08-10 to 2026-09-22 step drops. */
-	const oldForm = (schema?: string) => ({
+		const oldForm = (schema?: string) => ({
 		...(schema && { $schema: schema }),
 		kind: 'form',
 		name: 'order',
@@ -203,43 +228,43 @@ describe('migrate stays the one path that accepts an older version', () => {
 
 	test('an outdated part two bundles deep migrates and is stamped current', () => {
 		const source = holding(OUTDATED, { kind: 'bundle', name: 'inner', contents: [{ type: 'inline', key: 'deep', artifact: oldForm(OUTDATED) }] })
-		const result = migrateArtifact(source)
+		const result = migrateArtifact(source, { steps })
 		const deep = partOf(result.artifact, 'order', 'deep')
-		expect(deep.$schema).toBe(PARADOC_SCHEMA_URL)
+		expect(deep.$schema).toBe(ASTERDOC_SCHEMA_URL)
 		expect(deep.parties.buyer).not.toHaveProperty('multiple')
 		expect(bundle.from(result.artifact).name).toBe('packet')
 	})
 
 	test('a current bundle with an outdated part migrates the part', () => {
-		const source = holding(PARADOC_SCHEMA_URL, oldForm(OUTDATED))
+		const source = holding(ASTERDOC_SCHEMA_URL, oldForm(OUTDATED))
 		expect(() => bundle.from(source)).toThrow(SchemaVersionError)
-		const result = migrateArtifact(source)
+		const result = migrateArtifact(source, { steps })
 		expect(result.status).toBe('migrated')
 		const part = partOf(result.artifact, 'order')
-		expect(part.$schema).toBe(PARADOC_SCHEMA_URL)
+		expect(part.$schema).toBe(ASTERDOC_SCHEMA_URL)
 		expect(part.parties.buyer).not.toHaveProperty('multiple')
 		expect(bundle.from(result.artifact).name).toBe('packet')
 	})
 
 	test('a part without $schema follows its bundle through the steps', () => {
-		const result = migrateArtifact(holding(OUTDATED, oldForm()))
+		const result = migrateArtifact(holding(OUTDATED, oldForm()), { steps })
 		const part = partOf(result.artifact, 'order')
 		expect(part).not.toHaveProperty('$schema')
 		expect(part.parties.buyer).not.toHaveProperty('multiple')
 	})
 
 	test('a current bundle whose parts are all current is left as it is', () => {
-		const source = holding(PARADOC_SCHEMA_URL, { $schema: PARADOC_SCHEMA_URL, ...bodies.document })
-		expect(migrateArtifact(source)).toMatchObject({ status: 'current', artifact: source })
+		const source = holding(ASTERDOC_SCHEMA_URL, { $schema: ASTERDOC_SCHEMA_URL, ...bodies.document })
+		expect(migrateArtifact(source, { steps })).toMatchObject({ status: 'current', artifact: source })
 	})
 
 	test.each([
-		['later than its bundle', schemaVersionUrl('2026-09-22'), schemaVersionUrl('2026-08-10'), 'version-conflict'],
-		['with no published version', 'https://schema.paradoc.dev/schema.json', PARADOC_SCHEMA_URL, 'unknown-version'],
+		['later than its bundle', ASTERDOC_SCHEMA_URL, OUTDATED, 'version-conflict'],
+		['with no published version', 'https://schema.asterdoc.com/schema.json', ASTERDOC_SCHEMA_URL, 'unknown-version'],
 	])('a part %s is refused, naming it', (_label, partSchema, bundleSchema, code) => {
 		const error = (() => {
 			try {
-				migrateArtifact(holding(bundleSchema, { $schema: partSchema, ...bodies.document }))
+				migrateArtifact(holding(bundleSchema, { $schema: partSchema, ...bodies.document }), { steps })
 			} catch (caught) {
 				return caught
 			}

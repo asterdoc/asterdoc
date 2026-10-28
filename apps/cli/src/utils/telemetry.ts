@@ -4,27 +4,27 @@
  * Tracks anonymous CLI usage events. Fire-and-forget — never blocks commands.
  *
  * Opt-out:
- *   - Set `telemetry.enabled: false` in ~/.paradoc/config.json
- *   - Set `PARADOC_TELEMETRY_DISABLED=1` or `DO_NOT_TRACK=1` env vars
+ *   - Set `telemetry.enabled: false` in ~/.asterdoc/config.json
+ *   - Set `ASTERDOC_TELEMETRY_DISABLED=1` or `DO_NOT_TRACK=1` env vars
  *   - Pass `--no-telemetry` flag to any command
  *
  * Destination:
- *   - Every event goes to one host, `https://telemetry.paradoc.dev`. Set
- *     `PARADOC_TELEMETRY_URL` to send to another origin, such as
- *     `https://telemetry-dev.paradoc.dev` for development.
+ *   - Every event goes to one host, `https://telemetry.asterdoc.com`. Set
+ *     `ASTERDOC_TELEMETRY_URL` to send to another origin, such as
+ *     `https://telemetry-dev.asterdoc.com` for development.
  *
  * Debug:
- *   - Set `PARADOC_TELEMETRY_DEBUG=1` to log events to console
+ *   - Set `ASTERDOC_TELEMETRY_DEBUG=1` to log events to console
  */
 
 import { randomUUID } from 'node:crypto'
 import { isIP } from 'node:net'
 import { platform, arch, release } from 'node:os'
-import type { GlobalConfig } from '@paradoc/schemas'
+import type { GlobalConfig } from '@asterdoc/schemas'
 import { configManager } from './config.js'
 import { VERSION } from '../constants.js'
 
-const DEFAULT_TELEMETRY_ORIGIN = 'https://telemetry.paradoc.dev'
+const DEFAULT_TELEMETRY_ORIGIN = 'https://telemetry.asterdoc.com'
 const ANONYMOUS_EVENTS_PATH = '/v1/events/anonymous'
 const SEND_TIMEOUT_MS = 5_000
 
@@ -32,12 +32,12 @@ const SEND_TIMEOUT_MS = 5_000
 const DIRECTORY_INSTALL_EVENT = 'directory.installed'
 
 /**
- * The anonymous events URL. `PARADOC_TELEMETRY_URL` overrides the origin; a
+ * The anonymous events URL. `ASTERDOC_TELEMETRY_URL` overrides the origin; a
  * value that is not an http(s) origin is ignored so a bad override cannot
  * redirect events to an unintended scheme.
  */
 export function telemetryEndpoint(env: NodeJS.ProcessEnv = process.env): string {
-  const override = env.PARADOC_TELEMETRY_URL
+  const override = env.ASTERDOC_TELEMETRY_URL
   if (override) {
     try {
       const url = new URL(override)
@@ -98,7 +98,7 @@ async function isTelemetryEnabled(): Promise<boolean> {
   if (VERSION === 'dev') return false
 
   // Env var opt-outs (highest priority)
-  if (process.env.PARADOC_TELEMETRY_DISABLED === '1') return false
+  if (process.env.ASTERDOC_TELEMETRY_DISABLED === '1') return false
   if (process.env.DO_NOT_TRACK === '1') return false
 
   // Config-based opt-out. A config that cannot be read may hold an opt-out,
@@ -119,7 +119,7 @@ export function configAllowsTelemetry(config: GlobalConfig): boolean {
 
 /**
  * Get or create the persistent anonymous ID.
- * Stored in ~/.paradoc/config.json under `anonymousId`.
+ * Stored in ~/.asterdoc/config.json under `anonymousId`.
  */
 async function getAnonymousId(): Promise<string> {
   try {
@@ -192,7 +192,7 @@ async function sendEvents(events: TelemetryEvent[]): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         schema_version: 1,
-        resource: { service_name: 'paradoc-cli', service_version: VERSION, platform: 'cli' },
+        resource: { service_name: 'asterdoc-cli', service_version: VERSION, platform: 'cli' },
         events: events.map((event) => ({
           name: event.type,
           timestamp: event.timestamp,
@@ -225,7 +225,7 @@ async function sendEvents(events: TelemetryEvent[]): Promise<void> {
  * @param type - Event type in `resource.action` format (e.g. `project.initialized`)
  *
  * Fire-and-forget — errors are silently swallowed.
- * Use `PARADOC_TELEMETRY_DEBUG=1` to see events in the console.
+ * Use `ASTERDOC_TELEMETRY_DEBUG=1` to see events in the console.
  */
 export async function trackEvent(
   type: string,
@@ -240,7 +240,7 @@ export async function trackEvent(
 
   const event = await buildEvent(type, opts)
 
-  if (process.env.PARADOC_TELEMETRY_DEBUG) {
+  if (process.env.ASTERDOC_TELEMETRY_DEBUG) {
     console.log('[telemetry]', JSON.stringify(event, null, 2))
   }
 

@@ -1,8 +1,8 @@
 ---
 title: hash
 description: Compute file checksums
-ogTitle: paradoc hash
-ogDescription: Compute SHA256 checksums for use in Paradoc layer definitions
+ogTitle: asterdoc hash
+ogDescription: Compute SHA256 checksums for use in Asterdoc layer definitions
 ---
 
 Compute a SHA256 checksum of a file, formatted for use in layer definitions.
@@ -10,7 +10,7 @@ Compute a SHA256 checksum of a file, formatted for use in layer definitions.
 ## Usage
 
 ```bash
-paradoc hash <file> [options]
+asterdoc hash <file> [options]
 ```
 
 ## Arguments
@@ -28,14 +28,14 @@ paradoc hash <file> [options]
 
 ## Description
 
-Computes the SHA256 checksum of a file and outputs it in the `sha256:<hex>` format used by Paradoc layer definitions. This is useful when manually adding file-backed layers to artifacts.
+Computes the SHA256 checksum of a file and outputs it in the `sha256:<hex>` format used by Asterdoc layer definitions. This is useful when manually adding file-backed layers to artifacts.
 
 ## Examples
 
 Hash a PDF file:
 
 ```bash
-paradoc hash lease-template.pdf
+asterdoc hash lease-template.pdf
 ```
 
 Output:
@@ -47,7 +47,7 @@ sha256:a3f2b8c4e5d6...
 JSON output:
 
 ```bash
-paradoc hash lease-template.pdf --json
+asterdoc hash lease-template.pdf --json
 ```
 
 ```json
@@ -62,7 +62,7 @@ paradoc hash lease-template.pdf --json
 Hash from stdin:
 
 ```bash
-cat file.pdf | paradoc hash -
+cat file.pdf | asterdoc hash -
 ```
 
 ## See also

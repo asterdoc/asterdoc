@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { Form } from "@paradoc/types";
-import { pathSegments as renderPathSegments } from "@paradoc/render";
+import type { Form } from "@asterdoc/types";
+import { pathSegments as renderPathSegments } from "@asterdoc/render";
 
 import { ArtifactProvider, InvalidFieldPathError, useField } from "../src";
 import { pathSegments as reactPathSegments } from "../src/lib/fields";

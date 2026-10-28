@@ -193,7 +193,7 @@ type BundleContentItem = InlineBundleItem | PathBundleItem | RegistryBundleItem
           {
             name: 'slug',
             type: 'string',
-            description: 'Registry address of the artifact: @org/repo/name, three lowercase segments, with no edition or version (e.g., @paradoc/irs/w-9)',
+            description: 'Registry address of the artifact: @org/repo/name, three lowercase segments, with no edition or version (e.g., @asterdoc/irs/w-9)',
           },
           {
             name: 'edition',
@@ -224,7 +224,7 @@ Item keys start with a letter and contain only letters, digits, `_`, and `-`. Ev
 ## Examples
 
 ```yaml tab="YAML"
-$schema: https://schema.paradoc.dev/__SCHEMA_VERSION__.json
+$schema: https://schema.asterdoc.com/__SCHEMA_VERSION__.json
 kind: bundle
 name: loan-application
 version: "1.0.0"
@@ -240,7 +240,7 @@ contents:
   - type: inline
     key: welcome-doc
     artifact:
-      $schema: https://schema.paradoc.dev/__SCHEMA_VERSION__.json
+      $schema: https://schema.asterdoc.com/__SCHEMA_VERSION__.json
       kind: document
       name: welcome
       title: Welcome Letter
@@ -249,7 +249,7 @@ contents:
   - type: inline
     key: application
     artifact:
-      $schema: https://schema.paradoc.dev/__SCHEMA_VERSION__.json
+      $schema: https://schema.asterdoc.com/__SCHEMA_VERSION__.json
       kind: form
       name: application
       fields:
@@ -265,7 +265,7 @@ contents:
   # Registry reference with conditional include
   - type: registry
     key: w9
-    slug: "@paradoc/irs/w-9"
+    slug: "@asterdoc/irs/w-9"
     edition: "2024-03"
     version: "1.0.0"
     include: needsW9
@@ -273,7 +273,7 @@ contents:
 
 ```json tab="JSON"
 {
-  "$schema": "https://schema.paradoc.dev/__SCHEMA_VERSION__.json",
+  "$schema": "https://schema.asterdoc.com/__SCHEMA_VERSION__.json",
   "kind": "bundle",
   "name": "loan-application",
   "version": "1.0.0",
@@ -289,7 +289,7 @@ contents:
       "type": "inline",
       "key": "welcome-doc",
       "artifact": {
-        "$schema": "https://schema.paradoc.dev/__SCHEMA_VERSION__.json",
+        "$schema": "https://schema.asterdoc.com/__SCHEMA_VERSION__.json",
         "kind": "document",
         "name": "welcome",
         "title": "Welcome Letter"
@@ -299,7 +299,7 @@ contents:
       "type": "inline",
       "key": "application",
       "artifact": {
-        "$schema": "https://schema.paradoc.dev/__SCHEMA_VERSION__.json",
+        "$schema": "https://schema.asterdoc.com/__SCHEMA_VERSION__.json",
         "kind": "form",
         "name": "application",
         "fields": {
@@ -318,7 +318,7 @@ contents:
     {
       "type": "registry",
       "key": "w9",
-      "slug": "@paradoc/irs/w-9",
+      "slug": "@asterdoc/irs/w-9",
       "edition": "2024-03",
       "version": "1.0.0",
       "include": "needsW9"

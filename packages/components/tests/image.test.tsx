@@ -13,9 +13,9 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { checkElement } from "@paradoc/react-pdf/check";
-import { MissingImageSizeError, UndecodableImageError } from "@paradoc/react";
-import { renderPdf } from "@paradoc/react-pdf";
+import { checkElement } from "@asterdoc/react-pdf/check";
+import { MissingImageSizeError, UndecodableImageError } from "@asterdoc/react";
+import { renderPdf } from "@asterdoc/react-pdf";
 
 import { Document } from "../src/components/document";
 import { Field } from "../src/components/field";

@@ -17,16 +17,16 @@ const __dirname = path.dirname(__filename)
  * Execute a CLI command and return the result
  */
 
-describe('paradoc add', () => {
+describe('asterdoc add', () => {
   let tempDir: string
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(join(tmpdir(), 'paradoc-add-test-'))
+    tempDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-add-test-'))
     // Create minimal project structure
     await fs.writeFile(
-      join(tempDir, 'paradoc.json'),
+      join(tempDir, 'asterdoc.json'),
       JSON.stringify({
-        $schema: 'https://schema.paradoc.dev/manifest.json',
+        $schema: 'https://schema.asterdoc.com/manifest.json',
         name: '@test/test-project',
         title: 'Test Project',
         visibility: 'private',
@@ -42,7 +42,7 @@ describe('paradoc add', () => {
     it('rejects an unknown output format before project or network access', async () => {
       const result = await executeCliCommand(['add', '@acme/test', '--output', 'xml'], { cwd: tempDir })
       expect(result.stderr).toContain('Invalid output format: xml')
-      expect(result.stderr).not.toContain('Not in a Paradoc project')
+      expect(result.stderr).not.toContain('Not in an Asterdoc project')
       expect(result.exitCode).toBe(1)
     })
 
@@ -55,15 +55,15 @@ describe('paradoc add', () => {
     it('treats @namespace as namespace-only browse (requires project)', async () => {
       const result = await executeCliCommand(['add', '@acme'], { cwd: tempDir })
       // @acme is now a valid namespace-only pattern (browse mode),
-      // but fails because tempDir is not a Paradoc project
-      expect(result.stderr).toContain('Not in a Paradoc project')
+      // but fails because tempDir is not an Asterdoc project
+      expect(result.stderr).toContain('Not in an Asterdoc project')
       expect(result.exitCode).not.toBe(0)
     })
 
     it('rejects a bare artifact name and asks for its registry namespace', async () => {
       const result = await executeCliCommand(['add', 'w9'], { cwd: tempDir })
       expect(result.stderr).toContain('"w9" is not a document component')
-      expect(result.stderr).toContain('paradoc add @registry/w9')
+      expect(result.stderr).toContain('asterdoc add @registry/w9')
       expect(result.stderr).not.toContain('Invalid artifact')
       expect(result.exitCode).toBe(1)
     })
@@ -77,10 +77,10 @@ describe('paradoc add', () => {
 
   describe('project detection', () => {
     it('shows error when not in a project directory', async () => {
-      const nonProjectDir = await fs.mkdtemp(join(tmpdir(), 'paradoc-no-project-'))
+      const nonProjectDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-no-project-'))
       try {
         const result = await executeCliCommand(['add', '@acme/test'], { cwd: nonProjectDir })
-        expect(result.stderr).toContain('Not in a Paradoc project')
+        expect(result.stderr).toContain('Not in an Asterdoc project')
         expect(result.exitCode).not.toBe(0)
       } finally {
         await fs.rm(nonProjectDir, { recursive: true, force: true })
@@ -157,7 +157,7 @@ describe('paradoc add', () => {
   })
 })
 
-describe('paradoc add (files the artifact references)', () => {
+describe('asterdoc add (files the artifact references)', () => {
   // A registry of one artifact with a file layer and an instructions file. Each
   // test decides what the registry serves for those two files.
   /** A one-page PDF with no form fields: the smallest file a PDF layer can hold. */
@@ -243,9 +243,9 @@ describe('paradoc add (files the artifact references)', () => {
     const { port } = server.address() as AddressInfo
     registryUrl = `http://127.0.0.1:${port}`
 
-    tempDir = await fs.mkdtemp(join(tmpdir(), 'paradoc-add-files-'))
+    tempDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-add-files-'))
     await executeCliCommand(['init', '--yes', '--name', 'test-project'], { cwd: tempDir })
-    const manifestPath = join(tempDir, 'paradoc.json')
+    const manifestPath = join(tempDir, 'asterdoc.json')
     const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8'))
     manifest.registries = { '@fixture': { url: `http://127.0.0.1:${port}` } }
     await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2))
@@ -260,7 +260,7 @@ describe('paradoc add (files the artifact references)', () => {
     fs.access(join(tempDir, file)).then(() => true, () => false)
 
   const lockedArtifacts = async (): Promise<Record<string, unknown>> => {
-    const lock = await fs.readFile(join(tempDir, '.paradoc', 'lock.json'), 'utf-8').catch(() => '{}')
+    const lock = await fs.readFile(join(tempDir, '.asterdoc', 'lock.json'), 'utf-8').catch(() => '{}')
     return (JSON.parse(lock) as { artifacts?: Record<string, unknown> }).artifacts ?? {}
   }
 
@@ -440,22 +440,22 @@ describe('paradoc add (files the artifact references)', () => {
     ['no colon', 'Authorization Bearer abc', 'Invalid header "Authorization Bearer abc": expected "Name: Value".'],
     ['an empty name', ': Bearer abc', 'Invalid header ": Bearer abc": the header name is empty.'],
     ['an empty value', 'Authorization: ', 'Invalid header "Authorization": the header value is empty.'],
-  ])('paradoc registry add fails by name on a --header with %s', async (_shape, header, message) => {
+  ])('asterdoc registry add fails by name on a --header with %s', async (_shape, header, message) => {
     const result = await executeCliCommand(['registry', 'add', '@other', registryUrl, '--header', header, '--project', '--yes'], { cwd: tempDir })
 
     expect(result.exitCode).not.toBe(0)
     expect(result.stderr).toContain(message)
     expect(connections).toBe(0)
-    const manifest = JSON.parse(await fs.readFile(join(tempDir, 'paradoc.json'), 'utf-8')) as { registries: Record<string, unknown> }
+    const manifest = JSON.parse(await fs.readFile(join(tempDir, 'asterdoc.json'), 'utf-8')) as { registries: Record<string, unknown> }
     expect(manifest.registries).not.toHaveProperty('@other')
   }, 30000)
 })
 
-describe('paradoc add (namespace resolution with no registries configured)', () => {
+describe('asterdoc add (namespace resolution with no registries configured)', () => {
   let tempDir: string
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(join(tmpdir(), 'paradoc-add-namespaces-'))
+    tempDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-add-namespaces-'))
     await executeCliCommand(['init', '--yes', '--name', 'test-project'], { cwd: tempDir })
   })
 
@@ -463,14 +463,14 @@ describe('paradoc add (namespace resolution with no registries configured)', () 
     await fs.rm(tempDir, { recursive: true, force: true })
   })
 
-  it('refuses the reserved @paradoc without contacting any host: its registry is not available yet', async () => {
-    const result = await executeCliCommand(['add', '@paradoc/w9', '--no-cache'], {
+  it('refuses the reserved @asterdoc without contacting any host: its registry is not available yet', async () => {
+    const result = await executeCliCommand(['add', '@asterdoc/w9', '--no-cache'], {
       cwd: tempDir,
       env: await unreachableNetworkEnv(),
     })
 
     expect(result.exitCode).toBe(1)
-    expect(result.stderr).toContain('The Paradoc registry is not available yet, so @paradoc cannot be resolved.')
+    expect(result.stderr).toContain('The Asterdoc registry is not available yet, so @asterdoc cannot be resolved.')
     expect(result.stdout + result.stderr).not.toContain('Registry:')
   })
 
@@ -481,20 +481,20 @@ describe('paradoc add (namespace resolution with no registries configured)', () 
     })
 
     expect(result.exitCode).toBe(1)
-    expect(result.stderr).toContain('No registry is configured for @acme. Run: paradoc registry add @acme <url>')
-    expect(result.stdout + result.stderr).not.toContain('registry.paradoc.dev')
+    expect(result.stderr).toContain('No registry is configured for @acme. Run: asterdoc registry add @acme <url>')
+    expect(result.stdout + result.stderr).not.toContain('public.asterdoc.com')
   })
 })
 
-describe('paradoc add (registry integration)', () => {
+describe('asterdoc add (registry integration)', () => {
   const TEST_REGISTRY_URL = inject('testRegistryUrl')
   let tempDir: string
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(join(tmpdir(), 'paradoc-add-registry-'))
+    tempDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-add-registry-'))
     // Initialize project with registry config
     await executeCliCommand(['init', '--yes', '--name', 'test-project'], { cwd: tempDir })
-    const manifestPath = join(tempDir, 'paradoc.json')
+    const manifestPath = join(tempDir, 'asterdoc.json')
     const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf-8'))
     manifest.registries = {
       '@acme': {
@@ -550,7 +550,7 @@ describe('paradoc add (registry integration)', () => {
     await expect(fs.access(join(namespaceDir, 'residential-lease.json'))).resolves.toBeUndefined()
     if (format === 'typed') await expect(fs.access(join(namespaceDir, 'residential-lease.json.d.ts'))).resolves.toBeUndefined()
     if (format === 'ts') await expect(fs.access(join(namespaceDir, 'residential-lease.ts'))).resolves.toBeUndefined()
-    const lock = JSON.parse(await fs.readFile(join(tempDir, '.paradoc', 'lock.json'), 'utf8'))
+    const lock = JSON.parse(await fs.readFile(join(tempDir, '.asterdoc', 'lock.json'), 'utf8'))
     expect(lock.artifacts['@acme/residential-lease'].path).toBe('artifacts/@acme/residential-lease.json')
     if (format === 'ts') {
       const source = join(namespaceDir, 'residential-lease.json')
@@ -570,7 +570,7 @@ describe('paradoc add (registry integration)', () => {
   }, 30000)
 
   const locked = async (ref: string): Promise<Record<string, unknown>> =>
-    JSON.parse(await fs.readFile(join(tempDir, '.paradoc', 'lock.json'), 'utf8')).artifacts[ref]
+    JSON.parse(await fs.readFile(join(tempDir, '.asterdoc', 'lock.json'), 'utf8')).artifacts[ref]
   const installed = async (name: string): Promise<Record<string, unknown>> =>
     JSON.parse(await fs.readFile(join(tempDir, 'artifacts', '@acme', `${name}.json`), 'utf8'))
 
@@ -622,7 +622,7 @@ describe('paradoc add (registry integration)', () => {
     expect(result.stderr).toContain(message)
     expect(result.stdout).not.toContain('Added')
     await expect(fs.access(join(tempDir, 'artifacts', '@acme'))).rejects.toThrow()
-    await expect(fs.access(join(tempDir, '.paradoc', 'lock.json'))).rejects.toThrow()
+    await expect(fs.access(join(tempDir, '.asterdoc', 'lock.json'))).rejects.toThrow()
   }, 30000)
 
   it('lists the installed edition beside the version, and carries it in --json', async () => {
@@ -655,7 +655,7 @@ describe('paradoc add (registry integration)', () => {
   }, 30000)
 })
 
-describe('paradoc list', () => {
+describe('asterdoc list', () => {
   it('shows help for list command', async () => {
     const result = await executeCliCommand(['list', '--help'])
     expect(result.stdout).toContain('List installed artifacts')
@@ -663,10 +663,10 @@ describe('paradoc list', () => {
   })
 
   it('shows error when not in a project directory', async () => {
-    const nonProjectDir = await fs.mkdtemp(join(tmpdir(), 'paradoc-no-project-'))
+    const nonProjectDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-no-project-'))
     try {
       const result = await executeCliCommand(['list'], { cwd: nonProjectDir })
-      expect(result.stderr).toContain('Not in a Paradoc project')
+      expect(result.stderr).toContain('Not in an Asterdoc project')
       expect(result.exitCode).not.toBe(0)
     } finally {
       await fs.rm(nonProjectDir, { recursive: true, force: true })
@@ -674,7 +674,7 @@ describe('paradoc list', () => {
   })
 })
 
-describe('paradoc show', () => {
+describe('asterdoc show', () => {
   it('shows help for show command', async () => {
     const result = await executeCliCommand(['show', '--help'])
     expect(result.stdout).toContain('Show details about an artifact')
@@ -682,7 +682,7 @@ describe('paradoc show', () => {
   })
 })
 
-describe('paradoc search', () => {
+describe('asterdoc search', () => {
   it('shows help for search command', async () => {
     const result = await executeCliCommand(['search', '--help'])
     expect(result.stdout).toContain('Search for artifacts in a registry')
@@ -693,7 +693,7 @@ describe('paradoc search', () => {
   })
 })
 
-describe('paradoc registry', () => {
+describe('asterdoc registry', () => {
   it('shows help for registry command', async () => {
     const result = await executeCliCommand(['registry', '--help'])
     expect(result.stdout).toContain('Manage registry configurations')
@@ -717,11 +717,11 @@ describe('paradoc registry', () => {
   })
 })
 
-describe('paradoc add (variadic document components)', () => {
+describe('asterdoc add (variadic document components)', () => {
   let project: string
 
   beforeEach(async () => {
-    project = await fs.mkdtemp(join(tmpdir(), 'paradoc-add-variadic-'))
+    project = await fs.mkdtemp(join(tmpdir(), 'asterdoc-add-variadic-'))
     await fs.writeFile(
       join(project, 'components.json'),
       `${JSON.stringify({ style: 'new-york' }, null, 2)}\n`,
@@ -744,9 +744,9 @@ describe('paradoc add (variadic document components)', () => {
     })
 
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toContain('npx shadcn@4 add @paradoc/field --yes')
-    expect(result.stdout).toContain('npx shadcn@4 add @paradoc/table --yes')
-    expect(result.stdout).toContain('npx shadcn@4 add @paradoc/signature --yes')
+    expect(result.stdout).toContain('npx shadcn@4 add @asterdoc/field --yes')
+    expect(result.stdout).toContain('npx shadcn@4 add @asterdoc/table --yes')
+    expect(result.stdout).toContain('npx shadcn@4 add @asterdoc/signature --yes')
   })
 
   it('reports each name independently rather than one combined result', async () => {
@@ -756,7 +756,7 @@ describe('paradoc add (variadic document components)', () => {
     // flakiness — every requested name is actually attempted (not just the
     // first, and not stopped after the first failure), and each gets its
     // own reported outcome rather than one exit code standing in for both.
-    const bareProject = await fs.mkdtemp(join(tmpdir(), 'paradoc-add-no-config-'))
+    const bareProject = await fs.mkdtemp(join(tmpdir(), 'asterdoc-add-no-config-'))
     try {
       const result = await executeCliCommand(['add', 'field', 'table'], { cwd: bareProject })
 
@@ -783,6 +783,6 @@ describe('paradoc add (variadic document components)', () => {
     const result = await executeCliCommand(['add', 'field', '--dry-run'], { cwd: project })
 
     expect(result.exitCode).toBe(0)
-    expect(result.stdout).toContain('npx shadcn@4 add @paradoc/field --yes')
+    expect(result.stdout).toContain('npx shadcn@4 add @asterdoc/field --yes')
   })
 })

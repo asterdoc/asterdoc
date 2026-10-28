@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { form } from '@/artifacts'
-import type { Formatter, ParadocRenderer, RendererLayer } from '@paradoc/types'
+import type { Formatter, AsterdocRenderer, RendererLayer } from '@asterdoc/types'
 
 describe('Form rendering', () => {
 	const invoice = () =>
@@ -23,7 +23,7 @@ describe('Form rendering', () => {
 
 	test('uses an explicit custom renderer instead of the built-in renderer', async () => {
 		const render = vi.fn(async () => 'custom output')
-		const renderer: ParadocRenderer<RendererLayer, string> = { id: 'custom', render }
+		const renderer: AsterdocRenderer<RendererLayer, string> = { id: 'custom', render }
 
 		const output = await invoice()
 			.fill({ fields: { customer: 'Acme' } })

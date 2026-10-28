@@ -40,7 +40,7 @@ describe('PDF renderer options', () => {
     expect(createLayerRenderer({ pdfSignatureOptions: {} }).id).toBe('render-layer')
   })
 
-  it('@paradoc/render/pdf exports no signature options resolver', () => {
+  it('@asterdoc/render/pdf exports no signature options resolver', () => {
     expect('resolvePdfSignatureOptions' in pdf).toBe(false)
   })
 })

@@ -5,7 +5,7 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { PARADOC_SCHEMA_URL, RegistryIndexSchema, RegistryItemSchema } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL, RegistryIndexSchema, RegistryItemSchema } from '@asterdoc/schemas'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -14,7 +14,7 @@ describe('CLI Registry Command', () => {
   let tempDir: string
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-registry-test-'))
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-registry-test-'))
   })
 
   afterEach(async () => {
@@ -31,7 +31,7 @@ describe('CLI Registry Command', () => {
   /** A form source file: one release. */
   function form(name: string, version: string, edition?: { key: string; label: string; date?: string; effectiveFrom?: string }) {
     return {
-      $schema: PARADOC_SCHEMA_URL,
+      $schema: ASTERDOC_SCHEMA_URL,
       kind: 'form',
       name,
       version,
@@ -83,9 +83,9 @@ describe('CLI Registry Command', () => {
   describe('registry list', () => {
     it('should list registries with --json', async () => {
       const globalDir = path.join(tempDir, 'global')
-      await fs.mkdir(path.join(globalDir, '.paradoc'), { recursive: true })
+      await fs.mkdir(path.join(globalDir, '.asterdoc'), { recursive: true })
       await fs.writeFile(
-        path.join(globalDir, '.paradoc', 'config.json'),
+        path.join(globalDir, '.asterdoc', 'config.json'),
         JSON.stringify({
           registries: {
             '@test': 'https://example.com/registry',
@@ -94,7 +94,7 @@ describe('CLI Registry Command', () => {
       )
 
       const result = await executeCliCommand(['registry', 'list', '--json'], {
-        env: { HOME: globalDir, XDG_CONFIG_HOME: path.join(globalDir, '.paradoc') },
+        env: { HOME: globalDir, XDG_CONFIG_HOME: path.join(globalDir, '.asterdoc') },
       })
 
       expect(result.exitCode).toBe(0)
@@ -104,9 +104,9 @@ describe('CLI Registry Command', () => {
 
     it('should show registries in human format', async () => {
       const globalDir = path.join(tempDir, 'global')
-      await fs.mkdir(path.join(globalDir, '.paradoc'), { recursive: true })
+      await fs.mkdir(path.join(globalDir, '.asterdoc'), { recursive: true })
       await fs.writeFile(
-        path.join(globalDir, '.paradoc', 'config.json'),
+        path.join(globalDir, '.asterdoc', 'config.json'),
         JSON.stringify({
           registries: {
             '@test': 'https://example.com/registry',
@@ -115,7 +115,7 @@ describe('CLI Registry Command', () => {
       )
 
       const result = await executeCliCommand(['registry', 'list'], {
-        env: { HOME: globalDir, XDG_CONFIG_HOME: path.join(globalDir, '.paradoc') },
+        env: { HOME: globalDir, XDG_CONFIG_HOME: path.join(globalDir, '.asterdoc') },
       })
 
       expect(result.exitCode).toBe(0)
@@ -203,20 +203,20 @@ describe('CLI Registry Command', () => {
   })
 
   describe('registry add', () => {
-    it('refuses @paradoc, which is reserved, and writes no config', async () => {
+    it('refuses @asterdoc, which is reserved, and writes no config', async () => {
       const home = path.join(tempDir, 'home')
       await fs.mkdir(home, { recursive: true })
 
-      for (const namespace of ['@paradoc', 'paradoc', '@PARADOC']) {
+      for (const namespace of ['@asterdoc', 'asterdoc', '@ASTERDOC']) {
         const result = await executeCliCommand(
           ['registry', 'add', namespace, 'https://evil.example', '--global'],
           { cwd: tempDir, env: { HOME: home } }
         )
 
         expect(result.exitCode).toBe(1)
-        expect(result.stderr).toContain('is reserved for the Paradoc registry; it cannot be configured')
+        expect(result.stderr).toContain('is reserved for the Asterdoc registry; it cannot be configured')
       }
-      await expect(fs.access(path.join(home, '.paradoc', 'config.json'))).rejects.toThrow()
+      await expect(fs.access(path.join(home, '.asterdoc', 'config.json'))).rejects.toThrow()
     })
 
     it('adds any other namespace', async () => {
@@ -229,15 +229,15 @@ describe('CLI Registry Command', () => {
       )
 
       expect(result.exitCode).toBe(0)
-      const config = JSON.parse(await fs.readFile(path.join(home, '.paradoc', 'config.json'), 'utf-8'))
+      const config = JSON.parse(await fs.readFile(path.join(home, '.asterdoc', 'config.json'), 'utf-8'))
       expect(config.registries).toEqual({ '@acme': 'https://registry.acme.com' })
     })
 
     it('uses project scope without prompting when --yes is passed in a project', async () => {
       const project = path.join(tempDir, 'project')
       const home = path.join(tempDir, 'home')
-      await fs.mkdir(path.join(project, '.paradoc'), { recursive: true })
-      await fs.writeFile(path.join(project, 'paradoc.json'), JSON.stringify({ name: '@test/project', title: 'Project' }))
+      await fs.mkdir(path.join(project, '.asterdoc'), { recursive: true })
+      await fs.writeFile(path.join(project, 'asterdoc.json'), JSON.stringify({ name: '@test/project', title: 'Project' }))
 
       const result = await executeCliCommand(
         ['registry', 'add', '@acme', 'https://registry.acme.com', '--yes'],
@@ -246,7 +246,7 @@ describe('CLI Registry Command', () => {
 
       expect(result.exitCode).toBe(0)
       expect(result.stdout).not.toContain('Where would you like')
-      const manifest = JSON.parse(await fs.readFile(path.join(project, 'paradoc.json'), 'utf8'))
+      const manifest = JSON.parse(await fs.readFile(path.join(project, 'asterdoc.json'), 'utf8'))
       expect(manifest.registries, result.stdout + result.stderr).toEqual({ '@acme': 'https://registry.acme.com' })
     })
   })
@@ -254,15 +254,15 @@ describe('CLI Registry Command', () => {
   describe('registry remove', () => {
     it('should show error for non-existent namespace with --global', async () => {
       const globalDir = path.join(tempDir, 'global')
-      await fs.mkdir(path.join(globalDir, '.paradoc'), { recursive: true })
+      await fs.mkdir(path.join(globalDir, '.asterdoc'), { recursive: true })
       await fs.writeFile(
-        path.join(globalDir, '.paradoc', 'config.json'),
+        path.join(globalDir, '.asterdoc', 'config.json'),
         JSON.stringify({ registries: {} })
       )
 
       const result = await executeCliCommand(
         ['registry', 'remove', '@nonexistent', '--global'],
-        { env: { HOME: globalDir, XDG_CONFIG_HOME: path.join(globalDir, '.paradoc') } }
+        { env: { HOME: globalDir, XDG_CONFIG_HOME: path.join(globalDir, '.asterdoc') } }
       )
 
       // Should succeed but report not found
@@ -277,14 +277,14 @@ describe('CLI Registry Command', () => {
     async function projectWithBothScopes(): Promise<{ project: string; home: string }> {
       const home = path.join(tempDir, 'home')
       const project = path.join(tempDir, 'project')
-      await fs.mkdir(path.join(home, '.paradoc'), { recursive: true })
-      await fs.mkdir(path.join(project, '.paradoc'), { recursive: true })
+      await fs.mkdir(path.join(home, '.asterdoc'), { recursive: true })
+      await fs.mkdir(path.join(project, '.asterdoc'), { recursive: true })
       await fs.writeFile(
-        path.join(home, '.paradoc', 'config.json'),
+        path.join(home, '.asterdoc', 'config.json'),
         JSON.stringify({ registries: { '@acme': 'https://global.acme.example', '@global-only': 'https://global-only.example' } })
       )
       await fs.writeFile(
-        path.join(project, 'paradoc.json'),
+        path.join(project, 'asterdoc.json'),
         JSON.stringify({
           name: '@test/test-project',
           title: 'Test Project',

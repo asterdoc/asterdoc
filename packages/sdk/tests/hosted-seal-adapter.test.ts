@@ -62,7 +62,7 @@ describe('hostedSealAdapter', () => {
       form: {} as never,
       fields: {}, parties: {}, signers: {}, signatories: {}, targetLayer: 'html',
       document: { content: '<p>Hello</p>', mimeType: 'text/html' },
-    })).rejects.toThrow('Paradoc conversion failed (422): unsupported MIME type')
+    })).rejects.toThrow('Asterdoc conversion failed (422): unsupported MIME type')
   })
 
   it('names the status and body excerpt when a failed response is long', async () => {
@@ -91,7 +91,7 @@ describe('hostedSealAdapter', () => {
     expect(error).toBeInstanceOf(HostedConversionError)
     expect(error).not.toBeInstanceOf(SyntaxError)
     expect((error as HostedConversionError).message)
-      .toBe(`Paradoc conversion returned a response that is not JSON (200): ${body || '<empty body>'}`)
+      .toBe(`Asterdoc conversion returned a response that is not JSON (200): ${body || '<empty body>'}`)
     expect(error).toMatchObject({ status: 200, bodyExcerpt: body })
   })
 
@@ -102,7 +102,7 @@ describe('hostedSealAdapter', () => {
     })
 
     await expect(adapter.convert(request)).rejects.toThrow(
-      /^Paradoc conversion returned an invalid PDF response \(200\): \{"document"/,
+      /^Asterdoc conversion returned an invalid PDF response \(200\): \{"document"/,
     )
   })
 
@@ -114,7 +114,7 @@ describe('hostedSealAdapter', () => {
     await hostedSealAdapter({ apiKey: 'test-key', fetch }).convert(request)
 
     expect(HOSTED_CONVERT_PATH).toBe('/v1/exec/convert')
-    expect(fetch).toHaveBeenCalledWith('https://api.paradoc.dev/v1/exec/convert', expect.anything())
+    expect(fetch).toHaveBeenCalledWith('https://api.asterdoc.com/v1/exec/convert', expect.anything())
   })
 
   it.each([undefined, ''])('refuses a missing API key (%j) before any request', (apiKey) => {
@@ -175,7 +175,7 @@ describe('hostedSealAdapter', () => {
     const error = await adapter.convert(request).catch((caught: unknown) => caught)
     expect(error).toBeInstanceOf(HostedConversionError)
     expect((error as HostedConversionError).message)
-      .toMatch(/^Paradoc conversion returned a PDF that is not valid base64 \(200\)/)
+      .toMatch(/^Asterdoc conversion returned a PDF that is not valid base64 \(200\)/)
   })
 })
 

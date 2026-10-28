@@ -27,8 +27,8 @@ import type {
 	RuntimeFormJSON,
 	ArtifactEdition,
 	RegistryBundleItem,
-} from '@paradoc/types'
-import { parseArtifactCoordinate } from '@paradoc/schemas'
+} from '@asterdoc/types'
+import { parseArtifactCoordinate } from '@asterdoc/schemas'
 import {
 	parseBundle as parseBundleSchema,
 	parseBundleContentItem,

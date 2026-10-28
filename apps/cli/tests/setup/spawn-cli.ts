@@ -29,7 +29,7 @@ export function runCli(args: string[], options: CliRunOptions = {}): Promise<Cli
     ? path.join(packageRoot, 'src/index.ts')
     : target === 'dist'
       ? path.join(packageRoot, 'dist/index.js')
-      : path.resolve(packageRoot, '../paradoc-cli/bin.js')
+      : path.resolve(packageRoot, '../cli-shim/bin.js')
   const executable = target === 'source' ? 'tsx' : process.execPath
   const input = options.input ?? options.stdin
 

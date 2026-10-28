@@ -27,7 +27,7 @@ export type {
 	ProgressSummary,
 	SessionView,
 } from "./engine/derive";
-export { createParadocRuntime } from "./engine/paradoc-runtime";
+export { createAsterdocRuntime } from "./engine/asterdoc-runtime";
 export type { CoercionOptions } from "./engine/coerce";
 
 // ─── Event log ───────────────────────────────────────────────────────────

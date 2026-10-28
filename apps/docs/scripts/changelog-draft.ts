@@ -1,7 +1,7 @@
 /**
  * Print a scaffold for a new `## [x.y.z]` changelog entry from merged PR titles
  * since the last version tag. Best-effort; run by hand, then hand-edit the
- * result into paradoc/CHANGELOG.md.
+ * result into framework/CHANGELOG.md.
  *
  * Usage:
  *   tsx scripts/changelog-draft.ts [next-version]
@@ -25,7 +25,7 @@ function lastVersionTag(): string | null {
 
 export function prTitlesSince(tag: string | null, repositoryRoot = sh("git rev-parse --show-toplevel")): string[] {
   const range = tag ? `${tag}..HEAD` : "HEAD";
-  const publicRoot = resolve(repositoryRoot, "paradoc");
+  const publicRoot = resolve(repositoryRoot, "framework");
   // Squashed PR commits carry the PR title. Restrict the draft to the public subtree.
   const log = execFileSync(
     "git",

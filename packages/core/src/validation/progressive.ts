@@ -1,4 +1,4 @@
-import type { Attachment, Checklist, ChecklistItem, Form, FormParty, RuntimeParty } from '@paradoc/types'
+import type { Attachment, Checklist, ChecklistItem, Form, FormParty, RuntimeParty } from '@asterdoc/types'
 import type { ValidationError } from '@/types'
 import { compile } from '@/inference'
 import { jsonSchemaToZod, mapZodIssueToValidationError } from './data'

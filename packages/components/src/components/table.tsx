@@ -1,7 +1,7 @@
 /** @jsxRuntime classic */
 import React from "react";
 import type { ReactNode } from "react";
-import { RENDER_ATTRIBUTES, scaleTextClasses, useDocumentTokens, useList, usePage, useTotals } from "@paradoc/react";
+import { RENDER_ATTRIBUTES, scaleTextClasses, useDocumentTokens, useList, usePage, useTotals } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface TableColumn {
@@ -30,7 +30,7 @@ export interface TableFooterRow {
  * would measure the header one line short of what a copy actually draws. A
  * non-breaking space keeps the same font metrics, and so the same line
  * height, as the real label the copy substitutes in its place — see
- * `revealContinuedLabel` in `@paradoc/react-pdf`'s `src/tree.ts`, the
+ * `revealContinuedLabel` in `@asterdoc/react-pdf`'s `src/tree.ts`, the
  * translation that makes the substitution on the PDF path's one flat render.
  */
 const CONTINUED_LABEL_PLACEHOLDER = "\u00a0";

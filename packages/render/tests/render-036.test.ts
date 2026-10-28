@@ -3,7 +3,7 @@
  * reserved FormData root.
  */
 import { describe, expect, test } from 'vitest'
-import type { FormData } from '@paradoc/types'
+import type { FormData } from '@asterdoc/types'
 import { flattenRenderData } from '../src/render-data'
 import { templateRoots } from '../src/template/context'
 import { renderText } from '../src/text/render'

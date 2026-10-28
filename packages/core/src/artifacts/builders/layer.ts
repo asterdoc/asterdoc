@@ -5,15 +5,15 @@
  * Replaces instanceof checks with duck typing via _isLayerBuilder property.
  */
 
-import { isPdfMimeType, LAYER_BINDINGS_RULE } from '@paradoc/schemas';
-import type { InlineLayer, FileLayer, Layer, LayerFont, LayerFormat, SignatureSlot } from '@paradoc/types';
+import { isPdfMimeType, LAYER_BINDINGS_RULE } from '@asterdoc/schemas';
+import type { InlineLayer, FileLayer, Layer, LayerFont, LayerFormat, SignatureSlot } from '@asterdoc/types';
 
 // ============================================================================
 // Layer Builder Marker
 // ============================================================================
 
 /** Symbol to identify layer builders without instanceof */
-const LAYER_BUILDER_MARKER = Symbol.for('paradoc.layer-builder');
+const LAYER_BUILDER_MARKER = Symbol.for('asterdoc.layer-builder');
 
 /** Check if a value is a layer builder */
 function isLayerBuilder(value: unknown): value is FileLayerBuilderType | InlineLayerBuilderType {
@@ -39,7 +39,7 @@ export interface FileLayerBuilderType {
 	font(value: LayerFont): FileLayerBuilderType;
 	/** Declare the presentation a PDF layer's template requires, such as money without a symbol. */
 	format(value: LayerFormat): FileLayerBuilderType;
-	/** Map each AcroForm field name in a PDF template to the Paradoc path that fills it. PDF layers only. */
+	/** Map each AcroForm field name in a PDF template to the Asterdoc path that fills it. PDF layers only. */
 	bindings(value: Record<string, string>): FileLayerBuilderType;
 	/** Reuse the bindings of a sibling PDF layer. PDF layers only. */
 	bindingsFrom(value: string): FileLayerBuilderType;

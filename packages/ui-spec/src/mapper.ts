@@ -1,7 +1,7 @@
 /**
- * Maps a Paradoc artifact field definition to a catalog spec node.
+ * Maps an Asterdoc artifact field definition to a catalog spec node.
  *
- * Single switch over the field types in @paradoc/types. For each field
+ * Single switch over the field types in @asterdoc/types. For each field
  * type, picks the appropriate catalog component and constructs props from
  * the field's metadata (label, description, min/max, options, default, etc.).
  *
@@ -36,7 +36,7 @@ import type {
 	RatingField,
 	CoordinateField,
 	BboxField,
-} from "@paradoc/types";
+} from "@asterdoc/types";
 
 import type { CatalogOption } from "./catalog.js";
 import type { SpecNode } from "./spec.js";
@@ -82,7 +82,7 @@ function optionToCatalogOption(option: EnumOption, ctx: MapperContext): CatalogO
 	return { label, value: option.value };
 }
 
-/** Map a Paradoc form field to a catalog spec node. */
+/** Map an Asterdoc form field to a catalog spec node. */
 export function fieldToSpec(field: FormField, ctx: MapperContext = {}): SpecNode {
 	const baseProps = {
 		label: field.label,
@@ -369,7 +369,7 @@ export function fieldToSpec(field: FormField, ctx: MapperContext = {}): SpecNode
 
 		default: {
 			// Exhaustiveness check: this should never compile if a new field
-			// type is added to @paradoc/types and not handled above.
+			// type is added to @asterdoc/types and not handled above.
 			const _exhaustive: never = field;
 			throw new Error(
 				`fieldToSpec: unhandled field type: ${JSON.stringify(_exhaustive)}`,

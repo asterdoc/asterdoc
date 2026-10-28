@@ -5,7 +5,7 @@
  * - Stdin (via "-" token)
  */
 
-import { parse } from '@paradoc/core'
+import { parse } from '@asterdoc/core'
 import { readTextInput } from './io.js'
 
 export interface DataInputResult {

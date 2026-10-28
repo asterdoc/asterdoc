@@ -30,7 +30,7 @@ const messages = (result: { error?: { issues: Array<{ message: string; path: Pro
 describe('schemas-012: the lock file schema', () => {
 	it('accepts a lock file as the CLI writes it', () => {
 		const lock = {
-			$schema: 'https://schema.paradoc.dev/lock.json',
+			$schema: 'https://schema.asterdoc.com/lock.json',
 			version: 1,
 			artifacts: {
 				'@acme/w9': lockedArtifact,

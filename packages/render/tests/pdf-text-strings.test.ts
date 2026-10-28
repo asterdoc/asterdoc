@@ -8,7 +8,7 @@
  * and "•—™" (80 84 92). Read results are checked against pdf.js.
  */
 
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
 import { extractPdfData, inspectAcroFormFields, renderPdf, type PdfFont } from '../src/pdf'
 import { decodeTextString, encodeTextString } from '../src/pdf/text-string'
@@ -19,7 +19,7 @@ import { fieldValuesWithPdfjs } from './pdfjs-reference'
 const bytes = (value: string) => [...value].map((char) => char.charCodeAt(0))
 const byteString = (values: number[]) => String.fromCharCode(...values)
 
-const cjk: PdfFont = { bytes: syntheticFont({ name: 'ParadocTestCJK', characters: '中文字漢𠀋 ' }), source: 'fonts/test-cjk.ttf' }
+const cjk: PdfFont = { bytes: syntheticFont({ name: 'AsterdocTestCJK', characters: '中文字漢𠀋 ' }), source: 'fonts/test-cjk.ttf' }
 const liberation: PdfFont = { bytes: liberationSans(), source: 'fonts/LiberationSans-Regular.ttf' }
 
 describe('decodeTextString', () => {
@@ -107,7 +107,7 @@ describe('writing field text into a PDF', () => {
       template: acroFormPdf([{ kind: 'choice', name: 'city', options: ['東京', 'Paris'] }]),
       data: { value: '東京' },
       bindings: { city: 'value' },
-      layerFont: { bytes: syntheticFont({ name: 'ParadocTestCity', characters: '東京 ' }), source: 'fonts/city.ttf' },
+      layerFont: { bytes: syntheticFont({ name: 'AsterdocTestCity', characters: '東京 ' }), source: 'fonts/city.ttf' },
     })
     expect(await fieldValuesWithPdfjs(filled)).toEqual({ city: '東京' })
     expect(new TextDecoder('ascii').decode(filled)).toMatch(/\/I \[0\]/)

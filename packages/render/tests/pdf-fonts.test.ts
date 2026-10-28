@@ -27,10 +27,10 @@ const COMB = 1 << 24
 
 const liberation: PdfFont = { bytes: liberationSans(), source: 'fonts/LiberationSans-Regular.ttf' }
 const cjk: PdfFont = {
-  bytes: syntheticFont({ name: 'ParadocTestCJK', characters: '中文字漢𠀋 ' }),
+  bytes: syntheticFont({ name: 'AsterdocTestCJK', characters: '中文字漢𠀋 ' }),
   source: 'fonts/test-cjk.ttf',
 }
-const cyrillicOnly = syntheticFont({ name: 'ParadocTestFormFont', characters: 'Жук ' })
+const cyrillicOnly = syntheticFont({ name: 'AsterdocTestFormFont', characters: 'Жук ' })
 
 const field = (overrides: Partial<FixtureField> = {}): FixtureField => ({
   name: 'name',
@@ -83,7 +83,7 @@ describe('declared fonts', () => {
     const value = '中文字漢𠀋'
     const result = await fill(value, { layerFont: cjk })
     expect(result.text).toBe(value)
-    expect(result.fonts).toEqual([{ name: 'ParadocTestCJK', missingFile: false }])
+    expect(result.fonts).toEqual([{ name: 'AsterdocTestCJK', missingFile: false }])
     expect(await fieldValuesWithPdfjs(result.filled)).toEqual({ name: value })
   })
 
@@ -99,13 +99,13 @@ describe('declared fonts', () => {
 
 describe('font order', () => {
   const override: PdfFont = {
-    bytes: syntheticFont({ name: 'ParadocTestOverride', characters: 'Жук ' }),
+    bytes: syntheticFont({ name: 'AsterdocTestOverride', characters: 'Жук ' }),
     source: 'override.ttf',
   }
 
   it('prefers the render-time font to the layer font', async () => {
     const result = await fill('Жук', { font: override, layerFont: liberation })
-    expect(result.fonts.map((font) => font.name)).toEqual(['ParadocTestOverride'])
+    expect(result.fonts.map((font) => font.name)).toEqual(['AsterdocTestOverride'])
   })
 
   it('falls through to the layer font for a value the render-time font cannot draw', async () => {
@@ -130,7 +130,7 @@ describe('the form\'s own font', () => {
   it('draws a value it covers with no font configured, embedded from the form', async () => {
     const result = await fill('Жук', {}, ownFont)
     expect(result.text).toBe('Жук')
-    expect(result.fonts).toEqual([{ name: 'ParadocTestFormFont', missingFile: false }])
+    expect(result.fonts).toEqual([{ name: 'AsterdocTestFormFont', missingFile: false }])
   })
 
   it('falls through to Helvetica for a Latin-1 value it does not cover', async () => {
@@ -161,7 +161,7 @@ describe('Helvetica and missing glyphs', () => {
   })
 
   it('never draws a mapped glyph that has no outline', async () => {
-    const hollow: PdfFont = { bytes: syntheticFont({ name: 'ParadocTestHollow', characters: '中', blank: '空' }), source: 'hollow.ttf' }
+    const hollow: PdfFont = { bytes: syntheticFont({ name: 'AsterdocTestHollow', characters: '中', blank: '空' }), source: 'hollow.ttf' }
     expect(await fill('中', { layerFont: hollow }).then((result) => result.text)).toBe('中')
     const error = await fillError(PdfFieldFillError, '中空', { layerFont: hollow })
     expect([error.reason, error.character]).toEqual(['missing-glyph', '空'])
@@ -175,7 +175,7 @@ describe('scripts that need shaping', () => {
     ['Devanagari', 'नमस्ते'],
     ['Thai', 'สวัสดี'],
   ])('rejects %s naming the field and the script, even with a font that covers it', async (script, value) => {
-    const covering: PdfFont = { bytes: syntheticFont({ name: 'ParadocTestCovering', characters: value }), source: 'covering.ttf' }
+    const covering: PdfFont = { bytes: syntheticFont({ name: 'AsterdocTestCovering', characters: value }), source: 'covering.ttf' }
     const error = await fillError(PdfFieldFillError, value, { layerFont: covering })
     expect([error.field, error.reason, error.script]).toEqual(['name', 'unsupported-script', script])
     expect(error.message).toContain('React composition')
@@ -196,7 +196,7 @@ describe('font sources', () => {
   })
 
   it('accepts a font whose license permits editable embedding', async () => {
-    const editable: PdfFont = { bytes: syntheticFont({ name: 'ParadocTestEditable', characters: 'Жук', fsType: 0x0008 }), source: 'editable.ttf' }
+    const editable: PdfFont = { bytes: syntheticFont({ name: 'AsterdocTestEditable', characters: 'Жук', fsType: 0x0008 }), source: 'editable.ttf' }
     expect((await fill('Жук', { layerFont: editable })).text).toBe('Жук')
   })
 })
@@ -222,7 +222,7 @@ describe('overlays', () => {
   })
 
   it('draws each overlay in the font it names, in drawing order, before the render font', async () => {
-    const cyrillic: PdfFont = { bytes: syntheticFont({ name: 'ParadocTestCyrillic', characters: 'Жук ' }), source: 'cyrillic.ttf' }
+    const cyrillic: PdfFont = { bytes: syntheticFont({ name: 'AsterdocTestCyrillic', characters: 'Жук ' }), source: 'cyrillic.ttf' }
     const flat = await renderPdf({
       template: pagePdf([[300, 300]]),
       data: {},
@@ -236,13 +236,13 @@ describe('overlays', () => {
     const items = await textItemsWithPdfjs(flat)
     expect(items.map((item) => item.text)).toEqual(['Жук', 'Жук', 'Жук'])
     const fonts = await fontsWithPdfjs(flat)
-    expect(fonts.map((font) => font.name).sort()).toEqual(['LiberationSans', 'ParadocTestCyrillic'])
+    expect(fonts.map((font) => font.name).sort()).toEqual(['AsterdocTestCyrillic', 'LiberationSans'])
     // Named once, embedded once.
-    expect(Buffer.from(flat).toString('latin1').match(/\/BaseFont \/ParadocTestCyrillic/g)).toHaveLength(2)
+    expect(Buffer.from(flat).toString('latin1').match(/\/BaseFont \/AsterdocTestCyrillic/g)).toHaveLength(2)
   })
 
   it('falls back from an overlay font that cannot draw the text, and names an unusable one', async () => {
-    const cyrillic: PdfFont = { bytes: syntheticFont({ name: 'ParadocTestCyrillic', characters: 'Жук' }), source: 'cyrillic.ttf' }
+    const cyrillic: PdfFont = { bytes: syntheticFont({ name: 'AsterdocTestCyrillic', characters: 'Жук' }), source: 'cyrillic.ttf' }
     const flat = await renderPdf({ template: pagePdf([[300, 300]]), data: {}, overlays: [{ page: 1, x: 20, y: 20, text: 'Ωμέγα', font: cyrillic }], font: liberation })
     expect(await fontsWithPdfjs(flat)).toEqual([{ name: 'LiberationSans', missingFile: false }])
     const bad = renderPdf({ template: pagePdf([[300, 300]]), data: {}, overlays: [{ page: 1, x: 20, y: 20, text: 'a', font: { bytes: new Uint8Array(13), source: 'fonts/bad.ttf' } }] })
@@ -250,11 +250,11 @@ describe('overlays', () => {
   })
 
   it('keeps earlier overlay text in its own font when a later render draws on the same page', async () => {
-    const cyrillic: PdfFont = { bytes: syntheticFont({ name: 'ParadocTestCyrillic', characters: 'Жук' }), source: 'cyrillic.ttf' }
+    const cyrillic: PdfFont = { bytes: syntheticFont({ name: 'AsterdocTestCyrillic', characters: 'Жук' }), source: 'cyrillic.ttf' }
     const first = await renderPdf({ template: pagePdf([[300, 300]]), data: {}, overlays: [{ page: 1, x: 20, y: 20, text: 'Жук' }], font: cyrillic })
     const second = await renderPdf({ template: first, data: {}, overlays: [{ page: 1, x: 20, y: 60, text: 'Ωμέγα' }], font: liberation })
     expect((await textItemsWithPdfjs(second)).map((item) => item.text)).toEqual(['Жук', 'Ωμέγα'])
-    expect((await fontsWithPdfjs(second)).map((font) => font.name).sort()).toEqual(['LiberationSans', 'ParadocTestCyrillic'])
+    expect((await fontsWithPdfjs(second)).map((font) => font.name).sort()).toEqual(['AsterdocTestCyrillic', 'LiberationSans'])
   })
 
   it('shrinks to fit its width, and fails with an overflow error below the minimum size', async () => {
@@ -270,12 +270,12 @@ describe('font metrics', () => {
     const metrics = pdfFontMetrics(liberation)
     expect(metrics.canDraw('Жук Ωμέγα\n')).toBe(true)
     expect(metrics.canDraw('Жук 中')).toBe(false)
-    const hollow = pdfFontMetrics({ bytes: syntheticFont({ name: 'ParadocTestHollow', characters: '中', blank: '空' }), source: 'hollow.ttf' })
+    const hollow = pdfFontMetrics({ bytes: syntheticFont({ name: 'AsterdocTestHollow', characters: '中', blank: '空' }), source: 'hollow.ttf' })
     expect([hollow.canDraw('中'), hollow.canDraw('空')]).toEqual([true, false])
   })
 
   it('refuses a script that needs shaping even when the font covers it', () => {
-    const covering = pdfFontMetrics({ bytes: syntheticFont({ name: 'ParadocTestCovering', characters: 'שלום' }), source: 'covering.ttf' })
+    const covering = pdfFontMetrics({ bytes: syntheticFont({ name: 'AsterdocTestCovering', characters: 'שלום' }), source: 'covering.ttf' })
     expect(covering.canDraw('שלום')).toBe(false)
   })
 

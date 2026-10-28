@@ -7,7 +7,7 @@
  * here once so rendering and checking read the same tree.
  */
 
-import { parse, type Expr } from '@paradoc/expr'
+import { parse, type Expr } from '@asterdoc/expr'
 import { removedSyntaxHint, TemplateError, type TemplateDiagnostic, type TemplatePosition } from './errors'
 
 export interface ExpressionSlot {

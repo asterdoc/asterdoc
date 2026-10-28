@@ -1,6 +1,6 @@
 ---
 title: textRenderer
-description: Render Paradoc artifacts to text-based formats
+description: Render Asterdoc artifacts to text-based formats
 ---
 
 Render forms to HTML, Markdown, or plain text. Templates keep the familiar
@@ -13,8 +13,8 @@ are formatted from their schema types.
 ## Example
 
 ```ts
-import { p } from '@paradoc/core'
-import { textRenderer } from '@paradoc/render/text'
+import { p } from '@asterdoc/core'
+import { textRenderer } from '@asterdoc/render/text'
 
 const form = p.form({
   name: 'receipt',
@@ -63,7 +63,7 @@ const output = await filled.render({
 From the unified package's text entry point:
 
 ```ts
-import { textRenderer } from '@paradoc/render/text'
+import { textRenderer } from '@asterdoc/render/text'
 ```
 
 ## API
@@ -73,7 +73,7 @@ import { textRenderer } from '@paradoc/render/text'
 Factory function that creates a configured text renderer instance.
 
 ```ts
-function textRenderer(options?: TextRendererOptions): ParadocRenderer<
+function textRenderer(options?: TextRendererOptions): AsterdocRenderer<
   RendererLayer & { type: 'text'; content: string },
   string
 >
@@ -106,7 +106,7 @@ function textRenderer(options?: TextRendererOptions): ParadocRenderer<
 
 #### Returns
 
-Returns an `ParadocRenderer` object with:
+Returns an `AsterdocRenderer` object with:
 
 <PropertiesTable properties={[
   { name: 'id', type: '"text"', description: 'Renderer identifier' },
@@ -134,7 +134,7 @@ function renderText(options: {
 #### Parameters
 
 <PropertiesTable properties={[
-  { name: 'template', type: 'string', description: 'Paradoc template string' },
+  { name: 'template', type: 'string', description: 'Asterdoc template string' },
   { name: 'data', type: 'Record<string, unknown>', description: 'Data object to populate the template' },
   { name: 'form', type: 'Form', description: 'Form schema for automatic field-aware formatting', isOptional: true },
   { name: 'formatter', type: 'Formatter', description: 'Formatter used for declared artifact values.', isOptional: true },
@@ -203,8 +203,8 @@ const output = await filled.render({
 Pass a formatter for a precise locale or formatting policy:
 
 ```ts
-import { textRenderer } from '@paradoc/render/text'
-import { createFormatter } from '@paradoc/format'
+import { textRenderer } from '@asterdoc/render/text'
+import { createFormatter } from '@asterdoc/format'
 
 const renderer = textRenderer({
   formatter: createFormatter({ locale: 'de-DE' })
@@ -215,7 +215,7 @@ const renderer = textRenderer({
 
 ## Values in templates
 
-A template names each value by its path, such as `{{fields.buyerFullName}}`. A text layer takes no `bindings` or `bindingsFrom`, and validation rejects them there: bindings belong to [PDF layers](/sdk/renderers/pdf), where they map AcroForm field names to Paradoc paths.
+A template names each value by its path, such as `{{fields.buyerFullName}}`. A text layer takes no `bindings` or `bindingsFrom`, and validation rejects them there: bindings belong to [PDF layers](/sdk/renderers/pdf), where they map AcroForm field names to Asterdoc paths.
 
 ## Signature and Initials Directives
 

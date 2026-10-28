@@ -90,7 +90,7 @@ import {
   type PageDimensions,
   DEFAULT_TYPOGRAPHY,
   type Typography as Rhythm,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import { renderPdf, type PdfAdapterName, type PdfImage } from "../../src";
 import { closeChromium } from "../../src/adapters/chromium";
 import { readPdf, type ReadPage } from "../pdf-reader";

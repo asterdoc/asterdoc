@@ -1,7 +1,7 @@
 /**
  * Expression types for typed computed values
  *
- * These types correspond to the Expression schema in @paradoc/schemas.
+ * These types correspond to the Expression schema in @asterdoc/schemas.
  */
 
 // ============================================================================

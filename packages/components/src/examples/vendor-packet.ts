@@ -8,11 +8,11 @@
  * 1. **A composition.** The purchase order, an artifact with a React layer,
  *    rendered live on screen and to PDF by the renderer registered for
  *    `text/tsx`. Both parties sign it.
- * 2. **A registry PDF form.** The IRS W-9 from `@paradoc/essentials`, filled
+ * 2. **A registry PDF form.** The IRS W-9 from `@asterdoc/essentials`, filled
  *    through its official PDF layer and signed by the taxpayer. The bundle
  *    names it by its registry slug; the caller supplies the filled draft,
  *    because the bundle declaration does not load registry artifacts. The
- *    block preview uses `@paradoc/essentials` to supply this part.
+ *    block preview uses `@asterdoc/essentials` to supply this part.
  * 3. **An annex.** A certificate of insurance the vendor supplies as PDF bytes.
  *    The bundle declares what it is; the packet carries the bytes.
  *
@@ -22,8 +22,8 @@
  * that each get their parts from somewhere different.
  */
 
-import { p } from "@paradoc/core";
-import type { Bundle, Document } from "@paradoc/types";
+import { p } from "@asterdoc/core";
+import type { Bundle, Document } from "@asterdoc/types";
 
 import { purchaseOrderForm } from "./purchase-order";
 
@@ -38,7 +38,7 @@ export const VENDOR_PACKET_KEYS = {
 } as const satisfies Record<string, string>;
 
 /** The registry slug the packet names the W-9 by. */
-export const VENDOR_PACKET_W9_SLUG = "@paradoc/essentials/w-9";
+export const VENDOR_PACKET_W9_SLUG = "@asterdoc/essentials/w-9";
 
 /** The W-9 edition the packet declares; the seal refuses a draft of any other. */
 export const VENDOR_PACKET_W9_EDITION = "2024-03";
@@ -107,14 +107,14 @@ export const VENDOR_PACKET_ANNEX_FILENAME = "certificate-of-insurance.pdf";
  * A block installed into a browser project has no Node and no engine, so it
  * cannot render the certificate to have an annex. The file beside this module
  * is what it imports instead, exported as
- * `@paradoc/components/examples/certificate-of-insurance.pdf`.
+ * `@asterdoc/components/examples/certificate-of-insurance.pdf`.
  *
  * It is generated, not authored. `insuranceCertificatePdf()` in
- * `@paradoc/components/examples/pdf` draws it from `InsuranceCertificateDocument`
+ * `@asterdoc/components/examples/pdf` draws it from `InsuranceCertificateDocument`
  * with the default adapter, and that is how to regenerate it:
  *
  * ```sh
- * pnpm --filter @paradoc/components regenerate:annex
+ * pnpm --filter @asterdoc/components regenerate:annex
  * ```
  */
 export const VENDOR_PACKET_ANNEX_PATH = "certificate-of-insurance.pdf";

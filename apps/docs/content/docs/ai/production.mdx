@@ -1,8 +1,8 @@
 ---
 title: Prepare for production
 description: Restrict where the tools fetch from, use a private registry, and keep large results away from the model
-ogTitle: Run Paradoc AI tools in production
-ogDescription: Origin allowlists, private registry credentials, per-request context, and output limits for Paradoc AI tools
+ogTitle: Run Asterdoc AI tools in production
+ogDescription: Origin allowlists, private registry credentials, per-request context, and output limits for Asterdoc AI tools
 ---
 
 The quickstart uses defaults that suit a first run. Before real users talk to your agent, set these five things.
@@ -12,12 +12,12 @@ The quickstart uses defaults that suit a first run. Before real users talk to yo
 Create the tools inside your request handler, with a configuration like this one:
 
 ```typescript title="tools.ts"
-import { createToolExecutionContext, paradocTools, type ParadocToolsConfig } from "@paradoc/ai-sdk"
+import { createToolExecutionContext, asterdocTools, type AsterdocToolsConfig } from "@asterdoc/ai-sdk"
 
 const REGISTRY = "https://forms.example.com"
 
 export function toolsForRequest(request: Request) {
-  const config: ParadocToolsConfig = {
+  const config: AsterdocToolsConfig = {
     defaultRegistryUrl: REGISTRY,
     // Fetch only from your registry, not from a URL the model writes.
     approvedOrigins: [REGISTRY],
@@ -32,11 +32,11 @@ export function toolsForRequest(request: Request) {
     // The model gets at most 16 KB of each result. Your code gets all of it.
     maxOutputBytes: 16_384,
   }
-  return paradocTools(config)
+  return asterdocTools(config)
 }
 ```
 
-The example imports from `@paradoc/ai-sdk`. `@paradoc/tanstack-ai` and `@paradoc/mastra` export the same `paradocTools`, `createToolExecutionContext`, and `ParadocToolsConfig`, and take the same configuration.
+The example imports from `@asterdoc/ai-sdk`. `@asterdoc/tanstack-ai` and `@asterdoc/mastra` export the same `asterdocTools`, `createToolExecutionContext`, and `AsterdocToolsConfig`, and take the same configuration.
 
 ### Fetch only from your registry
 
@@ -75,10 +75,10 @@ In your own code, check `error.code` before you use a result:
 | `identity_mismatch` | The artifact file states another name, version, or edition than `registry.json` lists for it |
 | `invalid_artifact` | The artifact file could not be parsed, or is not an object. `render` and `extract` also return it for an artifact that fails schema validation. |
 | `artifact_fetch_error`, `registry_fetch_error` | A fetch failed, or the origin is not approved. Other tools report the same failure with their own code, such as `fill_error` or `render_error`, and the message says why. |
-| `outdated-version`, `missing-version`, `unknown-version` | The artifact's `$schema` is not the current schema version. Run `paradoc migrate` on the artifact and publish it again. |
+| `outdated-version`, `missing-version`, `unknown-version` | The artifact's `$schema` is not the current schema version. Run `asterdoc migrate` on the artifact and publish it again. |
 | `validation_error` | A value does not match the form |
 | `unsupported_artifact` | The tool does not support this kind of artifact, for example `fill` on a document |
 
 ## Publish artifacts on the current schema
 
-An artifact that the tools load from a registry or a URL must declare the current schema version in `$schema`. When you upgrade the Paradoc packages, run [`paradoc migrate`](/cli/commands/migrate) on your artifacts and publish them again. See [loading rules](/schemas#loading-rules).
+An artifact that the tools load from a registry or a URL must declare the current schema version in `$schema`. When you upgrade the Asterdoc packages, run [`asterdoc migrate`](/cli/commands/migrate) on your artifacts and publish them again. See [loading rules](/schemas#loading-rules).

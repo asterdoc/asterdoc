@@ -1,5 +1,5 @@
 /**
- * Sync the canonical paradoc/CHANGELOG.md into the docs content tree as an
+ * Sync the canonical framework/CHANGELOG.md into the docs content tree as an
  * MDX page so it renders at /changelog. Runs in `prebuild` / `predev`.
  *
  * The canonical changelog is the single source of truth and is NOT shipped
@@ -17,7 +17,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-// scripts/ -> apps/docs/ -> apps/ -> paradoc/
+// scripts/ -> apps/docs/ -> apps/ -> framework/
 const SOURCE = resolve(here, "../../../CHANGELOG.md");
 const TARGET_DIR = resolve(here, "../content/docs/changelog");
 const INDEX_TARGET = resolve(TARGET_DIR, "index.mdx");
@@ -91,7 +91,7 @@ export function buildPage(markdown: string): string {
     `ogDescription: "${escapeYaml(description)}"`,
     "---",
     "",
-    "{/* GENERATED FILE. Edit paradoc/CHANGELOG.md and run `pnpm sync:changelog`. */}",
+    "{/* GENERATED FILE. Edit framework/CHANGELOG.md and run `pnpm sync:changelog`. */}",
     "",
   ].join("\n");
 
@@ -115,9 +115,9 @@ export function promoteHeadings(markdown: string): string {
 }
 
 export function buildReleasePage(release: ReleaseSection): string {
-  const title = `Paradoc v${release.version}`;
+  const title = `Asterdoc v${release.version}`;
   const description = `Released ${release.date}`;
-  const ogDescription = `Release notes for Paradoc v${release.version}`;
+  const ogDescription = `Release notes for Asterdoc v${release.version}`;
   const body = escapeMdxProse(promoteHeadings(release.body));
 
   const frontmatter = [
@@ -128,7 +128,7 @@ export function buildReleasePage(release: ReleaseSection): string {
     `ogDescription: "${escapeYaml(ogDescription)}"`,
     "---",
     "",
-    "{/* GENERATED FILE. Edit paradoc/CHANGELOG.md and run `pnpm sync:changelog`. */}",
+    "{/* GENERATED FILE. Edit framework/CHANGELOG.md and run `pnpm sync:changelog`. */}",
     "",
   ].join("\n");
 

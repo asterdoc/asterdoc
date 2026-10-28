@@ -2,7 +2,7 @@
  * HTTP resolver for any environment with the Fetch API.
  */
 
-import type { Resolver } from '@paradoc/types'
+import type { Resolver } from '@asterdoc/types'
 import { invalidOptions, invalidPath, notFound, outsideRoot, resolverError } from '../shared/errors'
 import { normalizeRootedPath } from '../shared/path'
 
@@ -35,7 +35,7 @@ export interface HttpResolverOptions {
  *
  * @example
  * ```typescript
- * import { createHttpResolver } from '@paradoc/resolvers/http'
+ * import { createHttpResolver } from '@asterdoc/resolvers/http'
  *
  * const resolver = createHttpResolver({ baseUrl: 'https://example.com/forms/w-9/' })
  *

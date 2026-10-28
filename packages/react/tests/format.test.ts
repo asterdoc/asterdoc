@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createFormatter } from "@paradoc/format";
+import { createFormatter } from "@asterdoc/format";
 import { createValueFormatter, formatByType, ArtifactFieldFormatError } from "../src/lib/format";
-import { renderText } from "@paradoc/render/text";
-import type { Form, FormField, Formatter } from "@paradoc/types";
+import { renderText } from "@asterdoc/render/text";
+import type { Form, FormField, Formatter } from "@asterdoc/types";
 import { CompositeFieldPathError } from "../src/lib/fields";
 const money = { type: "money" } as FormField;
 
@@ -19,7 +19,7 @@ const survey = {
   unscored: { type: "rating" } as FormField,
 };
 
-/** The same five values through `@paradoc/render`'s own text output. */
+/** The same five values through `@asterdoc/render`'s own text output. */
 function renderedByText(formatter?: Formatter): string[] {
   return renderText({
     form: { fields: survey } as unknown as Form,

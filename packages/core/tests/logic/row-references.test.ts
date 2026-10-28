@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
-import { checkBooleanGate, createTypeEnv, T } from '@paradoc/expr'
-import type { Bundle, Form, FormField } from '@paradoc/types'
+import { checkBooleanGate, createTypeEnv, T } from '@asterdoc/expr'
+import type { Bundle, Form, FormField } from '@asterdoc/types'
 import { form } from '@/artifacts'
 import { validateFormDefs } from '@/logic/design-time/validation/validate-form-logic'
 import { validateBundleDefs } from '@/logic/design-time/validation/validate-bundle-logic'

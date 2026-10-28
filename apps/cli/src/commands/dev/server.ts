@@ -1,5 +1,5 @@
 /**
- * The dev server behind `paradoc dev`.
+ * The dev server behind `asterdoc dev`.
  *
  * One Vite server rooted at the project. Vite compiles the compositions for the
  * browser, which draws the paginated document, and it compiles the same modules
@@ -8,7 +8,7 @@
  * That is the lab's arrangement, generalized from one document to every
  * composition the project holds.
  *
- * The PDF route checks before it renders. `@paradoc/react-pdf/check` walks the tree
+ * The PDF route checks before it renders. `@asterdoc/react-pdf/check` walks the tree
  * the way the PDF path does and names the classes the engine cannot express and
  * the paths the artifact does not declare; those come back as findings the page
  * shows where the PDF would have been. Only a tree with no findings is rendered.
@@ -24,7 +24,7 @@ import { readFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { resolve } from 'node:path'
 
-import type { PageBreakPlan } from '@paradoc/react-pdf'
+import type { PageBreakPlan } from '@asterdoc/react-pdf'
 import type { Plugin, ViteDevServer } from 'vite'
 
 import { loadDiscovery, type DiscoveredComposition } from './discovery.js'
@@ -48,7 +48,7 @@ interface PdfRequest {
 	plan?: PageBreakPlan
 }
 
-/** How `paradoc dev` was invoked. */
+/** How `asterdoc dev` was invoked. */
 export interface DevServerOptions {
 	/** Project root: what is discovered, and what Vite serves. */
 	root: string
@@ -82,7 +82,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
 
 	const server = await toolchain.createServer({
 		root,
-		// The project's own Vite config is not read. `paradoc dev` serves one page it
+		// The project's own Vite config is not read. `asterdoc dev` serves one page it
 		// generates itself, and a config written for the project's application
 		// would apply its plugins, aliases and entry points to a page that is not
 		// the application. A composition imports packages and its own neighbours;
@@ -98,7 +98,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
 			host: options.host,
 			strictPort: true,
 			open: options.open,
-			// The document's typeface travels with `@paradoc/react`, which a
+			// The document's typeface travels with `@asterdoc/react`, which a
 			// workspace links from outside the project. Vite serves nothing outside
 			// the root by default, so the package and the packages it installed are
 			// named exactly, or the preview loads a page with no font and paginates
@@ -300,7 +300,7 @@ function harnessPlugin(
 	}
 
 	return {
-		name: 'paradoc:dev-harness',
+		name: 'asterdoc:dev-harness',
 		// Ahead of Vite's own resolution, which would look for these on disk.
 		enforce: 'pre',
 
@@ -414,18 +414,18 @@ async function renderRoute(
 		)
 		if (!data) throw new Error(messages.noSample)
 
-		// React comes from the project through Vite, not from `paradoc`: the element
+		// React comes from the project through Vite, not from `asterdoc`: the element
 		// has to be made by the same React the composition imports, which is what
 		// the generated element module guarantees.
 		const { element: makeElement } = (await server.ssrLoadModule(HARNESS_MODULES.element)) as {
 			element: (type: unknown, props: unknown) => unknown
 		}
 		const element = makeElement(Composition, { artifact: entry.artifact.artifact, data })
-		// The same walk `paradoc check` runs, over the element the project's own
+		// The same walk `asterdoc check` runs, over the element the project's own
 		// React built. `missingImages` is not a verdict here: this command
 		// resolves image bytes itself, just below, so a composition that names an
 		// image the tool can supply is not broken for needing it.
-		const { checkElement } = (await server.ssrLoadModule('@paradoc/react-pdf/check')) as {
+		const { checkElement } = (await server.ssrLoadModule('@asterdoc/react-pdf/check')) as {
 			checkElement: (element: unknown, options?: unknown) => Promise<CheckResult>
 		}
 		const check = await checkElement(element)
@@ -444,7 +444,7 @@ async function renderRoute(
 		]
 		if (faults.length > 0) return findings(response, faults)
 
-		const { renderPdf } = (await server.ssrLoadModule('@paradoc/react-pdf')) as {
+		const { renderPdf } = (await server.ssrLoadModule('@asterdoc/react-pdf')) as {
 			renderPdf: (element: unknown, options?: unknown) => Promise<RenderResult>
 		}
 		const result = await renderPdf(element, {
@@ -455,10 +455,10 @@ async function renderRoute(
 		response.setHeader('Content-Type', 'application/pdf')
 		response.setHeader('Cache-Control', 'no-store')
 		if (result.unknownBreaks.length > 0) {
-			response.setHeader('X-Paradoc-Unknown-Breaks', result.unknownBreaks.join(','))
+			response.setHeader('X-Asterdoc-Unknown-Breaks', result.unknownBreaks.join(','))
 		}
 		if (result.unknownRepeats.length > 0) {
-			response.setHeader('X-Paradoc-Unknown-Repeats', result.unknownRepeats.join(','))
+			response.setHeader('X-Asterdoc-Unknown-Repeats', result.unknownRepeats.join(','))
 		}
 		response.end(Buffer.from(result.bytes))
 	} catch (error) {
@@ -488,7 +488,7 @@ function isWithin(root: string, candidate: string): boolean {
 	return path === base || path.startsWith(`${base}/`)
 }
 
-/** What `@paradoc/react-pdf/check` answers with. */
+/** What `@asterdoc/react-pdf/check` answers with. */
 interface CheckResult {
 	unsupportedClasses: string[]
 	unresolvedPaths: string[]

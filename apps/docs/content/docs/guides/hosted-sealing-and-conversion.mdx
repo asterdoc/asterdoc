@@ -1,9 +1,9 @@
 ---
 title: Hosted sealing & conversion
-description: Use the Paradoc Platform API to seal and convert documents
+description: Use the Asterdoc Platform API to seal and convert documents
 ---
 
-Paradoc provides hosted sealing and document conversion for applications that
+Asterdoc provides hosted sealing and document conversion for applications that
 do not run their own conversion infrastructure.
 
 ## Hosted seal adapter
@@ -15,15 +15,15 @@ file-backed, bind its resolver where `form` is constructed —
 longer takes one.
 
 ```ts
-import { hostedSealAdapter } from '@paradoc/sdk'
+import { hostedSealAdapter } from '@asterdoc/sdk'
 
 const signable = await form
   .fill(data)
   .setTargetLayer('markdown')
   .seal({
     adapter: hostedSealAdapter({
-      apiKey: process.env.PARADOC_API_KEY!,
-      baseUrl: 'https://api.paradoc.dev',
+      apiKey: process.env.ASTERDOC_API_KEY!,
+      baseUrl: 'https://api.asterdoc.com',
       fetch,
     }),
   })
@@ -34,7 +34,7 @@ and requires an API key with `execution:run`. The result is returned directly
 to the caller; see [Platform access](/guides/platform-access) for the boundary
 between immediate execution results and stored content.
 
-`baseUrl` defaults to `https://api.paradoc.dev`; `fetch` can replace the request implementation. Pass `timeoutMs` to abort a conversion that takes too long, for example
+`baseUrl` defaults to `https://api.asterdoc.com`; `fetch` can replace the request implementation. Pass `timeoutMs` to abort a conversion that takes too long, for example
 `timeoutMs: 150_000`. Keep it above the 120 s server deadline described below. The timer starts when each request starts. A failed or unreadable response throws
 `TimeoutError` on timeout, or `HostedConversionError` for a failed response, which carries the HTTP `status` and the start of the
 response body in `bodyExcerpt`.

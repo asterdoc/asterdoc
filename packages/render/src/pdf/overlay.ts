@@ -55,7 +55,7 @@ interface EmbeddedImage {
 
 function textValue(overlay: PdfTextOverlay, data: Record<string, unknown>): unknown {
   if ('text' in overlay) return overlay.text
-  // An overlay field is a Paradoc path, read as a binding reads it: `fields.x` is `x`.
+  // An overlay field is an Asterdoc path, read as a binding reads it: `fields.x` is `x`.
   return getPath(data, renderDataPath(data, overlay.field))
 }
 

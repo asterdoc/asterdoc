@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { checklist, document, form } from '@/artifacts'
-import type { FormData, ParadocRenderer, RendererLayer, RenderRequest } from '@paradoc/types'
+import type { FormData, AsterdocRenderer, RendererLayer, RenderRequest } from '@asterdoc/types'
 
 /**
  * The payload core hands a renderer is the runtime `FormData`: field values in
@@ -30,7 +30,7 @@ const application = form({
 /** A renderer that records the data of every request it is handed. */
 function recordingRenderer() {
 	const seen: FormData[] = []
-	const renderer: ParadocRenderer<RendererLayer, string> = {
+	const renderer: AsterdocRenderer<RendererLayer, string> = {
 		id: 'recording',
 		render(request: RenderRequest<RendererLayer>) {
 			if (request.kind !== 'form') throw new Error(`expected a form request, got ${request.kind}`)
@@ -109,7 +109,7 @@ describe('the render request a definition-level render hands its renderer', () =
 /** A renderer that records every request it is handed, whole. */
 function requestRecorder() {
 	const seen: RenderRequest<RendererLayer>[] = []
-	const renderer: ParadocRenderer<RendererLayer, string> = {
+	const renderer: AsterdocRenderer<RendererLayer, string> = {
 		id: 'request-recorder',
 		render(request: RenderRequest<RendererLayer>) {
 			seen.push(request)

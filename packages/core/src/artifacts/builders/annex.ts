@@ -4,7 +4,7 @@
  * Uses factory function and object literal instead of class.
  */
 
-import type { CondExpr, FormAnnex } from '@paradoc/types';
+import type { CondExpr, FormAnnex } from '@asterdoc/types';
 import { parseFormAnnex } from '@/validation/artifact-parsers';
 
 type BuiltAnnex<R extends CondExpr | undefined> = R extends undefined

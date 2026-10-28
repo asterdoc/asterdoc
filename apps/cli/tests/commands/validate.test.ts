@@ -4,7 +4,7 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -18,7 +18,7 @@ describe('CLI Validate Command', () => {
   let tempDir: string
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-validate-test-'))
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-validate-test-'))
   })
 
   afterEach(async () => {
@@ -243,7 +243,7 @@ describe('CLI Validate Command', () => {
     it('fails on a missing layer file', async () => {
       const artifactPath = path.join(tempDir, 'bad-layers.json')
       await fs.writeFile(artifactPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'bad-layers',
         version: '1.0.0',
@@ -292,7 +292,7 @@ describe('CLI Validate Command', () => {
       const formPath = path.join(tempDir, 'templated.json')
       await fs.writeFile(path.join(tempDir, 'terms.md'), template)
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'templated',
         fields: { qty: { type: 'number', label: 'Quantity' } },
@@ -319,7 +319,7 @@ describe('CLI Validate Command', () => {
       const formPath = path.join(tempDir, 'signed.json')
       await fs.writeFile(path.join(tempDir, 'terms.md'), template)
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'signed',
         parties: { client: { label: 'Client', partyType: 'person', signature: { required: true } } },
@@ -386,7 +386,7 @@ describe('CLI Validate Command', () => {
       const formPath = path.join(tempDir, 'bound.json')
       await fs.writeFile(path.join(tempDir, 'bound.pdf'), textFieldPdf('amountSource', 48, 12))
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'bound',
         fields: { amountSource: { label: 'Source', ...field } },
@@ -429,7 +429,7 @@ describe('CLI Validate Command', () => {
       const formPath = path.join(tempDir, 'guided.json')
       await fs.writeFile(path.join(tempDir, 'guide.md'), 'Fill it in.')
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'guided',
         fields: { name: { type: 'text', label: 'Name' } },
@@ -477,7 +477,7 @@ describe('CLI Validate Command', () => {
       const formPath = path.join(tempDir, 'pet.json')
       await fs.copyFile(path.join(fixturesDir, 'pet-addendum.pdf'), path.join(tempDir, 'pet.pdf'))
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'pet',
         fields: {
@@ -499,7 +499,7 @@ describe('CLI Validate Command', () => {
       const result = await executeCliCommand(['validate', await write({ petName: 'name' }), '--json'])
       expect(result.exitCode).toBe(1)
       expect(JSON.parse(result.stdout).errors).toEqual([expect.objectContaining({
-        message: expect.stringMatching(/^Layer "pdf", binding "petName": "name" is not a known Paradoc path.*The key "petName" is a field of this artifact/),
+        message: expect.stringMatching(/^Layer "pdf", binding "petName": "name" is not a known Asterdoc path.*The key "petName" is a field of this artifact/),
         path: ['layers', 'pdf', 'bindings', 'petName'],
       })])
     })
@@ -508,7 +508,7 @@ describe('CLI Validate Command', () => {
       const result = await executeCliCommand(['validate', await write({ name: 'petName', weight: 'petHeight' }), '--json'])
       expect(result.exitCode).toBe(1)
       expect(JSON.parse(result.stdout).errors).toEqual([expect.objectContaining({
-        message: expect.stringMatching(/^Layer "pdf", binding "weight": "petHeight" is not a known Paradoc path/),
+        message: expect.stringMatching(/^Layer "pdf", binding "weight": "petHeight" is not a known Asterdoc path/),
         path: ['layers', 'pdf', 'bindings', 'weight'],
       })])
     })

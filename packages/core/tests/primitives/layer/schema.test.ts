@@ -64,7 +64,7 @@ describe('Layer', () => {
 				});
 			});
 
-			it('binds AcroForm field names to Paradoc paths on a PDF layer', () => {
+			it('binds AcroForm field names to Asterdoc paths on a PDF layer', () => {
 				const bound = layer()
 					.file()
 					.path('w-9.pdf')

@@ -6,12 +6,12 @@
  * that file and does not depend on React: it selects a renderer by MIME type
  * from the `renderers` registry and hands it the layer. This is that renderer.
  *
- * It lives here, in `@paradoc/react-pdf`, rather than inside `@paradoc/render`,
- * because this package depends on `@paradoc/render` and registering there would
+ * It lives here, in `@asterdoc/react-pdf`, rather than inside `@asterdoc/render`,
+ * because this package depends on `@asterdoc/render` and registering there would
  * be a cycle. Registration is the consumer's, one line at the render call:
  *
  * ```ts
- * import { reactLayerRenderers } from "@paradoc/react-pdf";
+ * import { reactLayerRenderers } from "@asterdoc/react-pdf";
  *
  * const pdf = await form.render({
  *   layer: "composition",
@@ -52,22 +52,22 @@ import { isAbsolute, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { createElement, type ReactNode } from "react";
-import { pageTextRuns } from "@paradoc/render/pdf";
+import { pageTextRuns } from "@asterdoc/render/pdf";
 import type {
   Form,
-  ParadocRenderer,
+  AsterdocRenderer,
   ReactLayerMimeType,
   RendererLayer,
   RenderRequest,
   SigningMarker,
-} from "@paradoc/types";
+} from "@asterdoc/types";
 
 import {
   type DocumentData,
   isOutside,
   SigningMarkerProvider,
   type SigningMarks,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import { renderPdf, type RenderPdfOptions } from "./render";
 
 /** What a composition receives when core renders it through its layer. */
@@ -91,8 +91,8 @@ export interface ReactLayerRendererOptions {
   /**
    * Directory the layer's path resolves against, and the boundary the resolved
    * path may not leave. A layer path is relative to the artifact file that
-   * declares it, so this is that file's directory. `paradoc check` passes it
-   * for you; `paradoc dev` loads discovered modules through Vite instead.
+   * declares it, so this is that file's directory. `asterdoc check` passes it
+   * for you; `asterdoc dev` loads discovered modules through Vite instead.
    *
    * Leaving it unset turns the import route off entirely: a layer binds only
    * through `components`, and an unbound layer fails naming both options.
@@ -176,8 +176,8 @@ function compositionProps(request: RenderRequest<RendererLayer>): ReactLayerComp
 /**
  * Binds a layer's `path` or `key` to a component, exactly as {@link reactRenderer}
  * does before it renders. Exported for callers that need the component itself
- * rather than PDF bytes: `paradoc check` binds a composition this way to check
- * it without rendering it. `paradoc dev` loads discovered modules through Vite
+ * rather than PDF bytes: `asterdoc check` binds a composition this way to check
+ * it without rendering it. `asterdoc dev` loads discovered modules through Vite
  * instead of this import route.
  *
  * @throws {UnboundReactLayerError}
@@ -197,7 +197,7 @@ export async function bindComponent(
 
   // No `baseDir` means the import route is off entirely: `process.cwd()` is
   // never used as a fallback. A caller who does not control the artifact binds
-  // through `components` only and never sets `baseDir`; `paradoc check` passes
+  // through `components` only and never sets `baseDir`; `asterdoc check` passes
   // the declaring artifact's own directory.
   if (options.baseDir === undefined) {
     throw new UnboundReactLayerError(
@@ -340,7 +340,7 @@ async function assertMarkersSurvived(
  */
 export function reactRenderer(
   options: ReactLayerRendererOptions = {}
-): ParadocRenderer<RendererLayer, Uint8Array> {
+): AsterdocRenderer<RendererLayer, Uint8Array> {
   return {
     id: "react",
     async render(request: RenderRequest<RendererLayer>): Promise<Uint8Array> {
@@ -376,7 +376,7 @@ export function reactRenderer(
  */
 export function reactLayerRenderers(
   options: ReactLayerRendererOptions = {}
-): Record<ReactLayerMimeType, ParadocRenderer<RendererLayer, Uint8Array>> {
+): Record<ReactLayerMimeType, AsterdocRenderer<RendererLayer, Uint8Array>> {
   const renderer = reactRenderer(options);
   return { "text/tsx": renderer, "text/jsx": renderer };
 }

@@ -4,8 +4,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type { Form, FormField } from '@paradoc/types'
-import { buildRegistry, T, Values } from '@paradoc/expr'
+import type { Form, FormField } from '@asterdoc/types'
+import { buildRegistry, T, Values } from '@asterdoc/expr'
 import { form } from '@/artifacts'
 import { evaluateFormDefs } from '@/logic/runtime/evaluation/form-evaluator'
 import { evaluateFormRules } from '@/logic/runtime/evaluation/rule-evaluator'

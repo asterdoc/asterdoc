@@ -1,7 +1,7 @@
 {
-	"name": "@paradoc/resolvers",
-	"version": "0.8.0",
-	"description": "Read Paradoc artifact content from the local filesystem, over HTTP, or from memory.",
+	"name": "@asterdoc/resolvers",
+	"version": "0.9.0",
+	"description": "Read Asterdoc artifact content from the local filesystem, over HTTP, or from memory.",
 	"type": "module",
 	"exports": {
 		"./fs": {
@@ -27,7 +27,7 @@
 		"LICENSE"
 	],
 	"keywords": [
-		"paradoc",
+		"asterdoc",
 		"resolvers",
 		"filesystem",
 		"http",
@@ -36,20 +36,20 @@
 	],
 	"license": "MIT",
 	"author": {
-		"name": "Paradoc",
-		"url": "https://paradoc.dev"
+		"name": "Asterdoc",
+		"url": "https://asterdoc.com"
 	},
 	"engines": {
 		"node": ">=18"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/paradoc-dev/paradoc.git",
+		"url": "https://github.com/asterdoc/asterdoc.git",
 		"directory": "packages/resolvers"
 	},
-	"homepage": "https://paradoc.dev",
+	"homepage": "https://asterdoc.com",
 	"bugs": {
-		"url": "https://github.com/paradoc-dev/paradoc/issues"
+		"url": "https://github.com/asterdoc/asterdoc/issues"
 	},
 	"publishConfig": {
 		"access": "public"
@@ -66,11 +66,11 @@
 		"test:watch": "vitest"
 	},
 	"dependencies": {
-		"@paradoc/types": "workspace:^"
+		"@asterdoc/types": "workspace:^"
 	},
 	"devDependencies": {
-		"@paradoc/eslint-config": "workspace:*",
-		"@paradoc/typescript-config": "workspace:*",
+		"@asterdoc/eslint-config": "workspace:*",
+		"@asterdoc/typescript-config": "workspace:*",
 		"@types/node": "catalog:",
 		"eslint": "catalog:",
 		"tsup": "catalog:",

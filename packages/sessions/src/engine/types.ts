@@ -103,13 +103,13 @@ export type FieldValidation =
 	| { ok: true; value: unknown }
 	| { ok: false; issues: Issue[] };
 
-/** A field's effective status; `required` implies visible (see @paradoc/core). */
+/** A field's effective status; `required` implies visible (see @asterdoc/core). */
 export type FieldStatus = "hidden" | "optional" | "required";
 
 /**
  * Minimal subset of FillState that `execute()` needs.
  *
- * In production this is wired to `@paradoc/core`'s real FillState via a thin
+ * In production this is wired to `@asterdoc/core`'s real FillState via a thin
  * adapter; in tests it's built directly. Keeping the shape minimal keeps the
  * engine independent of core's evolution and makes tests cheap.
  */
@@ -158,7 +158,7 @@ export type AnnexValidation =
 
 /**
  * Read-only interface the engine uses to query the artifact. Tests build a
- * fake; production wires this to @paradoc/core via a factory in derive.ts.
+ * fake; production wires this to @asterdoc/core via a factory in derive.ts.
  */
 export interface ArtifactRuntime {
 	/** True iff the field exists in the artifact schema (regardless of visibility). */

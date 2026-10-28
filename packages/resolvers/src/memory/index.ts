@@ -1,4 +1,4 @@
-import type { Resolver } from '@paradoc/types'
+import type { Resolver } from '@asterdoc/types'
 import { invalidOptions, notFound } from '../shared/errors'
 
 /** Options for creating an in-memory resolver. */

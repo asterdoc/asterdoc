@@ -23,7 +23,7 @@ import {
   type MeasuredKeep,
   type PageFurniture,
   type PagePlan,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ProposalDocument, overflowProposalData, purchaseOrderData, purchaseOrderForm } from "../src/examples";

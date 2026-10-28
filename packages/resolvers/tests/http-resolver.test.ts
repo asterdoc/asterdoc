@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { createHttpResolver } from '@paradoc/resolvers/http'
+import { createHttpResolver } from '@asterdoc/resolvers/http'
 
 function recordingFetch(respond: (url: string) => Response = () => new Response(new Uint8Array([1, 2, 3]))) {
   const urls: string[] = []

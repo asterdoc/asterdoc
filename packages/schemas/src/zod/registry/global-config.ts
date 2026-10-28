@@ -1,7 +1,7 @@
 /**
  * Global Config Schema
  *
- * Defines the schema for ~/.paradoc/config.json
+ * Defines the schema for ~/.asterdoc/config.json
  * Used to configure registries and default settings at the user level.
  */
 
@@ -20,7 +20,7 @@ export const CacheConfigSchema = z.strictObject({
 		.describe('Default cache TTL in seconds. 0 disables caching. Default: 3600 (1 hour)')
 		.optional(),
 	directory: z.string()
-		.describe('Custom cache directory. A leading ~ uses the home directory; relative paths use the config file directory. Default: ~/.paradoc/cache')
+		.describe('Custom cache directory. A leading ~ uses the home directory; relative paths use the config file directory. Default: ~/.asterdoc/cache')
 		.optional(),
 }).meta({
 	title: 'CacheConfig',
@@ -69,7 +69,7 @@ export const SecurityConfigSchema = z.strictObject({
 });
 
 /**
- * Global config schema for ~/.paradoc/config.json
+ * Global config schema for ~/.asterdoc/config.json
  */
 export const GlobalConfigSchema = z.object({
 	$schema: z.url()
@@ -94,8 +94,8 @@ export const GlobalConfigSchema = z.object({
 		.describe('Anonymous telemetry identifier. The CLI generates it once and keeps it across resets.')
 		.optional(),
 }).strict().meta({
-	title: 'Paradoc Global Config',
-	description: 'Schema for ~/.paradoc/config.json global configuration file',
+	title: 'Asterdoc Global Config',
+	description: 'Schema for ~/.asterdoc/config.json global configuration file',
 });
 
 /**

@@ -18,7 +18,7 @@ export default defineConfig({
   sourcemap: false,
   clean: true,
   external: [
-    "@paradoc/core",
-    "@paradoc/types",
+    "@asterdoc/core",
+    "@asterdoc/types",
   ],
 });

@@ -1,8 +1,8 @@
 ---
 title: registry catalog
 description: Manage registry catalog items
-ogTitle: paradoc registry catalog
-ogDescription: Add and remove artifacts from a Paradoc registry catalog
+ogTitle: asterdoc registry catalog
+ogDescription: Add and remove artifacts from an Asterdoc registry catalog
 ---
 
 Manage the artifact source files that `registry.config.json` lists.
@@ -10,7 +10,7 @@ Manage the artifact source files that `registry.config.json` lists.
 ## Usage
 
 ```bash
-paradoc registry catalog <command> [options]
+asterdoc registry catalog <command> [options]
 ```
 
 ## Subcommands
@@ -27,7 +27,7 @@ paradoc registry catalog <command> [options]
 Add an artifact source file to the registry catalog.
 
 ```bash
-paradoc registry catalog add <artifact> [options]
+asterdoc registry catalog add <artifact> [options]
 ```
 
 ### Arguments
@@ -53,8 +53,8 @@ Search tags and default editions and versions are not set here. Edit `tags` and 
 ### Examples
 
 ```bash
-paradoc registry catalog add forms/w4/2024-1.1.0.json
-paradoc registry catalog add forms/lease.yaml -c ./my-registry/registry.config.json
+asterdoc registry catalog add forms/w4/2024-1.1.0.json
+asterdoc registry catalog add forms/lease.yaml -c ./my-registry/registry.config.json
 ```
 
 ### Output
@@ -71,8 +71,8 @@ Catalog now has 4 source file(s)
 Remove an artifact, or one source file of it, from the registry catalog.
 
 ```bash
-paradoc registry catalog remove <target> [options]
-paradoc registry catalog rm <target> [options]
+asterdoc registry catalog remove <target> [options]
+asterdoc registry catalog rm <target> [options]
 ```
 
 ### Arguments
@@ -95,8 +95,8 @@ Removes source files from `sources` in `registry.config.json`. It does not delet
 ### Examples
 
 ```bash
-paradoc registry catalog remove w9
-paradoc registry catalog rm forms/w4/2025-1.0.0.json -y
+asterdoc registry catalog remove w9
+asterdoc registry catalog rm forms/w4/2025-1.0.0.json -y
 ```
 
 ### Output

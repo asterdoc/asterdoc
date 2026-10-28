@@ -4,7 +4,7 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { PARADOC_SCHEMA_URL, FORM_FIELD_TYPES } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL, FORM_FIELD_TYPES } from '@asterdoc/schemas'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -18,7 +18,7 @@ describe('CLI New Command', () => {
 
   beforeEach(async () => {
     // Create a temporary directory for test artifacts
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-test-'))
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-test-'))
   })
 
   afterEach(async () => {
@@ -35,7 +35,7 @@ describe('CLI New Command', () => {
       const result = await executeCliCommand(['new', '--help'])
 
       expect(result.exitCode).toBe(0)
-      expect(result.stdout).toContain('Create new Paradoc artifacts')
+      expect(result.stdout).toContain('Create new Asterdoc artifacts')
       // Should list supported artifact types
       expect(result.stdout).toContain('form')
       expect(result.stdout).toContain('checklist')
@@ -84,7 +84,7 @@ describe('CLI New Command', () => {
       const yamlFile = files.find((f) => f.includes('yaml-form') && f.endsWith('.yaml'))
       expect(yamlFile).toBeDefined()
       const content = await fs.readFile(path.join(tempDir, yamlFile!), 'utf-8')
-      expect(content).toContain(`\n$schema: ${PARADOC_SCHEMA_URL}\n`)
+      expect(content).toContain(`\n$schema: ${ASTERDOC_SCHEMA_URL}\n`)
     })
 
     it('should support dry-run mode', async () => {
@@ -227,7 +227,7 @@ describe('CLI New Command', () => {
       const artifact = JSON.parse(content)
       expect(artifact.title).toBe('My Custom Title')
       expect(Object.keys(artifact)[0]).toBe('$schema')
-      expect(artifact.$schema).toBe(PARADOC_SCHEMA_URL)
+      expect(artifact.$schema).toBe(ASTERDOC_SCHEMA_URL)
     })
 
     it('should create form with --description', async () => {
@@ -294,7 +294,7 @@ describe('CLI New Command', () => {
     })
 
     describe.each(FORM_FIELD_TYPES.map((type) => [type]))('--field with type %s', (type) => {
-      it(`scaffolds a ${type} field that passes paradoc validate`, async () => {
+      it(`scaffolds a ${type} field that passes asterdoc validate`, async () => {
         const createResult = await executeCliCommand(
           ['new', 'form', `${type}-field-form`, '--yes', '--field', `sample:${type}`],
           { cwd: tempDir }
@@ -345,7 +345,7 @@ describe('CLI New Command', () => {
     })
 
     it('should create form in an absolute --dir as given, not nested under the working directory', async () => {
-      const target = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-new-dir-'))
+      const target = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-new-dir-'))
       try {
         const result = await executeCliCommand(['new', 'form', 'abs-form', '--yes', '--dir', target], { cwd: tempDir })
 

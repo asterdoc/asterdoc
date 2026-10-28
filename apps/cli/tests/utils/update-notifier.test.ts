@@ -28,8 +28,8 @@ describe('update-notifier', () => {
 	let originalIsTTY: boolean | undefined
 
 	beforeEach(async () => {
-		tempDir = await fs.mkdtemp(join(tmpdir(), 'paradoc-update-test-'))
-		cacheFile = join(tempDir, '.paradoc', 'update-check.json')
+		tempDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-update-test-'))
+		cacheFile = join(tempDir, '.asterdoc', 'update-check.json')
 		mockHome.value = tempDir
 		originalEnv = { ...process.env }
 		originalIsTTY = process.stdout.isTTY
@@ -40,7 +40,8 @@ describe('update-notifier', () => {
 		// Default: pretend we're in a TTY, not CI
 		Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true })
 		delete process.env.CI
-		delete process.env.PARADOC_NO_UPDATE_CHECK
+		delete process.env.ASTERDOC_NO_UPDATE_CHECK
+		delete process.env.ASTERDOC_CLI_PACKAGE
 		mockVersion.value = '0.1.3'
 	})
 
@@ -82,8 +83,8 @@ describe('update-notifier', () => {
 			expect(fetchSpy).not.toHaveBeenCalled()
 		})
 
-		it('skips check when PARADOC_NO_UPDATE_CHECK is set', async () => {
-			process.env.PARADOC_NO_UPDATE_CHECK = '1'
+		it('skips check when ASTERDOC_NO_UPDATE_CHECK is set', async () => {
+			process.env.ASTERDOC_NO_UPDATE_CHECK = '1'
 			vi.resetModules()
 
 			const fetchSpy = vi.spyOn(globalThis, 'fetch')
@@ -111,7 +112,12 @@ describe('update-notifier', () => {
 			expect(fetchSpy).not.toHaveBeenCalled()
 		})
 
-		it('checks the package that is running on npm', async () => {
+		it.each([
+			['@asterdoc/cli when run directly', undefined, '@asterdoc/cli'],
+			['asterdoc when run through the shim', 'asterdoc', 'asterdoc'],
+			['@asterdoc/cli for an unknown package marker', 'asterdoc-cli', '@asterdoc/cli'],
+		])('checks %s', async (_label, marker, expectedPackage) => {
+			if (marker) process.env.ASTERDOC_CLI_PACKAGE = marker
 			vi.resetModules()
 
 			const fetchSpy = vi
@@ -126,7 +132,7 @@ describe('update-notifier', () => {
 			})
 
 			expect(fetchSpy).toHaveBeenCalledWith(
-				'https://registry.npmjs.org/@paradoc/cli/latest',
+				`https://registry.npmjs.org/${expectedPackage}/latest`,
 				expect.anything(),
 			)
 		})
@@ -147,7 +153,7 @@ describe('update-notifier', () => {
 	describe('printUpdateNotice', () => {
 		it('prints notice when cache has newer version', async () => {
 			const cache = { lastChecked: Date.now(), latestVersion: '0.2.0' }
-			await fs.mkdir(join(tempDir, '.paradoc'), { recursive: true })
+			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
 			await fs.writeFile(cacheFile, JSON.stringify(cache))
 
 			// We need to test the print logic directly since it reads from a fixed path.
@@ -191,7 +197,7 @@ describe('update-notifier', () => {
 		})
 
 		it('prints notice for a newer cached version when no opt-out is set', async () => {
-			await fs.mkdir(join(tempDir, '.paradoc'), { recursive: true })
+			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
 			await fs.writeFile(cacheFile, JSON.stringify({ lastChecked: Date.now(), latestVersion: '0.2.0' }))
 			vi.resetModules()
 
@@ -202,13 +208,29 @@ describe('update-notifier', () => {
 
 			const output = consoleSpy.mock.calls.flat().join('\n')
 			expect(output).toContain('0.2.0')
-			expect(output).toContain('npm i -g @paradoc/cli')
+			expect(output).toContain('npm i -g @asterdoc/cli')
 		})
 
-		it('skips notice when PARADOC_NO_UPDATE_CHECK is set', async () => {
-			await fs.mkdir(join(tempDir, '.paradoc'), { recursive: true })
+		it('tells a shim user to update the shim package', async () => {
+			process.env.ASTERDOC_CLI_PACKAGE = 'asterdoc'
+			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
 			await fs.writeFile(cacheFile, JSON.stringify({ lastChecked: Date.now(), latestVersion: '0.2.0' }))
-			process.env.PARADOC_NO_UPDATE_CHECK = '1'
+			vi.resetModules()
+
+			const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+			const { printUpdateNotice } = await import('../../src/utils/update-notifier.js')
+
+			printUpdateNotice()
+
+			const output = consoleSpy.mock.calls.flat().join('\n')
+			expect(output).toContain('npm i -g asterdoc')
+			expect(output).not.toContain('@asterdoc/cli')
+		})
+
+		it('skips notice when ASTERDOC_NO_UPDATE_CHECK is set', async () => {
+			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
+			await fs.writeFile(cacheFile, JSON.stringify({ lastChecked: Date.now(), latestVersion: '0.2.0' }))
+			process.env.ASTERDOC_NO_UPDATE_CHECK = '1'
 			vi.resetModules()
 
 			const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -220,7 +242,7 @@ describe('update-notifier', () => {
 		})
 
 		it('ignores the retired OFM_NO_UPDATE_CHECK name', async () => {
-			await fs.mkdir(join(tempDir, '.paradoc'), { recursive: true })
+			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
 			await fs.writeFile(cacheFile, JSON.stringify({ lastChecked: Date.now(), latestVersion: '0.2.0' }))
 			process.env.OFM_NO_UPDATE_CHECK = '1'
 			vi.resetModules()

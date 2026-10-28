@@ -1,5 +1,5 @@
-import type { Form, RenderRequest } from '@paradoc/types'
-import { createFormatter } from '@paradoc/format'
+import type { Form, RenderRequest } from '@asterdoc/types'
+import { createFormatter } from '@asterdoc/format'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { renderText, textRenderer, type RenderTextOptions } from '../src/text'
 
@@ -208,7 +208,7 @@ describe('text renderer behavior', () => {
     expect(renderText(options)).toBe('$1,250.00|1250|+12025550182|+12025550182|10 Main St, Boston, MA 02108, US|Boston')
   })
 
-  it('matches the Paradoc renderer adapter data shape', async () => {
+  it('matches the Asterdoc renderer adapter data shape', async () => {
     const request = {
       kind: 'form',
       template: {

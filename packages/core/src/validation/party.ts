@@ -11,7 +11,7 @@
  * ID convention: `{role}-{index}` (e.g., "tenant-0", "landlord-1")
  */
 
-import type { FormParty, Party } from '@paradoc/types';
+import type { FormParty, Party } from '@asterdoc/types';
 import { checkParty, inferPartyType } from '@/primitives/party';
 import { evaluateGate } from '@/logic/runtime/evaluation/expression-evaluator';
 import type { EvaluationContext } from '@/logic/runtime/evaluation/types';

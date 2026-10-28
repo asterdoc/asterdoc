@@ -2,10 +2,10 @@
  * Minimal resolver interface for reading content from storage.
  *
  * Implementations can back this with:
- *  - In-memory map (@paradoc/resolvers/memory)
- *  - Local filesystem (@paradoc/resolvers/fs)
+ *  - In-memory map (@asterdoc/resolvers/memory)
+ *  - Local filesystem (@asterdoc/resolvers/fs)
  *  - Object storage (S3/R2/etc.)
- *  - HTTP fetch (@paradoc/resolvers/http)
+ *  - HTTP fetch (@asterdoc/resolvers/http)
  */
 export interface Resolver {
   /**

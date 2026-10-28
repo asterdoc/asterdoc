@@ -7,7 +7,7 @@
 
 import type { EvaluationIssue } from '@/logic/runtime/evaluation/types'
 import type { RuleValidationResult } from '@/logic/runtime/evaluation/rule-evaluator'
-import type { FormPhase } from '@paradoc/types'
+import type { FormPhase } from '@asterdoc/types'
 
 /** Options for form fill operations. */
 export interface FillOptions {

@@ -1,8 +1,8 @@
-import { paradocTools } from '../src/index'
+import { asterdocTools } from '../src/index'
 import type { InferToolOutput } from 'ai'
 import type { ExtractOutput, RenderOutput, ValidateArtifactOutput } from '../src/index'
 
-const tools = paradocTools()
+const tools = asterdocTools()
 
 type ValidateResult = InferToolOutput<typeof tools.validate_artifact>
 type RenderResult = InferToolOutput<typeof tools.render>

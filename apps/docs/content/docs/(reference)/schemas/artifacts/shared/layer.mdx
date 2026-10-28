@@ -18,7 +18,7 @@ The layer's `mimeType` selects its renderer.
 | `text/markdown`, `text/html`, `text/plain` | inline or file | Built-in text renderer |
 | `application/pdf` | file | Built-in PDF renderer, using `bindings` |
 | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` | file | Built-in DOCX renderer |
-| `text/tsx`, `text/jsx` | file only, forms only | A renderer you register, such as `reactLayerRenderers()` from `@paradoc/react-pdf` |
+| `text/tsx`, `text/jsx` | file only, forms only | A renderer you register, such as `reactLayerRenderers()` from `@asterdoc/react-pdf` |
 
 Any other MIME type needs a renderer passed in the `renderers` option of `render()`, keyed by MIME type.
 
@@ -119,7 +119,7 @@ File-backed layer with external file reference. Used when content is stored in a
   {
     name: 'bindings',
     type: 'Record<string, string>',
-    description: 'PDF layers only. Maps each AcroForm field name in the template (key) to the Paradoc path that fills it (value). See [Bindings](#bindings)',
+    description: 'PDF layers only. Maps each AcroForm field name in the template (key) to the Asterdoc path that fills it (value). See [Bindings](#bindings)',
     isOptional: true,
   },
   {
@@ -138,7 +138,7 @@ File-backed layer with external file reference. Used when content is stored in a
 
 ## Bindings
 
-Only a PDF file layer takes `bindings` and `bindingsFrom`. Each key of `bindings` is a fully qualified AcroForm field name, as `paradoc inspect` prints it, and each value is the Paradoc path that fills it, such as `fields.name` or `parties.buyer.name`. A text, Markdown, HTML or DOCX template names each value directly as `{{fields.fieldName}}`. Validation rejects `bindings` or `bindingsFrom` on any other layer.
+Only a PDF file layer takes `bindings` and `bindingsFrom`. Each key of `bindings` is a fully qualified AcroForm field name, as `asterdoc inspect` prints it, and each value is the Asterdoc path that fills it, such as `fields.name` or `parties.buyer.name`. A text, Markdown, HTML or DOCX template names each value directly as `{{fields.fieldName}}`. Validation rejects `bindings` or `bindingsFrom` on any other layer.
 
 ```json
 {
@@ -199,8 +199,7 @@ type SignatureSlotPlacement =
     }
 ```
 
-`signatures` is the only place a layer declares signing fields. To update an
-artifact from an older schema version that uses `signatureBlocks` or `anchorBlocks`, run `paradoc migrate`.
+`signatures` is the only place a layer declares signing fields.
 
 ## Examples
 

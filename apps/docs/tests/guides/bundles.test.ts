@@ -2,7 +2,7 @@
  * Tests for code snippets in guides/bundles.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@paradoc/core'
+import { p } from '@asterdoc/core'
 
 describe('Bundles Guide', () => {
   // ============================================================================

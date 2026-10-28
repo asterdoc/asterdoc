@@ -1,6 +1,6 @@
 /**
  * Shape tests for the renderer plugin contract: RenderRequest, RendererLayer,
- * the closed ParadocRendererContext, and the signing-marker types a seal
+ * the closed AsterdocRendererContext, and the signing-marker types a seal
  * hands a renderer for flow placement.
  *
  * See tests/artifact-union.test.ts for the testing idiom.
@@ -15,8 +15,8 @@ import type {
 	RendererLayerType,
 	RenderRequest,
 	RendererExpressions,
-	ParadocRendererContext,
-	ParadocRenderer,
+	AsterdocRendererContext,
+	AsterdocRenderer,
 	SigningMarker,
 	SigningMarkerRequest,
 } from '../src/interfaces/renderer'
@@ -81,30 +81,30 @@ describe('RendererLayer', () => {
 	})
 })
 
-describe('ParadocRendererContext', () => {
+describe('AsterdocRendererContext', () => {
 	it('rejects a key it does not declare', () => {
 		// @ts-expect-error a misspelled member is an error, not an ignored extra.
-		const bad: ParadocRendererContext = { formater: undefined }
+		const bad: AsterdocRendererContext = { formater: undefined }
 		void bad
 	})
 
 	it('types its known members without forcing them', () => {
-		const empty: ParadocRendererContext = {}
+		const empty: AsterdocRendererContext = {}
 		void empty
-		expectTypeOf<ParadocRendererContext>().toHaveProperty('signing').toEqualTypeOf<SigningMarkerRequest | undefined>()
-		expectTypeOf<ParadocRendererContext>().toHaveProperty('expressions').toEqualTypeOf<RendererExpressions | undefined>()
+		expectTypeOf<AsterdocRendererContext>().toHaveProperty('signing').toEqualTypeOf<SigningMarkerRequest | undefined>()
+		expectTypeOf<AsterdocRendererContext>().toHaveProperty('expressions').toEqualTypeOf<RendererExpressions | undefined>()
 	})
 
 	it('requires expressions to carry a context with lookup', () => {
-		const good: ParadocRendererContext = { expressions: { context: { lookup: () => undefined } } }
+		const good: AsterdocRendererContext = { expressions: { context: { lookup: () => undefined } } }
 		void good
 		// @ts-expect-error expressions carry an expression context, not arbitrary data.
-		const bad: ParadocRendererContext = { expressions: { items: {} } }
+		const bad: AsterdocRendererContext = { expressions: { items: {} } }
 		void bad
 	})
 
 	it('has no logger member', () => {
-		expectTypeOf<ParadocRendererContext>().not.toHaveProperty('logger')
+		expectTypeOf<AsterdocRendererContext>().not.toHaveProperty('logger')
 	})
 })
 
@@ -124,12 +124,12 @@ describe('SigningMarker / SigningMarkerRequest', () => {
 	})
 })
 
-describe('ParadocRenderer', () => {
+describe('AsterdocRenderer', () => {
 	it('renders by id, returning Output sync or async', () => {
 		interface TextOutput {
 			text: string
 		}
-		expectTypeOf<ParadocRenderer<RendererLayer, TextOutput>['render']>().returns.toEqualTypeOf<
+		expectTypeOf<AsterdocRenderer<RendererLayer, TextOutput>['render']>().returns.toEqualTypeOf<
 			Promise<TextOutput> | TextOutput
 		>()
 	})

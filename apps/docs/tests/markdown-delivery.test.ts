@@ -57,9 +57,9 @@ describe("content paths", () => {
 
   test("names the explicit Markdown URL on the docs host", () => {
     expect(canonicalMarkdownUrl("/concepts")).toBe(
-      "https://docs.paradoc.dev/concepts.md",
+      "https://docs.asterdoc.com/concepts.md",
     );
-    expect(canonicalMarkdownUrl("/")).toBe("https://docs.paradoc.dev/index.md");
+    expect(canonicalMarkdownUrl("/")).toBe("https://docs.asterdoc.com/index.md");
   });
 });
 
@@ -76,7 +76,7 @@ describe("docs delivery", () => {
       served.push(request);
       const { pathname } = new URL(request.url);
       return pathname === "/llms.txt" ||
-        pathname === "/.well-known/agent-skills/paradoc/SKILL.md"
+        pathname === "/.well-known/agent-skills/asterdoc/SKILL.md"
         ? new Response("index", { status: 200 })
         : pathname.startsWith("/concepts") || pathname === "/"
           ? new Response("<html>", {
@@ -87,14 +87,14 @@ describe("docs delivery", () => {
     },
   });
   const get = (path: string, headers: Record<string, string> = {}, method = "GET") =>
-    handle(new Request(`https://docs.paradoc.dev${path}`, { method, headers }));
+    handle(new Request(`https://docs.asterdoc.com${path}`, { method, headers }));
 
   test("serves Markdown at an explicit URL, without JavaScript or Accept", async () => {
     const response = await get("/concepts.md");
     expect(response.status).toBe(200);
     expect(response.headers.get("Content-Type")).toBe("text/markdown; charset=utf-8");
     expect(response.headers.get("Link")).toContain(
-      '<https://docs.paradoc.dev/concepts/>; rel="canonical"',
+      '<https://docs.asterdoc.com/concepts/>; rel="canonical"',
     );
     expect(await response.text()).toBe("# /concepts\n");
   });
@@ -114,7 +114,7 @@ describe("docs delivery", () => {
       expect(response.headers.get("Content-Type")).toBe("text/html");
       expect(response.headers.get("Vary")).toBe("Origin, Accept");
       expect(response.headers.get("Link")).toBe(
-        '<https://docs.paradoc.dev/concepts.md>; rel="alternate"; type="text/markdown"',
+        '<https://docs.asterdoc.com/concepts.md>; rel="alternate"; type="text/markdown"',
       );
     }
   });
@@ -167,13 +167,13 @@ describe("docs delivery", () => {
     served.length = 0;
     for (const accept of [undefined, "text/markdown", "*/*"]) {
       const response = await get(
-        "/.well-known/agent-skills/paradoc/SKILL.md",
+        "/.well-known/agent-skills/asterdoc/SKILL.md",
         accept ? { Accept: accept } : {},
       );
       expect(response.status).toBe(200);
       expect(await response.text()).toBe("index");
     }
-    const missing = await get("/.well-known/agent-skills/paradoc/nope.md", {
+    const missing = await get("/.well-known/agent-skills/asterdoc/nope.md", {
       Accept: "text/markdown",
     });
     expect(missing.status).toBe(404);
@@ -251,7 +251,7 @@ describe.skipIf(!docsUrl)("built documentation delivery", () => {
       expect(explicit.headers.get("content-type"), explicitPath).toContain("text/markdown");
       expect(negotiated.headers.get("content-type"), pathname).toContain("text/markdown");
       expect(negotiatedBody, pathname).toBe(explicitBody);
-      expect(explicitBody, pathname).toContain(`Canonical URL: https://docs.paradoc.dev${pathname}`);
+      expect(explicitBody, pathname).toContain(`Canonical URL: https://docs.asterdoc.com${pathname}`);
       expect(placeholders(explicitBody), pathname).toEqual([]);
       expect(explicitBody, pathname).not.toContain("__SCHEMA_VERSION__");
       expect(explicitBody, pathname).not.toMatch(/^#{1,6} .*\[#[^\]]+\]\s*$/m);
@@ -300,7 +300,7 @@ describe.skipIf(!docsUrl)("built documentation delivery", () => {
     const index = (await (await fetch(new URL("/.well-known/agent-skills/index.json", docsUrl))).json()) as {
       skills: { name: string; url: string; digest: string }[];
     };
-    expect(index.skills.map((skill) => skill.name)).toEqual(["paradoc", "paradoc-react"]);
+    expect(index.skills.map((skill) => skill.name)).toEqual(["asterdoc", "asterdoc-react"]);
     for (const skill of index.skills) {
       const archive = Buffer.from(await (await fetch(new URL(skill.url, docsUrl))).arrayBuffer());
       expect(`sha256:${createHash("sha256").update(archive).digest("hex")}`).toBe(skill.digest);

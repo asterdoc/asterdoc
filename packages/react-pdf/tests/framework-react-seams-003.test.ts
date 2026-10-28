@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { discoverCompositions } from "@paradoc/react/discovery";
+import { discoverCompositions } from "@asterdoc/react/discovery";
 import { bindComponent } from "../src/layer";
 
 let root: string;

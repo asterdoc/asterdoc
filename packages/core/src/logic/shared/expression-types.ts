@@ -1,11 +1,11 @@
 /**
  * Whether an expression's value is one scalar string expression or an
- * object of nested ones. The scalar type list comes from `@paradoc/schemas`,
+ * object of nested ones. The scalar type list comes from `@asterdoc/schemas`,
  * the single source of truth for which expression types exist.
  */
 
-import { SCALAR_EXPRESSION_TYPES as SCHEMA_SCALAR_EXPRESSION_TYPES } from '@paradoc/schemas'
-import type { ScalarExpressionType } from '@paradoc/types'
+import { SCALAR_EXPRESSION_TYPES as SCHEMA_SCALAR_EXPRESSION_TYPES } from '@asterdoc/schemas'
+import type { ScalarExpressionType } from '@asterdoc/types'
 
 /** Scalar expression types (value is a single string expression). */
 export const SCALAR_EXPRESSION_TYPES: ReadonlySet<string> = new Set(SCHEMA_SCALAR_EXPRESSION_TYPES)

@@ -7,7 +7,7 @@ import { generateManifestTemplate } from '../utils/templates.js'
 import { writeFile } from '../utils/file-writer.js'
 import { findConfig } from '../utils/config.js'
 import { trackEvent } from '../utils/telemetry.js'
-import { ManifestSchema } from '@paradoc/schemas'
+import { ManifestSchema } from '@asterdoc/schemas'
 
 interface InitOptions {
   yes?: boolean
@@ -20,14 +20,14 @@ interface InitOptions {
 
 /**
  * Create the 'init' command
- * Initializes a new Paradoc project
+ * Initializes a new Asterdoc project
  */
 export function createInitCommand(): Command {
   const init = new Command('init')
 
   init
     .argument('[directory]', 'Directory to initialize (defaults to current directory)')
-    .description('Initialize a new Paradoc project')
+    .description('Initialize a new Asterdoc project')
     .option('-y, --yes', 'Non-interactive mode (skip prompts)')
     .option('--name <name>', 'Project title (required in non-interactive mode)')
     .option('--description <desc>', 'Project description')
@@ -54,7 +54,7 @@ export function createInitCommand(): Command {
             console.log(kleur.red('✗ --name is required when using --yes (non-interactive mode)'))
             console.log()
             console.log(kleur.gray('Example:'))
-            console.log(kleur.white('  paradoc init --yes --name "My Project"'))
+            console.log(kleur.white('  asterdoc init --yes --name "My Project"'))
             console.log()
             process.exit(1)
           }
@@ -70,7 +70,7 @@ export function createInitCommand(): Command {
         } else {
           // Interactive mode
           console.log()
-          console.log(kleur.bold('Initialize Paradoc Project'))
+          console.log(kleur.bold('Initialize Asterdoc Project'))
           console.log()
 
           // Prompt for title
@@ -78,7 +78,7 @@ export function createInitCommand(): Command {
             type: 'text',
             name: 'title',
             message: 'Project title:',
-            initial: options.name || 'My Paradoc Project',
+            initial: options.name || 'My Asterdoc Project',
             validate: (value: string) => value.trim().length > 0 || 'Project title is required',
           })
           if (!title) throw new Error('User force closed the prompt')
@@ -133,12 +133,12 @@ export function createInitCommand(): Command {
 
         const storage = new LocalFileSystem(targetDirectory)
 
-        // Check if paradoc.json already exists in target directory
-        const configPath = storage.joinPath('paradoc.json')
+        // Check if asterdoc.json already exists in target directory
+        const configPath = storage.joinPath('asterdoc.json')
         try {
-          if (await storage.exists('paradoc.json')) {
+          if (await storage.exists('asterdoc.json')) {
             console.log()
-            console.log(kleur.red('✗ paradoc.json already exists in this directory'))
+            console.log(kleur.red('✗ asterdoc.json already exists in this directory'))
             console.log(kleur.gray(`  ${configPath}`))
             console.log()
             process.exit(1)
@@ -156,21 +156,21 @@ export function createInitCommand(): Command {
             // Non-interactive mode: error if nested not explicitly allowed
             console.log()
             console.log(
-              kleur.yellow('⚠️  Found an existing Paradoc project at:'),
+              kleur.yellow('⚠️  Found an existing Asterdoc project at:'),
               kleur.cyan(parentConfig)
             )
             console.log()
-            console.log(kleur.gray("You're inside another Paradoc project."))
+            console.log(kleur.gray("You're inside another Asterdoc project."))
             console.log(kleur.gray('To create a nested project, add the --nested flag:'))
             console.log()
-            console.log(kleur.white('  paradoc init --yes --nested --name <name>'))
+            console.log(kleur.white('  asterdoc init --yes --nested --name <name>'))
             console.log()
             process.exit(1)
           } else {
             // Interactive mode: prompt user
             console.log()
             console.log(
-              kleur.yellow('⚠️  Found an existing Paradoc project at:'),
+              kleur.yellow('⚠️  Found an existing Asterdoc project at:'),
               kleur.cyan(parentConfig)
             )
             console.log()
@@ -230,20 +230,20 @@ export function createInitCommand(): Command {
           console.log()
         }
 
-        // Create the .paradoc directory. It marks the project root beside
-        // paradoc.json (see findRepoRoot) and holds lock.json once an artifact
+        // Create the .asterdoc directory. It marks the project root beside
+        // asterdoc.json (see findRepoRoot) and holds lock.json once an artifact
         // is installed.
         if (!dryRun) {
           try {
-            await storage.mkdir(storage.joinPath('.paradoc'), true)
+            await storage.mkdir(storage.joinPath('.asterdoc'), true)
           } catch (error) {
             throw new Error(
-              `Failed to create .paradoc directory: ${error instanceof Error ? error.message : String(error)}`
+              `Failed to create .asterdoc directory: ${error instanceof Error ? error.message : String(error)}`
             )
           }
         }
 
-        // Write paradoc.json
+        // Write asterdoc.json
         await writeFile(configPath, parsedTemplate.data, { dryRun, format: 'json' })
 
         // Show success message
@@ -251,8 +251,8 @@ export function createInitCommand(): Command {
           console.log(kleur.green('✓ Project initialized successfully!'))
           console.log()
           console.log(kleur.gray('Created:'))
-          console.log(kleur.gray('  paradoc.json'))
-          console.log(kleur.gray('  .paradoc/'))
+          console.log(kleur.gray('  asterdoc.json'))
+          console.log(kleur.gray('  .asterdoc/'))
           console.log()
 
           // Track init event (fire and forget)
@@ -261,8 +261,8 @@ export function createInitCommand(): Command {
           })
         } else {
           console.log(kleur.yellow('Dry run - would create:'))
-          console.log(kleur.gray('  paradoc.json'))
-          console.log(kleur.gray('  .paradoc/'))
+          console.log(kleur.gray('  asterdoc.json'))
+          console.log(kleur.gray('  .asterdoc/'))
           console.log()
         }
       } catch (error: any) {

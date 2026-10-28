@@ -5,7 +5,7 @@ import { executeRender } from '../../src/tools/render'
 import { executeValidateArtifact } from '../../src/tools/validate'
 import { executeFill } from '../../src/tools/fill'
 
-const REGISTRY_URL = 'https://public-dev.paradoc.dev'
+const REGISTRY_URL = 'https://public-dev.asterdoc.com'
 
 const PET_ADDENDUM_DATA = {
   fields: {

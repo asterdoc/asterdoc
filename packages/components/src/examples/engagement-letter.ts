@@ -27,8 +27,8 @@
  * same shape the proposal's is.
  */
 
-import { p } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { p } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 
 /** The layer that names the composition, and the layer the seal targets. */
 export const ENGAGEMENT_LETTER_REACT_LAYER = "composition";
@@ -54,7 +54,7 @@ export const ENGAGEMENT_LETTER_SIGNATURE_SLOTS = {
 
 /** The engagement letter, exactly as authored. Kept beside the instance for evaluators that take a raw `Form`. */
 export const engagementLetterSpec = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "engagement-letter",
   version: "1.0.0",

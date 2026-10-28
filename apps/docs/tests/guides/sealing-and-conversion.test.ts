@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test, vi } from 'vitest'
-import { p } from '@paradoc/core'
-import { hostedSealAdapter } from '@paradoc/sdk'
+import { p } from '@asterdoc/core'
+import { hostedSealAdapter } from '@asterdoc/sdk'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

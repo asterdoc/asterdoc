@@ -23,9 +23,9 @@ function importsOf(path: string): string[] {
   return ts.preProcessFile(readFileSync(path, "utf8"), true, true).importedFiles.map((file) => file.fileName);
 }
 
-/** A way into `@paradoc/react` other than its root: a subpath, or a relative path out of this package. */
+/** A way into `@asterdoc/react` other than its root: a subpath, or a relative path out of this package. */
 function isPrivateReactPath(from: string, specifier: string): boolean {
-  if (specifier.startsWith("@paradoc/react/")) return true;
+  if (specifier.startsWith("@asterdoc/react/")) return true;
   return specifier.startsWith(".") && relative(sourceRoot, resolve(dirname(from), specifier)).startsWith("..");
 }
 
@@ -40,9 +40,9 @@ describe("the explicit PDF integration", () => {
     expect(chromiumAdapter.name).toBe("chromium");
   });
 
-  // A private path into `@paradoc/react` would load a second copy of its
+  // A private path into `@asterdoc/react` would load a second copy of its
   // contexts, and a document's providers would never reach the engine's tree.
-  it("reaches @paradoc/react only through its public root", () => {
+  it("reaches @asterdoc/react only through its public root", () => {
     const offenders = sourceFiles(sourceRoot).flatMap((path) =>
       importsOf(path)
         .filter((specifier) => isPrivateReactPath(path, specifier))
@@ -53,10 +53,10 @@ describe("the explicit PDF integration", () => {
 
   it("names a subpath or a relative path out of the package as private, and nothing else", () => {
     const file = resolve(sourceRoot, "adapters/takumi.ts");
-    expect(isPrivateReactPath(file, "@paradoc/react/discovery")).toBe(true);
+    expect(isPrivateReactPath(file, "@asterdoc/react/discovery")).toBe(true);
     expect(isPrivateReactPath(file, "../../../react/src/lib/furniture")).toBe(true);
-    expect(isPrivateReactPath(file, "@paradoc/react")).toBe(false);
+    expect(isPrivateReactPath(file, "@asterdoc/react")).toBe(false);
     expect(isPrivateReactPath(file, "../tree")).toBe(false);
-    expect(isPrivateReactPath(file, "@paradoc/react-pdf")).toBe(false);
+    expect(isPrivateReactPath(file, "@asterdoc/react-pdf")).toBe(false);
   });
 });

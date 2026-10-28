@@ -1,8 +1,8 @@
 ---
 title: fill
-description: Start a Paradoc form or checklist draft from seed data
-ogTitle: fill — Paradoc AI Tools
-ogDescription: Apply seed data to a Paradoc form or checklist and report acceptance separately from completeness
+description: Start an Asterdoc form or checklist draft from seed data
+ogTitle: fill — Asterdoc AI Tools
+ogDescription: Apply seed data to an Asterdoc form or checklist and report acceptance separately from completeness
 ---
 
 Starts a draft of a form or checklist from seed data and applies defaults. The result reports two things separately: `accepted` says the supplied values passed validation, and `complete` says the draft meets every requirement. A draft does not need to be complete to be updated or rendered.
@@ -37,7 +37,7 @@ Party IDs follow the pattern `<role>-<index>`, such as `tenant-0`.
 ## Direct usage
 
 ```typescript
-import { executeFill } from "@paradoc/ai-tools"
+import { executeFill } from "@asterdoc/ai-tools"
 
 const result = await executeFill({
   source: "registry",

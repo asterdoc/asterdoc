@@ -10,8 +10,8 @@
 
 import { zipSync, unzipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
-import { createMemoryResolver } from '@paradoc/resolvers/memory'
-import { createLayerRenderer } from '@paradoc/render'
+import { createMemoryResolver } from '@asterdoc/resolvers/memory'
+import { createLayerRenderer } from '@asterdoc/render'
 import { checklist, form, validate, validateLayers } from '@/index'
 
 const encoder = new TextEncoder()

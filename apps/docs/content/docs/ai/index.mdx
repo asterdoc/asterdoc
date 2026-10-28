@@ -1,17 +1,17 @@
 ---
 title: Overview
-description: What an AI agent can do with Paradoc, and where to start
-ogTitle: Paradoc for AI agents
+description: What an AI agent can do with Asterdoc, and where to start
+ogTitle: Asterdoc for AI agents
 ogDescription: Give an AI agent tools to find a form, fill it from a conversation, and return a finished PDF
 ---
 
-Paradoc gives an AI agent tools to work with forms and documents. With them, an agent can find a form, ask a person for the values it needs, check each answer, and return the finished document as a PDF. It can also read a filled PDF form back into data.
+Asterdoc gives an AI agent tools to work with forms and documents. With them, an agent can find a form, ask a person for the values it needs, check each answer, and return the finished document as a PDF. It can also read a filled PDF form back into data.
 
 The tools run in your own application, inside the agent framework you already use.
 
 ## How the agent works
 
-A form is a Paradoc artifact: a definition of its fields, its parties, its rules, and how it renders. The agent never edits a PDF directly. It works on a draft of the form data, and Paradoc checks every value against the artifact.
+A form is an Asterdoc artifact: a definition of its fields, its parties, its rules, and how it renders. The agent never edits a PDF directly. It works on a draft of the form data, and Asterdoc checks every value against the artifact.
 
 1. **Find the form.** `get_artifact` loads it from a registry, with instructions written for agents.
 2. **Collect values.** `validate_input` checks each answer. `fill` starts a draft, and `update_fill` changes it.
@@ -29,15 +29,15 @@ There are ten tools in total. The [tool reference](/ai-tools) lists each one.
 | Start from a PDF that a person already filled | [Read a filled PDF](/ai/read-a-filled-pdf) |
 | Run the agent in production | [Prepare for production](/ai/production) |
 | Use a framework without an adapter, or no framework | [Use another framework](/ai/other-frameworks) |
-| Let a coding assistant, such as Claude Code, write Paradoc code with you | [Agent skills](/ai/skills) |
+| Let a coding assistant, such as Claude Code, write Asterdoc code with you | [Agent skills](/ai/skills) |
 
 ## Packages
 
 | Package | For |
 |---|---|
-| `@paradoc/ai-sdk` | Vercel AI SDK |
-| `@paradoc/tanstack-ai` | TanStack AI |
-| `@paradoc/mastra` | Mastra |
-| `@paradoc/ai-tools` | Any other framework, or plain code. Every adapter wraps it. |
+| `@asterdoc/ai-sdk` | Vercel AI SDK |
+| `@asterdoc/tanstack-ai` | TanStack AI |
+| `@asterdoc/mastra` | Mastra |
+| `@asterdoc/ai-tools` | Any other framework, or plain code. Every adapter wraps it. |
 
 Every adapter gives the same ten tools, with the same names and the same inputs and outputs. The [Adapters reference](/ai-tools/adapters) lists what each package exports.

@@ -7,7 +7,7 @@
  * point goes through, so no entry point can skip it.
  */
 
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
 import {
   checkPdfBindingFit,

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import type { Form } from '@paradoc/types'
-import { ISO_8601_DURATION_PATTERN } from '@paradoc/schemas'
+import type { Form } from '@asterdoc/types'
+import { ISO_8601_DURATION_PATTERN } from '@asterdoc/schemas'
 import { compile, type FieldToDataType } from '@/inference/form-payload'
 import { validateFormData } from '@/validation'
 import { form as formBuilder } from '@/artifacts'

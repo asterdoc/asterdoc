@@ -1,40 +1,40 @@
 <p align="center">
-  <a href="https://paradoc.dev?utm_source=github&utm_medium=ai-tools" target="_blank" rel="noopener noreferrer">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=ai-tools" target="_blank" rel="noopener noreferrer">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://assets.paradoc.dev/logo-400x400.png" type="image/png">
-      <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Paradoc logo">
+      <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Asterdoc logo">
     </picture>
   </a>
   <br />
 </p>
 
-<h1 align="center">@paradoc/ai-tools</h1>
+<h1 align="center">@asterdoc/ai-tools</h1>
 
 <div align="center">
 
-[![Paradoc documentation](https://img.shields.io/badge/Documentation-Paradoc-red.svg)](https://docs.paradoc.dev?utm_source=github&utm_medium=ai-tools)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/paradochq?style=social)](https://twitter.com/intent/follow?screen_name=paradochq)
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=ai-tools)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/asterdoc)
 
 </div>
 
-[Paradoc](https://paradoc.dev?utm_source=github&utm_medium=ai-tools) is **documents as code**. It lets developers and AI agents define, validate, and render business documents using typed, composable schemas. This eliminates template drift, broken mappings, and brittle glue code — while giving AI systems a reliable document layer they can safely read, reason over, and generate against in production workflows.
+[Asterdoc](https://asterdoc.com?utm_source=github&utm_medium=ai-tools) is **documents as code**. It lets developers and AI agents define, validate, and render business documents using typed, composable schemas. This eliminates template drift, broken mappings, and brittle glue code — while giving AI systems a reliable document layer they can safely read, reason over, and generate against in production workflows.
 
 ## Package overview
 
-Framework-neutral AI tool definitions for Paradoc. Provides Zod input schemas, execute functions, and an HTTP registry client that any AI framework adapter can wrap.
+Framework-neutral AI tool definitions for Asterdoc. Provides Zod input schemas, execute functions, and an HTTP registry client that any AI framework adapter can wrap.
 
 - **10 tools** - registry discovery, retrieval, inspection, validation, filling, fill-state inspection, updates, rendering, and PDF extraction
 - **No framework dependency** - Pure tool protocol, no AI SDK lock-in
 - **3 source modes** - Run operations against artifact JSON, a URL, or an indexed registry item
-- **Registry client** - Fetch artifacts from any Paradoc registry over HTTPS
+- **Registry client** - Fetch artifacts from any Asterdoc registry over HTTPS
 - **Bounded output** - Request-scoped caching, cancellation, limits, and selectable render presentation
 
-This package is the foundation for `@paradoc/ai-sdk` (Vercel AI SDK), `@paradoc/mastra` (Mastra), and `@paradoc/tanstack-ai` (TanStack AI). Advanced users can build custom adapters for other frameworks.
+This package is the foundation for `@asterdoc/ai-sdk` (Vercel AI SDK), `@asterdoc/mastra` (Mastra), and `@asterdoc/tanstack-ai` (TanStack AI). Advanced users can build custom adapters for other frameworks.
 
 ## Installation
 
 ```bash
-npm install @paradoc/ai-tools
+npm install @asterdoc/ai-tools
 ```
 
 ## Usage
@@ -53,7 +53,7 @@ import {
   executeGetFillState,
   executeUpdateFill,
   executeRender,
-} from "@paradoc/ai-tools";
+} from "@asterdoc/ai-tools";
 
 // Fetch available artifacts from a registry
 const registry = await executeGetRegistry({
@@ -114,9 +114,9 @@ The render tool supports three input modes via discriminated union:
 ### Configuration
 
 ```typescript
-import type { ParadocToolsConfig } from "@paradoc/ai-tools";
+import type { AsterdocToolsConfig } from "@asterdoc/ai-tools";
 
-const config: ParadocToolsConfig = {
+const config: AsterdocToolsConfig = {
   defaultRegistryUrl: "https://registry.acme.com",
   fetch: customFetchWithAuth,
   approvedOrigins: ["https://registry.acme.com"],
@@ -145,21 +145,21 @@ The public operation names and schemas are available from `toolDefinitions`. Wir
 
 ## Changelog
 
-View the [Changelog](https://github.com/paradoc-dev/paradoc/blob/main/CHANGELOG.md) for updates.
+View the [Changelog](https://github.com/asterdoc/asterdoc/blob/main/CHANGELOG.md) for updates.
 
 ## Related packages
 
-- [`@paradoc/ai-sdk`](../ai-sdk) - Vercel AI SDK adapter
-- [`@paradoc/mastra`](../mastra) - Mastra adapter
-- [`@paradoc/tanstack-ai`](../tanstack-ai) - TanStack AI adapter
-- [`@paradoc/sdk`](../sdk) - Paradoc framework SDK
+- [`@asterdoc/ai-sdk`](../ai-sdk) - Vercel AI SDK adapter
+- [`@asterdoc/mastra`](../mastra) - Mastra adapter
+- [`@asterdoc/tanstack-ai`](../tanstack-ai) - TanStack AI adapter
+- [`@asterdoc/sdk`](../sdk) - Asterdoc framework SDK
 
 ## Contributing
 
-We're open to all community contributions! If you'd like to contribute in any way, please read our [contribution guidelines](https://github.com/paradoc-dev/paradoc/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/paradoc-dev/paradoc/blob/main/CODE_OF_CONDUCT.md).
+We're open to all community contributions! If you'd like to contribute in any way, please read our [contribution guidelines](https://github.com/asterdoc/asterdoc/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/asterdoc/asterdoc/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
 This project is licensed under the MIT license.
 
-See [LICENSE](https://github.com/paradoc-dev/paradoc/blob/main/LICENSE) for more information.
+See [LICENSE](https://github.com/asterdoc/asterdoc/blob/main/LICENSE) for more information.

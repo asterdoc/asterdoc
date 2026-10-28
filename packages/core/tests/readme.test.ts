@@ -1,5 +1,5 @@
 /**
- * Tests for README examples in @paradoc/core
+ * Tests for README examples in @asterdoc/core
  * Verifies all code examples from the README work correctly
  */
 
@@ -12,7 +12,7 @@ import {
   type UuidField,
 } from "../src";
 
-describe("@paradoc/core - README Examples", () => {
+describe("@asterdoc/core - README Examples", () => {
   describe("Define forms with parties, fields, and validation rules", () => {
     test("creates residential lease agreement form", () => {
       const leaseAgreement = p

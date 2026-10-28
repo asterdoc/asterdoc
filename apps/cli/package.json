@@ -1,10 +1,10 @@
 {
-  "name": "@paradoc/cli",
-  "version": "0.8.0",
-  "description": "CLI tool for Paradoc framework",
+  "name": "@asterdoc/cli",
+  "version": "0.9.0",
+  "description": "CLI tool for Asterdoc framework",
   "type": "module",
   "bin": {
-    "paradoc": "./dist/index.js"
+    "asterdoc": "./dist/index.js"
   },
   "files": [
     "dist",
@@ -12,25 +12,25 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
+    "asterdoc",
     "cli",
     "forms",
     "documents-as-code",
     "command-line"
   ],
   "license": "MIT",
-  "author": "Paradoc",
+  "author": "Asterdoc",
   "engines": {
     "node": ">=22"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "apps/cli"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -46,16 +46,16 @@
     "lint": "eslint .",
     "check-types": "tsc --noEmit",
     "check": "pnpm lint && pnpm check-types",
-    "pretest": "pnpm --dir ../../.. exec turbo run build --filter=@paradoc/cli",
+    "pretest": "pnpm --dir ../../.. exec turbo run build --filter=@asterdoc/cli",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:perf": "PARADOC_PERF_TESTS=1 vitest run tests/commands/startup.test.ts",
+    "test:perf": "ASTERDOC_PERF_TESTS=1 vitest run tests/commands/startup.test.ts",
     "test-registry": "tsx test-registry/server.ts"
   },
   "dependencies": {
-    "@paradoc/render": "workspace:^",
-    "@paradoc/resolvers": "workspace:^",
+    "@asterdoc/render": "workspace:^",
+    "@asterdoc/resolvers": "workspace:^",
     "commander": "^12.1.0",
     "diff": "^8.0.2",
     "fast-glob": "^3.3.3",
@@ -66,18 +66,18 @@
     "safe-regex": "^2.1.1",
     "semver": "^7.7.3",
     "slugify": "^1.6.6",
-    "undici": "^7.22.0",
+    "undici": "^7.30.1",
     "yaml": "catalog:"
   },
   "devDependencies": {
-    "@paradoc/components": "workspace:*",
-    "@paradoc/core": "workspace:*",
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/react": "workspace:*",
-    "@paradoc/react-pdf": "workspace:*",
-    "@paradoc/schemas": "workspace:*",
-    "@paradoc/types": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/components": "workspace:*",
+    "@asterdoc/core": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/react": "workspace:*",
+    "@asterdoc/react-pdf": "workspace:*",
+    "@asterdoc/schemas": "workspace:*",
+    "@asterdoc/types": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@tailwindcss/vite": "^4.1.5",
     "@types/node": "catalog:",
     "@types/prompts": "^2.4.9",
@@ -93,13 +93,13 @@
     "tsup": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
-    "vite": "^7.1.7",
+    "vite": "^7.3.7",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@paradoc/react": "workspace:^",
-    "@paradoc/react-pdf": "workspace:^",
+    "@asterdoc/react": "workspace:^",
+    "@asterdoc/react-pdf": "workspace:^",
     "@tailwindcss/vite": "^4",
     "@vitejs/plugin-react": "^4 || ^5",
     "react": "^19",
@@ -109,10 +109,10 @@
     "vite": "^6 || ^7"
   },
   "peerDependenciesMeta": {
-    "@paradoc/react": {
+    "@asterdoc/react": {
       "optional": true
     },
-    "@paradoc/react-pdf": {
+    "@asterdoc/react-pdf": {
       "optional": true
     },
     "@tailwindcss/vite": {

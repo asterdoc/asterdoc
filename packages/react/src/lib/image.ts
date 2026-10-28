@@ -21,7 +21,7 @@ const IMAGE_SIGNATURES: readonly { format: string; magic: readonly (number | nul
   },
 ];
 
-/** The picture encodings every Paradoc renderer can draw. */
+/** The picture encodings every Asterdoc renderer can draw. */
 export const DRAWABLE_IMAGE_FORMATS = ["png", "jpeg", "gif", "webp", "svg"] as const;
 export type DrawableImageFormat = (typeof DRAWABLE_IMAGE_FORMATS)[number];
 

@@ -4,8 +4,8 @@ import { renderDocx } from '../dist/docx.js'
 import { inspectAcroFormFields, renderPdf } from '../dist/pdf.js'
 import { renderText } from '../dist/text.js'
 
-const textIterations = Number(process.env.PARADOC_BENCHMARK_ITERATIONS ?? 1_000)
-const binaryIterations = Number(process.env.PARADOC_BINARY_BENCHMARK_ITERATIONS ?? 100)
+const textIterations = Number(process.env.ASTERDOC_BENCHMARK_ITERATIONS ?? 1_000)
+const binaryIterations = Number(process.env.ASTERDOC_BINARY_BENCHMARK_ITERATIONS ?? 100)
 const pdf = new Uint8Array(await readFile(new URL('../tests/fixtures/pet-addendum-2.pdf', import.meta.url)))
 const docx = new Uint8Array(await readFile(new URL('../tests/fixtures/pet-addendum.docx', import.meta.url)))
 

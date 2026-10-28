@@ -1,4 +1,4 @@
-// Validation helpers for findings paradoc-cli-001..012 (validator val-p1a). Not a test file.
+// Validation helpers for findings asterdoc-cli-001..012 (validator val-p1a). Not a test file.
 import { spawn, execFileSync } from 'node:child_process'
 import { promises as fs, readFileSync, mkdirSync } from 'node:fs'
 import { createServer as createHttpsServer, type Server as HttpsServer } from 'node:https'
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 export const CLI = path.resolve(here, '../../dist/index.js')
-export const SCRATCH = path.join(process.env.TMPDIR ?? '/tmp', 'paradoc-cli-p1a')
+export const SCRATCH = path.join(process.env.TMPDIR ?? '/tmp', 'asterdoc-cli-p1a')
 
 export interface CliResult { stdout: string; stderr: string; exitCode: number }
 
@@ -26,7 +26,7 @@ export function runCli(args: string[], opts: { cwd: string; home?: string; env?:
         XDG_CONFIG_HOME: path.join(home, '.config'),
         XDG_CACHE_HOME: path.join(home, '.cache'),
         DO_NOT_TRACK: '1',
-        PARADOC_TELEMETRY_DISABLED: '1',
+        ASTERDOC_TELEMETRY_DISABLED: '1',
         NO_UPDATE_NOTIFIER: '1',
         CI: '1',
         ...opts.env,
@@ -52,14 +52,14 @@ export async function makeTempDir(prefix: string): Promise<string> {
 
 export async function makeProject(dir: string, registries?: Record<string, unknown>): Promise<void> {
   const manifest: Record<string, unknown> = {
-    $schema: 'https://schema.paradoc.dev/manifest.json',
+    $schema: 'https://schema.asterdoc.com/manifest.json',
     name: '@test/test-project',
     title: 'Test Project',
     visibility: 'private',
   }
   if (registries) manifest.registries = registries
-  await fs.mkdir(path.join(dir, '.paradoc'), { recursive: true })
-  await fs.writeFile(path.join(dir, 'paradoc.json'), JSON.stringify(manifest, null, 2))
+  await fs.mkdir(path.join(dir, '.asterdoc'), { recursive: true })
+  await fs.writeFile(path.join(dir, 'asterdoc.json'), JSON.stringify(manifest, null, 2))
 }
 
 /** A self-signed cert for 127.0.0.1, generated once into the scratch folder. */
@@ -105,7 +105,7 @@ export const TLS_ENV = { NODE_TLS_REJECT_UNAUTHORIZED: '0' }
 
 export function sampleForm(name: string): Record<string, unknown> {
   return {
-    $schema: 'https://schema.paradoc.dev/2026-10-02.json',
+    $schema: 'https://schema.asterdoc.com/2026-10-28.json',
     kind: 'form',
     name,
     version: '1.0.0',
@@ -115,7 +115,7 @@ export function sampleForm(name: string): Record<string, unknown> {
 }
 
 export const W9_YAML = `# Author note: keep this comment
-$schema: https://schema.paradoc.dev/2026-10-02.json
+$schema: https://schema.asterdoc.com/2026-10-28.json
 kind: form
 name: w9
 version: 1.0.0

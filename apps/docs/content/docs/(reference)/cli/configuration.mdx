@@ -1,7 +1,7 @@
 ---
 title: Configuration
-description: Configure the Paradoc CLI
-ogTitle: Paradoc CLI Configuration
+description: Configure the Asterdoc CLI
+ogTitle: Asterdoc CLI Configuration
 ogDescription: Learn how to configure global settings, project overrides, environment variables, and more
 ---
 
@@ -9,11 +9,11 @@ The CLI reads settings from two places: a **global config** for user-wide prefer
 
 ## Global configuration
 
-The global config lives at `~/.paradoc/config.json`. It applies to all projects unless overridden.
+The global config lives at `~/.asterdoc/config.json`. It applies to all projects unless overridden.
 
 ```json
 {
-  "$schema": "https://schema.paradoc.dev/config.json",
+  "$schema": "https://schema.asterdoc.com/config.json",
   "defaults": {
     "output": "json",
     "artifactsDir": "artifacts"
@@ -23,7 +23,7 @@ The global config lives at `~/.paradoc/config.json`. It applies to all projects 
   },
   "cache": {
     "ttl": 3600,
-    "directory": "~/.paradoc/cache"
+    "directory": "~/.asterdoc/cache"
   },
   "security": {
     "allowedContentTypes": ["application/vnd.acme.form+json"]
@@ -40,9 +40,9 @@ The global config lives at `~/.paradoc/config.json`. It applies to all projects 
 |-------|------|---------|-------------|
 | `defaults.output` | string | `"json"` | Default output format (`json`, `yaml`, `typed`, `ts`) |
 | `defaults.artifactsDir` | string | `"artifacts"` | Default directory for downloaded artifacts |
-| `registries` | object | — | Registry configuration by namespace. An artifact reference always names its namespace, as in `@acme/w9`. `@paradoc` is reserved and built in; an entry for it is an error |
+| `registries` | object | — | Registry configuration by namespace. An artifact reference always names its namespace, as in `@acme/w9`. `@asterdoc` is reserved and built in; an entry for it is an error |
 | `cache.ttl` | number | `3600` | Cache time-to-live in seconds |
-| `cache.directory` | string | `"~/.paradoc/cache"` | Cache storage directory. `~` uses your home directory; relative paths use the directory containing the config file. |
+| `cache.directory` | string | `"~/.asterdoc/cache"` | Cache storage directory. `~` uses your home directory; relative paths use the directory containing the config file. |
 | `security.allowedContentTypes` | array | — | Content types added to the built-in download defaults. This cannot narrow the defaults |
 | `telemetry.enabled` | boolean | `true` | Set to `false` to turn off [telemetry](#telemetry) |
 | `anonymousId` | string | — | Anonymous telemetry ID. The CLI creates it once and keeps it across resets |
@@ -51,7 +51,7 @@ The CLI validates this file each time it reads or writes it. A missing file mean
 
 ## Project overrides
 
-The `paradoc.json` manifest can override global settings on a per-project basis. These fields take precedence over the global config:
+The `asterdoc.json` manifest can override global settings on a per-project basis. These fields take precedence over the global config:
 
 - `artifacts.output` — output format
 - `artifacts.dir` — artifacts directory
@@ -66,8 +66,8 @@ See the [project manifest](/cli/projects#the-project-manifest) reference for ful
 When resolving a setting, the CLI checks in this order:
 
 1. **CLI flags** (highest priority)
-2. **Project config** (`paradoc.json`)
-3. **Global config** (`~/.paradoc/config.json`)
+2. **Project config** (`asterdoc.json`)
+3. **Global config** (`~/.asterdoc/config.json`)
 4. **Built-in defaults** (lowest priority)
 
 For registries, a project-level namespace mapping always wins over the same namespace in the global config.
@@ -83,15 +83,15 @@ These flags can be passed to any command:
 | `-v, --version` | Display the CLI version |
 
 ```bash
-paradoc --no-telemetry add @paradoc/w9
+asterdoc --no-telemetry add @asterdoc/w9
 ```
 
 ## The configure wizard
 
-The [`paradoc configure`](/cli/commands/configure) command walks you through each setting interactively and saves results to the global config:
+The [`asterdoc configure`](/cli/commands/configure) command walks you through each setting interactively and saves results to the global config:
 
 ```bash
-paradoc configure
+asterdoc configure
 ```
 
 The wizard covers output format, artifacts directory, cache TTL, and telemetry. Press Enter at any prompt to keep the current value.
@@ -102,11 +102,11 @@ The CLI reads these environment variables:
 
 | Variable | Purpose |
 |----------|---------|
-| `PARADOC_NO_UPDATE_CHECK=1` | Turn off the [update check](#update-check) |
-| `PARADOC_TELEMETRY_DISABLED=1` | Turn off [telemetry](#telemetry) |
-| `PARADOC_TELEMETRY_DEBUG=1` | Log telemetry events to the console |
+| `ASTERDOC_NO_UPDATE_CHECK=1` | Turn off the [update check](#update-check) |
+| `ASTERDOC_TELEMETRY_DISABLED=1` | Turn off [telemetry](#telemetry) |
+| `ASTERDOC_TELEMETRY_DEBUG=1` | Log telemetry events to the console |
 | `DO_NOT_TRACK=1` | Turn off telemetry (cross-tool standard) |
-| `PARADOC_TELEMETRY_URL` | Send [telemetry](#telemetry) to another origin, such as `https://telemetry-dev.paradoc.dev` |
+| `ASTERDOC_TELEMETRY_URL` | Send [telemetry](#telemetry) to another origin, such as `https://telemetry-dev.asterdoc.com` |
 | `CI` | Turn off the update check when set |
 | `HTTPS_PROXY`, `HTTP_PROXY` | Send requests through a [proxy](#proxy-support) |
 
@@ -129,7 +129,7 @@ The URL itself must remain a valid URL before expansion, so put placeholders ins
 
 ## Cache
 
-Registry data is cached locally at `~/.paradoc/cache/` to speed up repeated operations. The default TTL is 1 hour (3600 seconds).
+Registry data is cached locally at `~/.asterdoc/cache/` to speed up repeated operations. The default TTL is 1 hour (3600 seconds).
 
 Override the TTL globally in the config:
 
@@ -156,12 +156,12 @@ Or per registry:
 }
 ```
 
-Manage the cache with [`paradoc cache`](/cli/commands/cache):
+Manage the cache with [`asterdoc cache`](/cli/commands/cache):
 
 ```bash
-paradoc cache stats         # Show cache statistics
-paradoc cache clear         # Clear all cached data
-paradoc cache invalidate @acme  # Invalidate a specific registry
+asterdoc cache stats         # Show cache statistics
+asterdoc cache clear         # Clear all cached data
+asterdoc cache invalidate @acme  # Invalidate a specific registry
 ```
 
 ## Proxy support
@@ -173,29 +173,29 @@ The CLI respects standard proxy environment variables for outbound HTTP requests
 
 ```bash
 export HTTPS_PROXY=http://proxy.example.com:8080
-paradoc search lease
+asterdoc search lease
 ```
 
 ## Update check
 
-Once a day, the CLI checks npm for a newer `paradoc-cli` and prints a one-line notice after the command output, with the command to update it. The check is skipped when `CI` is set or output is not a terminal.
+Once a day, the CLI checks npm for a newer version of `asterdoc` and prints a one-line notice after the command output, with the command to update it. The check is skipped when `CI` is set or output is not a terminal.
 
 To turn it off:
 
 ```bash
-export PARADOC_NO_UPDATE_CHECK=1
+export ASTERDOC_NO_UPDATE_CHECK=1
 ```
 
 ## Telemetry
 
-The CLI sends anonymous events to one endpoint, `https://telemetry.paradoc.dev/v1/events/anonymous`. The events are `project.initialized`, `artifact.installed`, `registry.added`, and `directory.installed`. Events include the operating system, CPU architecture, Node.js version, and whether the CLI is running in CI. Public-registry installs also include the registry origin, artifact name, artifact version, and artifact kind. For a public-registry install the CLI sends `directory.installed` with those same fields, so directories can count installs. No personal information or artifact content is collected.
+The CLI sends anonymous events to one endpoint, `https://telemetry.asterdoc.com/v1/events/anonymous`. The events are `project.initialized`, `artifact.installed`, `registry.added`, and `directory.installed`. Events include the operating system, CPU architecture, Node.js version, and whether the CLI is running in CI. Public-registry installs also include the registry origin, artifact name, artifact version, and artifact kind. For a public-registry install the CLI sends `directory.installed` with those same fields, so directories can count installs. No personal information or artifact content is collected.
 
 Telemetry can be disabled in three ways:
 
 **CLI flag** (per invocation):
 
 ```bash
-paradoc --no-telemetry add @paradoc/w9
+asterdoc --no-telemetry add @asterdoc/w9
 ```
 
 **Global config** (persistent):
@@ -212,10 +212,10 @@ paradoc --no-telemetry add @paradoc/w9
 
 | Variable | Purpose |
 |----------|---------|
-| `PARADOC_TELEMETRY_DISABLED=1` | Disable telemetry |
+| `ASTERDOC_TELEMETRY_DISABLED=1` | Disable telemetry |
 | `DO_NOT_TRACK=1` | Disable telemetry (cross-tool standard) |
-| `PARADOC_TELEMETRY_DEBUG=1` | Log telemetry events to console |
-| `PARADOC_TELEMETRY_URL` | Send events to another origin, such as `https://telemetry-dev.paradoc.dev` for development |
+| `ASTERDOC_TELEMETRY_DEBUG=1` | Log telemetry events to console |
+| `ASTERDOC_TELEMETRY_URL` | Send events to another origin, such as `https://telemetry-dev.asterdoc.com` for development |
 
 When multiple settings conflict, the CLI checks in this order: CLI flag, environment variables, global config. Any opt-out at any level disables telemetry entirely.
 

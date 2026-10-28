@@ -1,7 +1,7 @@
 ---
 title: Layers & rendering
 description: How artifacts become output documents
-ogTitle: Layers and rendering in Paradoc
+ogTitle: Layers and rendering in Asterdoc
 ogDescription: Transform artifacts into Markdown, PDF, HTML, or DOCX using templates and renderers
 ---
 
@@ -50,7 +50,7 @@ A React layer (`text/tsx` or `text/jsx`) must be a file layer. Its `path` names 
 
 ## Templates and Bindings
 
-Text-based layers (Markdown, HTML, plain text) and DOCX layers use Paradoc
+Text-based layers (Markdown, HTML, plain text) and DOCX layers use Asterdoc
 templates. Everything inside a marker is an [artifact expression](/concepts/logic):
 `{{fields.fieldName}}` inserts a formatted value, `{{#if fields.total > 1000}}`
 tests a boolean condition, and `{{#each parties.tenant}}` loops with `item` as
@@ -58,7 +58,7 @@ the current row. See [Text layers](/guides/text-layers#template-syntax-reference
 
 PDF layers work differently. A PDF template has AcroForm fields rather than
 placeholders, so a PDF layer declares **bindings**: each key is an AcroForm
-field name in the template, and each value is the Paradoc path that fills it.
+field name in the template, and each value is the Asterdoc path that fills it.
 Only PDF layers take `bindings` and `bindingsFrom`; validation rejects them on
 any other layer.
 
@@ -76,14 +76,14 @@ pdf: p.layer()
 
 ## Resolution
 
-When layers reference external files, **resolvers** tell Paradoc how to load them. This makes Paradoc environment-agnostic—the same artifact works in Node, browsers, or custom environments.
+When layers reference external files, **resolvers** tell Asterdoc how to load them. This makes Asterdoc environment-agnostic—the same artifact works in Node, browsers, or custom environments.
 
 A resolver is bound once, when the artifact is built or loaded. Every instance
 you derive from it afterward—every `fill`, every render, every mutator—carries
 that same resolver, so render calls don't repeat it.
 
 ```ts
-import { createFsResolver } from "@paradoc/resolvers/fs";
+import { createFsResolver } from "@asterdoc/resolvers/fs";
 
 const form = p.form()
   .name("invoice")
@@ -115,7 +115,7 @@ See [Formatting](/sdk/formatting) for details on formatting and localization.
 
 ## Renderers
 
-Paradoc selects the built-in implementation from the layer's MIME type. The
+Asterdoc selects the built-in implementation from the layer's MIME type. The
 same API renders Markdown, HTML, plain text, PDF, or DOCX, so applications do
 not need their own format switch.
 
@@ -134,11 +134,11 @@ operations. See [Renderers](/sdk/renderers) for the full API.
 
 A React layer points at a React component in a `.tsx` or `.jsx` file. Core does
 not render React itself, so pass a renderer for the React MIME types in
-`renderers`. `reactLayerRenderers()` from `@paradoc/react-pdf` builds the
+`renderers`. `reactLayerRenderers()` from `@asterdoc/react-pdf` builds the
 entries for both `text/tsx` and `text/jsx`.
 
 ```tsx
-import { reactLayerRenderers } from "@paradoc/react-pdf";
+import { reactLayerRenderers } from "@asterdoc/react-pdf";
 import Invoice from "./invoice.tsx";
 
 const form = p.form()

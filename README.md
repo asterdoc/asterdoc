@@ -1,27 +1,27 @@
 <p align="center">
-  <a href="https://paradoc.dev?utm_source=github&utm_medium=main" target="_blank" rel="noopener noreferrer">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=main" target="_blank" rel="noopener noreferrer">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://assets.paradoc.dev/logo-400x400.png" type="image/png">
-      <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Paradoc logo">
+      <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Asterdoc logo">
     </picture>
   </a>
   <br />
 </p>
 
-<h1 align="center">Welcome to Paradoc</h1>
+<h1 align="center">Welcome to Asterdoc</h1>
 
 <div align="center">
 
-[![Paradoc documentation](https://img.shields.io/badge/Documentation-Paradoc-red.svg)](https://docs.paradoc.dev?utm_source=github&utm_medium=main)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/paradochq?style=social)](https://twitter.com/intent/follow?screen_name=paradochq)
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=main)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/asterdoc)
 
 </div>
 
-[Paradoc](https://paradoc.dev?utm_source=github&utm_medium=main) is **documents as code**. It lets developers and AI agents define, validate, and render business documents using typed, composable schemas. This eliminates template drift, broken mappings, and brittle glue code — while giving AI systems a reliable document layer they can safely read, reason over, and generate against in production workflows.
+[Asterdoc](https://asterdoc.com?utm_source=github&utm_medium=main) is **documents as code**. It lets developers and AI agents define, validate, and render business documents using typed, composable schemas. This eliminates template drift, broken mappings, and brittle glue code — while giving AI systems a reliable document layer they can safely read, reason over, and generate against in production workflows.
 
 ## Package overview
 
-The Paradoc SDK plus the unified renderer and filesystem resolver used below.
+The Asterdoc SDK plus the unified renderer and filesystem resolver used below.
 
 - 📦 **Focused packages** - The SDK includes the default renderer; environment adapters stay explicit
 - 🏗️ **Type-safe builders** - Fluent API with full TypeScript support
@@ -33,7 +33,7 @@ The Paradoc SDK plus the unified renderer and filesystem resolver used below.
 ## Installation
 
 ```bash
-npm install @paradoc/sdk @paradoc/resolvers
+npm install @asterdoc/sdk @asterdoc/resolvers
 ```
 
 ## Usage
@@ -41,8 +41,8 @@ npm install @paradoc/sdk @paradoc/resolvers
 Define forms with parties, fields, and output layers:
 
 ```typescript
-import { p } from "@paradoc/sdk";
-import { createFsResolver } from "@paradoc/resolvers/fs";
+import { p } from "@asterdoc/sdk";
+import { createFsResolver } from "@asterdoc/resolvers/fs";
 
 // A file-backed layer's bytes come from a resolver, bound once when the form
 // is built. Every instance derived from it — every fill, every render —
@@ -233,7 +233,7 @@ const leaseBundle = p
 Get automatic TypeScript types from your form definitions:
 
 ```typescript
-import { type InferFormPayload } from "@paradoc/sdk";
+import { type InferFormPayload } from "@asterdoc/sdk";
 
 type LeaseData = InferFormPayload<typeof leaseAgreement>;
 
@@ -271,7 +271,7 @@ if (result.success) {
 }
 ```
 
-For a complete production example, see `/incubator/apps/demo/src/demos/leasing`. For API reference and advanced patterns, visit [docs.paradoc.dev](https://docs.paradoc.dev).
+For a complete production example, see `/incubator/apps/demo/src/demos/leasing`. For API reference and advanced patterns, visit [docs.asterdoc.com](https://docs.asterdoc.com).
 
 ## Changelog
 
@@ -279,21 +279,21 @@ View package Changelogs for update.
 
 ## Core packages
 
-- [`@paradoc/core`](https://github.com/paradoc-dev/paradoc/blob/main/packages/core) - Core artifacts and builders
-- [`@paradoc/types`](https://github.com/paradoc-dev/paradoc/blob/main/packages/types) - TypeScript utilities and types
-- [`@paradoc/schemas`](https://github.com/paradoc-dev/paradoc/blob/main/packages/schemas) - JSON Schema definitions
-- [`@paradoc/format`](https://github.com/paradoc-dev/paradoc/blob/main/packages/format) - Locale-aware value presentation
-- [`@paradoc/resolvers`](https://github.com/paradoc-dev/paradoc/blob/main/packages/resolvers) - File and environment resolvers
-- [`@paradoc/render`](https://github.com/paradoc-dev/paradoc/blob/main/packages/render) - Unified PDF, DOCX, and text rendering
-- [`@paradoc/react`](https://github.com/paradoc-dev/paradoc/blob/main/packages/react) - Compose and preview a document in React
-- [`@paradoc/react-pdf`](https://github.com/paradoc-dev/paradoc/blob/main/packages/react-pdf) - Check, render and seal a React document as PDF
+- [`@asterdoc/core`](https://github.com/asterdoc/asterdoc/blob/main/packages/core) - Core artifacts and builders
+- [`@asterdoc/types`](https://github.com/asterdoc/asterdoc/blob/main/packages/types) - TypeScript utilities and types
+- [`@asterdoc/schemas`](https://github.com/asterdoc/asterdoc/blob/main/packages/schemas) - JSON Schema definitions
+- [`@asterdoc/format`](https://github.com/asterdoc/asterdoc/blob/main/packages/format) - Locale-aware value presentation
+- [`@asterdoc/resolvers`](https://github.com/asterdoc/asterdoc/blob/main/packages/resolvers) - File and environment resolvers
+- [`@asterdoc/render`](https://github.com/asterdoc/asterdoc/blob/main/packages/render) - Unified PDF, DOCX, and text rendering
+- [`@asterdoc/react`](https://github.com/asterdoc/asterdoc/blob/main/packages/react) - Compose and preview a document in React
+- [`@asterdoc/react-pdf`](https://github.com/asterdoc/asterdoc/blob/main/packages/react-pdf) - Check, render and seal a React document as PDF
 
 ## Contributing
 
-We're open to all community contributions! If you'd like to contribute in any way, please read our [contribution guidelines](https://github.com/paradoc-dev/paradoc/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/paradoc-dev/paradoc/blob/main/CODE_OF_CONDUCT.md).
+We're open to all community contributions! If you'd like to contribute in any way, please read our [contribution guidelines](https://github.com/asterdoc/asterdoc/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/asterdoc/asterdoc/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
 This project is licensed under the MIT license.
 
-See [LICENSE](https://github.com/paradoc-dev/paradoc/blob/main/LICENSE) for more information.
+See [LICENSE](https://github.com/asterdoc/asterdoc/blob/main/LICENSE) for more information.

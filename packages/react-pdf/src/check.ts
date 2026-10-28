@@ -15,7 +15,7 @@
  * would otherwise find every unsupported class and every missing image never
  * finishes. `checkElement` wraps the element in a `PartialValuesProvider` and a
  * `CheckModeProvider`
- * (`@paradoc/react`), which `Document`'s context reads: with
+ * (`@asterdoc/react`), which `Document`'s context reads: with
  * a collector present, `field`, `item`, and `party` record a fault and return
  * a placeholder instead of throwing, so the walk completes and every check
  * runs over the whole tree in one pass. Nothing outside this module ever
@@ -37,7 +37,7 @@
  *
  * **A component, or an already-built element.** `checkComposition` builds the
  * element itself from a component and `artifact`/`data`, which is what a layer
- * binds to. A caller that has already built the element — `paradoc dev`, which
+ * binds to. A caller that has already built the element — `asterdoc dev`, which
  * compiles a composition through the project's own Vite and must build it with
  * the project's own React rather than this package's — passes the element
  * straight to `checkElement` instead; `artifact` and `data` are meaningless
@@ -48,8 +48,8 @@
  * `src` that is neither a `data:` URI nor inline SVG markup, and this check
  * supplies none — it never renders — so every such `src` is reported
  * unconditionally, whether or not the caller would in fact have bytes for it
- * at render time. `paradoc check`, who
- * never resolves bytes either, treats a non-empty list as a failure. `paradoc
+ * at render time. `asterdoc check`, who
+ * never resolves bytes either, treats a non-empty list as a failure. `asterdoc
  * dev`, who resolves image sources from disk itself before handing them to
  * `renderPdf`, must not: a composition whose images the tool can in fact
  * supply is not broken for still needing them. Whether `missingImages` fails
@@ -65,7 +65,7 @@
 
 import { createElement, type ReactElement, type ReactNode } from "react";
 import { fromJsx } from "@takumi-rs/helpers/jsx";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 import {
   CheckModeProvider,
@@ -75,7 +75,7 @@ import {
   CompositeFieldPathError,
   UnknownFieldPathError,
   ArtifactFieldFormatError,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import type { ReactLayerComponent } from "./layer";
 import { preparePdfTree } from "./tree";
 import type { PdfAdapterName } from "./adapter";
@@ -164,7 +164,7 @@ export async function checkComposition(
  * one it builds itself.
  *
  * For a caller whose composition must be built by its own React instance —
- * `paradoc dev` compiles a composition through the project's own Vite — pass the
+ * `asterdoc dev` compiles a composition through the project's own Vite — pass the
  * element you already have. `artifact` and `data` play no part here: the
  * element already carries whatever it was built with.
  *

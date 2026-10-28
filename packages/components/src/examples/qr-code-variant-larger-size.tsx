@@ -12,7 +12,7 @@ import { shortProposalData } from "./proposal-data";
 export function QRCodeVariantLargerSize() {
   return (
     <QRCode
-      url={`https://docs.paradoc.dev/p/${String(shortProposalData.fields.proposalNumber)}`}
+      url={`https://docs.asterdoc.com/p/${String(shortProposalData.fields.proposalNumber)}`}
       size={200}
     />
   );

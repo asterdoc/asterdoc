@@ -1,5 +1,5 @@
 /**
- * Catalog of input UI primitives for Paradoc artifacts.
+ * Catalog of input UI primitives for Asterdoc artifacts.
  *
  * The catalog defines the *contract* between the mapper (which produces
  * spec fragments from artifact field definitions) and consumer registries
@@ -23,7 +23,7 @@ import {
 	PersonSchema,
 	PhoneSchema,
 	FormFieldSchema,
-} from "@paradoc/schemas";
+} from "@asterdoc/schemas";
 
 // ---------------------------------------------------------------------------
 // Shared sub-schemas

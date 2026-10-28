@@ -1,9 +1,9 @@
 /**
- * `paradoc add <name>` installs a document component.
+ * `asterdoc add <name>` installs a document component.
  *
  * The install itself is the shadcn CLI's, so what is tested here is everything
  * around it: that a bare name is read as a component and a namespaced one still
- * as an artifact, that the `@paradoc` namespace lands in `components.json`
+ * as an artifact, that the `@asterdoc` namespace lands in `components.json`
  * without disturbing the rest of the file, that a namespace already pointing
  * elsewhere is refused rather than overwritten, and that the command handed to
  * the shadcn CLI is the one the docs tell people to run.
@@ -31,7 +31,7 @@ import {
 let project: string
 
 beforeEach(async () => {
-  project = await mkdtemp(join(tmpdir(), 'paradoc-add-component-'))
+  project = await mkdtemp(join(tmpdir(), 'asterdoc-add-component-'))
 })
 
 afterEach(async () => {
@@ -51,8 +51,8 @@ describe('telling a component from an artifact', () => {
   })
 
   it('leaves an artifact reference, a namespace and a URL alone', () => {
-    expect(isComponentName('@paradoc/w9')).toBe(false)
-    expect(isComponentName('@paradoc')).toBe(false)
+    expect(isComponentName('@asterdoc/w9')).toBe(false)
+    expect(isComponentName('@asterdoc')).toBe(false)
     expect(isComponentName('https://registry.example.com/r/w9.json')).toBe(false)
   })
 
@@ -161,7 +161,7 @@ describe('installing', () => {
       console.log = log
     }
 
-    expect(printed).toContain(`npx ${SHADCN_SPEC} add @paradoc/field --yes`)
+    expect(printed).toContain(`npx ${SHADCN_SPEC} add @asterdoc/field --yes`)
   })
 
   it('fails with an explanation when the project has no shadcn config', async () => {
@@ -223,6 +223,6 @@ describe('installing', () => {
 
     const written = JSON.parse(await fs.readFile(configPath, 'utf8'))
     expect(written.registries).toBeUndefined()
-    expect(printed.join('\n')).toContain('@paradoc/field')
+    expect(printed.join('\n')).toContain('@asterdoc/field')
   })
 })

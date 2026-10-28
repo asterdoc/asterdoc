@@ -1,7 +1,7 @@
 ---
 title: Checklists
 description: Create task lists with boolean or enum statuses
-ogTitle: Create a checklist with Paradoc
+ogTitle: Create a checklist with Asterdoc
 ogDescription: Build task lists with boolean or multi-state status tracking
 ---
 
@@ -16,7 +16,7 @@ This guide walks through creating a checklist with items, filling it with data, 
 A checklist needs a name, version, title, and items. Each item has an ID, title, and status configuration.
 
 ```ts tab="Object Pattern"
-import { p } from '@paradoc/sdk'
+import { p } from '@asterdoc/sdk'
 
 const onboarding = p.checklist({
   name: 'employee-onboarding',
@@ -31,7 +31,7 @@ const onboarding = p.checklist({
 ```
 
 ```ts tab="Builder Pattern"
-import { p } from '@paradoc/sdk'
+import { p } from '@asterdoc/sdk'
 
 const onboarding = p
   .checklist()
@@ -230,7 +230,7 @@ const onboarding = p
 Render the filled checklist using a renderer.
 
 ```ts
-import { createLayerRenderer } from '@paradoc/render'
+import { createLayerRenderer } from '@asterdoc/render'
 
 const draft = onboarding.fill({
   'signed-contract': true,
@@ -265,7 +265,7 @@ const yaml = onboarding.toYAML()
 
 ```json tab="JSON"
 {
-  "$schema": "https://schema.paradoc.dev/__SCHEMA_VERSION__.json",
+  "$schema": "https://schema.asterdoc.com/__SCHEMA_VERSION__.json",
   "kind": "checklist",
   "name": "employee-onboarding",
   "version": "1.0.0",
@@ -291,7 +291,7 @@ const yaml = onboarding.toYAML()
 ```
 
 ```yaml tab="YAML"
-$schema: https://schema.paradoc.dev/__SCHEMA_VERSION__.json
+$schema: https://schema.asterdoc.com/__SCHEMA_VERSION__.json
 kind: checklist
 name: employee-onboarding
 version: 1.0.0

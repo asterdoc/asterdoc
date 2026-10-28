@@ -1,7 +1,7 @@
 ---
 title: fix
 description: Auto-fix common artifact issues
-ogTitle: paradoc fix
+ogTitle: asterdoc fix
 ogDescription: Automatically repair artifact metadata like file checksums
 ---
 
@@ -10,7 +10,7 @@ Fixes artifact metadata, such as computing and updating file checksums in layers
 ## Usage
 
 ```bash
-paradoc fix <artifact> [options]
+asterdoc fix <artifact> [options]
 ```
 
 ## Arguments
@@ -42,19 +42,19 @@ This is useful after attaching new files to an artifact, when file contents have
 Fix an artifact interactively:
 
 ```bash
-paradoc fix my-form.yaml
+asterdoc fix my-form.yaml
 ```
 
 Accept all changes automatically:
 
 ```bash
-paradoc fix my-form.yaml --yes
+asterdoc fix my-form.yaml --yes
 ```
 
 Preview changes without modifying:
 
 ```bash
-paradoc fix my-form.yaml --dry-run
+asterdoc fix my-form.yaml --dry-run
 ```
 
 ## Output
@@ -89,6 +89,6 @@ Will change:
 - [validate](/cli/commands/validate) - Check artifact validity
 - [attach](/cli/commands/attach) - Attach files to artifacts
 
-An artifact argument may be a file path or an installed `@namespace/name` reference from `.paradoc/lock.json`. An uninstalled reference fails with an error.
+An artifact argument may be a file path or an installed `@namespace/name` reference from `.asterdoc/lock.json`. An uninstalled reference fails with an error.
 
 Checksum repair covers file layers, each file layer's font, instruction files, and files inside inline bundle members. A missing referenced file is reported and skipped.

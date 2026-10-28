@@ -104,11 +104,11 @@ const COLOR = `black|white|transparent|(?:${PALETTE})-(?:50|100|200|300|400|500|
 
 /**
  * Classes that are not Tailwind utilities and carry no layout of their own.
- * `paradoc-document` names the typeface for the browser; the PDF supplies the
+ * `asterdoc-document` names the typeface for the browser; the PDF supplies the
  * same family through the renderer's font stack, so it is a no-op here rather
  * than a silent loss.
  */
-const NON_UTILITY_CLASSES = new Set(["paradoc-document", "paradoc-ltr-isolate"]);
+const NON_UTILITY_CLASSES = new Set(["asterdoc-document", "asterdoc-ltr-isolate"]);
 
 /**
  * Which fragment makes a family's effect visible. `inline` is distinct from

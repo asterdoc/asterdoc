@@ -1,4 +1,4 @@
-import type { Signature } from '@paradoc/types';
+import type { Signature } from '@asterdoc/types';
 
 export interface SignatureBuilder {
 	from(value: Signature): SignatureBuilder;

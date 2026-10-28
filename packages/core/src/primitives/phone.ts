@@ -1,5 +1,5 @@
 import { parsePhone } from '@/validation/parsers';
-import type { Phone } from '@paradoc/types';
+import type { Phone } from '@asterdoc/types';
 
 export interface PhoneBuilder {
 	from(value: Phone): PhoneBuilder;

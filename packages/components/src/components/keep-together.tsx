@@ -1,6 +1,6 @@
 /** @jsxRuntime classic */
 import React from "react";
-import { RENDER_ATTRIBUTES, useKeepVisible, usePage } from "@paradoc/react";
+import { RENDER_ATTRIBUTES, useKeepVisible, usePage } from "@asterdoc/react";
 import type { ComponentPropsWithoutRef, ElementType, ReactNode } from "react";
 
 export interface KeepTogetherProps {

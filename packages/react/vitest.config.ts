@@ -9,7 +9,7 @@ export default defineConfig({
   },
   resolve: {
     alias: [
-      { find: /^@paradoc\/react$/, replacement: path.resolve(__dirname, "./src/index.ts") },
+      { find: /^@asterdoc\/react$/, replacement: path.resolve(__dirname, "./src/index.ts") },
     ],
   },
 });

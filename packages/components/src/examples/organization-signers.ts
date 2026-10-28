@@ -1,4 +1,4 @@
-import type { Person, RuntimeParty } from "@paradoc/types";
+import type { Person, RuntimeParty } from "@asterdoc/types";
 
 type OrganizationData = {
   fields: Record<string, unknown>;

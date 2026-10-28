@@ -1,5 +1,5 @@
 import { parsePerson } from '@/validation/parsers';
-import type { Person } from '@paradoc/types';
+import type { Person } from '@asterdoc/types';
 
 export interface PersonBuilder {
 	from(value: Person): PersonBuilder;

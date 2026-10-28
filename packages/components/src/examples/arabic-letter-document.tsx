@@ -1,6 +1,6 @@
 /** @jsxRuntime classic */
 import React from "react";
-import { createFormatter } from "@paradoc/format";
+import { createFormatter } from "@asterdoc/format";
 /**
  * The Arabic letter, composed from the same components the proposal is.
  *
@@ -25,18 +25,18 @@ import { createFormatter } from "@paradoc/format";
  * outputs agree about it rather than each resolving `start` for itself.
  */
 
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 import { Document } from "../components/document";
-import { markDocumentRoot } from "@paradoc/react";
-import type { DocumentData } from "@paradoc/react";
+import { markDocumentRoot } from "@asterdoc/react";
+import type { DocumentData } from "@asterdoc/react";
 import { Field } from "../components/field";
 import { Text } from "../components/text";
 import { Section } from "../components/section";
 import { Table } from "../components/table";
 import { Totals } from "../components/totals";
-import type { FormatOptions } from "@paradoc/react";
-import type { DocumentTokensInput } from "@paradoc/react";
+import type { FormatOptions } from "@asterdoc/react";
+import type { DocumentTokensInput } from "@asterdoc/react";
 import { arabicLetterForm } from "./arabic-letter";
 
 const arabicFormatter = createFormatter({ locale: "ar-SA", numberingSystem: "latn", overrides: { organization: (value) => String(value?.name ?? "") } });

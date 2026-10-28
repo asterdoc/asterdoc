@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/ui-spec",
+  "name": "@asterdoc/ui-spec",
   "version": "0.0.0",
-  "description": "Headless UI specification for Paradoc artifacts. Maps form fields to renderable spec fragments — bring your own renderer.",
+  "description": "Headless UI specification for Asterdoc artifacts. Maps form fields to renderable spec fragments — bring your own renderer.",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
@@ -21,7 +21,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
+    "asterdoc",
     "forms",
     "ui",
     "catalog",
@@ -29,8 +29,8 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
     "node": ">=18"
@@ -51,13 +51,13 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@paradoc/schemas": "workspace:*",
-    "@paradoc/types": "workspace:*",
+    "@asterdoc/schemas": "workspace:*",
+    "@asterdoc/types": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",

@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test, expect } from 'vitest'
 import { form } from '@/artifacts'
-import type { SealAdapter, SealLocator, SignatureSlot } from '@paradoc/types'
-import { locator } from '@paradoc/render/pdf'
+import type { SealAdapter, SealLocator, SignatureSlot } from '@asterdoc/types'
+import { locator } from '@asterdoc/render/pdf'
 
 /**
  * Anchor-mode sealing with a pure byte converter.

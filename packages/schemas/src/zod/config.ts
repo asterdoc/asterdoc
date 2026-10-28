@@ -2,22 +2,22 @@
  * Schema version identity.
  *
  * Each version of the artifact schema is identified by a date and published
- * at a dated address, such as `https://schema.paradoc.dev/2026-10-02.json`.
+ * at a dated address, such as `https://schema.asterdoc.com/2026-10-28.json`.
  * A new dated version is created only for a breaking change, and each one
  * ships with a migration step from the version before it. The current version
  * is the latest entry in `SCHEMA_VERSIONS`.
  */
 
 /** Every published schema version, oldest first. The last entry is current. */
-export const SCHEMA_VERSIONS = ['2026-01-01', '2026-08-06', '2026-08-10', '2026-09-22', '2026-09-23', '2026-09-24', '2026-10-02'] as const;
+export const SCHEMA_VERSIONS = ['2026-10-28'] as const;
 
 /** A published, dated schema version. */
 export type SchemaVersion = (typeof SCHEMA_VERSIONS)[number];
 
 /** The current schema version: the latest dated version. */
-export const SCHEMA_VERSION = '2026-10-02' as const satisfies SchemaVersion;
+export const SCHEMA_VERSION = '2026-10-28' as const satisfies SchemaVersion;
 
-export const SCHEMA_BASE = 'https://schema.paradoc.dev';
+export const SCHEMA_BASE = 'https://schema.asterdoc.com';
 
 /** Stable schema addresses used by CLI-owned configuration files. */
 export const MANIFEST_SCHEMA_ID = `${SCHEMA_BASE}/manifest.json`;
@@ -48,10 +48,10 @@ export function isSchemaVersion(value: string): value is SchemaVersion {
 /**
  * What an artifact's `$schema` address says about its schema version.
  *
- * - `known`: a dated Paradoc address of a published version.
- * - `undated`: a Paradoc address that names no version, such as `schema.json`.
- * - `unknown-version`: a dated Paradoc address of a version that was never published.
- * - `foreign`: an address that is not a Paradoc schema address.
+ * - `known`: a dated Asterdoc address of a published version.
+ * - `undated`: an Asterdoc address that names no version, such as `schema.json`.
+ * - `unknown-version`: a dated Asterdoc address of a version that was never published.
+ * - `foreign`: an address that is not an Asterdoc schema address.
  */
 export type SchemaAddress =
 	| { readonly kind: 'known'; readonly version: SchemaVersion }
@@ -64,8 +64,8 @@ const DATED_ADDRESS = /^([0-9]{4}-[0-9]{2}-[0-9]{2})(?:\.json|\/[a-z][a-z0-9-]*\
 /**
  * Read the schema version an artifact's `$schema` address names.
  *
- * Both the dated bundle (`<base>/2026-08-10.json`) and a dated individual
- * schema (`<base>/2026-08-10/form.json`) name that version.
+ * Both the dated bundle (`<base>/2026-10-28.json`) and a dated individual
+ * schema (`<base>/2026-10-28/form.json`) name that version.
  */
 export function readSchemaAddress(address: string): SchemaAddress {
 	const prefix = `${SCHEMA_BASE}/`;

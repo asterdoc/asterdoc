@@ -30,10 +30,10 @@
  * it renders bare so a caller who puts it inside a packet supplies the bundle.
  */
 
-import { p } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { p } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 
-import type { DocumentTokensInput } from "@paradoc/react";
+import type { DocumentTokensInput } from "@asterdoc/react";
 
 /** The layer that names the composition. */
 export const INVOICE_REACT_LAYER = "composition";
@@ -91,7 +91,7 @@ export const invoiceTokens: DocumentTokensInput = {
 
 /** The invoice form, exactly as authored. Kept beside the instance for evaluators that take a raw `Form`. */
 export const invoiceSpec = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "invoice",
   version: "1.0.0",

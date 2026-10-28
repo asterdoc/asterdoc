@@ -1,5 +1,5 @@
 /**
- * Core primitive/data types that correspond to schemas in @paradoc/schemas.
+ * Core primitive/data types that correspond to schemas in @asterdoc/schemas.
  * These are the building blocks used in form definitions and filled data.
  */
 

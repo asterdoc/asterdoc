@@ -8,7 +8,7 @@
  */
 import { expect, test } from 'vitest'
 import { form } from '@/artifacts'
-import type { FormData, ParadocRenderer, RendererLayer } from '@paradoc/types'
+import type { FormData, AsterdocRenderer, RendererLayer } from '@asterdoc/types'
 
 const definition = () =>
 	form()
@@ -25,7 +25,7 @@ const definition = () =>
 
 const recordingRenderer = () => {
 	const seen: FormData[] = []
-	const renderer: ParadocRenderer<RendererLayer, string> = {
+	const renderer: AsterdocRenderer<RendererLayer, string> = {
 		id: 'recording',
 		render(request) {
 			if (request.kind !== 'form') throw new Error(`expected a form request, got ${request.kind}`)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BundleContentItemSchema, BundleSchema, ParadocSchema } from '../src/zod';
+import { BundleContentItemSchema, BundleSchema, AsterdocSchema } from '../src/zod';
 
 const inline = (artifact: unknown) => ({
 	type: 'inline' as const,
@@ -44,7 +44,7 @@ describe('inline bundle artifacts', () => {
 		};
 
 		expect(BundleSchema.safeParse(nested).success).toBe(true);
-		expect(ParadocSchema.safeParse(nested).success).toBe(true);
+		expect(AsterdocSchema.safeParse(nested).success).toBe(true);
 
 		const invalidNested = {
 			...nested,

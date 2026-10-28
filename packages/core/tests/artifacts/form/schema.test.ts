@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { form } from '@/artifacts'
-import type { Form, EnumField } from '@paradoc/types'
+import type { Form, EnumField } from '@asterdoc/types'
 
 /**
  * Form Schema Tests

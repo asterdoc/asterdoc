@@ -14,8 +14,8 @@ import type {
 	ContentRef,
 	Resolver,
 	ArtifactEdition,
-} from '@paradoc/types'
-import type { RuntimeDocumentJSON } from '@paradoc/types'
+} from '@asterdoc/types'
+import type { RuntimeDocumentJSON } from '@asterdoc/types'
 import { parseDocument, parseLayer } from '@/validation/artifact-parsers'
 import { toYAML } from '@/serialization/serialization'
 import {

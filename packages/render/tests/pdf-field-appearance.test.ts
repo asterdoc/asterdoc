@@ -7,7 +7,7 @@
  * field's right edge, and a declared size must be the size drawn.
  *
  * `irs-w-9.pdf` and `irs-1099-nec-copy-a.pdf` are byte copies of the official
- * IRS forms `@paradoc/essentials` bundles for the W-9 and 1099-NEC.
+ * IRS forms `@asterdoc/essentials` bundles for the W-9 and 1099-NEC.
  */
 
 import { readFile } from 'node:fs/promises'

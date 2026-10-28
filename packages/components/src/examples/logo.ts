@@ -13,7 +13,7 @@
  */
 
 /** Stable key for the proposal's organization mark. */
-export const PROPOSAL_LOGO_SRC = "paradoc-react:proposal-logo.png";
+export const PROPOSAL_LOGO_SRC = "asterdoc-react:proposal-logo.png";
 
 /** Rendered width in CSS pixels. The engine needs explicit dimensions. */
 export const PROPOSAL_LOGO_WIDTH_PX = 40;

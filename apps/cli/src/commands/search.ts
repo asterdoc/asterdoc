@@ -8,7 +8,7 @@ import { registryClient, RequestTimeoutError } from '../utils/registry-client.js
 import { configManager, normalizeNamespace } from '../utils/config.js'
 import { findRepoRoot } from '../utils/project.js'
 import { formatLayerCount } from '../utils/user-copy.js'
-import { resolveRegistryRelease } from '@paradoc/schemas'
+import { resolveRegistryRelease } from '@asterdoc/schemas'
 import { formatRelease, formatReleaseLines } from '../utils/registry-manifest.js'
 
 /** fetch() rejects with a TypeError carrying a cause when no response arrives at all. */
@@ -30,7 +30,7 @@ async function searchNamespace(registry: string | undefined): Promise<string> {
   if (configured.length === 1) return configured[0]!.namespace
   if (configured.length === 0) {
     throw new Error(
-      'No registry to search. Pass --registry @<namespace>, or add one first: paradoc registry add @<namespace> <url>',
+      'No registry to search. Pass --registry @<namespace>, or add one first: asterdoc registry add @<namespace> <url>',
     )
   }
   throw new Error(
@@ -156,7 +156,7 @@ export function createSearchCommand(): Command {
           }
 
           // Hint
-          console.log(`Run ${kleur.white(`paradoc add ${namespace}/<name>`)} to install an artifact, or ${kleur.white(`${namespace}/<name>/<edition>@<version>`)} for one release.`)
+          console.log(`Run ${kleur.white(`asterdoc add ${namespace}/<name>`)} to install an artifact, or ${kleur.white(`${namespace}/<name>/<edition>@<version>`)} for one release.`)
         }
       } catch (error) {
         spinner.fail('Search failed')

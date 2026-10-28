@@ -55,7 +55,7 @@ export const SignatureSlotSchema = z.object({
  * layer of one of these types carries source where a pointer belongs and is
  * rejected here.
  *
- * This is the one definition. `@paradoc/core` imports it for its render
+ * This is the one definition. `@asterdoc/core` imports it for its render
  * dispatch rather than restating it, so validation and dispatch cannot drift.
  */
 export const REACT_LAYER_MIME_TYPES = ['text/tsx', 'text/jsx'] as const;
@@ -177,12 +177,12 @@ export function isTextTemplateMimeType(mimeType: string): boolean {
 
 /**
  * A PDF layer's bindings: each key is a fully qualified AcroForm field name in
- * the template, and each value is the Paradoc path that fills it.
+ * the template, and each value is the Asterdoc path that fills it.
  */
 export const PdfBindingsSchema = z.record(
 	z.string().min(1).max(500).describe('AcroForm field name in the PDF template, fully qualified (e.g., topmostSubform[0].Page1[0].f1_01[0])'),
-	z.string().min(1).max(500).describe('Paradoc path whose value fills the field (e.g., fields.name, parties.buyer.name)'),
-).describe('PDF layers only. Maps each AcroForm field name (key) to the Paradoc path (value) that fills it');
+	z.string().min(1).max(500).describe('Asterdoc path whose value fills the field (e.g., fields.name, parties.buyer.name)'),
+).describe('PDF layers only. Maps each AcroForm field name (key) to the Asterdoc path (value) that fills it');
 
 /** A PDF layer that reuses a sibling PDF layer's bindings. */
 export const PdfBindingsFromSchema = z.string()

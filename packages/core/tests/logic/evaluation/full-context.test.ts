@@ -6,8 +6,8 @@
  * core-039, core-048, and core-050.
  */
 import { describe, expect, test } from 'vitest'
-import { buildRegistry, T, Values } from '@paradoc/expr'
-import type { Attestation, Form, SignatureCapture, ValidationRule } from '@paradoc/types'
+import { buildRegistry, T, Values } from '@asterdoc/expr'
+import type { Attestation, Form, SignatureCapture, ValidationRule } from '@asterdoc/types'
 import { form } from '@/artifacts'
 import { buildFormContext } from '@/logic/runtime/evaluation/context-builder'
 import { evaluateExpression } from '@/logic/runtime/evaluation/expression-evaluator'

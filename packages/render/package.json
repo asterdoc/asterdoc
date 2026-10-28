@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/render",
-  "version": "0.8.0",
-  "description": "Focused text, PDF, and DOCX rendering for Paradoc",
+  "name": "@asterdoc/render",
+  "version": "0.9.0",
+  "description": "Focused text, PDF, and DOCX rendering for Asterdoc",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -40,7 +40,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
+    "asterdoc",
     "documents",
     "rendering",
     "pdf",
@@ -49,20 +49,20 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/render"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -84,17 +84,17 @@
     "size-report": "pnpm --silent run build >/dev/null && node scripts/size-report.mjs"
   },
   "peerDependencies": {
-    "@paradoc/types": "workspace:^"
+    "@asterdoc/types": "workspace:^"
   },
   "dependencies": {
-    "@paradoc/expr": "workspace:^",
-    "@paradoc/format": "workspace:^",
+    "@asterdoc/expr": "workspace:^",
+    "@asterdoc/format": "workspace:^",
     "fflate": "^0.8.3"
   },
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/types": "workspace:^",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/types": "workspace:^",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "esbuild": "^0.27.2",

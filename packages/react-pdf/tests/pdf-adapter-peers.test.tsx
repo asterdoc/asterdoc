@@ -42,7 +42,7 @@ describe("asking for an adapter whose optional peers are missing", () => {
     expect(error.adapter).toBe("chromium");
     expect(error.peers).toEqual(["puppeteer", "tailwindcss"]);
     expect(error.message).toContain('The "chromium" PDF adapter could not be loaded');
-    expect(error.message).toContain("@paradoc/react-pdf");
+    expect(error.message).toContain("@asterdoc/react-pdf");
     expect(error.message).toContain("npm install puppeteer tailwindcss");
     // Whatever the loader actually said is carried through rather than
     // replaced, so the real cause stays readable and stays attached.

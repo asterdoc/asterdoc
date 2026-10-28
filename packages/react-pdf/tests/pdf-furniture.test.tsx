@@ -34,7 +34,7 @@ import {
   type PageFurniture,
   DEFAULT_PAGE_MARGIN_PX,
   PAGE_SIZES,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import {
   measureFurnitureBands,
   translateFurniture,

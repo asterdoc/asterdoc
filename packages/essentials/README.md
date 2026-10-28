@@ -1,32 +1,32 @@
 <p align="center">
-  <a href="https://paradoc.dev?utm_source=github&utm_medium=essentials" target="_blank" rel="noopener noreferrer">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=essentials" target="_blank" rel="noopener noreferrer">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://assets.paradoc.dev/logo-400x400.png" type="image/png">
-      <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Paradoc logo">
+      <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Asterdoc logo">
     </picture>
   </a>
   <br />
 </p>
 
-<h1 align="center">@paradoc/essentials</h1>
+<h1 align="center">@asterdoc/essentials</h1>
 
 <div align="center">
 
-[![Paradoc documentation](https://img.shields.io/badge/Documentation-Paradoc-red.svg)](https://docs.paradoc.dev?utm_source=github&utm_medium=essentials)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/paradochq?style=social)](https://twitter.com/intent/follow?screen_name=paradochq)
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=essentials)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/intent/follow?screen_name=asterdoc)
 
 </div>
 
-[Paradoc](https://paradoc.dev?utm_source=github&utm_medium=essentials) is **documents as code**. It lets developers and AI agents define, validate, and render business documents using typed, composable schemas.
+[Asterdoc](https://asterdoc.com?utm_source=github&utm_medium=essentials) is **documents as code**. It lets developers and AI agents define, validate, and render business documents using typed, composable schemas.
 
 ## Package overview
 
-A curated collection of common business artifacts ready to use with the Paradoc SDK. Each artifact ships with its full spec and pre-built layers (markdown and PDF) bundled in — no separate downloads, no resolver setup.
+A curated collection of common business artifacts ready to use with the Asterdoc SDK. Each artifact ships with its full spec and pre-built layers (markdown and PDF) bundled in — no separate downloads, no resolver setup.
 
 ## Installation
 
 ```bash
-npm install @paradoc/essentials @paradoc/sdk
+npm install @asterdoc/essentials @asterdoc/sdk
 ```
 
 ## Included artifacts
@@ -47,12 +47,12 @@ npm install @paradoc/essentials @paradoc/sdk
 Import by domain or from the root:
 
 ```typescript
-import { w9 } from "@paradoc/essentials/tax";
-import { i9 } from "@paradoc/essentials/employment";
-import { achDirectDeposit } from "@paradoc/essentials/banking";
+import { w9 } from "@asterdoc/essentials/tax";
+import { i9 } from "@asterdoc/essentials/employment";
+import { achDirectDeposit } from "@asterdoc/essentials/banking";
 
 // or flat
-import { w9, i9, achDirectDeposit } from "@paradoc/essentials";
+import { w9, i9, achDirectDeposit } from "@asterdoc/essentials";
 ```
 
 ## Usage
@@ -60,7 +60,7 @@ import { w9, i9, achDirectDeposit } from "@paradoc/essentials";
 Fill a W-9 and render its markdown layer:
 
 ```typescript
-import { w9 } from "@paradoc/essentials/tax";
+import { w9 } from "@asterdoc/essentials/tax";
 
 const markdown = await w9
   .fill({
@@ -104,20 +104,20 @@ if (result.success) {
 
 ## Changelog
 
-View the [Changelog](https://github.com/paradoc-dev/paradoc/blob/main/CHANGELOG.md) for updates.
+View the [Changelog](https://github.com/asterdoc/asterdoc/blob/main/CHANGELOG.md) for updates.
 
 ## Related packages
 
-- [`@paradoc/sdk`](../sdk) - Complete framework with renderers
-- [`@paradoc/core`](../core) - Core builders and validation
-- [`@paradoc/render`](../render) - MIME-selected PDF, DOCX, and text rendering
+- [`@asterdoc/sdk`](../sdk) - Complete framework with renderers
+- [`@asterdoc/core`](../core) - Core builders and validation
+- [`@asterdoc/render`](../render) - MIME-selected PDF, DOCX, and text rendering
 
 ## Contributing
 
-We're open to all community contributions! If you'd like to contribute in any way, please read our [contribution guidelines](https://github.com/paradoc-dev/paradoc/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/paradoc-dev/paradoc/blob/main/CODE_OF_CONDUCT.md).
+We're open to all community contributions! If you'd like to contribute in any way, please read our [contribution guidelines](https://github.com/asterdoc/asterdoc/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/asterdoc/asterdoc/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
 This project is licensed under the MIT license.
 
-See [LICENSE](https://github.com/paradoc-dev/paradoc/blob/main/LICENSE) for more information.
+See [LICENSE](https://github.com/asterdoc/asterdoc/blob/main/LICENSE) for more information.

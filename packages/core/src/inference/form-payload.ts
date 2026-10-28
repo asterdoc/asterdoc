@@ -12,8 +12,8 @@ import type {
   Organization,
   Phone,
   Attachment,
-} from '@paradoc/types'
-import { ISO_8601_DURATION_PATTERN } from '@paradoc/schemas'
+} from '@asterdoc/types'
+import { ISO_8601_DURATION_PATTERN } from '@asterdoc/schemas'
 import { TIME_PATTERN } from '@/primitives/time'
 import { compositeJsonSchema } from './composite-shapes'
 
@@ -638,7 +638,7 @@ function compileField(field: FormField): JsonSchema {
 
 /**
  * JSON Schema for an annex value: the Attachment primitive (`AttachmentSchema`
- * in @paradoc/schemas). Every annex slot holds exactly one Attachment.
+ * in @asterdoc/schemas). Every annex slot holds exactly one Attachment.
  */
 const ATTACHMENT_SCHEMA: JsonSchema = {
   type: 'object',

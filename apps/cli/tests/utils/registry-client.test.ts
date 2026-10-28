@@ -21,7 +21,7 @@ import {
 } from '../../src/utils/registry-client.js'
 import { RegistryManifestError } from '../../src/utils/registry-manifest.js'
 import { createHash } from 'node:crypto'
-import { resolveRegistryRelease, type RegistryItemSummary } from '@paradoc/schemas'
+import { resolveRegistryRelease, type RegistryItemSummary } from '@asterdoc/schemas'
 import { SECURITY_LIMITS, NETWORK_TIMEOUTS } from '../../src/utils/constants.js'
 import type { ResolvedRegistry } from '../../src/types.js'
 
@@ -153,7 +153,7 @@ describe('RegistryClient network fetches', () => {
     await rm(cacheDir, { recursive: true, force: true })
   })
 
-  /** A client whose shared cache points at a scratch directory, never ~/.paradoc. */
+  /** A client whose shared cache points at a scratch directory, never ~/.asterdoc. */
   async function newClient(): Promise<RegistryClient> {
     const client = new RegistryClient()
     await client.initCache({ directory: cacheDir })

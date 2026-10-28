@@ -1,11 +1,11 @@
 #!/usr/bin/env tsx
 /**
- * Export the Paradoc manifest schema to JSON Schema 2020-12 compliant format
+ * Export the Asterdoc manifest schema to JSON Schema 2020-12 compliant format
  *
  * This script uses Zod's registry approach to generate JSON Schema with proper $refs.
  *
  * Output:
- * - manifest.json ($id: https://schema.paradoc.dev/manifest.json)
+ * - manifest.json ($id: https://schema.asterdoc.com/manifest.json)
  */
 
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -48,8 +48,8 @@ export async function generateManifestSchema(): Promise<Record<string, unknown>>
 	const jsonSchema: Record<string, unknown> = {
 		$schema: 'https://json-schema.org/draft/2020-12/schema',
 		$id: MANIFEST_SCHEMA_ID,
-		title: 'Paradoc Project Manifest',
-		description: 'Schema for paradoc.json project manifest files',
+		title: 'Asterdoc Project Manifest',
+		description: 'Schema for asterdoc.json project manifest files',
 		...transformedMain,
 	};
 
@@ -65,7 +65,7 @@ export async function generateManifestSchema(): Promise<Record<string, unknown>>
  * Main export function
  */
 async function main() {
-	console.log('Exporting Paradoc manifest schema to JSON Schema 2020-12...\n');
+	console.log('Exporting Asterdoc manifest schema to JSON Schema 2020-12...\n');
 
 	try {
 		const jsonSchema = await generateManifestSchema();
@@ -83,7 +83,7 @@ async function main() {
 			console.log(`  $defs: ${Object.keys($defs).join(', ')}`);
 		}
 		console.log('\nManifest schema export complete!');
-		console.log('\nUpload schemas/manifest.json to schema.paradoc.dev/manifest.json');
+		console.log('\nUpload schemas/manifest.json to schema.asterdoc.com/manifest.json');
 	} catch (error) {
 		console.error('Failed to export manifest schema:', error);
 		process.exit(1);

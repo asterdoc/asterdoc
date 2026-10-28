@@ -1,3 +1,3 @@
-import { config } from '@paradoc/eslint-config/base';
+import { config } from '@asterdoc/eslint-config/base';
 
 export default config;

@@ -329,7 +329,7 @@ Created by `draft.complete()`. Fully frozen.
 
 <PropertiesTable properties={[
   { name: 'layer', type: 'string', description: 'Layer key to render. Defaults to the target layer', isOptional: true },
-  { name: 'renderer', type: 'ParadocRenderer', description: 'Renderer that processes the layer template, such as `createLayerRenderer()`', isOptional: true },
+  { name: 'renderer', type: 'AsterdocRenderer', description: 'Renderer that processes the layer template, such as `createLayerRenderer()`', isOptional: true },
   { name: 'renderers', type: 'RendererRegistry', description: 'Renderers keyed by layer MIME type, consulted after `renderer` and before the built-in engine', isOptional: true },
   { name: 'formatter', type: 'Formatter', description: 'Formatter used for values in this render', isOptional: true },
   { name: 'progressive', type: 'FormatterProgressivePolicy', description: 'Text for missing and incomplete values', isOptional: true },

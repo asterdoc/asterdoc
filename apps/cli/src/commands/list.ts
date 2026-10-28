@@ -63,7 +63,7 @@ export function createListCommand(): Command {
         } else {
           if (artifacts.length === 0) {
             console.log(kleur.gray('No artifacts installed.'))
-            console.log(kleur.gray("Run 'paradoc add @namespace/artifact-name' to install one."))
+            console.log(kleur.gray("Run 'asterdoc add @namespace/artifact-name' to install one."))
             return
           }
 

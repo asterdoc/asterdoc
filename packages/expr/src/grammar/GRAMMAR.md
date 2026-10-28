@@ -1,4 +1,4 @@
-# @paradoc/expr grammar (EBNF)
+# @asterdoc/expr grammar (EBNF)
 
 A single expression. Whitespace is insignificant between tokens. The start
 symbol is `expression`.

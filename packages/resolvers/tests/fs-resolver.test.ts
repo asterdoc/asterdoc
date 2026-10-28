@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, relative } from 'node:path'
 import { afterEach, beforeEach, describe, expect, test } from 'vitest'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 async function expectBytes(read: Promise<Uint8Array>, expected: Uint8Array): Promise<void> {
   expect(Array.from(await read)).toEqual(Array.from(expected))
@@ -14,7 +14,7 @@ describe('createFsResolver', () => {
   let outside: string
 
   beforeEach(async () => {
-    sandbox = await mkdtemp(join(tmpdir(), 'paradoc-resolver-'))
+    sandbox = await mkdtemp(join(tmpdir(), 'asterdoc-resolver-'))
     root = join(sandbox, 'root')
     outside = join(sandbox, 'outside')
     await Promise.all([mkdir(join(root, 'nested'), { recursive: true }), mkdir(outside)])

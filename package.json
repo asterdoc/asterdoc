@@ -1,13 +1,13 @@
 {
-  "name": "paradoc",
-  "description": "Paradoc monorepo - Documents as Code framework",
+  "name": "asterdoc-framework",
+  "description": "Asterdoc monorepo - Documents as Code framework",
   "private": true,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git"
+    "url": "https://github.com/asterdoc/asterdoc.git"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "packageManager": "pnpm@10.5.2",
   "scripts": {
     "build": "turbo run build",
@@ -16,9 +16,9 @@
     "check-types": "turbo run check-types",
     "test": "turbo run test",
     "clean": "turbo run clean",
-    "build:public": "turbo run build --filter='./packages/*' --filter='@paradoc/cli'",
-    "test:public": "turbo run test --filter='./packages/*' --filter='@paradoc/cli'",
-    "check:public": "turbo run lint check-types --filter='./packages/*' --filter='@paradoc/cli'",
+    "build:public": "turbo run build --filter='./packages/*' --filter='@asterdoc/cli'",
+    "test:public": "turbo run test --filter='./packages/*' --filter='@asterdoc/cli'",
+    "check:public": "turbo run lint check-types --filter='./packages/*' --filter='@asterdoc/cli'",
     "verify:public": "pnpm check:public && pnpm test:public && pnpm build:public"
   },
   "devDependencies": {

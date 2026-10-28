@@ -24,7 +24,7 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { flowGapClasses, scaleTextClasses, useDocumentTokens, usePage } from "@paradoc/react";
+import { flowGapClasses, scaleTextClasses, useDocumentTokens, usePage } from "@asterdoc/react";
 import type { ReactNode } from "react";
 import { KeepTogether } from "./keep-together";
 

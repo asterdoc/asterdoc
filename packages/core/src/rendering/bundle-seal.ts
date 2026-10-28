@@ -34,8 +34,8 @@
  * answers.
  */
 
-import { flattenPdf, inspectPdf, mergePdfs } from '@paradoc/render/pdf'
-import { parseArtifactCoordinate } from '@paradoc/schemas'
+import { flattenPdf, inspectPdf, mergePdfs } from '@asterdoc/render/pdf'
+import { parseArtifactCoordinate } from '@asterdoc/schemas'
 import type {
   BinaryContent,
   Bundle,
@@ -46,7 +46,7 @@ import type {
   SealAdapter,
   SealLocator,
   SigningField,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import type { DraftForm } from '@/artifacts/form'
 import { SealConfigError, hasSignatureSlots } from '@/artifacts/form/seal-slots'
 import type { DraftChecklist } from '@/artifacts/checklist'
@@ -246,7 +246,7 @@ function sealableForm(entry: DraftEntry): DraftForm<Form> | undefined {
  * The artifact a bundle item names, when the item names one this can compare.
  *
  * A registry item names its artifact by address, edition and version. The
- * address's last segment is the artifact's name, so `@paradoc/irs/w-9` names
+ * address's last segment is the artifact's name, so `@asterdoc/irs/w-9` names
  * `w-9`. A path item names a file rather than an identity, so there is nothing
  * to compare.
  */

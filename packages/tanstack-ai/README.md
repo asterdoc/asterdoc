@@ -1,28 +1,28 @@
-# @paradoc/tanstack-ai
+# @asterdoc/tanstack-ai
 
-Experimental [TanStack AI](https://tanstack.com/ai) tools for Paradoc document workflows. The adapter is tested against TanStack AI `0.53.0` and remains experimental until TanStack AI reaches a stable release. TanStack AI's pre-1.0 API may change between releases.
+Experimental [TanStack AI](https://tanstack.com/ai) tools for Asterdoc document workflows. The adapter is tested against TanStack AI `0.53.0` and remains experimental until TanStack AI reaches a stable release. TanStack AI's pre-1.0 API may change between releases.
 
-The adapter consumes the canonical schemas, descriptions, result contracts, and execution functions from `@paradoc/ai-tools`.
+The adapter consumes the canonical schemas, descriptions, result contracts, and execution functions from `@asterdoc/ai-tools`.
 
 ## Installation
 
 ```bash
-npm install @paradoc/tanstack-ai@0.8.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod
+npm install @asterdoc/tanstack-ai@0.8.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod
 ```
 
 ## Native server tools
 
-`paradocTools()` returns a readonly ten-tool tuple that can be passed directly to TanStack AI's `chat` activity:
+`asterdocTools()` returns a readonly ten-tool tuple that can be passed directly to TanStack AI's `chat` activity:
 
 ```typescript
 import { chat } from "@tanstack/ai";
 import { openaiText } from "@tanstack/ai-openai";
-import { paradocTools } from "@paradoc/tanstack-ai";
+import { asterdocTools } from "@asterdoc/tanstack-ai";
 
 const result = await chat({
   adapter: openaiText("gpt-5.5"),
   messages: [{ role: "user", content: "Inspect the purchase agreement fields." }],
-  tools: paradocTools({
+  tools: asterdocTools({
     defaultRegistryUrl: "https://registry.acme.com",
   }),
   stream: false,
@@ -48,23 +48,23 @@ Each tool uses the shared Zod input and output schemas. TanStack AI validates to
 
 ## Definition-only composition
 
-Use `paradocToolDefinitions()` when a client needs tool metadata and schemas without server credentials or execution functions. Instantiate a definition with TanStack AI's native `.client()` or `.server()` method at the boundary that owns execution:
+Use `asterdocToolDefinitions()` when a client needs tool metadata and schemas without server credentials or execution functions. Instantiate a definition with TanStack AI's native `.client()` or `.server()` method at the boundary that owns execution:
 
 ```typescript
-import { paradocToolDefinitions } from "@paradoc/tanstack-ai";
+import { asterdocToolDefinitions } from "@asterdoc/tanstack-ai";
 
-const definitions = paradocToolDefinitions();
+const definitions = asterdocToolDefinitions();
 const clientTools = definitions.map((definition) => definition.client());
 ```
 
-Individual server factories and definition functions are available from the root and from package subpaths, such as `getFillState()` and `@paradoc/tanstack-ai/get-fill-state`.
+Individual server factories and definition functions are available from the root and from package subpaths, such as `getFillState()` and `@asterdoc/tanstack-ai/get-fill-state`.
 
 ## Cancellation and configuration
 
-TanStack AI's execution `abortSignal` is composed with `ParadocToolsConfig.signal` and the request context signal before the shared operation runs. Registry, artifact, instruction, and layer requests observe the resulting signal.
+TanStack AI's execution `abortSignal` is composed with `AsterdocToolsConfig.signal` and the request context signal before the shared operation runs. Registry, artifact, instruction, and layer requests observe the resulting signal.
 
 ```typescript
-const tools = paradocTools({
+const tools = asterdocTools({
   defaultRegistryUrl: "https://registry.acme.com",
   approvedOrigins: ["https://registry.acme.com"],
   maxOutputBytes: 200_000,
@@ -75,9 +75,9 @@ const tools = paradocTools({
 
 ## Related packages
 
-- [`@paradoc/ai-tools`](../ai-tools) provides the framework-neutral contract.
-- [`@paradoc/ai-sdk`](../ai-sdk) provides the Vercel AI SDK 7 adapter.
-- [`@paradoc/mastra`](../mastra) provides the Mastra adapter.
+- [`@asterdoc/ai-tools`](../ai-tools) provides the framework-neutral contract.
+- [`@asterdoc/ai-sdk`](../ai-sdk) provides the Vercel AI SDK 7 adapter.
+- [`@asterdoc/mastra`](../mastra) provides the Mastra adapter.
 
 ## License
 

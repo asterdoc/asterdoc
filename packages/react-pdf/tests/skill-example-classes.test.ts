@@ -1,7 +1,7 @@
 /**
- * The `paradoc-react` skill teaches by example, and an agent copies the
+ * The `asterdoc-react` skill teaches by example, and an agent copies the
  * classes it sees. A class outside the verified vocabulary in a skill example
- * makes `paradoc check` fail and a PDF render throw for every agent that
+ * makes `asterdoc check` fail and a PDF render throw for every agent that
  * copied it. This reads every code block in the skill and holds each class it
  * names to `isSupportedClass`.
  */
@@ -13,7 +13,7 @@ import { isSupportedClass } from "../src/tailwind";
 
 const SKILL_DIR = resolve(
   import.meta.dirname,
-  "../../../skills/skills/paradoc-react"
+  "../../../skills/skills/asterdoc-react"
 );
 
 function skillFiles(): string[] {
@@ -41,7 +41,7 @@ function classesInCode(markdown: string): string[] {
   return strings.flatMap((value) => value.split(/\s+/).filter(Boolean));
 }
 
-describe("paradoc-react skill examples", () => {
+describe("asterdoc-react skill examples", () => {
   const examples = skillFiles().map((file) => ({
     file,
     classes: classesInCode(readFileSync(join(SKILL_DIR, file), "utf8")),

@@ -1,4 +1,4 @@
-import type { Attachment } from '@paradoc/types';
+import type { Attachment } from '@asterdoc/types';
 
 export interface AttachmentBuilder {
 	from(value: Attachment): AttachmentBuilder;

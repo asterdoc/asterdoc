@@ -1,17 +1,17 @@
 /**
- * Every labeled JSON example in the paradoc skill (paradoc/skills/skills/paradoc)
+ * Every labeled JSON example in the asterdoc skill (framework/skills/skills/asterdoc)
  * must pass what an author's artifact must pass. Artifact examples go through
  * the full `validate()`: schema, logic, template expressions, and layer
  * references. Configuration examples go through their Zod schema. This lives in
- * core because `@paradoc/schemas` cannot depend on `validate()`.
+ * core because `@asterdoc/schemas` cannot depend on `validate()`.
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { GlobalConfigSchema } from '@paradoc/schemas'
+import { GlobalConfigSchema } from '@asterdoc/schemas'
 import { validate } from '../src'
 
-const SKILL_DIR = join(import.meta.dirname, '../../../skills/skills/paradoc')
+const SKILL_DIR = join(import.meta.dirname, '../../../skills/skills/asterdoc')
 
 interface JsonExample {
   location: string

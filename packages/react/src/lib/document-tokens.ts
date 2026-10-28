@@ -42,10 +42,10 @@ import {
 } from "./tokens";
 
 /** Marks `Document` and `Bundle` as places a token set may be declared. */
-export const DOCUMENT_ROOT = Symbol.for("paradoc.react.documentRoot");
+export const DOCUMENT_ROOT = Symbol.for("asterdoc.react.documentRoot");
 
 /** Marks `TokenOverrideProvider`, whose tokens are a layer rather than a root. */
-export const TOKEN_OVERRIDE = Symbol.for("paradoc.react.tokenOverride");
+export const TOKEN_OVERRIDE = Symbol.for("asterdoc.react.tokenOverride");
 
 /** What a marked component type carries. */
 export interface TokenMarkers {

@@ -1,17 +1,17 @@
 /**
  * Authoring check of a form's PDF layer bindings against the form.
  *
- * A PDF layer's `bindings` map AcroForm field names (keys) to Paradoc paths
+ * A PDF layer's `bindings` map AcroForm field names (keys) to Asterdoc paths
  * (values). Rendering refuses a value it cannot parse or that names no path
  * the form declares, so `validate()` reports each one first. An inverted binding, with a field
  * name in the value position, is the common case.
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import { isPdfMimeType } from '@paradoc/schemas'
-import type { Form } from '@paradoc/types'
-import { parseBinding, PdfBindingSyntaxError, type PdfBindingPart } from '@paradoc/render'
-import { ArtifactFieldFormatError, validateFieldBindings } from '@paradoc/render/text'
+import { isPdfMimeType } from '@asterdoc/schemas'
+import type { Form } from '@asterdoc/types'
+import { parseBinding, PdfBindingSyntaxError, type PdfBindingPart } from '@asterdoc/render'
+import { ArtifactFieldFormatError, validateFieldBindings } from '@asterdoc/render/text'
 
 function bindingProblem(form: Form, bindingKey: string, value: string): string | undefined {
   let parts: PdfBindingPart[]
@@ -27,7 +27,7 @@ function bindingProblem(form: Form, bindingKey: string, value: string): string |
     } catch (error) {
       if (!(error instanceof ArtifactFieldFormatError)) throw error
       const detail = (error.issues[0]?.message ?? error.message).replace(/\.$/, '')
-      return `"${source}" is not a known Paradoc path (${detail})`
+      return `"${source}" is not a known Asterdoc path (${detail})`
     }
   }
   return undefined
@@ -35,7 +35,7 @@ function bindingProblem(form: Form, bindingKey: string, value: string): string |
 
 /**
  * Check that every value of every PDF layer's own `bindings` parses and names
- * only Paradoc paths the form declares. A layer reusing bindings through
+ * only Asterdoc paths the form declares. A layer reusing bindings through
  * `bindingsFrom` is checked where the bindings are declared.
  */
 export function validatePdfBindingPaths(form: Form): StandardSchemaV1.Issue[] {
@@ -46,7 +46,7 @@ export function validatePdfBindingPaths(form: Form): StandardSchemaV1.Issue[] {
       const problem = bindingProblem(form, bindingKey, value)
       if (!problem) continue
       const inverted = Object.hasOwn(form.fields ?? {}, bindingKey)
-        ? ` The key "${bindingKey}" is a field of this artifact: bindings map AcroForm field names (keys) to Paradoc paths (values).`
+        ? ` The key "${bindingKey}" is a field of this artifact: bindings map AcroForm field names (keys) to Asterdoc paths (values).`
         : ''
       issues.push({ message: `Layer "${layerKey}", binding "${bindingKey}": ${problem}.${inverted}`, path: ['layers', layerKey, 'bindings', bindingKey] })
     }

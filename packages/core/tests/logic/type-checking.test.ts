@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'vitest'
 import { validateFormDefs, validateBundleDefs } from '@/logic/design-time/validation'
-import { createTypeEnv } from '@paradoc/expr'
+import { createTypeEnv } from '@asterdoc/expr'
 import { buildFormTypeAcc } from '@/logic/design-time/type-checking'
 import { evaluateFormDefs } from '@/logic/runtime/evaluation/form-evaluator'
-import type { Form, Bundle } from '@paradoc/types'
+import type { Form, Bundle } from '@asterdoc/types'
 import type { LogicValidationIssue } from '@/logic/design-time/validation/shared'
 
 describe('Expression Type Checking', () => {

@@ -25,8 +25,8 @@
  * out by the caller with `computeLineAmounts`.
  */
 
-import { p } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { p } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 
 /** The layer that names the composition, and the layer the seal targets. */
 export const PROPOSAL_REACT_LAYER = "composition";
@@ -54,7 +54,7 @@ export const PROPOSAL_SIGNATURE_SLOTS = {
 
 /** The proposal form, exactly as authored. Kept beside the instance for evaluators that take a raw `Form`. */
 export const proposalSpec = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "services-proposal",
   version: "1.0.0",

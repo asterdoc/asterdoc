@@ -1,4 +1,4 @@
-import { createFormatter } from "@paradoc/format";
+import { createFormatter } from "@asterdoc/format";
 // @vitest-environment jsdom
 /**
  * The plan survives an equal re-render.

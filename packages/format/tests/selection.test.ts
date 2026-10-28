@@ -15,7 +15,7 @@ const options = [
 	{ value: 'roofing', label: 'Roofing' },
 ]
 
-describe('@paradoc/format selection values', () => {
+describe('@asterdoc/format selection values', () => {
 	it('formats every selection kind through direct, dynamic, and standalone operations', () => {
 		const formatter = createFormatter()
 
@@ -232,7 +232,7 @@ describe('@paradoc/format selection values', () => {
 	})
 })
 
-describe('@paradoc/format selection messages and nested options', () => {
+describe('@asterdoc/format selection messages and nested options', () => {
 	it('reads the messages of a locale that shares the language when the region has none', () => {
 		const formatter = createFormatter({ locale: 'de-AT' })
 		expect(formatter.formatBoolean(true)).toBe('Ja')

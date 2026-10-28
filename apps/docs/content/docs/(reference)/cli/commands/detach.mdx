@@ -1,8 +1,8 @@
 ---
 title: detach
 description: Detach a layer or content reference from an artifact
-ogTitle: paradoc detach
-ogDescription: Remove a layer or content reference from a Paradoc artifact
+ogTitle: asterdoc detach
+ogDescription: Remove a layer or content reference from an Asterdoc artifact
 ---
 
 Detach (remove) a layer or content reference from an artifact.
@@ -10,7 +10,7 @@ Detach (remove) a layer or content reference from an artifact.
 ## Usage
 
 ```bash
-paradoc detach <artifact> [target] [options]
+asterdoc detach <artifact> [target] [options]
 ```
 
 ## Arguments
@@ -40,37 +40,37 @@ The artifact file is rewritten in its original format (JSON or YAML) after remov
 Detach a specific layer:
 
 ```bash
-paradoc detach my-form.yaml pdf
+asterdoc detach my-form.yaml pdf
 ```
 
 Detach instructions:
 
 ```bash
-paradoc detach my-form.yaml instructions
+asterdoc detach my-form.yaml instructions
 ```
 
 Detach agent instructions:
 
 ```bash
-paradoc detach my-form.yaml agent-instructions
+asterdoc detach my-form.yaml agent-instructions
 ```
 
 Interactive selection (layers + content references):
 
 ```bash
-paradoc detach my-form.yaml
+asterdoc detach my-form.yaml
 ```
 
 Preview changes without modifying:
 
 ```bash
-paradoc detach my-form.yaml pdf --dry-run
+asterdoc detach my-form.yaml pdf --dry-run
 ```
 
 Skip confirmation:
 
 ```bash
-paradoc detach my-form.yaml instructions -y
+asterdoc detach my-form.yaml instructions -y
 ```
 
 ## Output
@@ -104,6 +104,6 @@ Detached content reference "instructions" from: my-form.yaml
 - [attach](/cli/commands/attach) - Attach files to artifacts
 - [show](/cli/commands/show) - Display artifact content
 
-An artifact argument may be a file path or an installed `@namespace/name` reference from `.paradoc/lock.json`. An uninstalled reference fails with an error.
+An artifact argument may be a file path or an installed `@namespace/name` reference from `.asterdoc/lock.json`. An uninstalled reference fails with an error.
 
 A layer cannot be detached while `defaultLayer` names it or another layer names it through `bindingsFrom`; update those references first. `--dry-run` previews the change, but still prompts unless combined with `--yes`.

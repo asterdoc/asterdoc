@@ -3,12 +3,12 @@
 // Expected: view stays resolved and `answer name` succeeds; out-of-range index rejected.
 // Actual: phase "unresolved", answer -> unresolved-state; index 1 on a single role accepted.
 import { describe, expect, it } from "vitest";
-import { createParadocRuntime } from "../../src/engine/paradoc-runtime";
+import { createAsterdocRuntime } from "../../src/engine/asterdoc-runtime";
 import type { FormSession } from "../../src/engine/types";
 import { execute } from "../../src/engine/execute";
 import { deriveView } from "../../src/engine/derive";
 
-const rt = () => createParadocRuntime(artifact({
+const rt = () => createAsterdocRuntime(artifact({
   parties: { witness: { label: "Witness", partyType: "person", min: 0, max: 3 }, signer: { label: "Signer", partyType: "person" } },
   fields: { name: { type: "text", required: true } },
 }));
@@ -42,7 +42,7 @@ describe("sessions-001", () => {
 
 export function artifact(extra: Record<string, unknown>) {
   return {
-    $schema: "https://schema.paradoc.dev/2026-10-02.json", kind: "form", name: "v", version: "1.0.0", title: "V",
+    $schema: "https://schema.asterdoc.com/2026-10-28.json", kind: "form", name: "v", version: "1.0.0", title: "V",
     parties: {}, fields: {},
     layers: { composition: { kind: "file", mimeType: "text/plain", path: "v.txt" } }, defaultLayer: "composition",
     ...extra,

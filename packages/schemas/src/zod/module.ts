@@ -39,19 +39,19 @@ import { ValidationRuleSchema, RuleSeveritySchema } from './artifacts/rules/vali
 import { RulesSectionSchema } from './artifacts/rules/rules-section';
 
 /**
- * Paradoc Schema Registry
+ * Asterdoc Schema Registry
  *
- * This registry contains all Paradoc schemas with their metadata (id, title, description).
- * Use z.toJSONSchema(ParadocRegistry) to generate JSON Schema with proper $refs.
+ * This registry contains all Asterdoc schemas with their metadata (id, title, description).
+ * Use z.toJSONSchema(AsterdocRegistry) to generate JSON Schema with proper $refs.
  */
-export const ParadocRegistry = z.globalRegistry;
+export const AsterdocRegistry = z.globalRegistry;
 
 /**
  * Register a schema under its id. `add` replaces a schema's metadata, so the
  * title and description its `.meta()` set are carried over with the id.
  */
 function register(schema: z.ZodType, id: string): void {
-	ParadocRegistry.add(schema, { ...schema.meta(), id });
+	AsterdocRegistry.add(schema, { ...schema.meta(), id });
 }
 
 // Register all schemas with their IDs for $ref generation
@@ -93,19 +93,19 @@ register(DefsSectionSchema, 'DefsSection');
 // The rules section is inlined as part of FormSchema.
 
 /**
- * Paradoc root schema - union of all artifact types
+ * Asterdoc root schema - union of all artifact types
  */
-export const ParadocSchema = z.union([
+export const AsterdocSchema = z.union([
 	FormSchema,
 	DocumentSchema,
 	ChecklistSchema,
 	BundleSchema,
 ]).meta({
-	title: 'Paradoc',
-	description: 'Root schema for any Paradoc artifact document',
+	title: 'Asterdoc',
+	description: 'Root schema for any Asterdoc artifact document',
 });
 
-register(ParadocSchema, 'Paradoc');
+register(AsterdocSchema, 'Asterdoc');
 
 // Export all schemas for direct import
 export {

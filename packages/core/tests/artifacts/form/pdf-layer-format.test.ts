@@ -3,9 +3,9 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
 import { layer, p } from '@/artifacts'
-import { createMemoryResolver } from '@paradoc/resolvers/memory'
-import { createLayerRenderer } from '@paradoc/render'
-import { inspectAcroFormFields, pdfRenderer } from '@paradoc/render/pdf'
+import { createMemoryResolver } from '@asterdoc/resolvers/memory'
+import { createLayerRenderer } from '@asterdoc/render'
+import { inspectAcroFormFields, pdfRenderer } from '@asterdoc/render/pdf'
 
 /**
  * A PDF layer whose template pre-prints the currency symbol declares

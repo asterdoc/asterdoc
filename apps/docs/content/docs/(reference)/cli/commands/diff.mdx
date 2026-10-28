@@ -1,7 +1,7 @@
 ---
 title: diff
 description: Compare two artifacts
-ogTitle: paradoc diff
+ogTitle: asterdoc diff
 ogDescription: Show differences between artifact files
 ---
 
@@ -10,7 +10,7 @@ Shows differences between two artifact files.
 ## Usage
 
 ```bash
-paradoc diff <file1> <file2> [options]
+asterdoc diff <file1> <file2> [options]
 ```
 
 ## Arguments
@@ -45,13 +45,13 @@ Like POSIX `diff`, the exit status tells scripts and agents whether the files di
 Compare two files:
 
 ```bash
-paradoc diff form-v1.yaml form-v2.yaml
+asterdoc diff form-v1.yaml form-v2.yaml
 ```
 
 Check if files differ in a script:
 
 ```bash
-paradoc diff form-v1.yaml form-v2.yaml --name-only > /dev/null
+asterdoc diff form-v1.yaml form-v2.yaml --name-only > /dev/null
 case $? in
   0) echo "unchanged" ;;
   1) echo "form changed" ;;
@@ -96,4 +96,4 @@ form-v2.yaml
 - [apply](/cli/commands/apply) - Apply a patch file
 - [show](/cli/commands/show) - Display artifact content
 
-The output is a human-readable unified-diff display. Its annotated file headers are not an input format for `paradoc apply`; use `git diff` or `diff -u` to create an applicable patch.
+The output is a human-readable unified-diff display. Its annotated file headers are not an input format for `asterdoc apply`; use `git diff` or `diff -u` to create an applicable patch.

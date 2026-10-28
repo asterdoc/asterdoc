@@ -60,5 +60,5 @@ export const ArtifactSchema = z.object({
 		.optional(),
 }).meta({
 	title: 'Artifact',
-	description: 'Root schema for all Paradoc artifacts (containers and documents).',
+	description: 'Root schema for all Asterdoc artifacts (containers and documents).',
 });

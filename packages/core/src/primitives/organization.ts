@@ -1,5 +1,5 @@
 import { parseOrganization } from '@/validation/parsers';
-import type { Organization } from '@paradoc/types';
+import type { Organization } from '@asterdoc/types';
 
 export interface OrganizationBuilder {
 	from(value: Organization): OrganizationBuilder;

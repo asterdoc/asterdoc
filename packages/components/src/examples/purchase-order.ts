@@ -29,8 +29,8 @@
  * so it renders bare and lets the caller decide.
  */
 
-import { p } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { p } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 
 /** The layer that names the composition, and the layer the seal targets. */
 export const PURCHASE_ORDER_REACT_LAYER = "composition";
@@ -58,7 +58,7 @@ export const PURCHASE_ORDER_SIGNATURE_SLOTS = {
 
 /** The purchase order form, exactly as authored. Kept beside the instance for evaluators that take a raw `Form`. */
 export const purchaseOrderSpec = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "purchase-order",
   version: "1.0.0",

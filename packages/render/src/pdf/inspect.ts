@@ -1,4 +1,4 @@
-import type { BinaryContent } from '@paradoc/types'
+import type { BinaryContent } from '@asterdoc/types'
 import { acroFields, textValue, type PdfFieldType } from './acroform'
 import { documentPages } from './page-tree'
 import { isRef, PdfModel } from './syntax'

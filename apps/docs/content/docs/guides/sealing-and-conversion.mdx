@@ -54,17 +54,17 @@ Misconfiguration fails **before** any rendering or conversion with a
 required-signature party no slot places, or a required slot without a
 signatory.
 
-`validate()` and `paradoc validate` report the problems the definition alone
+`validate()` and `asterdoc validate` report the problems the definition alone
 shows, before any data exists: a slot for an undeclared role, a
 required-signature party with no slot on a layer that declares `signatures`,
 a `'flow'` slot on a PDF or DOCX layer or of a type other than `signature` or
 `initials`, and a `'flow'` slot that no `signature(...)` or `initials(...)`
 directive in the layer's template places. See
-[`paradoc validate`](/cli/commands/validate#layer-references).
+[`asterdoc validate`](/cli/commands/validate#layer-references).
 
 ## Seal a PDF layer locally
 
-PDF layers need no adapter or network call. Paradoc renders the layer,
+PDF layers need no adapter or network call. Asterdoc renders the layer,
 resolves placements, flattens, and hashes the exact canonical bytes. The
 resolver that reads the PDF template's bytes is bound where the form is
 constructed — `p.form(schema, { resolver })` — so `draft` already carries
@@ -86,7 +86,7 @@ job — core locates anchors and markers itself with the built-in locator, so a
 pure byte converter works with zero configuration:
 
 ```ts
-import { hostedSealAdapter } from '@paradoc/sdk'
+import { hostedSealAdapter } from '@asterdoc/sdk'
 
 const signable = await draft.seal({
   adapter: hostedSealAdapter({ apiKey }),
@@ -96,7 +96,7 @@ const signable = await draft.seal({
 A custom converter is one honest function:
 
 ```ts
-import type { SealAdapter } from '@paradoc/sdk'
+import type { SealAdapter } from '@asterdoc/sdk'
 
 const adapter: SealAdapter = {
   async convert({ document }) {
@@ -130,13 +130,6 @@ prep.warnings      // e.g. slots skipped for unfilled party indexes
 
 const signable = await draft.seal({ adapter })  // same map, canonicalized
 ```
-
-## Older artifacts
-
-Layers in older schema versions could declare slots in `signatureBlocks` and
-`anchorBlocks`. Those fields are removed (see the
-[version history](/schemas#version-history)). Run
-`paradoc migrate` to move each block into `signatures` under the same id.
 
 ## Which operation to use
 

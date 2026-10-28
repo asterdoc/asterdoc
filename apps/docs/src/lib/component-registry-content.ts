@@ -22,8 +22,8 @@ export function getRegistryItem(name: string): RegistryItem {
   if (!item) {
     throw new Error(
       `No shadcn registry item named "${name}". Run \`pnpm registry:build\` in ` +
-        "paradoc/packages/components, then `pnpm sync:component-docs` (or `pnpm dev` / " +
-        "`pnpm build`, which run it automatically) in paradoc/apps/docs.",
+        "framework/packages/components, then `pnpm sync:component-docs` (or `pnpm dev` / " +
+        "`pnpm build`, which run it automatically) in framework/apps/docs.",
     );
   }
   return item;
@@ -38,7 +38,7 @@ export function getPreviewSource(name: string): string {
   if (!source) {
     throw new Error(
       `No preview source for "${name}". Add it to DEMO_FILES in ` +
-        "scripts/sync-component-docs-content.ts and to paradoc/packages/components/src/examples/.",
+        "scripts/sync-component-docs-content.ts and to framework/packages/components/src/examples/.",
     );
   }
   return source;
@@ -71,7 +71,7 @@ export function getVariantSource(name: string, variant: string): string {
   if (!source) {
     throw new Error(
       `No variant source for "${name}"/"${variant}". Add it to VARIANT_FILES in ` +
-        "scripts/sync-component-docs-content.ts and to paradoc/packages/components/src/examples/.",
+        "scripts/sync-component-docs-content.ts and to framework/packages/components/src/examples/.",
     );
   }
   return source;
@@ -97,8 +97,8 @@ export function getBlockUsageFiles(name: string): BlockUsageFiles {
   if (!composition?.content || !data?.content) {
     throw new Error(
       `Block "${name}" is missing its composition or sample-data file content. Run ` +
-        "`pnpm registry:build` in paradoc/packages/components, then `pnpm sync:component-docs` " +
-        "(or `pnpm dev` / `pnpm build`, which run it automatically) in paradoc/apps/docs.",
+        "`pnpm registry:build` in framework/packages/components, then `pnpm sync:component-docs` " +
+        "(or `pnpm dev` / `pnpm build`, which run it automatically) in framework/apps/docs.",
     );
   }
   return { composition, data };

@@ -1,6 +1,6 @@
-import { Document, Field } from '@paradoc/components'
-import type { DocumentData } from '@paradoc/react'
-import type { Form } from '@paradoc/types'
+import { Document, Field } from '@asterdoc/components'
+import type { DocumentData } from '@asterdoc/react'
+import type { Form } from '@asterdoc/types'
 
 export default function CleanComposition({ artifact, data }: { artifact: Form; data: DocumentData }) {
   return (
@@ -10,5 +10,5 @@ export default function CleanComposition({ artifact, data }: { artifact: Form; d
   )
 }
 
-/** Sample data `paradoc check` discovers automatically. */
+/** Sample data `asterdoc check` discovers automatically. */
 export const sample: DocumentData = { fields: { name: 'Ada Lovelace' }, parties: {} }

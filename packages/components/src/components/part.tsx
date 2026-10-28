@@ -22,13 +22,13 @@
 /** @jsxRuntime classic */
 import React from "react";
 import type { ReactNode } from "react";
-import { resolvePartPlacement, scaleTextClasses, useDocumentTokensAround } from "@paradoc/react";
+import { resolvePartPlacement, scaleTextClasses, useDocumentTokensAround } from "@asterdoc/react";
 
 /** What kind of document this part is. */
 export type PartKind = "composition" | "form" | "annex";
 
 /** Whether the part's packet pages are known, stale, or not pages at all. */
-export type { PartPlacementState } from "@paradoc/react";
+export type { PartPlacementState } from "@asterdoc/react";
 
 export interface PartProps {
   /** The bundle content key. */

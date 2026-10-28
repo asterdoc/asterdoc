@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { document } from '@/artifacts'
-import type { Document } from '@paradoc/types'
+import type { Document } from '@asterdoc/types'
 
 describe('Document', () => {
   // ============================================================================

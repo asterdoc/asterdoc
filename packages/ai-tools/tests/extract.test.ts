@@ -38,7 +38,7 @@ describe('extract tool', () => {
 			fields: { petName: 'Bella', species: 'dog', weight: 35, isVaccinated: true },
 			parties: { tenant: { name: 'Jane Doe' }, landlord: { name: 'Acme Properties LLC' } },
 		})
-		const { form } = await import('@paradoc/core')
+		const { form } = await import('@asterdoc/core')
 		const sdk = await form.from(artifact).extract(pdf)
 		expect(result).toEqual({ success: true, artifact_kind: 'form', layer: sdk.layer, data: sdk.data, report: sdk.report })
 	})

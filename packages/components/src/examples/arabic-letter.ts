@@ -22,10 +22,10 @@
  * hidden inside the tree, where `RootTokenMismatchError` would catch it.
  */
 
-import { p } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { p } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 
-import type { DocumentTokensInput } from "@paradoc/react";
+import type { DocumentTokensInput } from "@asterdoc/react";
 
 /** The layer that names the composition. */
 export const ARABIC_LETTER_REACT_LAYER = "composition";
@@ -53,7 +53,7 @@ export const arabicLetterTokens: DocumentTokensInput = {
 
 /** The letter form, exactly as authored. */
 export const arabicLetterSpec = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "arabic-order-confirmation",
   version: "1.0.0",

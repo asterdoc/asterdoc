@@ -126,7 +126,7 @@ const withVersion = (extra: unknown) => ({ ...petAddendum, versions: { ...petAdd
 
 describe('the published registry.json schema', () => {
 	it('is published at the registry schema address', () => {
-		expect(REGISTRY_SCHEMA_ID).toBe('https://schema.paradoc.dev/registry.json');
+		expect(REGISTRY_SCHEMA_ID).toBe('https://schema.asterdoc.com/registry.json');
 		expect(registrySchema.$id).toBe(REGISTRY_SCHEMA_ID);
 		expect(registrySchema.$schema).toBe('https://json-schema.org/draft/2020-12/schema');
 	});

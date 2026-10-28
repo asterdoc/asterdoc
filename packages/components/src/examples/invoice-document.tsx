@@ -28,10 +28,10 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 import { Document } from "../components/document";
-import type { DocumentData } from "@paradoc/react";
+import type { DocumentData } from "@asterdoc/react";
 import { Field } from "../components/field";
 import { Image } from "../components/image";
 import { PageNumber } from "../components/page-number";
@@ -39,11 +39,11 @@ import { Party } from "../components/party";
 import { Section } from "../components/section";
 import { Table } from "../components/table";
 import { Text } from "../components/text";
-import { markDocumentRoot, useDocumentTokens } from "@paradoc/react";
-import type { PageFurniture } from "@paradoc/react";
+import { markDocumentRoot, useDocumentTokens } from "@asterdoc/react";
+import type { PageFurniture } from "@asterdoc/react";
 import { Totals } from "../components/totals";
-import type { FormatOptions } from "@paradoc/react";
-import type { DocumentTokensInput } from "@paradoc/react";
+import type { FormatOptions } from "@asterdoc/react";
+import type { DocumentTokensInput } from "@asterdoc/react";
 import { invoiceForm, invoiceTokens } from "./invoice";
 
 /** Rendered size of the issuer's mark, in CSS pixels. The engine needs both stated. */

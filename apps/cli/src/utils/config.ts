@@ -1,5 +1,5 @@
 import { LocalFileSystem } from './local-fs.js'
-import { GlobalConfigSchema, ManifestSchema, SCHEMA_BASE, type GlobalConfig } from '@paradoc/schemas'
+import { GlobalConfigSchema, ManifestSchema, SCHEMA_BASE, type GlobalConfig } from '@asterdoc/schemas'
 
 import type {
   ProjectManifest,
@@ -18,30 +18,30 @@ import {
 import { PROJECT_REQUIRED_MESSAGE } from './user-copy.js'
 
 // Default paths (relative to the home directory)
-const GLOBAL_CONFIG_DIR = '.paradoc'
+const GLOBAL_CONFIG_DIR = '.asterdoc'
 const GLOBAL_CONFIG_FILE = 'config.json'
 const GLOBAL_CONFIG_SCHEMA_URL = `${SCHEMA_BASE}/config.json`
 
 import type { ZodError } from 'zod'
 
 /**
- * The namespace reserved for the Paradoc registry. No configuration can set it,
+ * The namespace reserved for the Asterdoc registry. No configuration can set it,
  * and until that registry is available it resolves to nothing.
  */
-export const PARADOC_NAMESPACE = '@paradoc'
+export const ASTERDOC_NAMESPACE = '@asterdoc'
 
 /** A namespace with its `@` prefix. */
 export function normalizeNamespace(namespace: string): string {
   return namespace.startsWith('@') ? namespace : `@${namespace}`
 }
 
-/** Whether a namespace is the reserved `@paradoc`, in any case. */
+/** Whether a namespace is the reserved `@asterdoc`, in any case. */
 export function isReservedNamespace(namespace: string): boolean {
-  return normalizeNamespace(namespace).toLowerCase() === PARADOC_NAMESPACE
+  return normalizeNamespace(namespace).toLowerCase() === ASTERDOC_NAMESPACE
 }
 
 function reservedNamespaceMessage(namespace: string): string {
-  return `${normalizeNamespace(namespace)} is reserved for the Paradoc registry; it cannot be configured`
+  return `${normalizeNamespace(namespace)} is reserved for the Asterdoc registry; it cannot be configured`
 }
 
 /** Throw when a namespace is reserved and so cannot be configured. */
@@ -58,21 +58,21 @@ function reservedRegistryIssues(registries: Record<string, unknown> | undefined)
   return reserved.map((key) => `"registries.${key}": ${reservedNamespaceMessage(key)}`).join('; ')
 }
 
-/** The reserved {@link PARADOC_NAMESPACE}, whose registry is not available yet. */
-export class ParadocRegistryUnavailableError extends Error {
+/** The reserved {@link ASTERDOC_NAMESPACE}, whose registry is not available yet. */
+export class AsterdocRegistryUnavailableError extends Error {
   constructor(public readonly namespace: string) {
     super(
-      `The Paradoc registry is not available yet, so ${namespace} cannot be resolved. ` +
-        'Use another registry: paradoc registry add @<namespace> <url>',
+      `The Asterdoc registry is not available yet, so ${namespace} cannot be resolved. ` +
+        'Use another registry: asterdoc registry add @<namespace> <url>',
     )
-    this.name = 'ParadocRegistryUnavailableError'
+    this.name = 'AsterdocRegistryUnavailableError'
   }
 }
 
 /** A namespace that has no registry configured. */
 export class UnconfiguredRegistryError extends Error {
   constructor(public readonly namespace: string) {
-    super(`No registry is configured for ${namespace}. Run: paradoc registry add ${namespace} <url>`)
+    super(`No registry is configured for ${namespace}. Run: asterdoc registry add ${namespace} <url>`)
     this.name = 'UnconfiguredRegistryError'
   }
 }
@@ -99,13 +99,13 @@ export function isMissingFileError(error: unknown): boolean {
 }
 
 /**
- * Find the nearest paradoc.json file
+ * Find the nearest asterdoc.json file
  * @param cwd - Current working directory
- * @returns Path to paradoc.json or undefined
+ * @returns Path to asterdoc.json or undefined
  */
 export async function findConfig(cwd?: string): Promise<string | undefined> {
   const storage = new LocalFileSystem(cwd)
-  const result = await storage.findUp('paradoc.json')
+  const result = await storage.findUp('asterdoc.json')
   return result ?? undefined
 }
 
@@ -121,8 +121,8 @@ export interface ConfiguredRegistry {
 // ============================================================================
 
 /**
- * Config manager for Paradoc CLI registry system
- * Handles global config (~/.paradoc/config.json) and project config (paradoc.json)
+ * Config manager for Asterdoc CLI registry system
+ * Handles global config (~/.asterdoc/config.json) and project config (asterdoc.json)
  */
 export class ConfigManager {
   private globalConfig: GlobalConfig | null = null
@@ -132,7 +132,7 @@ export class ConfigManager {
   private readonly homeDir: string
 
   /**
-   * @param homeDir - Directory that holds `.paradoc/config.json`. Defaults to the user's home.
+   * @param homeDir - Directory that holds `.asterdoc/config.json`. Defaults to the user's home.
    */
   constructor(homeDir: string = userHomeDir()) {
     this.homeDir = homeDir
@@ -147,7 +147,7 @@ export class ConfigManager {
   }
 
   /**
-   * Load the global config from ~/.paradoc/config.json.
+   * Load the global config from ~/.asterdoc/config.json.
    *
    * A missing file loads as an empty config. Invalid JSON or a config the
    * schema rejects throws an error naming the file and each bad key; the file
@@ -193,7 +193,7 @@ export class ConfigManager {
   }
 
   /**
-   * Save the global config to ~/.paradoc/config.json.
+   * Save the global config to ~/.asterdoc/config.json.
    * The config is validated first; an invalid config throws and nothing is written.
    */
   async saveGlobalConfig(config: GlobalConfig): Promise<void> {
@@ -213,7 +213,7 @@ export class ConfigManager {
   }
 
   /**
-   * Load the project manifest from paradoc.json.
+   * Load the project manifest from asterdoc.json.
    *
    * A missing manifest loads as null. Invalid JSON, a manifest the manifest
    * schema refuses, or one that configures a reserved registry namespace
@@ -223,7 +223,7 @@ export class ConfigManager {
     this.projectRoot = projectRoot
     this.projectManifest = null
     const projectStorage = new LocalFileSystem(projectRoot)
-    const manifestPath = projectStorage.joinPath('paradoc.json')
+    const manifestPath = projectStorage.joinPath('asterdoc.json')
 
     let content: string
     try {
@@ -255,7 +255,7 @@ export class ConfigManager {
   }
 
   /**
-   * Save the project manifest to paradoc.json
+   * Save the project manifest to asterdoc.json
    */
   async saveProjectManifest(manifest: ProjectManifest): Promise<void> {
     if (!this.projectRoot) {
@@ -263,7 +263,7 @@ export class ConfigManager {
     }
 
     const projectStorage = new LocalFileSystem(this.projectRoot)
-    const manifestPath = projectStorage.joinPath('paradoc.json')
+    const manifestPath = projectStorage.joinPath('asterdoc.json')
     await projectStorage.writeFile(manifestPath, JSON.stringify(manifest, null, 2))
     this.projectManifest = manifest
   }
@@ -295,16 +295,16 @@ export class ConfigManager {
    * Get the resolved registry URL for a namespace.
    *
    * A namespace resolves only through configuration; an unconfigured one throws
-   * {@link UnconfiguredRegistryError}. The reserved `@paradoc` throws
-   * {@link ParadocRegistryUnavailableError}.
+   * {@link UnconfiguredRegistryError}. The reserved `@asterdoc` throws
+   * {@link AsterdocRegistryUnavailableError}.
    */
   async getRegistryUrl(namespace: string): Promise<string> {
     const normalizedNamespace = normalizeNamespace(namespace)
-    // Loads the config first, so a config that configures @paradoc fails here too.
+    // Loads the config first, so a config that configures @asterdoc fails here too.
     const registry = await this.getRegistry(normalizedNamespace)
 
     if (isReservedNamespace(normalizedNamespace)) {
-      throw new ParadocRegistryUnavailableError(normalizedNamespace)
+      throw new AsterdocRegistryUnavailableError(normalizedNamespace)
     }
 
     if (!registry) {
@@ -459,7 +459,7 @@ export class ConfigManager {
   }
 
   /**
-   * Add or update a registry in project config (paradoc.json)
+   * Add or update a registry in project config (asterdoc.json)
    */
   async setProjectRegistry(namespace: string, entry: RegistryEntry): Promise<void> {
     assertConfigurableNamespace(namespace)
@@ -478,7 +478,7 @@ export class ConfigManager {
   }
 
   /**
-   * Remove a registry from project config (paradoc.json)
+   * Remove a registry from project config (asterdoc.json)
    */
   async removeProjectRegistry(namespace: string): Promise<boolean> {
     if (!this.projectManifest || !this.projectRoot) {

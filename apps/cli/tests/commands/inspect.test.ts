@@ -33,7 +33,7 @@ describe('CLI inspect command', () => {
     const pdf = path.join(fixturesDir, 'pet-addendum-bindings.pdf')
     const result = await executeCliCommand(['inspect', pdf, '--format', 'json'])
 
-    // A published CLI may install @paradoc/render on first use; either that
+    // A published CLI may install @asterdoc/render on first use; either that
     // succeeds and returns JSON or installation reports an actionable error.
     if (result.exitCode === 0) {
       const json = JSON.parse(result.stdout)
@@ -48,7 +48,7 @@ describe('CLI inspect command', () => {
     let tempDir: string
 
     beforeEach(async () => {
-      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-inspect-test-'))
+      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-inspect-test-'))
     })
 
     afterEach(async () => {

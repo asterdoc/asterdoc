@@ -1,8 +1,8 @@
 ---
 title: cache
 description: Manage registry cache
-ogTitle: paradoc cache
-ogDescription: Manage the Paradoc CLI registry cache
+ogTitle: asterdoc cache
+ogDescription: Manage the Asterdoc CLI registry cache
 ---
 
 Manages the registry data cache used to speed up registry operations.
@@ -10,7 +10,7 @@ Manages the registry data cache used to speed up registry operations.
 ## Usage
 
 ```bash
-paradoc cache <command> [options]
+asterdoc cache <command> [options]
 ```
 
 ## Subcommands
@@ -30,7 +30,7 @@ paradoc cache <command> [options]
 Clear all cached registry data.
 
 ```bash
-paradoc cache clear
+asterdoc cache clear
 ```
 
 ### Output
@@ -46,10 +46,10 @@ paradoc cache clear
 Show cache statistics.
 
 ```bash
-paradoc cache stats [options]
+asterdoc cache stats [options]
 ```
 
-`paradoc cache info` is an alias.
+`asterdoc cache info` is an alias.
 
 ### Options
 
@@ -62,7 +62,7 @@ paradoc cache stats [options]
 ```
 Cache Statistics
 
-Directory: ~/.paradoc/cache
+Directory: ~/.asterdoc/cache
 Default TTL: 1h
 Disk entries: 12
 Total size: 45.2 KB
@@ -75,7 +75,7 @@ Total size: 45.2 KB
 Invalidate cache for a specific registry.
 
 ```bash
-paradoc cache invalidate <namespace>
+asterdoc cache invalidate <namespace>
 ```
 
 ### Arguments
@@ -87,7 +87,7 @@ paradoc cache invalidate <namespace>
 ### Example
 
 ```bash
-paradoc cache invalidate @acme
+asterdoc cache invalidate @acme
 ```
 
 ---
@@ -97,7 +97,7 @@ paradoc cache invalidate @acme
 Show current cache configuration.
 
 ```bash
-paradoc cache config [options]
+asterdoc cache config [options]
 ```
 
 ### Options
@@ -111,7 +111,7 @@ paradoc cache config [options]
 ```
 Cache Configuration
 
-Effective directory: ~/.paradoc/cache
+Effective directory: ~/.asterdoc/cache
 
 Global config:
   TTL: 1h
@@ -127,7 +127,7 @@ Project config:
 Reset cache configuration to defaults.
 
 ```bash
-paradoc cache reset [options]
+asterdoc cache reset [options]
 ```
 
 ### Options
@@ -143,7 +143,7 @@ paradoc cache reset [options]
 
 Default settings:
   TTL: 3600s (1 hour)
-  Directory: ~/.paradoc/cache
+  Directory: ~/.asterdoc/cache
 ```
 
 ## See also

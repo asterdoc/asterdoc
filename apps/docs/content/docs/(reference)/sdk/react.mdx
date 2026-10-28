@@ -1,32 +1,32 @@
 ---
 title: React
-description: Headless React bindings, document tokens, and pagination for composing a document from a Paradoc artifact.
+description: Headless React bindings, document tokens, and pagination for composing a document from an Asterdoc artifact.
 ---
 
-`@paradoc/react` binds React components to a Paradoc form artifact. One tree is the source of truth for the paginated browser preview and for the PDF. The package ships behavior only: providers, hooks, measurement, and page planning. It emits no styled markup and ships no stylesheet.
+`@asterdoc/react` binds React components to an Asterdoc form artifact. One tree is the source of truth for the paginated browser preview and for the PDF. The package ships behavior only: providers, hooks, measurement, and page planning. It emits no styled markup and ships no stylesheet.
 
 The visible components (`Document`, `Field`, `Pages`, `Table`, and the rest) are source you install into your project. They are documented in the [Components](/components) area. This page is the reference for the runtime they import.
 
 ## Installation
 
 ```bash
-npm install @paradoc/react react react-dom
+npm install @asterdoc/react react react-dom
 ```
 
-React 19 is required. The root entry is browser-safe: it loads no PDF engine, browser driver, CSS compiler, or font files. To check a composition or render it to PDF on the server, add [`@paradoc/react-pdf`](/sdk/react-pdf).
+React 19 is required. The root entry is browser-safe: it loads no PDF engine, browser driver, CSS compiler, or font files. To check a composition or render it to PDF on the server, add [`@asterdoc/react-pdf`](/sdk/react-pdf).
 
 | Entry | Purpose |
 | --- | --- |
-| `@paradoc/react` | Providers, hooks, tokens, typography, furniture, and page planning |
-| `@paradoc/react/discovery` | Node-only conventions that pair a composition with its artifact and sample data |
+| `@asterdoc/react` | Providers, hooks, tokens, typography, furniture, and page planning |
+| `@asterdoc/react/discovery` | Node-only conventions that pair a composition with its artifact and sample data |
 
 ## Bind an artifact
 
 `ArtifactProvider` scopes one document store. Hooks under it read focused values from the artifact and the data.
 
 ```tsx
-import { ArtifactProvider, useField, type DocumentData } from "@paradoc/react";
-import type { Form } from "@paradoc/types";
+import { ArtifactProvider, useField, type DocumentData } from "@asterdoc/react";
+import type { Form } from "@asterdoc/types";
 
 function Name() {
   const name = useField("name");
@@ -74,11 +74,11 @@ An installed `Document` component wraps `ArtifactProvider` and the token provide
 | `useAnnexPicture(path)` | `AnnexBinding` plus `picture`, set only when the attachment is an image |
 | `useFormatter()` | The formatter registry, for components that format values themselves |
 
-Paths use Paradoc's shared field-path grammar: dot-separated object members and either bracket or dot notation for zero-based list indexes (`lineItems[0].unitPrice` and `lineItems.0.unitPrice` are equivalent). Empty segments and the unsafe members `__proto__`, `prototype`, and `constructor` are rejected. A path the artifact does not declare throws `UnknownFieldPathError`. A path that resolves to a fieldset or a list throws `CompositeFieldPathError`, because it has no single value to print. An undeclared role throws `UnknownPartyRoleError`, and an undeclared definition throws `UnknownDefinitionError`. A hook used outside `ArtifactProvider` throws `MissingArtifactProviderError`.
+Paths use Asterdoc's shared field-path grammar: dot-separated object members and either bracket or dot notation for zero-based list indexes (`lineItems[0].unitPrice` and `lineItems.0.unitPrice` are equivalent). Empty segments and the unsafe members `__proto__`, `prototype`, and `constructor` are rejected. A path the artifact does not declare throws `UnknownFieldPathError`. A path that resolves to a fieldset or a list throws `CompositeFieldPathError`, because it has no single value to print. An undeclared role throws `UnknownPartyRoleError`, and an undeclared definition throws `UnknownDefinitionError`. A hook used outside `ArtifactProvider` throws `MissingArtifactProviderError`.
 
 ### Signing
 
-`useSignature(role, index?, type?)` returns a `SignatureBinding` for one signing mark: `roleLabel`, `partyText`, `fieldLabel`, `required`, the `rule` and `dateRule` strings, and the invisible `marker` the seal flow locates. `type` is `"signature"` (the default) or `"initials"`. Core owns `SIGNATURE_RULE` and `INITIALS_RULE`; `@paradoc/react` re-exports them alongside its `DATE_RULE` for the rules the default components draw.
+`useSignature(role, index?, type?)` returns a `SignatureBinding` for one signing mark: `roleLabel`, `partyText`, `fieldLabel`, `required`, the `rule` and `dateRule` strings, and the invisible `marker` the seal flow locates. `type` is `"signature"` (the default) or `"initials"`. Core owns `SIGNATURE_RULE` and `INITIALS_RULE`; `@asterdoc/react` re-exports them alongside its `DATE_RULE` for the rules the default components draw.
 
 When `format` omits `formatter` or `progressive`, `ArtifactProvider` inherits that setting from the nearest `FormatterProvider`. A failed computed definition throws in a finished render, reports `defs.<name>` during a check, and prints the progressive placeholder in partial mode.
 
@@ -167,7 +167,7 @@ Bands are drawn inside the margin, so furniture never changes the page plan. A h
 The preview paginates by measuring. Every `KeepTogether` renders with a `data-keep-id`, `measureKeeps(root)` reads their heights, and `planPages(keeps, budget)` assigns them to pages that fit the content height. `usePagination` runs both after the fonts are ready and again whenever the measured tree resizes.
 
 ```tsx
-import { usePagination, usePaperGeometry } from "@paradoc/react";
+import { usePagination, usePaperGeometry } from "@asterdoc/react";
 import type { ReactNode } from "react";
 
 function PageCount({ children }: { children: ReactNode }) {
@@ -207,14 +207,14 @@ A `PagePlan` lists the keep ids on each page (`pages`), the repeated table heade
 
 ## Discovery
 
-`@paradoc/react/discovery` holds the project conventions that [`paradoc dev`](/cli/commands/dev) and [`paradoc check`](/cli/commands/check) share, for authoring tools that need the same answers. It reads files and artifacts only; it never loads a composition.
+`@asterdoc/react/discovery` holds the project conventions that [`asterdoc dev`](/cli/commands/dev) and [`asterdoc check`](/cli/commands/check) share, for authoring tools that need the same answers. It reads files and artifacts only; it never loads a composition.
 
-- A composition is a `.tsx` or `.jsx` file. Its default export is the component. `discoverCompositions` and `paradoc dev` find compositions under a `compositions/` directory; `paradoc check` takes the file you name.
+- A composition is a `.tsx` or `.jsx` file. Its default export is the component. `discoverCompositions` and `asterdoc dev` find compositions under a `compositions/` directory; `asterdoc check` takes the file you name.
 - Its artifact is the one whose `text/tsx` or `text/jsx` layer resolves to the file. If none does, an artifact file of the same name beside it is used.
 - Its sample data is a sibling `<name>.sample.{ts,tsx,js,mjs,jsx}` default export, or else a `sample` export on the composition itself.
 
 ```ts
-import { discoverCompositions } from "@paradoc/react/discovery";
+import { discoverCompositions } from "@asterdoc/react/discovery";
 
 for (const entry of await discoverCompositions(process.cwd())) {
   console.log(entry.id, entry.artifact?.relative, entry.problems);

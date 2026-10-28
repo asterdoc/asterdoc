@@ -11,7 +11,7 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { RENDER_ATTRIBUTES } from "@paradoc/react";
+import { RENDER_ATTRIBUTES } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface PageBreakProps {

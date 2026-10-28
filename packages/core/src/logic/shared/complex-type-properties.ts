@@ -1,5 +1,5 @@
 /**
- * Member paths of each composite value type, and each member's @paradoc/expr
+ * Member paths of each composite value type, and each member's @asterdoc/expr
  * type, derived from the composite value schemas. Field paths, row scopes,
  * definition members, and party members all read this one table.
  *
@@ -7,7 +7,7 @@
  * scalar-valued type, such as `duration` (an ISO 8601 string), has no members.
  */
 
-import { T, type ExprType } from '@paradoc/expr'
+import { T, type ExprType } from '@asterdoc/expr'
 import {
 	COMPOSITE_VALUE_SCHEMAS,
 	compositeJsonSchema,

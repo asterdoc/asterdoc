@@ -3,21 +3,21 @@ title: Renderer Reference
 description: Render artifacts to different output formats
 ---
 
-Renderers transform Paradoc artifacts into output formats like text, PDF, and DOCX. Each renderer implements the `ParadocRenderer` interface, making it easy to build custom renderers for your specific needs.
+Renderers transform Asterdoc artifacts into output formats like text, PDF, and DOCX. Each renderer implements the `AsterdocRenderer` interface, making it easy to build custom renderers for your specific needs.
 
 ## Installation
 
-`@paradoc/core` uses the unified renderer automatically. Install it directly
+`@asterdoc/core` uses the unified renderer automatically. Install it directly
 when building custom integrations or using format-specific functions:
 
 ```bash
-npm install @paradoc/render
+npm install @asterdoc/render
 ```
 
 ## Usage
 
 ```ts
-import { p } from '@paradoc/core'
+import { p } from '@asterdoc/core'
 
 // Create a form with a template layer
 const form = p.form({
@@ -56,7 +56,7 @@ const output = await filled.render({ renderer: myRenderer })
 ```
 
 The same optional override is available to `.seal({ renderer: myRenderer })`.
-Paradoc still applies its built-in PDF flattening and canonical hashing after
+Asterdoc still applies its built-in PDF flattening and canonical hashing after
 the custom renderer or conversion adapter returns.
 
 ## Renderer registry
@@ -67,11 +67,11 @@ a `RendererRegistry` keyed by layer MIME type. Core consults it when no
 format core does not ship reaches the render call.
 
 React layers (`text/tsx` and `text/jsx`) render this way. The renderer lives in
-`@paradoc/react-pdf`, and `reactLayerRenderers` builds the entries for both MIME
+`@asterdoc/react-pdf`, and `reactLayerRenderers` builds the entries for both MIME
 types:
 
 ```ts
-import { reactLayerRenderers } from '@paradoc/react-pdf'
+import { reactLayerRenderers } from '@asterdoc/react-pdf'
 
 const pdf = await filled.render({
   layer: 'composition',
@@ -80,7 +80,7 @@ const pdf = await filled.render({
 ```
 
 The React renderer writes the PDF itself, so sealing a React layer needs no
-seal adapter. See [@paradoc/react](/sdk/react) for the component side.
+seal adapter. See [@asterdoc/react](/sdk/react) for the component side.
 
 ## Format Entry Points
 
@@ -93,14 +93,14 @@ when you need its low-level functions or format-specific configuration.
 | [PDF](/sdk/renderers/pdf) | Fill PDF forms with AcroForm field support |
 | [DOCX](/sdk/renderers/docx) | Generate Word documents from templates |
 
-`@paradoc/render/pdf` also exports PDF utilities: `inspectPdf`,
+`@asterdoc/render/pdf` also exports PDF utilities: `inspectPdf`,
 `flattenPdf`, `selectPdfPages`, `mergePdfs`, and the placement helpers. See
 [PDF utilities](/sdk/renderers/pdf#pdf-utilities).
 
 ## createLayerRenderer()
 
 ```ts
-function createLayerRenderer(options?: CreateLayerRendererOptions): ParadocRenderer<
+function createLayerRenderer(options?: CreateLayerRendererOptions): AsterdocRenderer<
   RendererLayer,
   string | Uint8Array
 >
@@ -117,12 +117,12 @@ function createLayerRenderer(options?: CreateLayerRendererOptions): ParadocRende
 
 ## Renderer Interface
 
-All renderers implement the `ParadocRenderer` interface. Use this to build custom renderers:
+All renderers implement the `AsterdocRenderer` interface. Use this to build custom renderers:
 
 ```ts
-import type { ParadocRenderer, RenderRequest, RendererLayer } from '@paradoc/types'
+import type { AsterdocRenderer, RenderRequest, RendererLayer } from '@asterdoc/types'
 
-const myRenderer: ParadocRenderer<RendererLayer, string> = {
+const myRenderer: AsterdocRenderer<RendererLayer, string> = {
   id: 'my-renderer',
   render(request: RenderRequest): string {
     // Narrow on `kind` to read the artifact with its payload.
@@ -134,7 +134,7 @@ const myRenderer: ParadocRenderer<RendererLayer, string> = {
 }
 ```
 
-### ParadocRenderer
+### AsterdocRenderer
 
 <PropertiesTable properties={[
   { name: 'id', type: 'string', description: 'Unique identifier for this renderer (e.g., "text", "pdf", "docx")' },
@@ -156,7 +156,7 @@ The request object passed to the `render` method. It names the artifact that dec
   { name: 'template', type: 'RendererLayer', description: 'The resolved template layer to render' },
   { name: 'artifact', type: 'Form | Checklist | Document', description: 'The artifact definition, matching `kind`' },
   { name: 'data', type: 'FormData | ChecklistData', description: 'The payload of the artifact kind. A document request has none', isOptional: true },
-  { name: 'ctx', type: 'ParadocRendererContext', description: 'Optional context with formatter, progressive policy, expressions, and signing markers', isOptional: true },
+  { name: 'ctx', type: 'AsterdocRendererContext', description: 'Optional context with formatter, progressive policy, expressions, and signing markers', isOptional: true },
 ]} />
 
 ### RendererLayer
@@ -169,12 +169,12 @@ The resolved template content:
   { name: 'mimeType', type: 'string', description: 'Media type (e.g., "text/html", "application/pdf")', isOptional: true },
   { name: 'key', type: 'string', description: 'The layer key in the artifact', isOptional: true },
   { name: 'path', type: 'string', description: 'The path a file layer declares', isOptional: true },
-  { name: 'bindings', type: 'Bindings', description: 'PDF layers only: AcroForm field name to Paradoc path. Other layers carry none', isOptional: true },
+  { name: 'bindings', type: 'Bindings', description: 'PDF layers only: AcroForm field name to Asterdoc path. Other layers carry none', isOptional: true },
   { name: 'font', type: 'RendererLayerFont', description: 'Resolved font declared by a PDF layer', isOptional: true },
   { name: 'format', type: 'LayerFormat', description: 'Presentation overrides declared by a PDF layer', isOptional: true },
 ]} />
 
-### ParadocRendererContext
+### AsterdocRendererContext
 
 Optional context for customizing renderer behavior. A key it does not declare is a type error:
 
@@ -182,22 +182,22 @@ Optional context for customizing renderer behavior. A key it does not declare is
   { name: 'formatter', type: 'Formatter', description: 'Formatter selected for the entire artifact render', isOptional: true },
   { name: 'progressive', type: 'FormatterProgressivePolicy', description: 'Text for missing and incomplete values', isOptional: true },
   { name: 'signing', type: 'SigningMarkerRequest', description: 'Set only on the seal pass that must carry flow signature markers', isOptional: true },
-  { name: 'expressions', type: 'RendererExpressions', description: 'The artifact\'s expression context that template expressions read, supplied by `@paradoc/core`', isOptional: true },
+  { name: 'expressions', type: 'RendererExpressions', description: 'The artifact\'s expression context that template expressions read, supplied by `@asterdoc/core`', isOptional: true },
 ]} />
 
 ## Building Custom Renderers
 
 To create a custom renderer:
 
-1. Implement the `ParadocRenderer` interface
+1. Implement the `AsterdocRenderer` interface
 2. Handle the template type(s) you support
 3. Use the request formatter for consistent value presentation
 
 ```ts
-import type { ParadocRenderer, RenderRequest, RendererLayer } from '@paradoc/types'
+import type { AsterdocRenderer, RenderRequest, RendererLayer } from '@asterdoc/types'
 
 // Custom CSV renderer example
-export function csvRenderer(): ParadocRenderer<
+export function csvRenderer(): AsterdocRenderer<
   RendererLayer & { type: 'text'; content: string },
   string
 > {

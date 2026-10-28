@@ -9,7 +9,7 @@
  * evaluated against the form's evaluation context (`fields.*`, defs keys, etc.).
  */
 
-import type { Form, FormPayment, Money, MoneyExpression } from '@paradoc/types'
+import type { Form, FormPayment, Money, MoneyExpression } from '@asterdoc/types'
 import { buildFormContext, type FormDataPayload } from './context-builder'
 import { evaluateExpression } from './expression-evaluator'
 

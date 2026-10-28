@@ -15,14 +15,14 @@
  * as eligible rather than deadlocked).
  */
 
-import type { Form, FormField, FieldsetField, Expression } from '@paradoc/types'
+import type { Form, FormField, FieldsetField, Expression } from '@asterdoc/types'
 import { parseExpression } from '@/logic/design-time/validation/expression-parser'
 import { topologicalSort } from '@/logic/shared/topological-sort'
 import { fillNodeOf } from '@/logic/shared/list-paths'
 
 /**
  * Field/def ids referenced by an expression (`fields.` stripped). `extractReferences`
- * (`@paradoc/expr`) never visits a call's callee, so a function name can never
+ * (`@asterdoc/expr`) never visits a call's callee, so a function name can never
  * appear in `result.variables` here.
  */
 export function referencedIds(expr: boolean | string | undefined): string[] {

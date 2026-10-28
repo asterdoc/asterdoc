@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/agent-discovery",
+  "name": "@asterdoc/agent-discovery",
   "version": "0.0.0",
-  "description": "Agent discovery for the Paradoc public sites: API catalog, MCP server card, Link headers and the Agent Skills distribution.",
+  "description": "Agent discovery for the Asterdoc public sites: API catalog, MCP server card, Link headers and the Agent Skills distribution.",
   "private": true,
   "type": "module",
   "exports": {
@@ -17,8 +17,8 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "ajv": "catalog:",
     "ajv-formats": "catalog:",

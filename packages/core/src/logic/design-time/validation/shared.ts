@@ -1,5 +1,5 @@
-import type { CondExpr, Form, Bundle, BundleContentItem, DefsSection, Expression, ScalarExpressionType } from '@paradoc/types'
-import { T, type ExprType, type TypeEnv } from '@paradoc/expr'
+import type { CondExpr, Form, Bundle, BundleContentItem, DefsSection, Expression, ScalarExpressionType } from '@asterdoc/types'
+import { T, type ExprType, type TypeEnv } from '@asterdoc/expr'
 import { parseExpression } from './expression-parser'
 import { definitionExpressionLeaves } from '../../shared/defs-dependencies'
 import { isScalarExpressionType } from '../../shared/expression-types'
@@ -26,9 +26,9 @@ export interface LogicValidationIssue {
   expression?: string
   /** Specific variable that was not found (optional) */
   variable?: string
-  /** Expected type, as an @paradoc/expr type name (for type validation issues) */
+  /** Expected type, as an @asterdoc/expr type name (for type validation issues) */
   expectedType?: string
-  /** Actual inferred type, as an @paradoc/expr type name (for type validation issues) */
+  /** Actual inferred type, as an @asterdoc/expr type name (for type validation issues) */
   actualType?: string
 }
 

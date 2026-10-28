@@ -1,5 +1,5 @@
-import { defaultFormatter } from '@paradoc/format'
-import type { Form } from '@paradoc/types'
+import { defaultFormatter } from '@asterdoc/format'
+import type { Form } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
 
 import { inspectAcroFormFields, pdfRenderer } from '../src/pdf'

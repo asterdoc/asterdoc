@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { person, organization, partyData, inferPartyType } from '@/primitives';
-import type { Party } from '@paradoc/types';
+import type { Party } from '@asterdoc/types';
 
 describe('Party Builders', () => {
 	// ============================================================================

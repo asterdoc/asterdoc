@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { field } from '@/artifacts'
 import { validateFormData } from '@/validation'
 

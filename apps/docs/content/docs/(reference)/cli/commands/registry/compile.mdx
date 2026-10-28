@@ -1,8 +1,8 @@
 ---
 title: registry compile
 description: Compile registry artifacts
-ogTitle: paradoc registry compile
-ogDescription: Validate and compile Paradoc registry artifacts for deployment
+ogTitle: asterdoc registry compile
+ogDescription: Validate and compile Asterdoc registry artifacts for deployment
 ---
 
 Compile a registry: validate each source file, compute checksums, and write `registry.json` and a folder for each release.
@@ -10,7 +10,7 @@ Compile a registry: validate each source file, compute checksums, and write `reg
 ## Usage
 
 ```bash
-paradoc registry compile [options]
+asterdoc registry compile [options]
 ```
 
 ## Options
@@ -45,19 +45,19 @@ Compile is all or nothing. It reports every problem, one line each, and writes n
 Compile with defaults:
 
 ```bash
-paradoc registry compile
+asterdoc registry compile
 ```
 
 Compile to a separate output directory:
 
 ```bash
-paradoc registry compile -o ./dist
+asterdoc registry compile -o ./dist
 ```
 
 Preview without writing:
 
 ```bash
-paradoc registry compile --dry-run
+asterdoc registry compile --dry-run
 ```
 
 ## Output

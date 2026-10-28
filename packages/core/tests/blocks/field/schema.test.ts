@@ -12,7 +12,7 @@ import type {
 	PhoneField,
 	CoordinateField,
 	FieldsetField,
-} from '@paradoc/types';
+} from '@asterdoc/types';
 
 describe('Field', () => {
 	// ============================================================================

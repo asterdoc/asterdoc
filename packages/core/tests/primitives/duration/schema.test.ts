@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { duration } from '@/primitives/duration';
-import type { Duration } from '@paradoc/types';
+import type { Duration } from '@asterdoc/types';
 
 describe('Duration', () => {
 	// ============================================================================

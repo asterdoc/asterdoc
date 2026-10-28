@@ -1,8 +1,8 @@
 ---
 title: registry remove
 description: Remove a registry configuration
-ogTitle: paradoc registry remove
-ogDescription: Remove a configured Paradoc registry
+ogTitle: asterdoc registry remove
+ogDescription: Remove a configured Asterdoc registry
 ---
 
 Remove a registry configuration.
@@ -10,8 +10,8 @@ Remove a registry configuration.
 ## Usage
 
 ```bash
-paradoc registry remove [namespace] [options]
-paradoc registry rm [namespace] [options]
+asterdoc registry remove [namespace] [options]
+asterdoc registry rm [namespace] [options]
 ```
 
 ## Arguments
@@ -24,22 +24,22 @@ paradoc registry rm [namespace] [options]
 
 | Option | Description |
 |--------|-------------|
-| `--global` | Remove from global config (~/.paradoc/config.json) |
-| `--project` | Remove from project config (paradoc.json) |
+| `--global` | Remove from global config (~/.asterdoc/config.json) |
+| `--project` | Remove from project config (asterdoc.json) |
 
 ## Description
 
-Removes a registry from your configuration. Without a namespace, the command lists registries and lets you select one or more to remove. With `--global`, the list holds only the registries in the global config; with `--project`, only those in `paradoc.json`. With neither, it lists every registry in effect.
+Removes a registry from your configuration. Without a namespace, the command lists registries and lets you select one or more to remove. With `--global`, the list holds only the registries in the global config; with `--project`, only those in `asterdoc.json`. With neither, it lists every registry in effect.
 
 With a namespace, if neither `--global` nor `--project` is specified, you will be prompted to choose. When not in a project directory, defaults to global config.
 
 ## Examples
 
 ```bash
-paradoc registry remove @acme
-paradoc registry rm @acme --global
-paradoc registry remove
-paradoc registry remove --global
+asterdoc registry remove @acme
+asterdoc registry rm @acme --global
+asterdoc registry remove
+asterdoc registry remove --global
 ```
 
 ## See also

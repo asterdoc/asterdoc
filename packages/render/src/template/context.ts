@@ -15,8 +15,8 @@ import {
   type FnSignature,
   type HostFunction,
   type Registry,
-} from '@paradoc/expr'
-import type { Form, RendererExpressions } from '@paradoc/types'
+} from '@asterdoc/expr'
+import type { Form, RendererExpressions } from '@asterdoc/types'
 import { RENDER_DATA_ROOTS } from '../render-data'
 import { dataPath } from './scope'
 
@@ -24,12 +24,12 @@ import { dataPath } from './scope'
  * How a renderer is told what template expressions can read and call.
  *
  * Its `context` is the one a render request carries in `ctx.expressions`
- * (`RendererExpressions` from `@paradoc/types`); the functions and their
+ * (`RendererExpressions` from `@asterdoc/types`); the functions and their
  * signatures come from the renderer's own options.
  */
 export interface TemplateExpressionOptions {
   /**
-   * The artifact's expression context. `@paradoc/core` supplies it, so a
+   * The artifact's expression context. `@asterdoc/core` supplies it, so a
    * template sees exactly what field logic sees.
    */
   context?: EvaluationContext
@@ -43,8 +43,8 @@ export interface TemplateExpressionOptions {
  * The expression options for one render: the renderer's configured functions,
  * and the expression context the request carries.
  *
- * `@paradoc/core` builds that context with `@paradoc/expr`'s `createContext`;
- * `@paradoc/types` declares it structurally, so it stays free of the expression
+ * `@asterdoc/core` builds that context with `@asterdoc/expr`'s `createContext`;
+ * `@asterdoc/types` declares it structurally, so it stays free of the expression
  * engine. This is the one place a renderer reads it back as the engine's type.
  */
 export function requestExpressions(

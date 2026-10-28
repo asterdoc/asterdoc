@@ -1,12 +1,12 @@
 // @vitest-environment node
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 import { ArtifactProvider, CheckModeProvider, PartialValuesProvider, useTotals } from "../src";
 
 const form = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "defs-fail",
   version: "1.0.0",

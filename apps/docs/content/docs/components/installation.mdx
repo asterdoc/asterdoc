@@ -1,18 +1,18 @@
 ---
 title: Installation
-description: Register the Paradoc registry namespace and install the document component substrate
+description: Register the Asterdoc registry namespace and install the document component substrate
 ---
 
 Set this up once per project, before installing any component or block.
 
 ## Register the namespace
 
-Add the `@paradoc` registry to your project's `components.json`:
+Add the `@asterdoc` registry to your project's `components.json`:
 
 ```json
 {
   "registries": {
-    "@paradoc": "https://docs.paradoc.dev/r/{name}.json"
+    "@asterdoc": "https://docs.asterdoc.com/r/{name}.json"
   }
 }
 ```
@@ -21,18 +21,18 @@ Add the `@paradoc` registry to your project's `components.json`:
 
 Install the styles, preview pages, and document component explicitly. The
 components bring the public runtime packages they import; `document` itself
-brings `@paradoc/react` and `@paradoc/types`. The preset writes
-`styles/paradoc.css`:
+brings `@asterdoc/react` and `@asterdoc/types`. The preset writes
+`styles/asterdoc.css`:
 
 ```bash
-npx shadcn@4 add @paradoc/document-styles @paradoc/pages @paradoc/document
+npx shadcn@4 add @asterdoc/document-styles @asterdoc/pages @asterdoc/document
 ```
 
 Then import the preset in your global stylesheet:
 
 ```css
 /* your global stylesheet */
-@import "@/styles/paradoc.css";
+@import "@/styles/asterdoc.css";
 ```
 
 The components are styled with Tailwind utility classes, so a Tailwind project
@@ -42,14 +42,14 @@ it controls pagination without drawing visible markup.
 
 ### Versions
 
-An installed component is written against one version of `@paradoc/react`, and
+An installed component is written against one version of `@asterdoc/react`, and
 each item declares that version, so the CLI installs the substrate it was
 generated from. Two consequences worth knowing before you start:
 
 - **Install the components you want together, and update them together.** Adding
   `field` today and `table` after two releases leaves two files written against
   two substrates in one project.
-- **Upgrading `@paradoc/react` means reviewing the matching component sources.**
+- **Upgrading `@asterdoc/react` means reviewing the matching component sources.**
   The CLI does not overwrite an edited file unless you explicitly pass
   `--overwrite`, so upgrades remain a source change you control.
 
@@ -57,10 +57,10 @@ generated from. Two consequences worth knowing before you start:
 
 The components render in the browser without anything else. To render a
 composition to PDF on the server, add
-[`@paradoc/react-pdf`](/sdk/react-pdf):
+[`@asterdoc/react-pdf`](/sdk/react-pdf):
 
 ```bash
-npm install @paradoc/react-pdf
+npm install @asterdoc/react-pdf
 ```
 
 ## Adding a component
@@ -68,26 +68,26 @@ npm install @paradoc/react-pdf
 With the registry namespace registered, install a component by name:
 
 ```bash
-npx shadcn@4 add @paradoc/field
+npx shadcn@4 add @asterdoc/field
 ```
 
-Or, with the [Paradoc CLI](/cli), which writes the namespace into
+Or, with the [Asterdoc CLI](/cli), which writes the namespace into
 `components.json` for you and then runs the same install:
 
 ```bash
-npx paradoc-cli add field
+npx asterdoc add field
 ```
 
-With the CLI installed globally (`npm install -g paradoc-cli`), the command is
-`paradoc add field`.
+With the CLI installed globally (`npm install -g asterdoc`), the command is
+`asterdoc add field`.
 
-Files land in `components/paradoc/`. A component that builds on another brings it
+Files land in `components/asterdoc/`. A component that builds on another brings it
 along: installing `field` also installs `keep-together`.
 
 Without a registry entry in `components.json`, the full URL works too:
 
 ```bash
-npx shadcn@4 add https://docs.paradoc.dev/r/field.json
+npx shadcn@4 add https://docs.asterdoc.com/r/field.json
 ```
 
 Each component's own page (for example [`field`](/components/field)) shows its

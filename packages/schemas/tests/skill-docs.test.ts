@@ -1,9 +1,9 @@
 /**
- * The paradoc skill (paradoc/skills/skills/paradoc) is written by hand. These
+ * The asterdoc skill (framework/skills/skills/asterdoc) is written by hand. These
  * tests hold its mechanically checkable facts to the schemas: the field type
  * list and the signature slot type names. Lists are parsed from the docs, so
  * prose edits do not break them. The labeled JSON examples get full artifact
- * validation in @paradoc/core (tests/skill-docs-examples.test.ts).
+ * validation in @asterdoc/core (tests/skill-docs-examples.test.ts).
  */
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import type { z } from 'zod'
 import { FormFieldSchema, SignatureSlotTypeSchema } from '../src/zod'
 
-const SKILL_DIR = join(import.meta.dirname, '../../../skills/skills/paradoc')
+const SKILL_DIR = join(import.meta.dirname, '../../../skills/skills/asterdoc')
 
 function readSkill(relativePath: string): string {
 	return readFileSync(join(SKILL_DIR, relativePath), 'utf8')
@@ -94,7 +94,7 @@ describe('skill docs: field types', () => {
 	})
 
 	it('states the schema field type count wherever it gives one', () => {
-		const counts = [...fields.matchAll(/\b(\d+)\s+(?:Paradoc field types|field types|typed field definitions)/g)].map((match) =>
+		const counts = [...fields.matchAll(/\b(\d+)\s+(?:Asterdoc field types|field types|typed field definitions)/g)].map((match) =>
 			Number(match[1]),
 		)
 		expect(counts.length).toBeGreaterThan(0)

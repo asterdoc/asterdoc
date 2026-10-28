@@ -11,7 +11,7 @@ import {
   TYPOGRAPHY_LEVELS,
   flowGapClasses,
   scaleTextClasses,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 
 const LABEL = "text-xs font-medium uppercase tracking-wide text-neutral-500";
 const ROOT = "flex flex-col gap-6 text-sm leading-relaxed text-neutral-900";

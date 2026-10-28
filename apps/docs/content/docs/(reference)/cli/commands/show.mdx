@@ -1,7 +1,7 @@
 ---
 title: show
 description: Display artifact content
-ogTitle: paradoc show
+ogTitle: asterdoc show
 ogDescription: View artifact metadata, fields, and structure
 ---
 
@@ -10,7 +10,7 @@ Shows details about an artifact file.
 ## Usage
 
 ```bash
-paradoc show <artifact> [options]
+asterdoc show <artifact> [options]
 ```
 
 ## Arguments
@@ -39,19 +39,19 @@ The `--deps` flag lists every local file dependency, including file-backed layer
 Show artifact details:
 
 ```bash
-paradoc show my-form.yaml
+asterdoc show my-form.yaml
 ```
 
 Show raw content:
 
 ```bash
-paradoc show my-form.yaml --raw
+asterdoc show my-form.yaml --raw
 ```
 
 Show with file dependencies:
 
 ```bash
-paradoc show my-form.yaml --deps
+asterdoc show my-form.yaml --deps
 ```
 
 ## Output
@@ -113,4 +113,4 @@ File: my-form.yaml
 - [validate](/cli/commands/validate) - Check artifact validity
 - [render](/cli/commands/render) - Render artifact layers
 
-An artifact argument may be a file path or an installed `@namespace/name` reference from `.paradoc/lock.json`. An uninstalled reference fails with an error.
+An artifact argument may be a file path or an installed `@namespace/name` reference from `.asterdoc/lock.json`. An uninstalled reference fails with an error.

@@ -23,7 +23,7 @@ import {
   type Typography as Rhythm,
   type TypographyLevel,
   type ApplicationFontSnapshot,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 
 /** Which sample document the lab is showing. */
 export type LabDocument = "proposal" | "invoice" | "arabic-letter";

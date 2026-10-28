@@ -8,12 +8,12 @@
  * which no source file carries. Importing it here is what an installed
  * project does, so the component previews are styled exactly as a consumer's.
  */
-@import "@paradoc/components/styles.css";
+@import "@asterdoc/components/styles.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
 /*
- * @paradoc/components lives outside this app's own src/ tree, so Tailwind's
+ * @asterdoc/components lives outside this app's own src/ tree, so Tailwind's
  * automatic content detection (which stops at node_modules) never sees the
  * utility classes its live-rendered document components use. The component
  * docs pages (/components/*) render that package's real components, so its

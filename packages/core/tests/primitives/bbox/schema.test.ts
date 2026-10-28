@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { bbox } from '@/primitives/bbox';
-import type { Bbox } from '@paradoc/types';
+import type { Bbox } from '@asterdoc/types';
 
 describe('Bbox', () => {
 	// ============================================================================

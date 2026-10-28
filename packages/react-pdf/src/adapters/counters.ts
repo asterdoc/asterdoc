@@ -1,4 +1,4 @@
-import type { PageCounter } from "@paradoc/react";
+import type { PageCounter } from "@asterdoc/react";
 export const PAGE_COUNTER_CLASSES: Readonly<Record<PageCounter, string>> = {
   current: "pageNumber",
   total: "totalPages",

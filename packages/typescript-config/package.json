@@ -1,8 +1,8 @@
 {
-  "name": "@paradoc/typescript-config",
+  "name": "@asterdoc/typescript-config",
   "version": "0.1.0",
   "private": true,
-  "description": "Shared TypeScript configuration for Paradoc framework packages",
+  "description": "Shared TypeScript configuration for Asterdoc framework packages",
   "type": "module",
   "files": [
     "*.json",
@@ -10,27 +10,26 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
-    "paradoc",
+    "asterdoc",
     "typescript",
     "tsconfig",
     "config"
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/typescript-config"
   },
-  "homepage": "https://www.paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   }
 }

@@ -20,7 +20,7 @@ Every part must reach PDF. A form with a React layer does, through the renderer 
 Start from the agreement in the [React Layers](/guides/react-layers) guide. The statement of work follows the same pattern:
 
 ```ts title="documents/statement-of-work.ts"
-import { p } from '@paradoc/core'
+import { p } from '@asterdoc/core'
 
 export const statementOfWork = p
   .form()
@@ -45,10 +45,10 @@ export const statementOfWork = p
 ```
 
 ```tsx title="compositions/statement-of-work-document.tsx"
-import type { ReactLayerComponentProps } from '@paradoc/react-pdf'
-import { Document } from '@/components/paradoc/document'
-import { Field } from '@/components/paradoc/field'
-import { Signature } from '@/components/paradoc/signature'
+import type { ReactLayerComponentProps } from '@asterdoc/react-pdf'
+import { Document } from '@/components/asterdoc/document'
+import { Field } from '@/components/asterdoc/field'
+import { Signature } from '@/components/asterdoc/signature'
 
 export default function StatementOfWorkDocument({ artifact, data }: ReactLayerComponentProps) {
   return (
@@ -67,7 +67,7 @@ export default function StatementOfWorkDocument({ artifact, data }: ReactLayerCo
 The bundle names the parts and their order. Each content key is how the rest of the packet refers to that part.
 
 ```ts title="documents/onboarding.ts"
-import { p } from '@paradoc/core'
+import { p } from '@asterdoc/core'
 import { agreement } from './agreement'
 import { statementOfWork } from './statement-of-work'
 
@@ -135,8 +135,8 @@ Pass one entry per content key in `contents`. A form entry is the filled draft. 
 
 ```ts title="seal-packet.ts"
 import { readFile, writeFile } from 'node:fs/promises'
-import { sealBundle, type BundleSealOptions } from '@paradoc/core'
-import { reactLayerRenderers } from '@paradoc/react-pdf'
+import { sealBundle, type BundleSealOptions } from '@asterdoc/core'
+import { reactLayerRenderers } from '@asterdoc/react-pdf'
 import AgreementDocument from './documents/agreement-document'
 import { onboarding } from './documents/onboarding'
 import StatementOfWorkDocument from './documents/statement-of-work-document'
@@ -194,7 +194,7 @@ A signing ceremony binds to `canonicalPdfHash`, the hash of the document the sig
 `sealBundle()` throws `BundleSealError` when the packet cannot be built: a content key has no entry, an entry is not the artifact the bundle declares, a bytes entry's content does not match its `mimeType`, a part fails to render or seal, or no part reaches a PDF. `problems` lists every issue, and `part` names the content key when the failure belongs to one.
 
 ```ts
-import { BundleSealError } from '@paradoc/core'
+import { BundleSealError } from '@asterdoc/core'
 
 try {
   await sealBundle(onboarding, options)

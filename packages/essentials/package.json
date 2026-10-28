@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/essentials",
-  "version": "0.8.0",
-  "description": "Ready-to-use Paradoc artifacts for common business forms: IRS W-9, 1099-NEC, 1099-MISC, and 4506-T, USCIS I-9, and NACHA ACH forms",
+  "name": "@asterdoc/essentials",
+  "version": "0.9.0",
+  "description": "Ready-to-use Asterdoc artifacts for common business forms: IRS W-9, 1099-NEC, 1099-MISC, and 4506-T, USCIS I-9, and NACHA ACH forms",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -35,7 +35,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
+    "asterdoc",
     "forms",
     "artifacts",
     "irs",
@@ -50,20 +50,20 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/essentials"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -83,14 +83,14 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@paradoc/core": "workspace:^",
-    "@paradoc/resolvers": "workspace:^",
-    "@paradoc/types": "workspace:^"
+    "@asterdoc/core": "workspace:^",
+    "@asterdoc/resolvers": "workspace:^",
+    "@asterdoc/types": "workspace:^"
   },
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/sdk": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/sdk": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",

@@ -10,7 +10,7 @@ describe('LockFileManager', () => {
 
   beforeEach(async () => {
     manager = new LockFileManager()
-    tempDir = await fs.mkdtemp(join(tmpdir(), 'paradoc-test-'))
+    tempDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-test-'))
   })
 
   afterEach(async () => {
@@ -27,12 +27,12 @@ describe('LockFileManager', () => {
 
     it('loads existing lock file', async () => {
       // Create existing lock file
-      const lockDir = join(tempDir, '.paradoc')
+      const lockDir = join(tempDir, '.asterdoc')
       await fs.mkdir(lockDir, { recursive: true })
       await fs.writeFile(
         join(lockDir, 'lock.json'),
         JSON.stringify({
-          $schema: 'https://schema.paradoc.dev/lock.json',
+          $schema: 'https://schema.asterdoc.com/lock.json',
           version: 1,
           artifacts: {
             '@acme/test-artifact': {
@@ -68,8 +68,8 @@ describe('LockFileManager', () => {
       manager.setArtifact('@registry.acme.com/w9', locked)
       await manager.save()
 
-      const saved = JSON.parse(await fs.readFile(join(tempDir, '.paradoc', 'lock.json'), 'utf-8'))
-      expect(saved.$schema).toBe('https://schema.paradoc.dev/lock.json')
+      const saved = JSON.parse(await fs.readFile(join(tempDir, '.asterdoc', 'lock.json'), 'utf-8'))
+      expect(saved.$schema).toBe('https://schema.asterdoc.com/lock.json')
 
       const reloaded = new LockFileManager()
       await reloaded.init(tempDir)
@@ -78,7 +78,7 @@ describe('LockFileManager', () => {
     })
 
     it('refuses a lock file the lock schema refuses, naming the file and key', async () => {
-      const lockDir = join(tempDir, '.paradoc')
+      const lockDir = join(tempDir, '.asterdoc')
       await fs.mkdir(lockDir, { recursive: true })
       const lockPath = join(lockDir, 'lock.json')
       await fs.writeFile(lockPath, JSON.stringify({
@@ -91,7 +91,7 @@ describe('LockFileManager', () => {
     })
 
     it('refuses a lock file that is not JSON, naming the file', async () => {
-      const lockDir = join(tempDir, '.paradoc')
+      const lockDir = join(tempDir, '.asterdoc')
       await fs.mkdir(lockDir, { recursive: true })
       const lockPath = join(lockDir, 'lock.json')
       await fs.writeFile(lockPath, '{ not json')
@@ -191,7 +191,7 @@ describe('LockFileManager', () => {
 
       await manager.save()
 
-      const lockPath = join(tempDir, '.paradoc', 'lock.json')
+      const lockPath = join(tempDir, '.asterdoc', 'lock.json')
       const content = await fs.readFile(lockPath, 'utf-8')
       const parsed = JSON.parse(content)
       expect(parsed.artifacts['@acme/saved-artifact']).toBeDefined()

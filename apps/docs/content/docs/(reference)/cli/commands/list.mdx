@@ -1,8 +1,8 @@
 ---
 title: list
 description: List installed artifacts
-ogTitle: paradoc list
-ogDescription: View all artifacts installed in your Paradoc project
+ogTitle: asterdoc list
+ogDescription: View all artifacts installed in your Asterdoc project
 ---
 
 Lists all artifacts installed in the current project.
@@ -10,8 +10,8 @@ Lists all artifacts installed in the current project.
 ## Usage
 
 ```bash
-paradoc list [options]
-paradoc ls [options]
+asterdoc list [options]
+asterdoc ls [options]
 ```
 
 ## Options
@@ -30,19 +30,19 @@ The `list` command reads the project's lock file and displays all installed arti
 List all installed artifacts:
 
 ```bash
-paradoc list
+asterdoc list
 ```
 
 Using the alias:
 
 ```bash
-paradoc ls
+asterdoc ls
 ```
 
 Output as JSON:
 
 ```bash
-paradoc list --json
+asterdoc list --json
 ```
 
 ## Output
@@ -63,7 +63,7 @@ When no artifacts are installed:
 
 ```
 No artifacts installed.
-Run 'paradoc add @namespace/artifact-name' to install one.
+Run 'asterdoc add @namespace/artifact-name' to install one.
 ```
 
 ## JSON output

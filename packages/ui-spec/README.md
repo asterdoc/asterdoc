@@ -1,20 +1,20 @@
-# @paradoc/ui-spec
+# @asterdoc/ui-spec
 
-> **In development; not yet published.** This package is currently `private: true` and is consumed by applications in the Paradoc workspace. Its API may change before publication.
+> **In development; not yet published.** This package is currently `private: true` and is consumed by applications in the Asterdoc workspace. Its API may change before publication.
 
-A **headless UI specification** for Paradoc artifacts. It maps form fields to typed, validated presentation trees. The landing playground renderer binds the spec to its interactive controls.
+A **headless UI specification** for Asterdoc artifacts. It maps form fields to typed, validated presentation trees. The landing playground renderer binds the spec to its interactive controls.
 
 ## What it does
 
-Given a `FormField` from `@paradoc/types` (text, number, enum, address, person, and other field families), `fieldToSpec` produces a JSON spec naming the input component and its typed props. `validateSpec` validates a serialized tree, including component props, child shape, and field targets. The package has **no React, no shadcn, and no rendering runtime**. Consumers validate the tree and wire catalog component names to their own controls.
+Given a `FormField` from `@asterdoc/types` (text, number, enum, address, person, and other field families), `fieldToSpec` produces a JSON spec naming the input component and its typed props. `validateSpec` validates a serialized tree, including component props, child shape, and field targets. The package has **no React, no shadcn, and no rendering runtime**. Consumers validate the tree and wire catalog component names to their own controls.
 
 ```ts
 import {
   createSubmitFieldValueAction,
   fieldToSpec,
   validateSpec,
-} from "@paradoc/ui-spec";
-import type { FormField } from "@paradoc/types";
+} from "@asterdoc/ui-spec";
+import type { FormField } from "@asterdoc/types";
 
 const animalField: FormField = {
   type: "enum",
@@ -63,16 +63,16 @@ The action type is an in-process TypeScript contract. Hosts own transport valida
 
 ## Architecture: why headless
 
-The package depends on `zod` plus the canonical schemas and types from Paradoc. It has zero React peer dependency and no shadcn coupling. Two reasons:
+The package depends on `zod` plus the canonical schemas and types from Asterdoc. It has zero React peer dependency and no shadcn coupling. Two reasons:
 
-1. **No bundle duplication** — apps that already have shadcn primitives (e.g. via `@paradoc/common` in the platform monorepo) shouldn't load a second copy
+1. **No bundle duplication** — apps that already have shadcn primitives (e.g. via `@asterdoc/common` in the platform monorepo) shouldn't load a second copy
 2. **Consumer freedom** — the host chooses its rendering technology and maps the typed component names to its own controls
 
 ## Catalog components
 
 The catalog defines the following input primitives. See `src/catalog.ts` for the full Zod-typed prop schemas. A renderer may support a subset of the catalog and must provide a visible fallback for unsupported nodes.
 
-| Component | Used for paradoc field types |
+| Component | Used for asterdoc field types |
 |---|---|
 | `TextInput` | `text` and `uuid` |
 | `TextArea` | long `text` fields (`maxLength > 200`) |
@@ -103,7 +103,7 @@ import {
   type CatalogComponentName,
   type CatalogPropsFor,
   type SpecNode,
-} from "@paradoc/ui-spec";
+} from "@asterdoc/ui-spec";
 
 type RegistryArgs<TName extends CatalogComponentName> = {
   spec: Extract<SpecNode, { type: TName }>;

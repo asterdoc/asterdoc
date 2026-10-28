@@ -1,5 +1,5 @@
 import { parseBbox, parseCoordinate } from '@/validation/parsers';
-import type { Bbox, Coordinate } from '@paradoc/types';
+import type { Bbox, Coordinate } from '@asterdoc/types';
 
 export interface BboxBuilder {
 	from(value: Bbox): BboxBuilder;

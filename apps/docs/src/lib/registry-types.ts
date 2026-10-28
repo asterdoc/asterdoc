@@ -1,6 +1,6 @@
 /**
  * Shape of one shadcn registry item, as committed under `public/r/{name}.json`
- * by `pnpm registry:build` in `paradoc/packages/components`. Kept here, not
+ * by `pnpm registry:build` in `framework/packages/components`. Kept here, not
  * inferred, because the generated content module (`src/generated/`) needs a
  * type to import without pulling in the generator itself.
  */

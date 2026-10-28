@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { validateFormDefs } from '@/logic/design-time/validation/validate-form-logic'
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 
 /**
  * Tests for validateFormDefs (design-time validation).

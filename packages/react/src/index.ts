@@ -1,14 +1,14 @@
 /**
- * `@paradoc/react` — compose a document from React components bound to a
- * Paradoc form artifact.
+ * `@asterdoc/react` — compose a document from React components bound to a
+ * Asterdoc form artifact.
  *
  * One tree is the source of truth for the paginated preview and for the PDF.
  * This entry is what runs in a browser: providers, focused bindings,
  * measurement, and page planning. Visible component source is installed into
- * the consumer's project. `@paradoc/react-pdf` is the Node-only half.
+ * the consumer's project. `@asterdoc/react-pdf` is the Node-only half.
  *
- * The artifact packages — `@paradoc/core`, `@paradoc/types`, `@paradoc/render`
- * and `@paradoc/format` — are consumed unchanged.
+ * The artifact packages — `@asterdoc/core`, `@asterdoc/types`, `@asterdoc/render`
+ * and `@asterdoc/format` — are consumed unchanged.
  */
 
 export {
@@ -19,7 +19,7 @@ export {
 // `ArtifactProvider` reads this on every render, checking or not, so it is substrate
 // an installed `document.tsx` must reach through this package rather than a
 // copy of its own.
-// `@paradoc/react-pdf/check` is the only caller that ever supplies one.
+// `@asterdoc/react-pdf/check` is the only caller that ever supplies one.
 export {
   CheckModeProvider,
   useUnresolvedPathCollector,
@@ -35,7 +35,7 @@ export {
   type PartialValuesProviderProps,
 } from "./components/partial-context";
 // The provider is the seal's, and the seal is Node: it is exported from
-// `@paradoc/react-pdf`. The hook is not — `useSignature` calls it on every
+// `@asterdoc/react-pdf`. The hook is not — `useSignature` calls it on every
 // render, sealing or not — so it belongs to the browser entry alongside the
 // shared rendering vocabulary.
 export {
@@ -132,7 +132,7 @@ export {
 export {
   DATE_RULE,
 } from "./headless/signing";
-export { INITIALS_RULE, SIGNATURE_RULE } from "@paradoc/core";
+export { INITIALS_RULE, SIGNATURE_RULE } from "@asterdoc/core";
 
 export {
   annexSlot,

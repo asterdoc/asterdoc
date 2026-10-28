@@ -19,7 +19,7 @@ describe('CLI General Commands', () => {
 
       expect(result.exitCode).toBe(0)
       expect(result.stdout).toContain('Usage:')
-      expect(result.stdout).toContain('paradoc')
+      expect(result.stdout).toContain('asterdoc')
     })
 
     it('should display help with -h flag', async () => {
@@ -27,14 +27,14 @@ describe('CLI General Commands', () => {
 
       expect(result.exitCode).toBe(0)
       expect(result.stdout).toContain('Usage:')
-      expect(result.stdout).toContain('paradoc')
+      expect(result.stdout).toContain('asterdoc')
     })
 
     it('prints command help for -h before a command', async () => {
       const result = await executeCliCommand(['-h', 'add'])
 
       expect(result.exitCode).toBe(0)
-      expect(result.stdout).toContain('Usage: paradoc add')
+      expect(result.stdout).toContain('Usage: asterdoc add')
     })
 
     it('rejects an unknown command even when help is requested', async () => {
@@ -51,13 +51,13 @@ describe('CLI General Commands', () => {
     })
 
     it('prints the update notice after asynchronous command output', async () => {
-      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-update-order-'))
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-update-order-'))
       const home = path.join(root, 'home')
       const preload = path.join(root, 'tty.mjs')
       try {
-        await fs.mkdir(path.join(home, '.paradoc'), { recursive: true })
+        await fs.mkdir(path.join(home, '.asterdoc'), { recursive: true })
         await fs.writeFile(
-          path.join(home, '.paradoc', 'update-check.json'),
+          path.join(home, '.asterdoc', 'update-check.json'),
           JSON.stringify({ lastChecked: Date.now(), latestVersion: '99.0.0' }),
         )
         await fs.writeFile(preload, "Object.defineProperty(process.stdout, 'isTTY', { value: true })\n")
@@ -66,7 +66,7 @@ describe('CLI General Commands', () => {
           cwd: root,
           target: 'dist',
           nodeArgs: ['--import', preload],
-          env: { HOME: home, CI: undefined, PARADOC_NO_UPDATE_CHECK: undefined, NO_COLOR: '1' },
+          env: { HOME: home, CI: undefined, ASTERDOC_NO_UPDATE_CHECK: undefined, NO_COLOR: '1' },
         })
         expect(result.exitCode).toBe(0)
         expect(result.stdout.indexOf('Cache Statistics')).toBeLessThan(
@@ -109,7 +109,7 @@ describe('CLI General Commands', () => {
       // When no arguments are provided, Commander.js may output to stdout or stderr
       const output = result.stdout + result.stderr
       expect(output).toContain('Usage:')
-      expect(output).toContain('paradoc')
+      expect(output).toContain('asterdoc')
     })
 
     it('should print the same help for bare help as for --help', async () => {
@@ -132,7 +132,7 @@ describe('CLI General Commands', () => {
 
       expect(viaCommand.exitCode).toBe(0)
       expect(viaCommand.stderr).not.toContain('unknown command')
-      expect(viaCommand.stdout).toContain('Usage: paradoc add')
+      expect(viaCommand.stdout).toContain('Usage: asterdoc add')
       expect(viaCommand.stdout).toBe(viaFlag.stdout)
     })
 
@@ -140,7 +140,7 @@ describe('CLI General Commands', () => {
       const result = await executeCliCommand(['help', 'registry', 'add'])
 
       expect(result.exitCode).toBe(0)
-      expect(result.stdout).toContain('Usage: paradoc registry add')
+      expect(result.stdout).toContain('Usage: asterdoc registry add')
     })
 
     it('should still reject an unknown command', async () => {

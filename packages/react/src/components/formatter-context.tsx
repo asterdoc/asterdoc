@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { Formatter, FormatterProgressivePolicy } from "@paradoc/types";
+import type { Formatter, FormatterProgressivePolicy } from "@asterdoc/types";
 
 export interface ArtifactFormatting {
   formatter?: Formatter;

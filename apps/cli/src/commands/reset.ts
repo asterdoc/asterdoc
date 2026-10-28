@@ -3,15 +3,16 @@ import kleur from 'kleur'
 import ora from 'ora'
 import prompts from 'prompts'
 import { LocalFileSystem } from '../utils/local-fs.js'
-import { paradocHomePath, userHomeDir } from '../utils/home.js'
+import { asterdocHomePath, userHomeDir } from '../utils/home.js'
 
-import type { GlobalConfig } from '@paradoc/schemas'
+import type { GlobalConfig } from '@asterdoc/schemas'
 import { registryClient } from '../utils/registry-client.js'
 import { configManager } from '../utils/config.js'
 import { formatBytes } from '../utils/format.js'
+import { brandColorBold } from '../constants.js'
 
 /**
- * Global storage for ~/.paradoc operations
+ * Global storage for ~/.asterdoc operations
  */
 const globalStorage = new LocalFileSystem(userHomeDir())
 
@@ -49,13 +50,13 @@ async function getDirectorySize(dirPath: string): Promise<number> {
 
 /**
  * Create the 'reset' command
- * Factory reset for Paradoc CLI
+ * Factory reset for Asterdoc CLI
  */
 export function createResetCommand(): Command {
   const reset = new Command('reset')
 
   reset
-    .description('Reset Paradoc CLI to factory defaults (clears global config and cache)')
+    .description('Reset Asterdoc CLI to factory defaults (clears global config and cache)')
     .option('-y, --yes', 'Skip confirmation prompt')
     .option('--keep-registries', 'Keep registry configurations')
     .option('--keep-cache', 'Keep cached data')
@@ -65,14 +66,14 @@ export function createResetCommand(): Command {
       try {
         // Gather information about what will be deleted
         console.log()
-        console.log(kleur.bold('Paradoc CLI Reset'))
+        console.log(brandColorBold('Asterdoc CLI Reset'))
         console.log()
 
         // Check what exists
         let configExists = false
         let cacheSize = 0
 
-        configExists = await globalStorage.exists(paradocHomePath('config.json'))
+        configExists = await globalStorage.exists(asterdocHomePath('config.json'))
 
         // Read the current config before anything is cleared, so a config the
         // CLI cannot read stops the reset with nothing changed.
@@ -85,7 +86,7 @@ export function createResetCommand(): Command {
 
         // Show what will be affected
         console.log(kleur.gray('This will:'))
-        console.log(kleur.cyan('  • Create fresh default config (~/.paradoc/config.json)'))
+        console.log(kleur.cyan('  • Create fresh default config (~/.asterdoc/config.json)'))
 
         if (!options.keepRegistries) {
           if (configExists) {
@@ -168,19 +169,19 @@ export function createResetCommand(): Command {
         spinner.succeed('Created default configuration')
 
         console.log()
-        console.log(kleur.green('✓') + ' Paradoc CLI has been reset to factory defaults')
+        console.log(kleur.green('✓') + ' Asterdoc CLI has been reset to factory defaults')
         console.log()
         console.log(kleur.gray('Default settings:'))
         console.log(kleur.gray('  Output format: json'))
         console.log(kleur.gray('  Artifacts directory: artifacts'))
         console.log(kleur.gray('  Cache TTL: 3600s (1 hour)'))
-        console.log(kleur.gray('  Cache directory: ~/.paradoc/cache'))
+        console.log(kleur.gray('  Cache directory: ~/.asterdoc/cache'))
         console.log(kleur.gray(`  Telemetry: ${defaultConfig.telemetry?.enabled !== false ? 'enabled' : 'disabled'}`))
         if (existingRegistries && Object.keys(existingRegistries).length > 0) {
           console.log(kleur.gray(`  Registries: ${Object.keys(existingRegistries).length} preserved`))
         } else {
           console.log()
-          console.log(kleur.gray('Run `paradoc registry add` to configure registries'))
+          console.log(kleur.gray('Run `asterdoc registry add` to configure registries'))
         }
       } catch (error) {
         spinner.fail('Reset failed')

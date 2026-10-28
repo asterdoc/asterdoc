@@ -1,0 +1,13 @@
+{
+  "name": "asterdoc-react",
+  "version": "0.7.0",
+  "author": "asterdoc",
+  "date": "2026-10-08",
+  "abstract": "Compose, check, preview, render and seal Asterdoc documents written in React with @asterdoc/react and @asterdoc/react-pdf: install components and blocks from the @asterdoc registry, bind a composition to a form artifact through its React layer, stay inside the verified class vocabulary the PDF engine renders, check with asterdoc check, preview with asterdoc dev, render with renderPdf, and seal through the React layer renderers.",
+  "references": [
+    "https://docs.asterdoc.com/components",
+    "https://docs.asterdoc.com/r/registry.json",
+    "https://github.com/asterdoc/asterdoc/tree/main/packages/react",
+    "https://github.com/asterdoc/asterdoc/tree/main/packages/react-pdf"
+  ]
+}

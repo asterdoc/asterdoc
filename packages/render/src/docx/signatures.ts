@@ -1,7 +1,7 @@
 import type {
   SignatureCapturedValue,
   SignaturePlaceholderValue,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import { createSignatureDirectives } from '../text/signatures'
 import type { SigningDirective } from '../text/template'
 

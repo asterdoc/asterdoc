@@ -35,9 +35,9 @@ describe('CLI telemetry transport', () => {
     config.value = { anonymousId: 'anon-1' }
     fetchMock.mockReset().mockResolvedValue(new Response(null, { status: 202 }))
     vi.stubGlobal('fetch', fetchMock)
-    vi.stubEnv('PARADOC_TELEMETRY_DISABLED', '')
+    vi.stubEnv('ASTERDOC_TELEMETRY_DISABLED', '')
     vi.stubEnv('DO_NOT_TRACK', '')
-    vi.stubEnv('PARADOC_TELEMETRY_URL', '')
+    vi.stubEnv('ASTERDOC_TELEMETRY_URL', '')
   })
 
   afterEach(() => {
@@ -47,20 +47,20 @@ describe('CLI telemetry transport', () => {
 
   describe('telemetryEndpoint', () => {
     it('defaults to the production telemetry host', () => {
-      expect(telemetryEndpoint({})).toBe('https://telemetry.paradoc.dev/v1/events/anonymous')
+      expect(telemetryEndpoint({})).toBe('https://telemetry.asterdoc.com/v1/events/anonymous')
     })
 
     it('honors an origin override and drops any path on it', () => {
-      expect(telemetryEndpoint({ PARADOC_TELEMETRY_URL: 'https://telemetry-dev.paradoc.dev/x?y=1' })).toBe(
-        'https://telemetry-dev.paradoc.dev/v1/events/anonymous'
+      expect(telemetryEndpoint({ ASTERDOC_TELEMETRY_URL: 'https://telemetry-dev.asterdoc.com/x?y=1' })).toBe(
+        'https://telemetry-dev.asterdoc.com/v1/events/anonymous'
       )
     })
 
-    it.each(['not a url', 'ftp://telemetry-dev.paradoc.dev', 'javascript:alert(1)'])(
+    it.each(['not a url', 'ftp://telemetry-dev.asterdoc.com', 'javascript:alert(1)'])(
       'ignores the invalid override %s',
       (value) => {
-        expect(telemetryEndpoint({ PARADOC_TELEMETRY_URL: value })).toBe(
-          'https://telemetry.paradoc.dev/v1/events/anonymous'
+        expect(telemetryEndpoint({ ASTERDOC_TELEMETRY_URL: value })).toBe(
+          'https://telemetry.asterdoc.com/v1/events/anonymous'
         )
       }
     )
@@ -72,7 +72,7 @@ describe('CLI telemetry transport', () => {
 
       const requests = sentRequests(fetchMock)
       expect(requests).toHaveLength(1)
-      expect(requests[0]!.url).toBe('https://telemetry.paradoc.dev/v1/events/anonymous')
+      expect(requests[0]!.url).toBe('https://telemetry.asterdoc.com/v1/events/anonymous')
       const [usage, directory] = requests[0]!.body.events
       expect(usage!.name).toBe('artifact.installed')
       expect(directory!.name).toBe('directory.installed')
@@ -85,10 +85,10 @@ describe('CLI telemetry transport', () => {
       expect(directory!.attributes).not.toHaveProperty('is_update')
     })
 
-    it('never contacts tasks.paradoc.dev', async () => {
+    it('never contacts tasks.asterdoc.com', async () => {
       await trackInstall(PUBLIC_REGISTRY, 'w9', '1.2.0', 'form')
       await trackRegistryAdd(PUBLIC_REGISTRY)
-      for (const { url } of sentRequests(fetchMock)) expect(new URL(url).hostname).not.toBe('tasks.paradoc.dev')
+      for (const { url } of sentRequests(fetchMock)) expect(new URL(url).hostname).not.toBe('tasks.asterdoc.com')
     })
 
     it('omits the directory event when the registry sets enableDirectory: false', async () => {
@@ -116,11 +116,11 @@ describe('CLI telemetry transport', () => {
       expect(fetchMock).not.toHaveBeenCalled()
     })
 
-    it('goes to the override origin when PARADOC_TELEMETRY_URL is set', async () => {
-      vi.stubEnv('PARADOC_TELEMETRY_URL', 'https://telemetry-dev.paradoc.dev')
+    it('goes to the override origin when ASTERDOC_TELEMETRY_URL is set', async () => {
+      vi.stubEnv('ASTERDOC_TELEMETRY_URL', 'https://telemetry-dev.asterdoc.com')
       await trackInstall(PUBLIC_REGISTRY, 'w9', '1.2.0', 'form')
       expect(sentRequests(fetchMock).map((request) => request.url)).toEqual([
-        'https://telemetry-dev.paradoc.dev/v1/events/anonymous',
+        'https://telemetry-dev.asterdoc.com/v1/events/anonymous',
       ])
     })
   })
@@ -147,8 +147,8 @@ describe('CLI telemetry transport', () => {
       expect(fetchMock).toHaveBeenCalledTimes(3)
     })
 
-    it('honors PARADOC_TELEMETRY_DISABLED=1', async () => {
-      vi.stubEnv('PARADOC_TELEMETRY_DISABLED', '1')
+    it('honors ASTERDOC_TELEMETRY_DISABLED=1', async () => {
+      vi.stubEnv('ASTERDOC_TELEMETRY_DISABLED', '1')
       await sendAll()
       expect(fetchMock).not.toHaveBeenCalled()
     })

@@ -9,10 +9,10 @@
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { FileLayer, Form, Resolver } from '@paradoc/types'
-import { isPdfMimeType } from '@paradoc/schemas'
-import { resolveLayerBindings } from '@paradoc/render'
-import { checkPdfBindingFit, inspectAcroFormFields, type PdfBindingFitIssue } from '@paradoc/render/pdf'
+import type { FileLayer, Form, Resolver } from '@asterdoc/types'
+import { isPdfMimeType } from '@asterdoc/schemas'
+import { resolveLayerBindings } from '@asterdoc/render'
+import { checkPdfBindingFit, inspectAcroFormFields, type PdfBindingFitIssue } from '@asterdoc/render/pdf'
 
 /** A validation issue with the severity the validation model gives it. */
 export interface LayerValidationIssue extends StandardSchemaV1.Issue {

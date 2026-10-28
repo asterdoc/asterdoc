@@ -1,5 +1,5 @@
 import { parseMetadata } from '@/validation/parsers';
-import type { Metadata } from '@paradoc/types';
+import type { Metadata } from '@asterdoc/types';
 
 export interface MetadataBuilder {
 	from(value: Metadata): MetadataBuilder;

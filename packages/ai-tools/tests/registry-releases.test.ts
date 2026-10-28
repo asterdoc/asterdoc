@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/core'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/core'
 import {
 	executeGetArtifact,
 	executeGetRegistry,
@@ -17,7 +17,7 @@ import { registryFetch, registryFixture, sha256 } from './helpers/registry'
 const REGISTRY = 'https://registry.example'
 
 const w9 = (edition: { key: string; label: string; date?: string }, version: string) => ({
-	$schema: PARADOC_SCHEMA_URL,
+	$schema: ASTERDOC_SCHEMA_URL,
 	kind: 'document' as const,
 	name: 'w-9',
 	version,
@@ -27,7 +27,7 @@ const w9 = (edition: { key: string; label: string; date?: string }, version: str
 })
 
 const notice = (version: string) => ({
-	$schema: PARADOC_SCHEMA_URL,
+	$schema: ASTERDOC_SCHEMA_URL,
 	kind: 'document' as const,
 	name: 'notice',
 	version,

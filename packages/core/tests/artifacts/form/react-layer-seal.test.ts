@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test, expect, vi } from 'vitest'
-import { LocateError } from '@paradoc/render/pdf'
+import { LocateError } from '@asterdoc/render/pdf'
 import { form, SealConfigError } from '@/artifacts'
-import type { ParadocRenderer, RendererLayer, RenderRequest, SignatureSlot, SigningMarker } from '@paradoc/types'
+import type { AsterdocRenderer, RendererLayer, RenderRequest, SignatureSlot, SigningMarker } from '@asterdoc/types'
 
 /**
  * Sealing a layer core cannot render.
@@ -15,7 +15,7 @@ import type { ParadocRenderer, RendererLayer, RenderRequest, SignatureSlot, Sign
  *
  * The PDFs are the same fixture pair the text flow path uses, so the placement,
  * drift check and canonicalization behave exactly as they do there. The
- * renderer stands in for `@paradoc/react-pdf`: it answers the marker pass with
+ * renderer stands in for `@asterdoc/react-pdf`: it answers the marker pass with
  * the encoded fixture and every other pass with the clean one.
  */
 describe('sealing a React layer', () => {
@@ -40,7 +40,7 @@ describe('sealing a React layer', () => {
 	 * Stands in for the React renderer: it draws the markers it is given and
 	 * returns PDF bytes, so the seal has nothing left to convert.
 	 */
-	const reactRenderer = (passes: Pass[]): ParadocRenderer<RendererLayer, Uint8Array> => ({
+	const reactRenderer = (passes: Pass[]): AsterdocRenderer<RendererLayer, Uint8Array> => ({
 		id: 'react-stub',
 		render(request: RenderRequest<RendererLayer>) {
 			const markers = request.ctx?.signing?.markers ?? []
@@ -122,7 +122,7 @@ describe('sealing a React layer', () => {
 		const override = { id: 'override', render: vi.fn(() => cleanPdf) }
 		const sealed = await draft().seal({
 			renderers: { 'text/tsx': reactRenderer(passes) },
-			renderer: override as unknown as ParadocRenderer<RendererLayer, Uint8Array>,
+			renderer: override as unknown as AsterdocRenderer<RendererLayer, Uint8Array>,
 		})
 
 		expect(override.render).not.toHaveBeenCalled()
@@ -135,7 +135,7 @@ describe('sealing a React layer', () => {
 		// injection, so the rejection stands exactly as it did.
 		const override = { id: 'override', render: () => cleanPdf }
 		await expect(
-			draft().seal({ renderer: override as unknown as ParadocRenderer<RendererLayer, Uint8Array> }),
+			draft().seal({ renderer: override as unknown as AsterdocRenderer<RendererLayer, Uint8Array> }),
 		).rejects.toThrow(SealConfigError)
 	})
 
@@ -144,12 +144,12 @@ describe('sealing a React layer', () => {
 	})
 
 	test('a renderer that returns text rather than PDF bytes is a config error', async () => {
-		const textRenderer: ParadocRenderer<RendererLayer, string> = {
+		const textRenderer: AsterdocRenderer<RendererLayer, string> = {
 			id: 'text-stub',
 			render: () => 'not a pdf',
 		}
 		const attempt = draft().seal({
-			renderers: { 'text/tsx': textRenderer as unknown as ParadocRenderer<RendererLayer, Uint8Array> },
+			renderers: { 'text/tsx': textRenderer as unknown as AsterdocRenderer<RendererLayer, Uint8Array> },
 		})
 		await expect(attempt).rejects.toThrow(SealConfigError)
 		await expect(attempt).rejects.toThrow(/must render PDF bytes/)
@@ -174,7 +174,7 @@ describe('sealing a React layer', () => {
 		// The clean fixture carries the visible placeholders and no marker, which
 		// is exactly the shape a renderer without braille coverage produces.
 		// Core cannot see a font, so it says what almost certainly happened.
-		const unmarked: ParadocRenderer<RendererLayer, Uint8Array> = {
+		const unmarked: AsterdocRenderer<RendererLayer, Uint8Array> = {
 			id: 'unmarked-stub',
 			render: () => cleanPdf,
 		}
@@ -229,7 +229,7 @@ describe('sealing a layer with a registered renderer of its own', () => {
 		const render = vi.fn(() => 'RENDERED BY THE REGISTRY')
 		const converted: string[] = []
 		const sealed = await markdownDraft().seal({
-			renderers: { 'text/markdown': { id: 'markdown-stub', render } as ParadocRenderer<RendererLayer, string> },
+			renderers: { 'text/markdown': { id: 'markdown-stub', render } as AsterdocRenderer<RendererLayer, string> },
 			adapter: {
 				convert: async ({ document }) => {
 					converted.push(String(document.content))
@@ -250,9 +250,9 @@ describe('sealing a layer with a registered renderer of its own', () => {
 		const converted: string[] = []
 		await markdownDraft().seal({
 			renderers: {
-				'text/markdown': { id: 'markdown-stub', render: registered } as ParadocRenderer<RendererLayer, string>,
+				'text/markdown': { id: 'markdown-stub', render: registered } as AsterdocRenderer<RendererLayer, string>,
 			},
-			renderer: { id: 'override', render: override } as ParadocRenderer<RendererLayer, string>,
+			renderer: { id: 'override', render: override } as AsterdocRenderer<RendererLayer, string>,
 			adapter: {
 				convert: async ({ document }) => {
 					converted.push(String(document.content))
@@ -269,7 +269,7 @@ describe('sealing a layer with a registered renderer of its own', () => {
 	test('prepareSeal honours the registry the same way', async () => {
 		const render = vi.fn(() => 'RENDERED BY THE REGISTRY')
 		const prepared = await markdownDraft().prepareSeal({
-			renderers: { 'text/markdown': { id: 'markdown-stub', render } as ParadocRenderer<RendererLayer, string> },
+			renderers: { 'text/markdown': { id: 'markdown-stub', render } as AsterdocRenderer<RendererLayer, string> },
 			adapter: { convert: async () => ({ pdf: fixture('auto-clean.pdf') }) },
 		})
 

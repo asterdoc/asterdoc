@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test, expect } from 'vitest'
-import { pageTextRuns } from '@paradoc/render/pdf'
-import type { Bundle, ParadocRenderer, RendererLayer, RenderRequest, SignatureSlot } from '@paradoc/types'
+import { pageTextRuns } from '@asterdoc/render/pdf'
+import type { Bundle, AsterdocRenderer, RendererLayer, RenderRequest, SignatureSlot } from '@asterdoc/types'
 import { form, SealConfigError, UnboundResolverError } from '@/artifacts'
 import { assembleBundle, BundleSealError, sealBundle } from '@/rendering'
 
@@ -15,7 +15,7 @@ import { assembleBundle, BundleSealError, sealBundle } from '@/rendering'
  * index across the whole packet, and the hashes describe the packet rather than
  * any part of it.
  *
- * The renderer stands in for `@paradoc/react-pdf`, exactly as it does in
+ * The renderer stands in for `@asterdoc/react-pdf`, exactly as it does in
  * `tests/artifacts/form/react-layer-seal.test.ts`, so nothing here needs React
  * and the fixtures are the same PDFs the flow path is measured on.
  */
@@ -32,7 +32,7 @@ describe('sealing a bundle', () => {
 	}
 
 	/** Answers the marker pass with the encoded fixture and every other pass with the clean one. */
-	const reactRenderer = (): ParadocRenderer<RendererLayer, Uint8Array> => ({
+	const reactRenderer = (): AsterdocRenderer<RendererLayer, Uint8Array> => ({
 		id: 'react-stub',
 		render: (request: RenderRequest<RendererLayer>) =>
 			(request.ctx?.signing?.markers ?? []).length > 0 ? encodedPdf : cleanPdf,
@@ -407,7 +407,7 @@ describe('sealing a bundle', () => {
 	})
 
 	test('names the part a render failed in', async () => {
-		const failing: ParadocRenderer<RendererLayer, Uint8Array> = {
+		const failing: AsterdocRenderer<RendererLayer, Uint8Array> = {
 			id: 'broken',
 			render: () => {
 				throw new Error('the engine gave up')
@@ -451,7 +451,7 @@ describe('assembling a bundle', () => {
 	test('names a React part by what its renderer produced, not by the layer', async () => {
 		const assembled = await assembleBundle(bundle, {
 			renderers: {
-				'text/tsx': { id: 'stub', render: () => pdf } as ParadocRenderer<RendererLayer, Uint8Array>,
+				'text/tsx': { id: 'stub', render: () => pdf } as AsterdocRenderer<RendererLayer, Uint8Array>,
 			},
 			contents: {
 				composition: draft,

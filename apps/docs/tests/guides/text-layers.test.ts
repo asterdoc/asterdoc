@@ -7,9 +7,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { p } from '@paradoc/sdk'
-import { createLayerRenderer } from '@paradoc/render'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { p } from '@asterdoc/sdk'
+import { createLayerRenderer } from '@asterdoc/render'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -152,7 +152,7 @@ describe('Text Layers Guide', () => {
       layer: 'markdown',
     })
 
-    const tempDir = mkdtempSync(join(tmpdir(), 'paradoc-text-test-'))
+    const tempDir = mkdtempSync(join(tmpdir(), 'asterdoc-text-test-'))
     try {
       const outputPath = join(tempDir, 'lease-agreement.md')
       writeFileSync(outputPath, output)

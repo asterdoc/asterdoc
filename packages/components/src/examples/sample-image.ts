@@ -8,8 +8,8 @@
  * so only a raster proves an image was embedded and painted as one.
  */
 
-import { imageDataUri } from "@paradoc/react";
-import type { Attachment } from "@paradoc/types";
+import { imageDataUri } from "@asterdoc/react";
+import type { Attachment } from "@asterdoc/types";
 
 /** A 64×64 sketch of a yard: sky, ground, a shed, a container, and the sun. */
 const SITE_PHOTO_BASE64 =

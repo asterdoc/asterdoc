@@ -13,9 +13,9 @@
  * left to the runtime.
  */
 
-import type { RuntimeParty } from "@paradoc/types";
+import type { RuntimeParty } from "@asterdoc/types";
 
-import type { DocumentData } from "@paradoc/react";
+import type { DocumentData } from "@asterdoc/react";
 import { computeLineAmounts, type LineItemInput } from "./line-items";
 
 const CURRENCY = "SAR";

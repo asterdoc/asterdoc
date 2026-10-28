@@ -1,4 +1,4 @@
-import type { ParadocToolsConfig } from '../config'
+import type { AsterdocToolsConfig } from '../config'
 import { RenderInputSchema, type RenderInput, type RenderOutput } from '../contracts'
 import { artifactKind, asChecklistPayload, asFormPayload, boundedPresentation, contextOptions, encodeOutput, makeResolver } from '../artifact'
 import { errorFromUnknown, validationErrors } from '../errors'
@@ -38,7 +38,7 @@ function missingData(artifact_kind: 'form' | 'checklist'): RenderOutput {
 }
 
 async function renderer() {
-	const module = await import('@paradoc/render')
+	const module = await import('@asterdoc/render')
 	return module.createLayerRenderer()
 }
 
@@ -62,11 +62,11 @@ function outputResult(
 
 export async function executeRender(
 	input: RenderInput | Record<string, unknown>,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<RenderOutput> {
 	try {
 		const normalized = RenderInputSchema.parse(input)
-		const { isChecklist, isDocument, isForm, loadFromObject, validate } = await import('@paradoc/core')
+		const { isChecklist, isDocument, isForm, loadFromObject, validate } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		const kind = artifactKind(artifact)
 		const validation = validate(artifact)

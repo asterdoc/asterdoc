@@ -1,8 +1,8 @@
-import { createFormatter } from "@paradoc/format";
-import { pageTextRuns } from "@paradoc/render/pdf";
-import { ArtifactProvider, useTotals } from "@paradoc/react";
+import { createFormatter } from "@asterdoc/format";
+import { pageTextRuns } from "@asterdoc/render/pdf";
+import { ArtifactProvider, useTotals } from "@asterdoc/react";
 import { describe, expect, it } from "vitest";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 import { Document } from "../../components/src/components/document";
 import { Field } from "../../components/src/components/field";
@@ -10,7 +10,7 @@ import { reactRenderer, type ReactLayerComponentProps } from "../src/layer";
 import { renderPdf } from "../src/render";
 
 const artifact = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "clock-def",
   version: "1.0.0",

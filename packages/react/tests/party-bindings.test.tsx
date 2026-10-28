@@ -2,7 +2,7 @@
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 import {
   ArtifactProvider,

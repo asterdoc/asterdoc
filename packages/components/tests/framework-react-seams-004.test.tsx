@@ -1,8 +1,8 @@
 /** @jsxRuntime classic */
 import React from "react";
 import { describe, expect, it } from "vitest";
-import { checkElement } from "@paradoc/react-pdf/check";
-import { renderPdf, UnsupportedPdfContentError } from "@paradoc/react-pdf";
+import { checkElement } from "@asterdoc/react-pdf/check";
+import { renderPdf, UnsupportedPdfContentError } from "@asterdoc/react-pdf";
 import { Document } from "../src/components/document";
 import { Field } from "../src/components/field";
 import { proposalForm } from "../src/examples/proposal";

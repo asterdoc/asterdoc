@@ -88,7 +88,7 @@ describe('CLI startup (built)', () => {
     if (!existsSync(builtCliPath)) {
       throw new Error(
         `Built binary not found at ${builtCliPath}. Run 'pnpm build' first, or run this suite through ` +
-          "'pnpm turbo run test --filter=@paradoc/cli', which builds before testing.",
+          "'pnpm turbo run test --filter=@asterdoc/cli', which builds before testing.",
       )
     }
   })
@@ -102,7 +102,7 @@ describe('CLI startup (built)', () => {
   it('--help prints usage and exits 0', async () => {
     const { exitCode, stdout } = await runCommand('node', [builtCliPath, '--help'])
     expect(exitCode).toBe(0)
-    expect(stdout).toContain('Paradoc CLI')
+    expect(stdout).toContain('Asterdoc CLI')
   })
 
   it('an unknown command exits non-zero', async () => {
@@ -116,9 +116,9 @@ describe('CLI startup (built)', () => {
  * Wall-clock startup budget for the built binary. Opt-in only: the 500ms p95
  * target holds on an idle machine but not inside a loaded parallel run, where
  * CPU contention inflates spawn and boot time. Run it with `pnpm test:perf`
- * (sets PARADOC_PERF_TESTS=1) on a quiet machine.
+ * (sets ASTERDOC_PERF_TESTS=1) on a quiet machine.
  */
-describe.runIf(process.env.PARADOC_PERF_TESTS === '1')(
+describe.runIf(process.env.ASTERDOC_PERF_TESTS === '1')(
   'CLI startup performance (built)',
   { timeout: 60_000 },
   () => {

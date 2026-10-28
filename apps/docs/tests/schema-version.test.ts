@@ -1,23 +1,17 @@
 /**
  * Docs pages never hand-write a schema version. They write a token that
- * `remarkSchemaVersion` fills from `@paradoc/schemas` at build time.
+ * `remarkSchemaVersion` fills from `@asterdoc/schemas` at build time.
  */
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
-import { SCHEMA_VERSION, SCHEMA_VERSIONS } from '@paradoc/schemas'
-import {
-  fillSchemaVersion,
-  PREVIOUS_SCHEMA_VERSION_TOKEN,
-  remarkSchemaVersion,
-  SCHEMA_VERSION_TOKEN,
-} from '@/lib/schema-version'
+import { SCHEMA_VERSION, SCHEMA_VERSIONS } from '@asterdoc/schemas'
+import { fillSchemaVersion, remarkSchemaVersion, SCHEMA_VERSION_TOKEN } from '@/lib/schema-version'
 
 const contentRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../content/docs')
-const previousVersion = SCHEMA_VERSIONS[SCHEMA_VERSIONS.length - 2]
 
-const DATED_SCHEMA_URL = /schema\.paradoc\.dev\/\d{4}-\d{2}-\d{2}/
+const DATED_SCHEMA_URL = /schema\.asterdoc\.com\/\d{4}-\d{2}-\d{2}/
 /** A row of the version history table on the schemas page, which names each version on purpose. */
 const VERSION_HISTORY_ROW = /^\| `\d{4}-\d{2}-\d{2}` \|/
 
@@ -44,12 +38,9 @@ function contentPages(dir = contentRoot): string[] {
 }
 
 describe('schema version tokens', () => {
-  test('fill the current and previous version', () => {
-    expect(fillSchemaVersion(`https://schema.paradoc.dev/${SCHEMA_VERSION_TOKEN}.json`)).toBe(
-      `https://schema.paradoc.dev/${SCHEMA_VERSION}.json`,
-    )
-    expect(fillSchemaVersion(`${PREVIOUS_SCHEMA_VERSION_TOKEN} → ${SCHEMA_VERSION_TOKEN}`)).toBe(
-      `${previousVersion} → ${SCHEMA_VERSION}`,
+  test('fill the current version', () => {
+    expect(fillSchemaVersion(`https://schema.asterdoc.com/${SCHEMA_VERSION_TOKEN}.json`)).toBe(
+      `https://schema.asterdoc.com/${SCHEMA_VERSION}.json`,
     )
   })
 
@@ -61,7 +52,7 @@ describe('schema version tokens', () => {
     const tree = {
       type: 'root',
       children: [
-        { type: 'code', value: `"$schema": "https://schema.paradoc.dev/${SCHEMA_VERSION_TOKEN}.json"` },
+        { type: 'code', value: `"$schema": "https://schema.asterdoc.com/${SCHEMA_VERSION_TOKEN}.json"` },
         { type: 'paragraph', children: [
           { type: 'inlineCode', value: SCHEMA_VERSION_TOKEN },
           { type: 'text', value: SCHEMA_VERSION_TOKEN },
@@ -72,7 +63,7 @@ describe('schema version tokens', () => {
     expect(tree).toEqual({
       type: 'root',
       children: [
-        { type: 'code', value: `"$schema": "https://schema.paradoc.dev/${SCHEMA_VERSION}.json"` },
+        { type: 'code', value: `"$schema": "https://schema.asterdoc.com/${SCHEMA_VERSION}.json"` },
         { type: 'paragraph', children: [
           { type: 'inlineCode', value: SCHEMA_VERSION },
           { type: 'text', value: SCHEMA_VERSION_TOKEN },
@@ -84,14 +75,14 @@ describe('schema version tokens', () => {
 
 describe('docs content', () => {
   test('flags a hand-written schema version, stale or current', () => {
-    expect(handWrittenVersions('guides/forms.mdx', '  "$schema": "https://schema.paradoc.dev/2026-08-06.json",')).toHaveLength(1)
-    expect(handWrittenVersions('guides/forms.mdx', '$schema: https://schema.paradoc.dev/1999-01-01.json')).toHaveLength(1)
+    expect(handWrittenVersions('guides/forms.mdx', '  "$schema": "https://schema.asterdoc.com/2026-08-06.json",')).toHaveLength(1)
+    expect(handWrittenVersions('guides/forms.mdx', '$schema: https://schema.asterdoc.com/1999-01-01.json')).toHaveLength(1)
     expect(handWrittenVersions('mcp/tools/validate.mdx', `    "schema": "${SCHEMA_VERSION}",`)).toHaveLength(1)
     expect(handWrittenVersions('(reference)/schemas/index.mdx', `The current schema version is \`${SCHEMA_VERSION}\`.`)).toHaveLength(1)
   })
 
   test('accepts tokens and the version history table', () => {
-    expect(handWrittenVersions('guides/forms.mdx', `"$schema": "https://schema.paradoc.dev/${SCHEMA_VERSION_TOKEN}.json"`)).toEqual([])
+    expect(handWrittenVersions('guides/forms.mdx', `"$schema": "https://schema.asterdoc.com/${SCHEMA_VERSION_TOKEN}.json"`)).toEqual([])
     expect(handWrittenVersions('(reference)/schemas/index.mdx', `| \`${SCHEMA_VERSION}\` | Adds list fields. |`)).toEqual([])
     expect(handWrittenVersions('(reference)/ai-tools/fill.mdx', `"asOf": { "date": "${SCHEMA_VERSION}" }`)).toEqual([])
   })

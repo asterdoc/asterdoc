@@ -1,5 +1,5 @@
 {
-  "extends": "@paradoc/typescript-config/react-library.json",
+  "extends": "@asterdoc/typescript-config/react-library.json",
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",

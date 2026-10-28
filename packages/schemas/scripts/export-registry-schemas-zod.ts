@@ -1,14 +1,14 @@
 #!/usr/bin/env tsx
 /**
- * Export the Paradoc registry schemas to JSON Schema 2020-12 compliant format
+ * Export the Asterdoc registry schemas to JSON Schema 2020-12 compliant format
  *
  * This script uses Zod's registry approach to generate JSON Schema with proper $refs.
  *
  * Output:
- * - registry.json ($id: https://schema.paradoc.dev/registry.json)
- * - registry-item.json ($id: https://schema.paradoc.dev/registry-item.json)
- * - config.json ($id: https://schema.paradoc.dev/config.json)
- * - lock.json ($id: https://schema.paradoc.dev/lock.json)
+ * - registry.json ($id: https://schema.asterdoc.com/registry.json)
+ * - registry-item.json ($id: https://schema.asterdoc.com/registry-item.json)
+ * - config.json ($id: https://schema.asterdoc.com/config.json)
+ * - lock.json ($id: https://schema.asterdoc.com/lock.json)
  */
 
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -110,7 +110,7 @@ export async function generateRegistrySchemas(): Promise<Record<string, Record<s
  * Main export function
  */
 async function main() {
-	console.log('Exporting Paradoc registry schemas to JSON Schema 2020-12...\n');
+	console.log('Exporting Asterdoc registry schemas to JSON Schema 2020-12...\n');
 
 	try {
 		// Ensure output directory exists
@@ -135,7 +135,7 @@ async function main() {
 		}
 
 		console.log('\nRegistry schema export complete!');
-		console.log('\nUpload these files to schema.paradoc.dev:');
+		console.log('\nUpload these files to schema.asterdoc.com:');
 		for (const schema of SCHEMAS_TO_EXPORT) {
 			console.log(`  - ${schema.outputFile}`);
 		}

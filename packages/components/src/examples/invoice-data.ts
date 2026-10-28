@@ -11,13 +11,13 @@
  * - `overflowInvoiceData` is 48 rows and runs past two breaks, so the table's
  *   header is copied onto more than one continued page.
  *
- * The row counts are asserted in `@paradoc/react`'s `tests/invoice-artifact.test.ts`, so shrinking
+ * The row counts are asserted in `@asterdoc/react`'s `tests/invoice-artifact.test.ts`, so shrinking
  * either set fails rather than quietly breaking the budget.
  */
 
-import type { RuntimeParty } from "@paradoc/types";
+import type { RuntimeParty } from "@asterdoc/types";
 
-import type { DocumentData } from "@paradoc/react";
+import type { DocumentData } from "@asterdoc/react";
 import { computeLineAmounts, type LineItemInput } from "./line-items";
 
 const CURRENCY = "USD";

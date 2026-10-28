@@ -28,7 +28,7 @@
  * rather than inventing a new artifact. They are read by the docs app both
  * as components (the live Preview and Variants) and as raw source text,
  * rewritten to the form a consumer would write — see
- * `paradoc/apps/docs/scripts/sync-component-docs-content.ts`.
+ * `framework/apps/docs/scripts/sync-component-docs-content.ts`.
  */
 
 export {

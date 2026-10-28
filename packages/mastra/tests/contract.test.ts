@@ -14,13 +14,13 @@ import {
 	validateArtifact,
 	validateInput,
 	DEFAULT_MODEL_OUTPUT_MAX_BYTES,
-	paradocTools,
+	asterdocTools,
 } from '../src'
-import { executeExtract, operationNames, toolDefinitions } from '@paradoc/ai-tools'
-import { PARADOC_SCHEMA_URL } from '@paradoc/core'
+import { executeExtract, operationNames, toolDefinitions } from '@asterdoc/ai-tools'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/core'
 
 const documentArtifact = {
-	$schema: PARADOC_SCHEMA_URL,
+	$schema: ASTERDOC_SCHEMA_URL,
 	kind: 'document' as const,
 	name: 'notice',
 	version: '1.0.0',
@@ -69,9 +69,9 @@ const extractInput = {
 	pdf: btoa(filledPdf),
 }
 
-describe('@paradoc/mastra', () => {
+describe('@asterdoc/mastra', () => {
 	it('publishes the ten canonical operations as native Mastra tools', () => {
-		const tools = paradocTools()
+		const tools = asterdocTools()
 
 		expect(Object.keys(tools)).toEqual(operationNames)
 		for (const name of operationNames) {
@@ -125,7 +125,7 @@ describe('@paradoc/mastra', () => {
 			if (url.endsWith('/notice/1.0.0/notice.json')) return new Response(body)
 			return new Response('missing', { status: 404 })
 		})
-		const tools = paradocTools({ fetch })
+		const tools = asterdocTools({ fetch })
 
 		const registry = await execute(tools.get_registry, { registry_url: 'https://registry.example' })
 		expect(registry).toMatchObject({ items: [{ name: 'notice', kind: 'document', latest_version: '1.0.0', versions: ['1.0.0'] }] })
@@ -223,7 +223,7 @@ describe('@paradoc/mastra', () => {
 
 	it('keeps free-form JSON inputs open for OpenAI models, so form data reaches the tools', async () => {
 		const formArtifact = {
-			$schema: PARADOC_SCHEMA_URL,
+			$schema: ASTERDOC_SCHEMA_URL,
 			kind: 'form' as const,
 			name: 'note',
 			fields: { name: { type: 'text' as const, label: 'Name' } },

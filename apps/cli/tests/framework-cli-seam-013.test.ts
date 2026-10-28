@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const builtCli = path.resolve(__dirname, '../dist/index.js')
-const runRoot = '/private/tmp/claude-501/-Users-amuaddi-projects-paradoc-workspace/3c3d0125-1acb-434a-8ef8-4b49600f0eae/scratchpad/val-seam-c/runs/seam-013'
+const runRoot = '/private/tmp/claude-501/-Users-amuaddi-projects-asterdoc-workspace/3c3d0125-1acb-434a-8ef8-4b49600f0eae/scratchpad/val-seam-c/runs/seam-013'
 
 function runCli(args: string[], cwd: string, home: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve, reject) => {
@@ -56,7 +56,7 @@ describe('framework-cli-seam-013 add and generate name TS exports from different
     // exactly the mismatch add.ts:172 cannot produce (it always names the
     // file after artifactName), but generate.ts is fed arbitrary filenames.
     const artifact = {
-      $schema: 'https://schema.paradoc.dev/2026-10-02.json',
+      $schema: 'https://schema.asterdoc.com/2026-10-28.json',
       kind: 'form',
       name: 'w9',
       version: '1.0.0',

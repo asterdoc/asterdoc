@@ -1,8 +1,8 @@
 /**
  * schemas-001: individual published schemas have unresolvable $refs (missing '#').
- * Input: every schemas/2026-09-23/*.json file, resolved against schemas/2026-09-23.json.
+ * Input: every schemas/<version>/*.json file, resolved against schemas/<version>.json.
  * Expected: each $ref is `<bundle $id>#/$defs/<Name>` and names an existing $defs entry.
- * Actual: refs are `https://schema.paradoc.dev/2026-09-23.json/$defs/<Name>` (a path, no fragment).
+ * Actual: refs are `https://schema.asterdoc.com/<version>.json/$defs/<Name>` (a path, no fragment).
  * Ajv 2020 also throws MissingRefError on compile of bbox.json with the bundle added.
  */
 import { readFileSync, readdirSync } from 'node:fs'

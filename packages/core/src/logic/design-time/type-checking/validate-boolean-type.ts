@@ -1,10 +1,10 @@
 /**
  * Type-checks expressions against the type they must return: a boolean gate
- * (required, visible, include) via @paradoc/expr's checkBooleanGate, or a
+ * (required, visible, include) via @asterdoc/expr's checkBooleanGate, or a
  * definition or payment value via its declared type.
  */
 
-import { check, checkBooleanGate, formatType, typesEqual, T, type Diagnostic, type ExprType, type TypeEnv } from '@paradoc/expr'
+import { check, checkBooleanGate, formatType, typesEqual, T, type Diagnostic, type ExprType, type TypeEnv } from '@asterdoc/expr'
 
 /** The result of type-checking one expression. Types are `formatType` names. */
 export type TypeValidationResult =

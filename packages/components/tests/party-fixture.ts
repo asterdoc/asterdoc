@@ -8,7 +8,7 @@
  * multiply-filled role binds each index to its own item. The first witness's
  * item is empty, so the "leaves off a blank line" behavior stays proven.
  */
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 export const partyFixtureForm = {
   name: "party-component",

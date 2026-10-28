@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { FormField } from "@paradoc/types";
+import type { FormField } from "@asterdoc/types";
 import { CATALOG, validateProps } from "../src/catalog.js";
 import { fieldToSpec } from "../src/mapper.js";
 

@@ -12,7 +12,7 @@ const PACKAGES = join(import.meta.dirname, '../..')
 const README = readFileSync(join(import.meta.dirname, '../README.md'), 'utf8')
 const TOOLS = Object.keys(toolDefinitions)
 
-/** Published packages that depend on @paradoc/ai-tools. */
+/** Published packages that depend on @asterdoc/ai-tools. */
 function adapters(): string[] {
 	return readdirSync(PACKAGES, { withFileTypes: true })
 		.filter((entry) => entry.isDirectory())
@@ -27,7 +27,7 @@ function adapters(): string[] {
 				return []
 			}
 		})
-		.filter((pkg) => !pkg.private && pkg.dependencies?.['@paradoc/ai-tools'] !== undefined)
+		.filter((pkg) => !pkg.private && pkg.dependencies?.['@asterdoc/ai-tools'] !== undefined)
 		.map((pkg) => pkg.name)
 		.sort()
 }
@@ -45,7 +45,7 @@ describe('ai-tools README', () => {
 	})
 
 	it('finds the adapters that wrap this package', () => {
-		expect(adapters()).toContain('@paradoc/ai-sdk')
+		expect(adapters()).toContain('@asterdoc/ai-sdk')
 	})
 
 	it('names every adapter in the overview and in related packages', () => {

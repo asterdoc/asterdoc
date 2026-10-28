@@ -5,7 +5,7 @@
  * or supplied by a headless caller.
  *
  * Node only. The browser cannot read these paths, which is why they live in
- * `@paradoc/react-pdf` rather than the browser-safe `@paradoc/react`.
+ * `@asterdoc/react-pdf` rather than the browser-safe `@asterdoc/react`.
  */
 
 import { readFile } from "node:fs/promises";
@@ -79,7 +79,7 @@ function resourcePath(source: string, resolveFrom: string): string | undefined {
   if (source.startsWith("file:")) return fileURLToPath(source);
   if (source.startsWith("http://") || source.startsWith("https://")) return undefined;
   if (source.startsWith(".") || isAbsolute(source)) return resolve(resolveFrom, source);
-  return createRequire(join(resolveFrom, "paradoc-font-resolver.cjs")).resolve(source);
+  return createRequire(join(resolveFrom, "asterdoc-font-resolver.cjs")).resolve(source);
 }
 
 /** Resolve and cache application font bytes, independently of their provider. */
@@ -187,4 +187,4 @@ export interface PdfImage {
   data: Uint8Array;
 }
 
-export { imageFormat } from "@paradoc/react";
+export { imageFormat } from "@asterdoc/react";

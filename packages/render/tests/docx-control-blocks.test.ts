@@ -2,7 +2,7 @@
 // closers and ELSE that must match their block (render-020), paragraph
 // numbering in error locations (render-021), and the removed INS and {{& }}
 // aliases (render-027).
-import { createTypeEnv, T } from '@paradoc/expr'
+import { createTypeEnv, T } from '@asterdoc/expr'
 import { unzipSync, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 import { checkDocxTemplate, renderDocx } from '../src/docx'

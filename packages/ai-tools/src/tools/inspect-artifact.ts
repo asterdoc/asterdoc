@@ -1,4 +1,4 @@
-import type { ParadocToolsConfig } from '../config'
+import type { AsterdocToolsConfig } from '../config'
 import { InspectArtifactInputSchema, type InspectArtifactInput, type InspectArtifactOutput } from '../contracts'
 import { artifactKind, isRecord } from '../artifact'
 import { errorFromUnknown } from '../errors'
@@ -90,7 +90,7 @@ function inspectSections(artifact: Record<string, unknown>, requested: SectionNa
 
 export async function executeInspectArtifact(
 	input: InspectArtifactInput | Record<string, unknown>,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<InspectArtifactOutput> {
 	try {
 		const normalized = InspectArtifactInputSchema.parse(input)

@@ -1,5 +1,5 @@
 import { parseAddress } from '@/validation/parsers';
-import type { Address } from '@paradoc/types';
+import type { Address } from '@asterdoc/types';
 
 export interface AddressBuilder {
 	from(value: Address): AddressBuilder;

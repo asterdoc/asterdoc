@@ -5,14 +5,14 @@ import { VERSION, brandColorBold } from '../constants.js'
 
 /**
  * Create the 'about' command
- * Displays information about Paradoc CLI
+ * Displays information about Asterdoc CLI
  */
 export function createAboutCommand(): Command {
   const about = new Command('about')
 
-  about.description('Display information about Paradoc CLI').action(() => {
+  about.description('Display information about Asterdoc CLI').action(() => {
     console.log()
-    console.log(brandColorBold('Paradoc CLI'))
+    console.log(brandColorBold('Asterdoc CLI'))
     console.log()
     console.log(`${kleur.gray('Version:')}        ${kleur.white(VERSION)}`)
     console.log(`${kleur.gray('Platform:')}       ${kleur.white(platform)}`)

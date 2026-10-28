@@ -8,8 +8,8 @@ import {
 	type RegistryRelease,
 	type RegistryReleaseFailure,
 	type RegistryReleaseRequest,
-} from '@paradoc/schemas'
-import type { ParadocToolsConfig } from './config'
+} from '@asterdoc/schemas'
+import type { AsterdocToolsConfig } from './config'
 import type { RegistryReleasesOutput } from './contracts'
 import type { ToolExecutionContext } from './context'
 import { cacheKey, configForExecution } from './context'
@@ -291,11 +291,11 @@ function trimBase(url: string): string {
 	return new URL(url).toString().replace(/\/$/, '')
 }
 
-export function registryUrlFromConfig(inputUrl: string | undefined, config?: ParadocToolsConfig): string | undefined {
+export function registryUrlFromConfig(inputUrl: string | undefined, config?: AsterdocToolsConfig): string | undefined {
 	return inputUrl ?? config?.defaultRegistryUrl
 }
 
-export function fetchPolicyFromConfig(config?: ParadocToolsConfig): FetchPolicy {
+export function fetchPolicyFromConfig(config?: AsterdocToolsConfig): FetchPolicy {
 	return {
 		allowLocalDevelopment: config?.allowLocalDevelopment,
 		approvedOrigins: config?.approvedOrigins,
@@ -321,7 +321,7 @@ export interface FetchedRegistryIndex {
 export async function fetchRegistryIndexResponse(
 	baseUrl: string,
 	customFetch?: typeof globalThis.fetch,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<FetchedRegistryIndex> {
 	const url = new URL('registry.json', `${trimBase(baseUrl)}/`).toString()
 	const res = await safeFetch(url, MAX_INDEX_SIZE, customFetch, fetchPolicyFromConfig(config))
@@ -333,7 +333,7 @@ export async function fetchRegistryIndexResponse(
 export async function fetchRegistryIndex(
 	baseUrl: string,
 	customFetch?: typeof globalThis.fetch,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<RegistryIndex> {
 	return (await fetchRegistryIndexResponse(baseUrl, customFetch, config)).index
 }
@@ -399,7 +399,7 @@ async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
 async function parseArtifactFile(text: string, path: string): Promise<Record<string, unknown>> {
 	let value: unknown
 	try {
-		value = path.endsWith('.json') ? JSON.parse(text) : (await import('@paradoc/core')).fromYAML(text)
+		value = path.endsWith('.json') ? JSON.parse(text) : (await import('@asterdoc/core')).fromYAML(text)
 	} catch (error) {
 		throw new RegistryArtifactError('invalid_artifact', `Registry artifact ${path} could not be parsed: ${error instanceof Error ? error.message : String(error)}`)
 	}
@@ -438,7 +438,7 @@ export async function fetchRegistryArtifact(
 	registryUrl: string,
 	request: RegistryArtifactRequest,
 	customFetch?: typeof globalThis.fetch,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<FetchedRegistryArtifact> {
 	const { index, baseUrl } = await fetchRegistryIndexResponse(registryUrl, customFetch, config)
 	const item = index.items.find((candidate) => candidate.name === request.name)

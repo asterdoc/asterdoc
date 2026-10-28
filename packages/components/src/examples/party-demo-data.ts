@@ -6,7 +6,7 @@
  * the demo's `Party` names by path. `witness` is filled twice, so a variant
  * can select the second one by `index`.
  */
-import type { DocumentData } from "@paradoc/react";
+import type { DocumentData } from "@asterdoc/react";
 
 export const partyDemoData: DocumentData = {
   fields: {

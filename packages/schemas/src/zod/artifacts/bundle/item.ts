@@ -3,7 +3,7 @@ import { CondExprSchema } from '../expressions/cond-expr';
 import { ChecklistSchema } from '../checklist';
 import { DocumentSchema } from '../document';
 import { FormSchema } from '../form';
-import type { Bundle } from '@paradoc/types';
+import type { Bundle } from '@asterdoc/types';
 import { ArtifactSchema } from '../shared/base';
 import { DefsSectionSchema } from '../expressions/defs-section';
 import { addDuplicateIdentityIssues } from '../shared/unique';

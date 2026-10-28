@@ -15,7 +15,7 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { PAGE_COUNTER_ATTRIBUTE, scaleTextClasses, useDocumentTokens, usePageNumber } from "@paradoc/react";
+import { PAGE_COUNTER_ATTRIBUTE, scaleTextClasses, useDocumentTokens, usePageNumber } from "@asterdoc/react";
 
 export interface PageNumberProps {
   /**

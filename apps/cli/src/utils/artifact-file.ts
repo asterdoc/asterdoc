@@ -1,4 +1,4 @@
-import { assertCurrentSchemaVersion, parse, toYAML, validate, type Artifact } from '@paradoc/core'
+import { assertCurrentSchemaVersion, parse, toYAML, validate, type Artifact } from '@asterdoc/core'
 import { parseDocument } from 'yaml'
 import type { LocalFileSystem } from './local-fs.js'
 
@@ -13,7 +13,7 @@ export interface ArtifactFileReference {
 /**
  * Parse an artifact file's content (JSON or YAML) and apply the schema
  * version rule for artifact files: `$schema` must name the current version.
- * An older file fails with an error that points to `paradoc migrate`.
+ * An older file fails with an error that points to `asterdoc migrate`.
  */
 export function parseArtifactFile(raw: string): unknown {
   const parsed = parse(raw)

@@ -10,7 +10,7 @@ export interface CommandEntry {
 
 export const commandEntries: CommandEntry[] = [
 	// Registry
-	{ name: 'add', description: 'Add an artifact from a registry, or one or more document components from the Paradoc component registry', group: 'Registry',
+	{ name: 'add', description: 'Add an artifact from a registry, or one or more document components from the Asterdoc component registry', group: 'Registry',
 		load: () => import('./commands/add.js').then(m => m.createAddCommand()) },
 	{ name: 'list', description: 'List installed artifacts', group: 'Registry', aliases: ['ls'],
 		load: () => import('./commands/list.js').then(m => m.createListCommand()) },
@@ -22,7 +22,7 @@ export const commandEntries: CommandEntry[] = [
 	// Artifacts
 	{ name: 'show', description: 'Show details about an artifact', group: 'Artifacts',
 		load: () => import('./commands/show.js').then(m => m.createShowCommand()) },
-	{ name: 'validate', description: 'Validate one or more Paradoc artifacts against the core schema', group: 'Artifacts',
+	{ name: 'validate', description: 'Validate one or more Asterdoc artifacts against the core schema', group: 'Artifacts',
 		load: () => import('./commands/validate.js').then(m => m.createValidateCommand()) },
 	{ name: 'inspect', description: 'Inspect PDF form fields to aid in bindings configuration', group: 'Artifacts',
 		load: () => import('./commands/inspect.js').then(m => m.createInspectCommand()) },
@@ -30,7 +30,7 @@ export const commandEntries: CommandEntry[] = [
 		load: () => import('./commands/render.js').then(m => m.createRenderCommand()) },
 	{ name: 'check', description: 'Check a composition against its artifact without rendering a PDF', group: 'Artifacts',
 		load: () => import('./commands/check.js').then(m => m.createCheckCommand()) },
-	{ name: 'new', description: 'Create new Paradoc artifacts', group: 'Artifacts',
+	{ name: 'new', description: 'Create new Asterdoc artifacts', group: 'Artifacts',
 		load: () => import('./commands/new/index.js').then(m => m.createNewCommand()) },
 	{ name: 'fix', description: 'Fix artifact metadata (e.g., file checksums in layers)', group: 'Artifacts',
 		load: () => import('./commands/fix.js').then(m => m.createFixCommand()) },
@@ -44,15 +44,15 @@ export const commandEntries: CommandEntry[] = [
 		load: () => import('./commands/generate.js').then(m => m.createGenerateCommand()) },
 	{ name: 'hash', description: 'Compute SHA256 checksum of a file (for use in layer definitions)', group: 'Artifacts',
 		load: () => import('./commands/hash.js').then(m => m.createHashCommand()) },
-	{ name: 'data', description: 'Data operations for Paradoc artifacts', group: 'Artifacts',
+	{ name: 'data', description: 'Data operations for Asterdoc artifacts', group: 'Artifacts',
 		load: () => import('./commands/data/index.js').then(m => m.createDataCommand()) },
-	{ name: 'migrate', description: 'Migrate artifact files to the current schema version (2026-10-02)', group: 'Artifacts',
+	{ name: 'migrate', description: 'Migrate artifact files to the current schema version (2026-10-28)', group: 'Artifacts',
 		load: () => import('./commands/migrate.js').then(m => m.createMigrateCommand()) },
 	{ name: 'diff', description: 'Show differences between two artifact files', group: 'Artifacts',
 		load: () => import('./commands/diff.js').then(m => m.createDiffCommand()) },
 
 	// Project
-	{ name: 'init', description: 'Initialize a new Paradoc project', group: 'Project',
+	{ name: 'init', description: 'Initialize a new Asterdoc project', group: 'Project',
 		load: () => import('./commands/init.js').then(m => m.createInitCommand()) },
 	{ name: 'dev', description: 'Preview compositions live with their sample data and a proof PDF', group: 'Project',
 		load: () => import('./commands/dev/index.js').then(m => m.createDevCommand()) },
@@ -60,16 +60,16 @@ export const commandEntries: CommandEntry[] = [
 		load: () => import('./commands/apply.js').then(m => m.createApplyCommand()) },
 
 	// Settings
-	{ name: 'configure', description: 'Interactive configuration wizard for Paradoc CLI', group: 'Settings', aliases: ['config'],
+	{ name: 'configure', description: 'Interactive configuration wizard for Asterdoc CLI', group: 'Settings', aliases: ['config'],
 		load: () => import('./commands/configure.js').then(m => m.createConfigureCommand()) },
 	{ name: 'cache', description: 'Manage registry cache', group: 'Settings',
 		load: () => import('./commands/cache.js').then(m => m.createCacheCommand()) },
-	{ name: 'reset', description: 'Reset Paradoc CLI to factory defaults (clears global config and cache)', group: 'Settings',
+	{ name: 'reset', description: 'Reset Asterdoc CLI to factory defaults (clears global config and cache)', group: 'Settings',
 		load: () => import('./commands/reset.js').then(m => m.createResetCommand()) },
-	{ name: 'docs', description: 'Open Paradoc documentation in browser', group: 'Settings',
+	{ name: 'docs', description: 'Open Asterdoc documentation in browser', group: 'Settings',
 		load: () => import('./commands/docs.js').then(m => m.createDocsCommand()) },
-	{ name: 'console', description: 'Open Paradoc web console in browser', group: 'Settings',
+	{ name: 'console', description: 'Open Asterdoc web console in browser', group: 'Settings',
 		load: () => import('./commands/console.js').then(m => m.createConsoleCommand()) },
-	{ name: 'about', description: 'Display information about Paradoc CLI', group: 'Settings',
+	{ name: 'about', description: 'Display information about Asterdoc CLI', group: 'Settings',
 		load: () => import('./commands/about.js').then(m => m.createAboutCommand()) },
 ]

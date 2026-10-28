@@ -1,8 +1,8 @@
 ---
 title: dev
 description: Preview React compositions live beside the PDF they render to
-ogTitle: paradoc dev
-ogDescription: A live preview of every composition in a Paradoc project, with a proof view of its PDF
+ogTitle: asterdoc dev
+ogDescription: A live preview of every composition in an Asterdoc project, with a proof view of its PDF
 ---
 
 Serves every React composition in the project, paginated on screen with its
@@ -11,7 +11,7 @@ sample data, beside the PDF the same tree renders to.
 ## Usage
 
 ```bash
-paradoc dev [dir] [options]
+asterdoc dev [dir] [options]
 ```
 
 ## Arguments
@@ -32,7 +32,7 @@ paradoc dev [dir] [options]
 
 ## The conventions
 
-Three things are found by convention. `paradoc dev --list` prints what it found, so
+Three things are found by convention. `asterdoc dev --list` prints what it found, so
 a project can check its own layout without starting anything.
 
 ### Compositions
@@ -65,7 +65,7 @@ layers:
     path: compositions/purchase-order.tsx
 ```
 
-`paradoc dev` reads every artifact in the project and pairs a composition with the
+`asterdoc dev` reads every artifact in the project and pairs a composition with the
 artifact whose layer resolves to it. If no layer points at a composition, it
 falls back to an artifact file of the same name beside it —
 `purchase-order.tsx` next to `purchase-order.yaml` — so a composition can be
@@ -86,26 +86,26 @@ export default {
 };
 ```
 
-All three rules live in `@paradoc/react/discovery` and are read by
-`paradoc check` as well, so a composition that previews is a
+All three rules live in `@asterdoc/react/discovery` and are read by
+`asterdoc check` as well, so a composition that previews is a
 composition that checks.
 
 ## The preview
 
 The document is on the left, paginated in the browser at the page geometry
-`@paradoc/react` fixes, and the PDF is on the right, rendered in Node from the
+`@asterdoc/react` fixes, and the PDF is on the right, rendered in Node from the
 same tree with the preview's page breaks passed as hints. Editing a composition
 or its sample updates both; editing an artifact reloads the page.
 
-Before it renders, the PDF route runs the same check `paradoc check` runs
-(`checkElement` from `@paradoc/react-pdf/check`): every Tailwind class the engine
+Before it renders, the PDF route runs the same check `asterdoc check` runs
+(`checkElement` from `@asterdoc/react-pdf/check`): every Tailwind class the engine
 cannot express, and every path the artifact does not declare. A composition with
 a finding shows it where the PDF would have been, and a document that throws
 while it draws shows the reason where the document would have been. A
 composition with no artifact says so there too, rather than sitting on
 "rendering".
 
-Images are not a finding here. `paradoc dev` reads the image sources the check
+Images are not a finding here. `asterdoc dev` reads the image sources the check
 reports and loads their bytes from disk before rendering, so only a source that
 is not a file on disk reaches you, named by the renderer.
 
@@ -115,41 +115,41 @@ where the preview did not.
 
 ## What it serves
 
-`paradoc dev` writes nothing to disk. The page is four modules generated in memory
+`asterdoc dev` writes nothing to disk. The page is four modules generated in memory
 and addressed as files of the project root:
 
 | Module | What it is |
 |--------|-----------|
-| `paradoc-dev.client.tsx` | The preview application |
-| `paradoc-dev.manifest.ts` | What discovery found, with a loader per composition |
-| `paradoc-dev.styles.css` | The document's Tailwind, plus the preview's own frame |
-| `paradoc-dev.element.ts` | The one `createElement` call the PDF route makes in your React |
+| `asterdoc-dev.client.tsx` | The preview application |
+| `asterdoc-dev.manifest.ts` | What discovery found, with a loader per composition |
+| `asterdoc-dev.styles.css` | The document's Tailwind, plus the preview's own frame |
+| `asterdoc-dev.element.ts` | The one `createElement` call the PDF route makes in your React |
 
-`POST /@paradoc/dev/pdf` is the proof view's own route and can be driven
+`POST /@asterdoc/dev/pdf` is the proof view's own route and can be driven
 headlessly. It takes `{ "id": "<composition id>", "plan": { "breaks": [],
 "repeats": [] } }` — the id is what `--list --json` reports — and answers with
 `application/pdf`, or `422` and `{ "findings": [{ "kind", "message" }] }` when
-the check fails. `X-Paradoc-Unknown-Breaks` and `X-Paradoc-Unknown-Repeats` name
+the check fails. `X-Asterdoc-Unknown-Breaks` and `X-Asterdoc-Unknown-Repeats` name
 any hint the render could not honour.
 
 ## What the project must supply
 
 The preview compiles the project's own compositions against the project's own
-React, so it uses the project's toolchain. `paradoc` does not carry a bundler:
+React, so it uses the project's toolchain. `asterdoc` does not carry a bundler:
 
 ```bash
-npm install @paradoc/react @paradoc/react-pdf react react-dom
+npm install @asterdoc/react @asterdoc/react-pdf react react-dom
 npm install --save-dev vite @vitejs/plugin-react @tailwindcss/vite tailwindcss
 ```
 
-`@paradoc/react`, `@paradoc/react-pdf`, `react` and `react-dom` are resolved at
+`@asterdoc/react`, `@asterdoc/react-pdf`, `react` and `react-dom` are resolved at
 your project and nowhere else, because the page loads them and a second copy
 would be a different React. The PDF route renders through your
-`@paradoc/react-pdf`. A project missing any of the eight is told which, in the
+`@asterdoc/react-pdf`. A project missing any of the eight is told which, in the
 install commands of whichever package manager left a lockfile, before anything
 starts.
 
-The project's own `vite.config` is not read: `paradoc dev` serves one page it
+The project's own `vite.config` is not read: `asterdoc dev` serves one page it
 generates itself, so a composition should import packages and its own neighbours
 and nothing else. TypeScript and JavaScript path aliases from `tsconfig.json` or
 `jsconfig.json` are supported.
@@ -157,7 +157,7 @@ and nothing else. TypeScript and JavaScript path aliases from `tsconfig.json` or
 The preview also uses the installed `pages` component. Add it before starting:
 
 ```bash
-paradoc add pages
+asterdoc add pages
 ```
 
 ## Examples
@@ -165,14 +165,14 @@ paradoc add pages
 Preview the project in the working directory:
 
 ```bash
-paradoc dev
+asterdoc dev
 ```
 
 Check what the conventions found, without starting a server:
 
 ```bash
-paradoc dev --list
-paradoc dev --list --json
+asterdoc dev --list
+asterdoc dev --list --json
 ```
 
 `--list --json` reports one object per composition and exits `0` even when there
@@ -198,7 +198,7 @@ are none:
 Serve on another port and open a browser:
 
 ```bash
-paradoc dev ./packages/documents --port 5300 --open
+asterdoc dev ./packages/documents --port 5300 --open
 ```
 
 ## Headless PDF requests

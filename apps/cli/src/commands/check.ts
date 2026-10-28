@@ -2,11 +2,11 @@ import { Command } from 'commander'
 import kleur from 'kleur'
 import { dirname, extname, relative, resolve } from 'node:path'
 
-import { assertCurrentSchemaVersion, isForm, reactLayersOf, validate, type Form } from '@paradoc/core'
-import type { DocumentData } from '@paradoc/react'
-import type * as Discovery from '@paradoc/react/discovery'
-import type { bindComponent } from '@paradoc/react-pdf'
-import type { checkComposition, CompositionCheckResult } from '@paradoc/react-pdf/check'
+import { assertCurrentSchemaVersion, isForm, reactLayersOf, validate, type Form } from '@asterdoc/core'
+import type { DocumentData } from '@asterdoc/react'
+import type * as Discovery from '@asterdoc/react/discovery'
+import type { bindComponent } from '@asterdoc/react-pdf'
+import type { checkComposition, CompositionCheckResult } from '@asterdoc/react-pdf/check'
 
 import { readTextInput, resolveArtifactTarget } from '../utils/io.js'
 import { LocalFileSystem } from '../utils/local-fs.js'
@@ -37,17 +37,17 @@ interface ResolvedLayer {
 const REACT_EXTENSIONS = new Set(['.tsx', '.jsx'])
 
 /**
- * `@paradoc/react-pdf` carries a WebAssembly PDF layout engine, fonts, and React
- * itself — real weight that most `paradoc` installs never touch. Check resolves
+ * `@asterdoc/react-pdf` carries a WebAssembly PDF layout engine, fonts, and React
+ * itself — real weight that most `asterdoc` installs never touch. Check resolves
  * it from the project so the composition and renderer share one React instance.
  */
 async function loadBindComponent(root: string): Promise<typeof bindComponent> {
   try {
-    const mod = await importPeer(root, '@paradoc/react-pdf', CHECK_NEED)
+    const mod = await importPeer(root, '@asterdoc/react-pdf', CHECK_NEED)
     return mod.bindComponent as typeof bindComponent
   } catch (error) {
     throw new Error(
-      `Could not install or load @paradoc/react-pdf, needed to bind the composition to its module: ` +
+      `Could not install or load @asterdoc/react-pdf, needed to bind the composition to its module: ` +
         `${error instanceof Error ? error.message : String(error)}`
     )
   }
@@ -55,11 +55,11 @@ async function loadBindComponent(root: string): Promise<typeof bindComponent> {
 
 async function loadCheckComposition(root: string): Promise<typeof checkComposition> {
   try {
-    const mod = await importPeer(root, '@paradoc/react-pdf/check', CHECK_NEED)
+    const mod = await importPeer(root, '@asterdoc/react-pdf/check', CHECK_NEED)
     return mod.checkComposition as typeof checkComposition
   } catch (error) {
     throw new Error(
-      `Could not install or load @paradoc/react-pdf, needed to check the composition: ` +
+      `Could not install or load @asterdoc/react-pdf, needed to check the composition: ` +
         `${error instanceof Error ? error.message : String(error)}`
     )
   }
@@ -69,17 +69,17 @@ async function loadCheckComposition(root: string): Promise<typeof checkCompositi
  * The conventions, from the package that owns them.
  *
  * Which artifact renders a composition and where its sample data comes from are
- * questions `paradoc dev` asks of the same project, so both commands read one
- * answer (`@paradoc/react/discovery`) rather than each deriving its own. A rule
+ * questions `asterdoc dev` asks of the same project, so both commands read one
+ * answer (`@asterdoc/react/discovery`) rather than each deriving its own. A rule
  * only one of them implemented would make a composition that previews fail a
  * check, or the reverse, for a reason about the tools rather than the document.
  */
 async function loadDiscovery(root: string): Promise<typeof Discovery> {
   try {
-    return (await importPeer(root, '@paradoc/react/discovery', CHECK_NEED)) as unknown as typeof Discovery
+    return (await importPeer(root, '@asterdoc/react/discovery', CHECK_NEED)) as unknown as typeof Discovery
   } catch (error) {
     throw new Error(
-      `Could not install or load @paradoc/react, needed to find the composition's artifact: ` +
+      `Could not install or load @asterdoc/react, needed to find the composition's artifact: ` +
         `${error instanceof Error ? error.message : String(error)}`
     )
   }
@@ -174,12 +174,12 @@ async function loadArtifactLayer(target: string, layerKey: string | undefined): 
  * A layer's path is relative to the artifact file that declares it, so an
  * artifact and its composition may live apart and the search covers the whole
  * project. When no layer points at the composition, an artifact file of the
- * same name beside it is taken instead — the fallback `paradoc dev` also applies,
+ * same name beside it is taken instead — the fallback `asterdoc dev` also applies,
  * so a composition written before its layer entry is checkable and previewable
  * on the same terms.
  *
  * Scoped to the nearest project from the composition. Outside a project, the
- * search starts in the composition's directory. `paradoc dev` uses the same
+ * search starts in the composition's directory. `asterdoc dev` uses the same
  * nearest-project rule, starting from its `[dir]` argument.
  */
 async function findArtifactForComposition(
@@ -251,7 +251,7 @@ async function findArtifactForComposition(
 
 /**
  * Holds a matched artifact file to the current schema version and the schema,
- * which loose pairing deliberately does not. `paradoc dev` applies the same rule.
+ * which loose pairing deliberately does not. `asterdoc dev` applies the same rule.
  */
 function validatedLayer(resolved: ResolvedLayer): ResolvedLayer {
   try {
@@ -327,9 +327,9 @@ async function explicitData(value: string, form: Form): Promise<DocumentData> {
 /**
  * Sample data for the composition, if any is discoverable.
  *
- * The order is the shared one (`@paradoc/react/discovery`): a sibling
+ * The order is the shared one (`@asterdoc/react/discovery`): a sibling
  * `<composition>.sample.{ts,tsx,js,mjs,jsx}` first, then a named `sample`
- * export on the composition module. `paradoc dev` reads the same order, so a
+ * export on the composition module. `asterdoc dev` reads the same order, so a
  * composition previews with the data it is checked against.
  *
  * Only a sibling's `default` counts as a sample. The composition module's own

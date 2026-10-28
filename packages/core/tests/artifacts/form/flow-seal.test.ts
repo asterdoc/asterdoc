@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test, expect } from 'vitest'
 import { form, SealConfigError } from '@/artifacts'
-import { containsEncoding } from '@paradoc/render/pdf'
-import type { SealAdapter, SignatureSlot } from '@paradoc/types'
+import { containsEncoding } from '@asterdoc/render/pdf'
+import type { SealAdapter, SignatureSlot } from '@asterdoc/types'
 
 /**
  * 'flow' placement, end to end: core renders twice (markers, then clean),

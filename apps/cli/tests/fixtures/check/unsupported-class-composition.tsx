@@ -1,6 +1,6 @@
-import { Document, Field } from '@paradoc/components'
-import type { DocumentData } from '@paradoc/react'
-import type { Form } from '@paradoc/types'
+import { Document, Field } from '@asterdoc/components'
+import type { DocumentData } from '@asterdoc/react'
+import type { Form } from '@asterdoc/types'
 
 /** `grid-cols-3` is not in takumi's verified class vocabulary: no grid family is. */
 export default function UnsupportedClassComposition({ artifact, data }: { artifact: Form; data: DocumentData }) {

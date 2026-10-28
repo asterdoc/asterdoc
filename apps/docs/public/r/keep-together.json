@@ -5,15 +5,15 @@
   "title": "Keep Together",
   "description": "The pagination unit. Content inside one is never split across a page break, and renders only on the page the plan put it on.",
   "dependencies": [
-    "@paradoc/react@^0.8.0"
+    "@asterdoc/react@^0.9.0"
   ],
   "registryDependencies": [],
   "files": [
     {
-      "path": "components/paradoc/keep-together.tsx",
+      "path": "components/asterdoc/keep-together.tsx",
       "type": "registry:ui",
-      "target": "components/paradoc/keep-together.tsx",
-      "content": "import React from \"react\";\nimport { RENDER_ATTRIBUTES, useKeepVisible, usePage } from \"@paradoc/react\";\nimport type { ComponentPropsWithoutRef, ElementType, ReactNode } from \"react\";\n\n/** @jsxRuntime classic */\n\nexport interface KeepTogetherProps {\n  /** Stable id the page plan tracks this content by; must be unique within the document. */\n  keepId: string;\n  /**\n   * Element or component the keep renders as.\n   *\n   * @default \"div\"\n   */\n  as?: ElementType;\n  /** Content kept together as one pagination unit. */\n  children?: ReactNode;\n  [property: string]: unknown;\n}\n\nexport function KeepTogether({ keepId, as: Tag = \"div\", children, ...props }: KeepTogetherProps) {\n  const visible = useKeepVisible(keepId);\n  const repeated = usePage()?.repeats.has(keepId) === true;\n  if (!visible) return null;\n  const pagination = { [RENDER_ATTRIBUTES.keepId]: keepId, [RENDER_ATTRIBUTES.keepRepeat]: repeated ? \"true\" : undefined };\n  return <Tag {...props as ComponentPropsWithoutRef<\"div\">} {...pagination}>{children}</Tag>;\n}\n"
+      "target": "components/asterdoc/keep-together.tsx",
+      "content": "import React from \"react\";\nimport { RENDER_ATTRIBUTES, useKeepVisible, usePage } from \"@asterdoc/react\";\nimport type { ComponentPropsWithoutRef, ElementType, ReactNode } from \"react\";\n\n/** @jsxRuntime classic */\n\nexport interface KeepTogetherProps {\n  /** Stable id the page plan tracks this content by; must be unique within the document. */\n  keepId: string;\n  /**\n   * Element or component the keep renders as.\n   *\n   * @default \"div\"\n   */\n  as?: ElementType;\n  /** Content kept together as one pagination unit. */\n  children?: ReactNode;\n  [property: string]: unknown;\n}\n\nexport function KeepTogether({ keepId, as: Tag = \"div\", children, ...props }: KeepTogetherProps) {\n  const visible = useKeepVisible(keepId);\n  const repeated = usePage()?.repeats.has(keepId) === true;\n  if (!visible) return null;\n  const pagination = { [RENDER_ATTRIBUTES.keepId]: keepId, [RENDER_ATTRIBUTES.keepRepeat]: repeated ? \"true\" : undefined };\n  return <Tag {...props as ComponentPropsWithoutRef<\"div\">} {...pagination}>{children}</Tag>;\n}\n"
     }
   ]
 }

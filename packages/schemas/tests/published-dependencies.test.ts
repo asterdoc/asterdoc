@@ -1,6 +1,6 @@
 /**
  * Every package the source imports, including type-only imports, reaches the
- * published `.d.ts`. A consumer who installs only `@paradoc/schemas` must be
+ * published `.d.ts`. A consumer who installs only `@asterdoc/schemas` must be
  * able to resolve each one, so each must be a runtime dependency, not a
  * devDependency.
  */
@@ -38,8 +38,8 @@ function importedPackages(source: string): string[] {
 describe('published dependencies', () => {
 	const imported = new Set(sourceFiles(join(root, 'src')).flatMap((file) => importedPackages(readFileSync(file, 'utf8'))))
 
-	it('finds the type-only @paradoc/types import', () => {
-		expect(imported).toContain('@paradoc/types')
+	it('finds the type-only @asterdoc/types import', () => {
+		expect(imported).toContain('@asterdoc/types')
 	})
 
 	it('declares every imported package as a runtime dependency', () => {
@@ -48,7 +48,7 @@ describe('published dependencies', () => {
 	})
 
 	it('reads a type-only import as a package the declarations need', () => {
-		expect(importedPackages("import type { Bundle } from '@paradoc/types/x';")).toEqual(['@paradoc/types'])
+		expect(importedPackages("import type { Bundle } from '@asterdoc/types/x';")).toEqual(['@asterdoc/types'])
 		expect(importedPackages("import { z } from 'zod';\nimport { a } from './local';")).toEqual(['zod'])
 	})
 })

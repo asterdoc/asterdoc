@@ -1,10 +1,10 @@
 /** @jsxRuntime classic */
 import React from "react";
-import { scaleTextClasses, useDocumentTokens, useField, useTotals } from "@paradoc/react";
+import { scaleTextClasses, useDocumentTokens, useField, useTotals } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface TotalRow {
-  /** Name of the artifact's computed total, evaluated by `@paradoc/core`. */
+  /** Name of the artifact's computed total, evaluated by `@asterdoc/core`. */
   def: string;
   /** Overrides the def's own label. Defaults to the def's own label. */
   label?: string;

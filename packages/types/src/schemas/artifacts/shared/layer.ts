@@ -152,7 +152,7 @@ export interface FileLayer {
   format?: LayerFormat;
   /**
    * PDF layers only. Maps each AcroForm field name in the template (key) to
-   * the Paradoc path that fills it (value), such as `fields.name`.
+   * the Asterdoc path that fills it (value), such as `fields.name`.
    */
   bindings?: Bindings;
   /** PDF layers only. Key of a sibling PDF layer whose bindings this layer reuses. */
@@ -169,6 +169,6 @@ export type Layer = InlineLayer | FileLayer;
 
 /**
  * A PDF layer's bindings: each key is a fully qualified AcroForm field name in
- * the template, and each value is the Paradoc path that fills it.
+ * the template, and each value is the Asterdoc path that fills it.
  */
 export type Bindings = Record<string, string>;

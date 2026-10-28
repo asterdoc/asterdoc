@@ -6,7 +6,7 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@paradoc/types": ["../types/src/index.ts"]
+      "@asterdoc/types": ["../types/src/index.ts"]
     }
   },
   "include": ["src", "tests"],

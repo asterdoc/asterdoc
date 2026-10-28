@@ -59,7 +59,7 @@ export const FURNITURE_SLOTS: readonly FurnitureSlot[] = ["header", "footer", "s
  * preview draws its bands at this inset, the default engine draws its own at
  * the same one, and the Chromium adapter places its print templates there, so
  * the sheets agree. The default engine exposes no inset to set, so the value is
- * calibrated by observation, and `@paradoc/react-pdf`'s
+ * calibrated by observation, and `@asterdoc/react-pdf`'s
  * `tests/pdf-furniture.test.tsx` and `tests/pdf-chromium-furniture.test.tsx`
  * each solve the band's top edge back out of two rendered pages set at
  * different sizes and pin it to this number.
@@ -82,7 +82,7 @@ export const RENDER_ATTRIBUTES = {
 } as const;
 
 /** Public class and rule for directionally isolated left-to-right values. */
-export const LTR_ISOLATE_CLASS = "paradoc-ltr-isolate";
+export const LTR_ISOLATE_CLASS = "asterdoc-ltr-isolate";
 export const LTR_ISOLATE_STYLESHEET = `.${LTR_ISOLATE_CLASS} {\n  direction: ltr;\n  unicode-bidi: isolate;\n}`;
 
 /**

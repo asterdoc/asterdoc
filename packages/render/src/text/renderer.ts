@@ -1,11 +1,11 @@
-import { defaultFormatter } from '@paradoc/format'
+import { defaultFormatter } from '@asterdoc/format'
 import type {
   Formatter,
   FormatterProgressivePolicy,
-  ParadocRenderer,
+  AsterdocRenderer,
   RendererLayer,
   RenderRequest,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import { requestRenderData } from '../render-data'
 import { renderText } from './render'
 import type { TextSignatureOptions } from './signatures'
@@ -21,7 +21,7 @@ export interface TextRendererOptions {
 
 type TextLayer = RendererLayer & { type: 'text'; content: string }
 
-export function textRenderer(options: TextRendererOptions = {}): ParadocRenderer<TextLayer, string> {
+export function textRenderer(options: TextRendererOptions = {}): AsterdocRenderer<TextLayer, string> {
   const formatter = options.formatter ?? defaultFormatter
   return {
     id: 'text',

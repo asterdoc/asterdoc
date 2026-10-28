@@ -2,7 +2,7 @@
  * The sample engagement letter, sealed through the core seal flow.
  *
  * Sample material, and deliberately the same shape as `./seal.ts`. Nothing here
- * re-implements sealing and nothing here converts anything: `@paradoc/core`'s
+ * re-implements sealing and nothing here converts anything: `@asterdoc/core`'s
  * `seal()` runs the whole flow — it decides the signer bindings, renders the
  * composition twice through the renderer registered for its layer, locates the
  * markers, checks for drift, flattens and hashes the canonical PDF. The
@@ -15,13 +15,13 @@
  *
  * The letter is the case where the two slots are further apart than the
  * proposal's: they sit on the last page, below nine clauses of prose that decide
- * where that page starts. `@paradoc/react-pdf`'s `tests/engagement-letter-seal.test.tsx` is what says
+ * where that page starts. `@asterdoc/react-pdf`'s `tests/engagement-letter-seal.test.tsx` is what says
  * both markers are still located there.
  */
 
-import { reactLayerRenderers } from "@paradoc/react-pdf";
-import type { RenderPdfOptions } from "@paradoc/react-pdf";
-import type { PdfImage } from "@paradoc/react-pdf";
+import { reactLayerRenderers } from "@asterdoc/react-pdf";
+import type { RenderPdfOptions } from "@asterdoc/react-pdf";
+import type { PdfImage } from "@asterdoc/react-pdf";
 import {
   engagementLetter,
   ENGAGEMENT_LETTER_REACT_LAYER,

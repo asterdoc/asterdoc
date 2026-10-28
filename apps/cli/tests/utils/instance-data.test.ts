@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateFormData, type Form } from '@paradoc/core'
+import { validateFormData, type Form } from '@asterdoc/core'
 import { makeInstanceTemplate } from '../../src/utils/instance-template.js'
 import { validateFormPayload, type PayloadValidationResult } from '../../src/utils/validate-data.js'
 

@@ -6,7 +6,7 @@ description: Load file-based layers and templates for rendering
 Resolvers provide a unified interface for loading file-based content (templates, assets) when rendering forms. They abstract away the underlying storage mechanism, whether in-memory, filesystem, or remote.
 
 <Callout type="warn">
-The `@paradoc/resolvers` package provides filesystem, HTTP, and memory resolvers. Install it separately from the SDK with `npm install @paradoc/resolvers`, and import the entrypoint for your environment.
+The `@asterdoc/resolvers` package provides filesystem, HTTP, and memory resolvers. Install it separately from the SDK with `npm install @asterdoc/resolvers`, and import the entrypoint for your environment.
 </Callout>
 
 ## Resolver Interface
@@ -39,17 +39,17 @@ It's accepted by:
 
 `resolver` is the only field, and it's optional: pass it only when the artifact has file-backed layers. It's bound once, at construction, and every instance you derive afterward — every `fill`, mutator, and `clone` — carries it. A render call never takes one.
 
-Render a file-backed layer with no resolver bound, and Paradoc throws
+Render a file-backed layer with no resolver bound, and Asterdoc throws
 `UnboundResolverError`, naming the layer, the path it wanted, and where to
 bind one.
 
 ## Memory Resolver (Browser-Compatible)
 
-The `createMemoryResolver` function is exported from `@paradoc/resolvers/memory` and works in any environment, including browsers.
+The `createMemoryResolver` function is exported from `@asterdoc/resolvers/memory` and works in any environment, including browsers.
 
 ```ts
-import { p } from '@paradoc/core'
-import { createMemoryResolver } from '@paradoc/resolvers/memory'
+import { p } from '@asterdoc/core'
+import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 
 const resolver = createMemoryResolver({
   contents: {
@@ -86,11 +86,11 @@ Binary content, including a Node.js `Buffer`, is copied when the resolver is cre
 ## Filesystem Resolver (Node.js Only)
 
 <Callout type="warn">
-The `@paradoc/resolvers/fs` entrypoint requires Node.js.
+The `@asterdoc/resolvers/fs` entrypoint requires Node.js.
 </Callout>
 
 ```ts
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({
   root: process.cwd()
@@ -118,10 +118,10 @@ The filesystem resolver validates that paths and symlinks stay within the root d
 
 ## HTTP Resolver
 
-The `createHttpResolver` function is exported from `@paradoc/resolvers/http` and works in any environment with the Fetch API. It reads each path beneath a base URL.
+The `createHttpResolver` function is exported from `@asterdoc/resolvers/http` and works in any environment with the Fetch API. It reads each path beneath a base URL.
 
 ```ts
-import { createHttpResolver } from '@paradoc/resolvers/http'
+import { createHttpResolver } from '@asterdoc/resolvers/http'
 
 const resolver = createHttpResolver({
   baseUrl: 'https://example.com/forms/w-9/'
@@ -153,8 +153,8 @@ Paths follow the filesystem resolver's rules: forward slashes only, and a single
 Resolvers are needed when forms define file-based layers:
 
 ```ts
-import { p } from '@paradoc/core'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { p } from '@asterdoc/core'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: process.cwd() })
 
@@ -182,7 +182,7 @@ const filled = form.fill({
 const output = await filled.render()
 ```
 
-Render a file layer with no resolver bound and Paradoc throws
+Render a file layer with no resolver bound and Asterdoc throws
 `UnboundResolverError`, naming the layer, the path it wanted, and where to
 bind one.
 
@@ -216,7 +216,7 @@ layers: {
 Implement the `Resolver` interface for custom storage backends:
 
 ```ts
-import type { Resolver } from '@paradoc/types'
+import type { Resolver } from '@asterdoc/types'
 
 // Example: S3 resolver
 function createS3Resolver(bucket: string, s3Client: S3Client): Resolver {

@@ -1,4 +1,4 @@
-import type { ParadocToolsConfig } from '../config'
+import type { AsterdocToolsConfig } from '../config'
 import { FillInputSchema, type FillInput, type FillOutput } from '../contracts'
 import { artifactKind, contextOptions, contextSnapshot, formDraftPayload, asChecklistPayload, asFormPayload, makeResolver } from '../artifact'
 import { errorFromUnknown, validationErrors } from '../errors'
@@ -6,11 +6,11 @@ import { resolveSource } from '../resolve-source'
 
 export async function executeFill(
 	input: FillInput | Record<string, unknown>,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<FillOutput> {
 	try {
 		const normalized = FillInputSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject } = await import('@paradoc/core')
+		const { isChecklist, isForm, loadFromObject } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		const kind = artifactKind(artifact)
 		if (isForm(artifact)) {

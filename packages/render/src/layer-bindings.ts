@@ -5,7 +5,7 @@ export interface LayerBindingsSpec {
   bindingsFrom?: string
 }
 
-// @paradoc/render does not depend on @paradoc/schemas, so the PDF check is stated here.
+// @asterdoc/render does not depend on @asterdoc/schemas, so the PDF check is stated here.
 function isPdfLayer(layer: LayerBindingsSpec): boolean {
   return layer.mimeType?.toLowerCase() === 'application/pdf'
 }
@@ -16,7 +16,7 @@ function isPdfLayer(layer: LayerBindingsSpec): boolean {
  * `bindings`, never its `bindingsFrom`. Only bindings carry over; a layer's
  * `format` is always its own.
  *
- * Only PDF layers have bindings, which map AcroForm field names to Paradoc
+ * Only PDF layers have bindings, which map AcroForm field names to Asterdoc
  * paths; any other layer, or a source that is not a PDF layer, gives none.
  *
  * Throws when `bindingsFrom` names a layer that does not exist.

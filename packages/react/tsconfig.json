@@ -1,5 +1,5 @@
 {
-  "extends": "@paradoc/typescript-config/react-library.json",
+  "extends": "@asterdoc/typescript-config/react-library.json",
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -10,7 +10,7 @@
     "noUncheckedSideEffectImports": true,
     "baseUrl": ".",
     "paths": {
-      "@paradoc/react": ["./src/index.ts"]
+      "@asterdoc/react": ["./src/index.ts"]
     }
   },
   "include": [

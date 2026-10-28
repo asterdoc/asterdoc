@@ -33,7 +33,7 @@ export type Presentation = "text" | "rendered";
 
 /**
  * Validation issue surfaced by per-field or whole-form validation.
- * Mirrors the shape returned by Paradoc's validators, kept loose here so
+ * Mirrors the shape returned by Asterdoc's validators, kept loose here so
  * the engine package stays independent of validator-internal types.
  */
 export type Issue = {

@@ -6,8 +6,8 @@ import {
 	operationNames,
 	toModelOutput,
 	toolDefinitions,
-	type ParadocToolsConfig,
-} from '@paradoc/ai-tools'
+	type AsterdocToolsConfig,
+} from '@asterdoc/ai-tools'
 import type { ZodType } from 'zod'
 
 export type {
@@ -26,7 +26,7 @@ export type {
 	InspectArtifactInput,
 	InspectArtifactOutput,
 	OperationName,
-	ParadocToolsConfig,
+	AsterdocToolsConfig,
 	RenderInput,
 	RenderOutput,
 	ToolDefinitions,
@@ -36,12 +36,12 @@ export type {
 	ValidateArtifactOutput,
 	ValidateInputOutput,
 	ValidateInputValue,
-} from '@paradoc/ai-tools'
+} from '@asterdoc/ai-tools'
 export { operationNames }
 export { createToolExecutionContext }
 
-/** Configuration for the Mastra adapter and the shared Paradoc operations. */
-export type ParadocMastraConfig = ParadocToolsConfig
+/** Configuration for the Mastra adapter and the shared Asterdoc operations. */
+export type AsterdocMastraConfig = AsterdocToolsConfig
 export { DEFAULT_MODEL_OUTPUT_MAX_BYTES }
 
 type MastraExecutionContext = {
@@ -53,21 +53,21 @@ type MastraToolDefinition<Input, Output> = {
 	description: string
 	input_schema: ZodType<Input>
 	output_schema: ZodType<Output>
-	execute: (input: Input, config?: ParadocToolsConfig) => Promise<Output>
+	execute: (input: Input, config?: AsterdocToolsConfig) => Promise<Output>
 }
 
-function sharedConfig(config: ParadocMastraConfig | undefined): ParadocToolsConfig | undefined {
+function sharedConfig(config: AsterdocMastraConfig | undefined): AsterdocToolsConfig | undefined {
 	return config
 }
 
-function executionConfig(config: ParadocMastraConfig | undefined, context: MastraExecutionContext): ParadocToolsConfig | undefined {
+function executionConfig(config: AsterdocMastraConfig | undefined, context: MastraExecutionContext): AsterdocToolsConfig | undefined {
 	const shared = sharedConfig(config)
 	return configForExecution(shared, context.abortSignal)
 }
 
 function createMastraTool<Input, Output>(
 	definition: MastraToolDefinition<Input, Output>,
-	config?: ParadocMastraConfig,
+	config?: AsterdocMastraConfig,
 ) {
 	return createTool({
 		id: definition.name,
@@ -83,48 +83,48 @@ function createMastraTool<Input, Output>(
 	})
 }
 
-export function getRegistry(config?: ParadocMastraConfig) {
+export function getRegistry(config?: AsterdocMastraConfig) {
 	return createMastraTool(toolDefinitions.get_registry, config)
 }
 
-export function getArtifact(config?: ParadocMastraConfig) {
+export function getArtifact(config?: AsterdocMastraConfig) {
 	return createMastraTool(toolDefinitions.get_artifact, config)
 }
 
-export function inspectArtifact(config?: ParadocMastraConfig) {
+export function inspectArtifact(config?: AsterdocMastraConfig) {
 	return createMastraTool(toolDefinitions.inspect_artifact, config)
 }
 
-export function validateArtifact(config?: ParadocMastraConfig) {
+export function validateArtifact(config?: AsterdocMastraConfig) {
 	return createMastraTool(toolDefinitions.validate_artifact, config)
 }
 
-export function validateInput(config?: ParadocMastraConfig) {
+export function validateInput(config?: AsterdocMastraConfig) {
 	return createMastraTool(toolDefinitions.validate_input, config)
 }
 
-export function fill(config?: ParadocMastraConfig) {
+export function fill(config?: AsterdocMastraConfig) {
 	return createMastraTool(toolDefinitions.fill, config)
 }
 
-export function getFillState(config?: ParadocMastraConfig) {
+export function getFillState(config?: AsterdocMastraConfig) {
 	return createMastraTool(toolDefinitions.get_fill_state, config)
 }
 
-export function updateFill(config?: ParadocMastraConfig) {
+export function updateFill(config?: AsterdocMastraConfig) {
 	return createMastraTool(toolDefinitions.update_fill, config)
 }
 
-export function render(config?: ParadocMastraConfig) {
+export function render(config?: AsterdocMastraConfig) {
 	return createMastraTool(toolDefinitions.render, config)
 }
 
-export function extract(config?: ParadocMastraConfig) {
+export function extract(config?: AsterdocMastraConfig) {
 	return createMastraTool(toolDefinitions.extract, config)
 }
 
-/** Create all ten shared Paradoc operations with their canonical snake_case IDs. */
-export function paradocTools(config?: ParadocMastraConfig) {
+/** Create all ten shared Asterdoc operations with their canonical snake_case IDs. */
+export function asterdocTools(config?: AsterdocMastraConfig) {
 	return {
 		get_registry: getRegistry(config),
 		get_artifact: getArtifact(config),

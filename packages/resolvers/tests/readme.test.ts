@@ -6,12 +6,12 @@ import { describe, expect, test } from 'vitest'
 const run = promisify(execFile)
 const packageRoot = fileURLToPath(new URL('..', import.meta.url))
 
-describe('@paradoc/resolvers public entrypoints', () => {
+describe('@asterdoc/resolvers public entrypoints', () => {
   test('loads every emitted entrypoint through package exports', async () => {
     const source = [
-      'import { createFsResolver } from "@paradoc/resolvers/fs"',
-      'import { createHttpResolver } from "@paradoc/resolvers/http"',
-      'import { createMemoryResolver } from "@paradoc/resolvers/memory"',
+      'import { createFsResolver } from "@asterdoc/resolvers/fs"',
+      'import { createHttpResolver } from "@asterdoc/resolvers/http"',
+      'import { createMemoryResolver } from "@asterdoc/resolvers/memory"',
       'if (typeof createFsResolver !== "function") process.exit(1)',
       'if (typeof createHttpResolver !== "function") process.exit(1)',
       'if (typeof createMemoryResolver !== "function") process.exit(1)',

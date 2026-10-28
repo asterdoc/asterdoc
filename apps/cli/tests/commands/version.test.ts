@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 let root: string
@@ -20,7 +20,7 @@ function runVersion(args: string[]) {
       XDG_CONFIG_HOME: path.join(home, '.config'),
       XDG_DATA_HOME: path.join(home, '.local', 'share'),
       XDG_CACHE_HOME: path.join(home, '.cache'),
-      PARADOC_TELEMETRY_DISABLED: '1',
+      ASTERDOC_TELEMETRY_DISABLED: '1',
       NO_COLOR: '1',
     },
   })
@@ -28,7 +28,7 @@ function runVersion(args: string[]) {
 
 function writeForm(version: string): string {
   const file = path.join(repo, 'my-form.json')
-  fs.writeFileSync(file, `${JSON.stringify({ $schema: PARADOC_SCHEMA_URL, kind: 'form', name: 'my-form', version, fields: {} }, null, 2)}\n`)
+  fs.writeFileSync(file, `${JSON.stringify({ $schema: ASTERDOC_SCHEMA_URL, kind: 'form', name: 'my-form', version, fields: {} }, null, 2)}\n`)
   return file
 }
 
@@ -38,12 +38,12 @@ function readVersion(file: string): string {
 
 describe('CLI version command', () => {
   beforeEach(() => {
-    root = fs.mkdtempSync(path.join(os.tmpdir(), 'paradoc-version-'))
+    root = fs.mkdtempSync(path.join(os.tmpdir(), 'asterdoc-version-'))
     repo = path.join(root, 'repo')
     home = path.join(root, 'home')
-    fs.mkdirSync(path.join(repo, '.paradoc'), { recursive: true })
+    fs.mkdirSync(path.join(repo, '.asterdoc'), { recursive: true })
     fs.mkdirSync(home)
-    fs.writeFileSync(path.join(repo, 'paradoc.json'), '{}\n')
+    fs.writeFileSync(path.join(repo, 'asterdoc.json'), '{}\n')
   })
 
   afterEach(() => {

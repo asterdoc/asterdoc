@@ -11,9 +11,9 @@ export default defineConfig({
 	clean: true,
 	external: [
 		// Mark workspace dependencies as external (they'll be installed separately)
-		'@paradoc/core',
-		'@paradoc/format',
-		'@paradoc/render',
-		'@paradoc/sessions',
+		'@asterdoc/core',
+		'@asterdoc/format',
+		'@asterdoc/render',
+		'@asterdoc/sessions',
 	],
 })

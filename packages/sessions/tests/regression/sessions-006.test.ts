@@ -2,9 +2,9 @@
 // Input: "9876543210" (Indian mobile), "020 7946 0958" (UK national).
 // Expected: not stored as a different country's number. Actual: "+19876543210" accepted. The UK case is rejected by the E.164 pattern (not a silent bug).
 import { expect, it } from "vitest";
-import { createParadocRuntime } from "../../src/engine/paradoc-runtime";
+import { createAsterdocRuntime } from "../../src/engine/asterdoc-runtime";
 
-const rt = () => createParadocRuntime(artifact({ fields: { tel: { type: "phone" } } }));
+const rt = () => createAsterdocRuntime(artifact({ fields: { tel: { type: "phone" } } }));
 
 it("sessions-006: 10-digit number without a country code is not assumed US", () => {
   const r = rt().validateField("tel", "9876543210");
@@ -17,7 +17,7 @@ it("sessions-006: national number with a trunk 0 is not turned into +0...", () =
 
 export function artifact(extra: Record<string, unknown>) {
   return {
-    $schema: "https://schema.paradoc.dev/2026-10-02.json", kind: "form", name: "v", version: "1.0.0", title: "V",
+    $schema: "https://schema.asterdoc.com/2026-10-28.json", kind: "form", name: "v", version: "1.0.0", title: "V",
     parties: {}, fields: {},
     layers: { composition: { kind: "file", mimeType: "text/plain", path: "v.txt" } }, defaultLayer: "composition",
     ...extra,

@@ -3,7 +3,7 @@
 
 set -uo pipefail
 
-URL="${PARADOC_DOCS_URL:-https://docs.paradoc.dev}/api/health"
+URL="${ASTERDOC_DOCS_URL:-https://docs.asterdoc.com}/api/health"
 body=$(curl -fsS --max-time 10 "$URL" 2>/dev/null) || {
   echo "❌ docs: ${URL} (unreachable)"
   exit 1

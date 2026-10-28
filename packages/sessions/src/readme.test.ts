@@ -1,5 +1,5 @@
 /**
- * The README is published to npm, so every Paradoc package it names must be
+ * The README is published to npm, so every Asterdoc package it names must be
  * one a reader can install.
  */
 import { readdirSync, readFileSync } from 'node:fs'
@@ -25,10 +25,10 @@ function publishedPackages(): Set<string> {
 }
 
 describe('sessions README', () => {
-	const named = [...new Set([...README.matchAll(/@paradoc\/[a-z0-9-]+/g)].map((match) => match[0]))]
+	const named = [...new Set([...README.matchAll(/@asterdoc\/[a-z0-9-]+/g)].map((match) => match[0]))]
 
-	it('names Paradoc packages', () => {
-		expect(named).toContain('@paradoc/core')
+	it('names Asterdoc packages', () => {
+		expect(named).toContain('@asterdoc/core')
 	})
 
 	it('names only published packages', () => {

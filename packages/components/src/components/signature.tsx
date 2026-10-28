@@ -10,7 +10,7 @@
  * sizing the field from the underscore run on the same line, so a document that
  * draws its rule with a one-pixel div gives the seal nothing to measure. The
  * default is the exact placeholder core's flow renderer produces, so the sealed
- * document and the plain one are the same page. `@paradoc/react-pdf`'s
+ * document and the plain one are the same page. `@asterdoc/react-pdf`'s
  * `tests/seal.test.tsx` asserts that, page by page.
  *
  * The block is also where the marker goes. On the seal's marker pass the layer's
@@ -26,7 +26,7 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { scaleTextClasses, useDocumentTokens, useSignature, type SigningMarkType } from "@paradoc/react";
+import { scaleTextClasses, useDocumentTokens, useSignature, type SigningMarkType } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface SignatureProps {

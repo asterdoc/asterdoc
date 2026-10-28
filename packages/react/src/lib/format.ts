@@ -1,8 +1,8 @@
-import { defaultFormatter } from "@paradoc/format";
-import type { FormField, Formatter, FormatterProgressivePolicy } from "@paradoc/types";
-import { formatFieldValue, formatDefinitionValue } from "@paradoc/render/text/field-formatter";
+import { defaultFormatter } from "@asterdoc/format";
+import type { FormField, Formatter, FormatterProgressivePolicy } from "@asterdoc/types";
+import { formatFieldValue, formatDefinitionValue } from "@asterdoc/render/text/field-formatter";
 import { CompositeFieldPathError } from "./fields";
-export { ArtifactFieldFormatError } from "@paradoc/render/text/field-formatter";
+export { ArtifactFieldFormatError } from "@asterdoc/render/text/field-formatter";
 
 export const BLANK = "—";
 

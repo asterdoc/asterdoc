@@ -22,7 +22,7 @@ export default defineConfig({
 	sourcemap: false,
 	clean: true,
 	external: [
-		'@paradoc/ai-tools',
+		'@asterdoc/ai-tools',
 		'@mastra/core',
 		'@mastra/core/tools',
 		'zod',

@@ -18,7 +18,7 @@ interface CliResult {
 }
 
 /**
- * Spawns `paradoc` under `tsx` (the same way the CLI's own dev script and its
+ * Spawns `asterdoc` under `tsx` (the same way the CLI's own dev script and its
  * other command tests do) and waits for the process to fully close before
  * resolving, so `stdout`/`stderr` are read to completion rather than
  * snapshotted mid-flight. Encoding is set explicitly on both streams so a
@@ -180,13 +180,13 @@ describe('CLI check command', () => {
 })
 
 /**
- * `paradoc check` holds its artifact to the current schema version on every
- * target shape, as `paradoc dev` does: the artifact file itself, a composition
+ * `asterdoc check` holds its artifact to the current schema version on every
+ * target shape, as `asterdoc dev` does: the artifact file itself, a composition
  * an artifact's layer points at, and a composition paired with a sibling
  * artifact of the same name.
  */
 describe('CLI check command applies the schema version rule', () => {
-  const OUTDATED = 'https://schema.paradoc.dev/2026-08-10.json'
+  const UNPUBLISHED = 'https://schema.asterdoc.com/2020-01-01.json'
 
   /** The clean fixture pair, with the artifact rewritten under `artifactName`. */
   async function fixtureWith(
@@ -200,8 +200,8 @@ describe('CLI check command applies the schema version rule', () => {
     return dir
   }
 
-  const outdated = (artifact: Record<string, any>) => {
-    artifact.$schema = OUTDATED
+  const unpublished = (artifact: Record<string, any>) => {
+    artifact.$schema = UNPUBLISHED
   }
   const siblingOnly = (artifact: Record<string, any>) => {
     delete artifact.layers
@@ -213,16 +213,16 @@ describe('CLI check command applies the schema version rule', () => {
     ['a sibling-matched composition', 'clean-composition.json', 'clean-composition.tsx'],
   ] as const
 
-  it.each(shapes)('%s with an outdated $schema exits 1 and points to paradoc migrate', async (label, artifactName, target) => {
+  it.each(shapes)('%s with an unpublished $schema version exits 1 and points to asterdoc migrate', async (label, artifactName, target) => {
     const dir = await fixtureWith(artifactName, (artifact) => {
-      outdated(artifact)
+      unpublished(artifact)
       if (label === 'a sibling-matched composition') siblingOnly(artifact)
     })
     try {
       const result = await executeCliCommand(['check', target], { cwd: dir })
       expect(result.exitCode).toBe(1)
-      expect(result.stderr).toContain('2026-08-10')
-      expect(result.stderr).toContain('paradoc migrate')
+      expect(result.stderr).toContain('2020-01-01')
+      expect(result.stderr).toContain('asterdoc migrate')
     } finally {
       await fs.rm(dir, { recursive: true, force: true })
     }
@@ -269,7 +269,7 @@ describe('CLI check command (built binary)', () => {
     if (!existsSync(builtCliPath)) {
       throw new Error(
         `Built binary not found at ${builtCliPath}. Run 'pnpm build' first, or run this suite through ` +
-          "'pnpm turbo run test --filter=@paradoc/cli', which builds before testing."
+          "'pnpm turbo run test --filter=@asterdoc/cli', which builds before testing."
       )
     }
   })
@@ -315,8 +315,8 @@ describe('CLI check command (built binary)', () => {
       // config would make the transform depend on the caller's cwd instead
       // of the composition's location, and the two runs below would answer
       // differently depending only on where the process happened to start.
-      const isolatedDir = await fs.mkdtemp(path.join(tmpdir(), 'paradoc-check-no-tsconfig-'))
-      const misleadingCwd = await fs.mkdtemp(path.join(tmpdir(), 'paradoc-check-misleading-cwd-'))
+      const isolatedDir = await fs.mkdtemp(path.join(tmpdir(), 'asterdoc-check-no-tsconfig-'))
+      const misleadingCwd = await fs.mkdtemp(path.join(tmpdir(), 'asterdoc-check-misleading-cwd-'))
       try {
         await fs.copyFile(
           path.join(fixturesDir, 'clean-artifact.json'),
@@ -363,7 +363,7 @@ describe('CLI check command resolves its loader from the project', () => {
   }
 
   /** What a project that composes in React installs, minus the loader. */
-  const PROJECT_PACKAGES = ['@paradoc/components', '@paradoc/react', '@paradoc/react-pdf', 'react', 'react-dom']
+  const PROJECT_PACKAGES = ['@asterdoc/components', '@asterdoc/react', '@asterdoc/react-pdf', 'react', 'react-dom']
 
   let scratch: string
 
@@ -374,14 +374,14 @@ describe('CLI check command resolves its loader from the project', () => {
   }
 
   /**
-   * An installation shaped like `npm i -g paradoc-cli`, outside this repository:
+   * An installation shaped like `npm i -g asterdoc`, outside this repository:
    * the built binary beside its `dependencies` and nothing else. Inside the
    * repository the CLI's own development copy of `tsx` always resolves, so only
-   * an installation without one can show what a published `paradoc` does.
+   * an installation without one can show what a published `asterdoc` does.
    */
   async function installCli(): Promise<string> {
     const nodeModules = path.join(scratch, 'install', 'node_modules')
-    const cli = path.join(nodeModules, '@paradoc', 'cli')
+    const cli = path.join(nodeModules, '@asterdoc', 'cli')
     await fs.mkdir(cli, { recursive: true })
     await fs.cp(builtDist, path.join(cli, 'dist'), { recursive: true })
     await fs.writeFile(path.join(cli, 'package.json'), JSON.stringify({ type: 'module' }))
@@ -429,7 +429,7 @@ describe('CLI check command resolves its loader from the project', () => {
   })
 
   beforeEach(async () => {
-    scratch = await fs.realpath(await fs.mkdtemp(path.join(tmpdir(), 'paradoc-check-loader-')))
+    scratch = await fs.realpath(await fs.mkdtemp(path.join(tmpdir(), 'asterdoc-check-loader-')))
   })
 
   afterEach(async () => {
@@ -459,9 +459,9 @@ describe('CLI check command resolves its loader from the project', () => {
 
     expect(result.exitCode).toBe(1)
     expect(result.stdout).toBe('')
-    expect(result.stderr).toContain(`paradoc check needs tsx, and it is not installed in ${dir}`)
+    expect(result.stderr).toContain(`asterdoc check needs tsx, and it is not installed in ${dir}`)
     expect(result.stderr).toContain('npm install --save-dev tsx\n')
-    expect(result.stderr).not.toContain('paradoc dev')
+    expect(result.stderr).not.toContain('asterdoc dev')
     expect(result.stderr).not.toContain('preview')
   }, 30000)
 
@@ -478,13 +478,13 @@ describe('CLI check command resolves its loader from the project', () => {
 
   it('names check, not dev, when the project lacks a package the check loads', async () => {
     const entry = await installCli()
-    const dir = await project({ loader: true, without: '@paradoc/react-pdf' })
+    const dir = await project({ loader: true, without: '@asterdoc/react-pdf' })
 
     const result = await run(entry, dir)
 
     expect(result.exitCode).toBe(1)
-    expect(result.stderr).toContain('paradoc check needs @paradoc/react-pdf, and it is not installed')
-    expect(result.stderr).toContain('npm install @paradoc/react-pdf\n')
-    expect(result.stderr).not.toContain('paradoc dev')
+    expect(result.stderr).toContain('asterdoc check needs @asterdoc/react-pdf, and it is not installed')
+    expect(result.stderr).toContain('npm install @asterdoc/react-pdf\n')
+    expect(result.stderr).not.toContain('asterdoc dev')
   }, 30000)
 })

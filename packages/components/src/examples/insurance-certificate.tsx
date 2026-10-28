@@ -15,11 +15,11 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { p } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { p } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 
 import { Document } from "../components/document";
-import type { DocumentData } from "@paradoc/react";
+import type { DocumentData } from "@asterdoc/react";
 import { Text } from "../components/text";
 import { Field } from "../components/field";
 import { Section } from "../components/section";
@@ -27,7 +27,7 @@ import { Table } from "../components/table";
 
 /** The certificate form, exactly as authored. */
 export const insuranceCertificateSpec = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "certificate-of-insurance",
   version: "1.0.0",

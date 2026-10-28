@@ -9,11 +9,11 @@
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { Checklist, Form, Layer, Resolver } from '@paradoc/types'
-import { createTypeEnv, T, type ExprType, type TypeEnv } from '@paradoc/expr'
-import { checkTextTemplate, textTemplateSigningDirectives, type TemplateDiagnostic } from '@paradoc/render/text'
-import { checkDocxTemplate } from '@paradoc/render/docx'
-import { isDocxMimeType, isTextTemplateMimeType } from '@paradoc/schemas'
+import type { Checklist, Form, Layer, Resolver } from '@asterdoc/types'
+import { createTypeEnv, T, type ExprType, type TypeEnv } from '@asterdoc/expr'
+import { checkTextTemplate, textTemplateSigningDirectives, type TemplateDiagnostic } from '@asterdoc/render/text'
+import { checkDocxTemplate } from '@asterdoc/render/docx'
+import { isDocxMimeType, isTextTemplateMimeType } from '@asterdoc/schemas'
 import { flowPlacementIssues } from '@/validation/layer-references'
 import { buildFormTypeAcc, registerPartyTypes } from '../type-checking/build-type-environment'
 

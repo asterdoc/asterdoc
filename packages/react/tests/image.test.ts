@@ -107,11 +107,11 @@ describe("bytes as a source both outputs can read", () => {
 describe("the one source both outputs read", () => {
   it("embeds bytes and leaves a source string alone", () => {
     expect(imageSource({ bytes: PNG }, "logo")).toBe(imageDataUri(PNG, "logo"));
-    expect(imageSource({ src: "paradoc:logo.png" }, "logo")).toBe("paradoc:logo.png");
+    expect(imageSource({ src: "asterdoc:logo.png" }, "logo")).toBe("asterdoc:logo.png");
   });
 
   it("prefers bytes over a source, because bytes need nothing supplied", () => {
-    expect(imageSource({ bytes: PNG, src: "paradoc:logo.png" }, "logo")).toBe(
+    expect(imageSource({ bytes: PNG, src: "asterdoc:logo.png" }, "logo")).toBe(
       imageDataUri(PNG, "logo")
     );
   });

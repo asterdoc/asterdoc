@@ -1,5 +1,5 @@
 /**
- * @paradoc/expr: the Paradoc expression language, with its parser, evaluator,
+ * @asterdoc/expr: the Asterdoc expression language, with its parser, evaluator,
  * and artifact-aware type checker.
  */
 

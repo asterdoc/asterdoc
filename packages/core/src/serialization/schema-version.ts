@@ -1,4 +1,4 @@
-import { PARADOC_SCHEMA_URL, SCHEMA_VERSION, readSchemaAddress } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION, readSchemaAddress } from '@asterdoc/schemas'
 import { LoadError } from './load-error'
 
 /**
@@ -7,7 +7,7 @@ import { LoadError } from './load-error'
  * - `missing-version`: an artifact file has no `$schema`.
  * - `outdated-version`: `$schema` names an earlier published version.
  * - `unknown-version`: `$schema` names no published version, names no
- *   version at all (the undated `schema.json`), or is not a Paradoc address.
+ *   version at all (the undated `schema.json`), or is not an Asterdoc address.
  */
 export type SchemaVersionErrorCode = 'missing-version' | 'outdated-version' | 'unknown-version'
 
@@ -15,7 +15,7 @@ export type SchemaVersionErrorCode = 'missing-version' | 'outdated-version' | 'u
  * An artifact does not follow the current schema version.
  *
  * Nothing but `migrate` accepts another version: the message names what was
- * found, the current version, and the `paradoc migrate` command that upgrades
+ * found, the current version, and the `asterdoc migrate` command that upgrades
  * the file.
  */
 export class SchemaVersionError extends LoadError {
@@ -34,7 +34,7 @@ export class SchemaVersionError extends LoadError {
 	}
 }
 
-const CURRENT = `the current schema version is ${SCHEMA_VERSION} (${PARADOC_SCHEMA_URL})`
+const CURRENT = `the current schema version is ${SCHEMA_VERSION} (${ASTERDOC_SCHEMA_URL})`
 
 type ArtifactShape = { $schema?: unknown; kind?: unknown; contents?: unknown }
 
@@ -103,39 +103,41 @@ function checkAddress(
 		return new SchemaVersionError(
 			'missing-version',
 			undefined,
-			`${subject} has no $schema; ${CURRENT}. Run paradoc migrate <file> --from <version> to add it.`,
+			`${subject} has no $schema; ${CURRENT}. Run asterdoc migrate <file> --from <version> to add it.`,
 			path,
 		)
 	}
 	const read = typeof address === 'string' ? readSchemaAddress(address) : ({ kind: 'foreign' } as const)
 	switch (read.kind) {
-		case 'known':
-			if (read.version === SCHEMA_VERSION) return undefined
+		case 'known': {
+			const version: string = read.version
+			if (version === SCHEMA_VERSION) return undefined
 			return new SchemaVersionError(
 				'outdated-version',
 				address,
-				`${subject} was written for schema version ${read.version}; ${CURRENT}. Run paradoc migrate <file> to upgrade it.`,
+				`${subject} was written for schema version ${version}; ${CURRENT}. Run asterdoc migrate <file> to upgrade it.`,
 				path,
 			)
+		}
 		case 'undated':
 			return new SchemaVersionError(
 				'unknown-version',
 				address,
-				`${where}$schema ${String(address)} names no schema version; ${CURRENT}. Run paradoc migrate <file> --from <version> to name it.`,
+				`${where}$schema ${String(address)} names no schema version; ${CURRENT}. Run asterdoc migrate <file> --from <version> to name it.`,
 				path,
 			)
 		case 'unknown-version':
 			return new SchemaVersionError(
 				'unknown-version',
 				address,
-				`${where}$schema names schema version ${read.version}, which does not exist; ${CURRENT}. Run paradoc migrate <file> --from <version> once you know its version.`,
+				`${where}$schema names schema version ${read.version}, which does not exist; ${CURRENT}. Run asterdoc migrate <file> --from <version> once you know its version.`,
 				path,
 			)
 		case 'foreign':
 			return new SchemaVersionError(
 				'unknown-version',
 				address,
-				`${where}$schema ${JSON.stringify(address)} is not a Paradoc schema address; ${CURRENT}. Run paradoc migrate <file> --from <version> once you know its version.`,
+				`${where}$schema ${JSON.stringify(address)} is not an Asterdoc schema address; ${CURRENT}. Run asterdoc migrate <file> --from <version> once you know its version.`,
 				path,
 			)
 	}

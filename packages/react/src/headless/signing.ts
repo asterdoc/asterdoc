@@ -1,4 +1,4 @@
-import { INITIALS_RULE, SIGNATURE_RULE } from "@paradoc/core";
+import { INITIALS_RULE, SIGNATURE_RULE } from "@asterdoc/core";
 
 import { useArtifact } from "./artifact";
 import { usePartyContact } from "./party";

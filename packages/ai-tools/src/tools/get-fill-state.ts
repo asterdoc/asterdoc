@@ -1,5 +1,5 @@
-import type { RuleValidationResult } from '@paradoc/core'
-import type { ParadocToolsConfig } from '../config'
+import type { RuleValidationResult } from '@asterdoc/core'
+import type { AsterdocToolsConfig } from '../config'
 import { FillStateInputSchema, type FillItemState, type FillStateInput, type FillStateOutput, type FillTarget, type RuleViolation, type ToolError } from '../contracts'
 import { artifactKind, asChecklistPayload, asFormPayload, contextOptions, contextSnapshot, makeResolver } from '../artifact'
 import { errorFromUnknown, validationErrors } from '../errors'
@@ -54,11 +54,11 @@ function stateOutput(kind: 'form' | 'checklist', state: {
 
 export async function executeGetFillState(
 	input: FillStateInput | Record<string, unknown>,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<FillStateOutput> {
 	try {
 		const normalized = FillStateInputSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject } = await import('@paradoc/core')
+		const { isChecklist, isForm, loadFromObject } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		if (isForm(artifact)) {
 			const instance = loadFromObject<'form'>(artifact, { resolver: makeResolver(base_url, config) })

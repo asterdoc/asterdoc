@@ -1,6 +1,6 @@
 /**
  * schemas-003: registering schemas by id wipes their title and description.
- * Input: FormSchema after src/zod/module.ts runs ParadocRegistry.add(FormSchema, { id: 'Form' }),
+ * Input: FormSchema after src/zod/module.ts runs AsterdocRegistry.add(FormSchema, { id: 'Form' }),
  *        and the published bundle of the current schema version.
  * Expected: FormSchema.meta() keeps title 'Form' and its description; bundle $defs.Form has a title.
  * Actual: FormSchema.meta() is { id: 'Form' }; only $defs.Layer keeps a title/description.

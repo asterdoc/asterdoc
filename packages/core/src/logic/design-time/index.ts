@@ -20,5 +20,5 @@ export { validateLogic } from './validation'
 
 export type { LogicValidatableArtifact } from './validation'
 
-// Schema types (re-export from @paradoc/types)
-export type { CondExpr, DefsSection } from '@paradoc/types'
+// Schema types (re-export from @asterdoc/types)
+export type { CondExpr, DefsSection } from '@asterdoc/types'

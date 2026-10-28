@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 import { load, safeLoad, loadFromObject, safeLoadFromObject, LoadError, type AnyArtifactInstance } from '@/serialization'
 import type { FormInstance } from '@/artifacts'
 
@@ -15,7 +15,7 @@ describe('load functions', () => {
   // ============================================================================
 
   const formYAML = `
-$schema: ${PARADOC_SCHEMA_URL}
+$schema: ${ASTERDOC_SCHEMA_URL}
 kind: form
 name: test-form
 version: 1.0.0
@@ -27,7 +27,7 @@ fields:
 `
 
   const formJSON = JSON.stringify({
-    $schema: PARADOC_SCHEMA_URL,
+    $schema: ASTERDOC_SCHEMA_URL,
     kind: 'form',
     name: 'test-form',
     version: '1.0.0',
@@ -38,7 +38,7 @@ fields:
   })
 
   const documentYAML = `
-$schema: ${PARADOC_SCHEMA_URL}
+$schema: ${ASTERDOC_SCHEMA_URL}
 kind: document
 name: test-document
 version: 1.0.0
@@ -51,7 +51,7 @@ layers:
 `
 
   const bundleYAML = `
-$schema: ${PARADOC_SCHEMA_URL}
+$schema: ${ASTERDOC_SCHEMA_URL}
 kind: bundle
 name: test-bundle
 version: 1.0.0
@@ -64,7 +64,7 @@ contents:
 `
 
   const checklistYAML = `
-$schema: ${PARADOC_SCHEMA_URL}
+$schema: ${ASTERDOC_SCHEMA_URL}
 kind: checklist
 name: test-checklist
 version: 1.0.0
@@ -119,7 +119,7 @@ items:
 
       test('loads bundle from JSON', () => {
         const json = JSON.stringify({
-          $schema: PARADOC_SCHEMA_URL,
+          $schema: ASTERDOC_SCHEMA_URL,
           kind: 'bundle',
           name: 'json-bundle',
           version: '1.0.0',
@@ -150,7 +150,7 @@ title: No Kind
 
       test('throws LoadError for unknown kind', () => {
         const yaml = `
-$schema: ${PARADOC_SCHEMA_URL}
+$schema: ${ASTERDOC_SCHEMA_URL}
 kind: unknown
 name: unknown
 version: 1.0.0
@@ -259,7 +259,7 @@ title: No Kind
 
       test('returns error for unknown kind', () => {
         const yaml = `
-$schema: ${PARADOC_SCHEMA_URL}
+$schema: ${ASTERDOC_SCHEMA_URL}
 kind: unknown
 name: unknown
 version: 1.0.0
@@ -275,7 +275,7 @@ title: Unknown
 
       test('returns error for validation failures', () => {
         const yaml = `
-$schema: ${PARADOC_SCHEMA_URL}
+$schema: ${ASTERDOC_SCHEMA_URL}
 kind: form
 name: ""
 version: 1.0.0

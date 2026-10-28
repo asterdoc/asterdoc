@@ -30,12 +30,12 @@ describe('CLI show command', () => {
   })
 
   it('should show issuer, edition and full registry coordinates', async () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'paradoc-show-'))
+    const dir = mkdtempSync(path.join(tmpdir(), 'asterdoc-show-'))
     const file = path.join(dir, 'packet.json')
     writeFileSync(
       file,
       JSON.stringify({
-        $schema: 'https://schema.paradoc.dev/2026-10-02.json',
+        $schema: 'https://schema.asterdoc.com/2026-10-28.json',
         kind: 'bundle',
         name: 'packet',
         issuer: 'U.S. Internal Revenue Service',

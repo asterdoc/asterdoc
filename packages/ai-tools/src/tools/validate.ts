@@ -1,5 +1,5 @@
-import type { ValidateLayersResult } from '@paradoc/core'
-import type { ParadocToolsConfig } from '../config'
+import type { ValidateLayersResult } from '@asterdoc/core'
+import type { AsterdocToolsConfig } from '../config'
 import { ValidateArtifactInputSchema, type ValidateArtifactInput, type ValidateArtifactOutput } from '../contracts'
 import { artifactKind, makeResolver } from '../artifact'
 import { errorFromUnknown } from '../errors'
@@ -7,10 +7,10 @@ import { resolveSource } from '../resolve-source'
 
 export async function executeValidateArtifact(
 	input: ValidateArtifactInput | Record<string, unknown>,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<ValidateArtifactOutput> {
 	try {
-		const { validate, validateLayers } = await import('@paradoc/core')
+		const { validate, validateLayers } = await import('@asterdoc/core')
 		const normalized = ValidateArtifactInputSchema.parse(input)
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		const kind = artifactKind(artifact)

@@ -7,7 +7,7 @@
  * `last` answer where a row sits, and exist only inside a loop.
  */
 
-import type { Formatter } from '@paradoc/types'
+import type { Formatter } from '@asterdoc/types'
 import {
   buildRegistry,
   EvaluationError,
@@ -21,7 +21,7 @@ import {
   type HostFunction,
   type Registry,
   type Value,
-} from '@paradoc/expr'
+} from '@asterdoc/expr'
 import { FormattedFieldValue, unwrapFormattedValue } from '../text/field-formatter'
 import { TemplateError, type TemplatePosition } from './errors'
 

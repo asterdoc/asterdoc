@@ -5,12 +5,12 @@
  * This script:
  * 1. Exports individual schemas to schemas/{version}/ folder
  * 2. Uses Zod's z.toJSONSchema() for conversion
- * 3. Outputs to schemas/ folder for upload to schema.paradoc.dev
+ * 3. Outputs to schemas/ folder for upload to schema.asterdoc.com
  *
- * Output structure (for schema.paradoc.dev):
- * - {version}/form.json ($id: https://schema.paradoc.dev/{version}/form.json)
- * - {version}/document.json ($id: https://schema.paradoc.dev/{version}/document.json)
- * - {version}/bundle.json ($id: https://schema.paradoc.dev/{version}/bundle.json)
+ * Output structure (for schema.asterdoc.com):
+ * - {version}/form.json ($id: https://schema.asterdoc.com/{version}/form.json)
+ * - {version}/document.json ($id: https://schema.asterdoc.com/{version}/document.json)
+ * - {version}/bundle.json ($id: https://schema.asterdoc.com/{version}/bundle.json)
  * - etc.
  */
 
@@ -92,6 +92,14 @@ function transformRefsToBundle(obj: unknown, bundleId: string): unknown {
 	return result;
 }
 
+function inlineRootRef(schema: Record<string, unknown>): Record<string, unknown> {
+	const { $ref, $defs, ...rest } = schema;
+	if (typeof $ref !== 'string' || !$ref.startsWith('#/$defs/') || typeof $defs !== 'object' || $defs === null) return schema;
+	const root = ($defs as Record<string, unknown>)[$ref.slice('#/$defs/'.length)];
+	if (typeof root !== 'object' || root === null) return schema;
+	return { ...rest, ...(root as Record<string, unknown>), $defs };
+}
+
 /**
  * Strip local $defs from schema since all refs now point to the external bundle.
  * This removes redundant definitions that were only needed for local resolution.
@@ -109,7 +117,7 @@ async function collectSchemas(): Promise<SchemaInfo[]> {
 	for (const [exportName, exportValue] of Object.entries(module)) {
 		if (
 			exportName.endsWith('Schema') &&
-			exportName !== 'ParadocSchema' && // Skip the root union schema
+			exportName !== 'AsterdocSchema' && // Skip the root union schema
 			exportValue &&
 			typeof exportValue === 'object'
 		) {
@@ -143,7 +151,7 @@ export async function generateIndividualSchemas(): Promise<IndividualSchemaExpor
 			}) as Record<string, unknown>;
 
 			// Transform local $refs to bundle fragment references
-			const transformedSchema = transformRefsToBundle(rawSchema, SCHEMA_VERSIONED_ID) as Record<string, unknown>;
+			const transformedSchema = transformRefsToBundle(inlineRootRef(rawSchema), SCHEMA_VERSIONED_ID) as Record<string, unknown>;
 
 			// Strip local $defs (now redundant since refs point to bundle)
 			const cleanedSchema = stripLocalDefs(transformedSchema);
@@ -202,7 +210,7 @@ async function main() {
 		if (failures.length > 0) {
 			console.log(`  Skipped: ${failures.length}`);
 		}
-		console.log(`\nUpload contents of ${relative(SCHEMAS_PKG_DIR, OUTPUT_DIR)}/ to schema.paradoc.dev/${SCHEMA_VERSION}/`);
+		console.log(`\nUpload contents of ${relative(SCHEMAS_PKG_DIR, OUTPUT_DIR)}/ to schema.asterdoc.com/${SCHEMA_VERSION}/`);
 
 		if (failures.length > 0) {
 			// A schema that failed to export leaves the old published file in place

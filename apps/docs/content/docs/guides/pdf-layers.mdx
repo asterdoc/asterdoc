@@ -7,11 +7,11 @@ ogDescription: Fill existing PDF forms by mapping fields to AcroForm bindings
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-In this guide, we'll use Paradoc to fill out an IRS W-9 form. The W-9 is a common tax document that businesses use to collect taxpayer identification information from contractors and vendors. It's a great example because it has text fields, checkboxes, and split fields (like SSN broken into three boxes) — all patterns you'll encounter when working with PDF forms.
+In this guide, we'll use Asterdoc to fill out an IRS W-9 form. The W-9 is a common tax document that businesses use to collect taxpayer identification information from contractors and vendors. It's a great example because it has text fields, checkboxes, and split fields (like SSN broken into three boxes) — all patterns you'll encounter when working with PDF forms.
 
 **About AcroForm Fields**
 
-AcroForm is the original interactive PDF forms technology introduced by Adobe. When a PDF lets you type into text fields, check boxes, or select dropdowns, those elements are AcroForm fields. Each field has an internal (often non-semantic, like `Page1.f1_01[0].top`) name, which Paradoc uses to map your data to the correct field in the PDF.
+AcroForm is the original interactive PDF forms technology introduced by Adobe. When a PDF lets you type into text fields, check boxes, or select dropdowns, those elements are AcroForm fields. Each field has an internal (often non-semantic, like `Page1.f1_01[0].top`) name, which Asterdoc uses to map your data to the correct field in the PDF.
 
 <Steps>
 <Step>
@@ -76,22 +76,22 @@ Install the SDK, unified renderer, and filesystem resolver.
 <Tabs items={['npm', 'pnpm', 'yarn', 'bun']} groupId="package-manager" persist>
   <Tab value="npm">
     ```bash
-    npm install @paradoc/sdk @paradoc/render @paradoc/resolvers
+    npm install @asterdoc/sdk @asterdoc/render @asterdoc/resolvers
     ```
   </Tab>
   <Tab value="pnpm">
     ```bash
-    pnpm add @paradoc/sdk @paradoc/render @paradoc/resolvers
+    pnpm add @asterdoc/sdk @asterdoc/render @asterdoc/resolvers
     ```
   </Tab>
   <Tab value="yarn">
     ```bash
-    yarn add @paradoc/sdk @paradoc/render @paradoc/resolvers
+    yarn add @asterdoc/sdk @asterdoc/render @asterdoc/resolvers
     ```
   </Tab>
   <Tab value="bun">
     ```bash
-    bun add @paradoc/sdk @paradoc/render @paradoc/resolvers
+    bun add @asterdoc/sdk @asterdoc/render @asterdoc/resolvers
     ```
   </Tab>
 </Tabs>
@@ -103,7 +103,7 @@ Install the SDK, unified renderer, and filesystem resolver.
 Before creating bindings, discover the AcroForm field names in your PDF template using `inspectAcroFormFields`.
 
 ```ts
-import { inspectAcroFormFields } from '@paradoc/render/pdf'
+import { inspectAcroFormFields } from '@asterdoc/render/pdf'
 import { readFileSync } from 'node:fs'
 
 const template = readFileSync('layers/w9.pdf')
@@ -131,8 +131,8 @@ form — it reads `layers/w9.pdf`, and every instance you derive from `w9Form`
 later carries the same resolver.
 
 ```ts
-import { p } from '@paradoc/sdk'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { p } from '@asterdoc/sdk'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: '.' })
 
@@ -229,7 +229,7 @@ layer's MIME type, and the resolver bound to `w9Form` loads the template from
 the filesystem — `filled` carries it too, so the render call doesn't repeat it.
 
 ```ts
-import { createLayerRenderer } from '@paradoc/render'
+import { createLayerRenderer } from '@asterdoc/render'
 import { writeFileSync } from 'node:fs'
 
 const output = await filled.render({
@@ -246,7 +246,7 @@ wrapping. The SSN parts land one digit per box. A value too long for its field f
 `PdfFieldFillError`, naming the field, rather than being clipped. See
 [Field appearance](/sdk/renderers/pdf#field-appearance).
 
-`paradoc validate` finds these failures before any data is filled. It lays out
+`asterdoc validate` finds these failures before any data is filled. It lays out
 a typical value at each bound field's length limit, so give every bound text
 field a `maxLength` (or a `pattern`) that its box can hold. See
 [Checking bindings before filling](/sdk/renderers/pdf#checking-bindings-before-filling).

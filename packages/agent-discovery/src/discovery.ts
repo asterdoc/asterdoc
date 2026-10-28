@@ -64,13 +64,13 @@ export function apiCatalog(origin: string) {
 export function serverCard() {
   return {
     $schema: SERVER_CARD_SCHEMA,
-    name: "dev.paradoc/mcp",
-    title: "Paradoc",
+    name: "com.asterdoc/mcp",
+    title: "Asterdoc",
     version: MCP_SERVER_VERSION,
-    description: "Fill, render, seal and send Paradoc forms and documents.",
-    websiteUrl: "https://paradoc.dev",
+    description: "Fill, render, seal and send Asterdoc forms and documents.",
+    websiteUrl: "https://asterdoc.com",
     repository: {
-      url: "https://github.com/paradoc-dev/paradoc",
+      url: "https://github.com/asterdoc/asterdoc",
       source: "github",
     },
     remotes: [
@@ -81,7 +81,7 @@ export function serverCard() {
           {
             name: "x-api-key",
             description:
-              "A Paradoc API key, for clients that cannot run OAuth. Interactive clients sign in with OAuth instead.",
+              "An Asterdoc API key, for clients that cannot run OAuth. Interactive clients sign in with OAuth instead.",
             isRequired: false,
             isSecret: true,
           },

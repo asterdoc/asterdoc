@@ -11,8 +11,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import os from 'node:os'
-import { validate } from '@paradoc/core'
-import { RegistryIndexSchema, listRegistryReleases } from '@paradoc/schemas'
+import { validate } from '@asterdoc/core'
+import { RegistryIndexSchema, listRegistryReleases } from '@asterdoc/schemas'
 import { runCli } from '../setup/spawn-cli.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../test-registry')
@@ -36,7 +36,7 @@ const releases = manifest.items.flatMap((item) =>
 
 describe('test registry', () => {
   it('matches fresh registry compile output', async () => {
-    const output = fs.mkdtempSync(path.join(os.tmpdir(), 'paradoc-test-registry-'))
+    const output = fs.mkdtempSync(path.join(os.tmpdir(), 'asterdoc-test-registry-'))
     try {
       const result = await runCli(['registry', 'compile', '--config', path.join(root, 'registry.config.json'), '--output', output], { cwd: root })
       expect(result.exitCode).toBe(0)

@@ -1,14 +1,14 @@
 ---
 title: Use another framework
-description: Call the Paradoc tools from plain code, or adapt them to a framework that has no adapter
-ogTitle: Paradoc tools for other frameworks
-ogDescription: Call the Paradoc tools directly, or wrap them for any AI framework with the framework-neutral tool definitions
+description: Call the Asterdoc tools from plain code, or adapt them to a framework that has no adapter
+ogTitle: Asterdoc tools for other frameworks
+ogDescription: Call the Asterdoc tools directly, or wrap them for any AI framework with the framework-neutral tool definitions
 ---
 
-Paradoc has adapters for the Vercel AI SDK, TanStack AI, and Mastra. For any other framework, or to call the tools from your own code, use `@paradoc/ai-tools`. It is the package every adapter wraps, and it does not depend on an AI framework.
+Asterdoc has adapters for the Vercel AI SDK, TanStack AI, and Mastra. For any other framework, or to call the tools from your own code, use `@asterdoc/ai-tools`. It is the package every adapter wraps, and it does not depend on an AI framework.
 
 ```bash
-npm install @paradoc/ai-tools
+npm install @asterdoc/ai-tools
 ```
 
 It needs Node.js 22.13 or newer.
@@ -18,9 +18,9 @@ It needs Node.js 22.13 or newer.
 Each tool has an execute function, such as `executeFill` for `fill`. It takes the same snake_case input as the tool, and the same configuration as the adapters.
 
 ```typescript
-import { executeFill, executeGetFillState, executeRender } from "@paradoc/ai-tools"
+import { executeFill, executeGetFillState, executeRender } from "@asterdoc/ai-tools"
 
-const config = { defaultRegistryUrl: "https://public.paradoc.dev" } // a demo registry
+const config = { defaultRegistryUrl: "https://public.asterdoc.com" } // a demo registry
 const source = { source: "registry", artifact_name: "pet-addendum" } as const
 
 const draft = await executeFill(
@@ -60,11 +60,11 @@ import {
   configForExecution,
   operationNames,
   toolDefinitions,
-  type ParadocToolsConfig,
-} from "@paradoc/ai-tools"
+  type AsterdocToolsConfig,
+} from "@asterdoc/ai-tools"
 import { z } from "zod"
 
-export function myFrameworkTools(config?: ParadocToolsConfig) {
+export function myFrameworkTools(config?: AsterdocToolsConfig) {
   return operationNames.map((name) => {
     const definition = toolDefinitions[name]
     return {
@@ -88,9 +88,9 @@ An adapter must do three things:
 - **Join the abort signals.** `configForExecution(config, signal)` joins the framework's abort signal to `signal` and `context.signal` from the configuration.
 - **Bound what the model sees.** `boundModelValue(output, maxBytes)` cuts long `content`, such as a base64 PDF, to `maxOutputBytes` (default 16,384) and marks it `truncated: true`. Return the full result to application code.
 
-The [Vercel AI SDK](https://github.com/paradoc-dev/paradoc/tree/main/packages/ai-sdk), [TanStack AI](https://github.com/paradoc-dev/paradoc/tree/main/packages/tanstack-ai), and [Mastra](https://github.com/paradoc-dev/paradoc/tree/main/packages/mastra) adapters are complete examples.
+The [Vercel AI SDK](https://github.com/asterdoc/asterdoc/tree/main/packages/ai-sdk), [TanStack AI](https://github.com/asterdoc/asterdoc/tree/main/packages/tanstack-ai), and [Mastra](https://github.com/asterdoc/asterdoc/tree/main/packages/mastra) adapters are complete examples.
 
 ## Next
 
-- [`@paradoc/ai-tools` API](/ai-tools/api): every export and the configuration.
+- [`@asterdoc/ai-tools` API](/ai-tools/api): every export and the configuration.
 - [Tool reference](/ai-tools): the inputs and outputs of each tool.

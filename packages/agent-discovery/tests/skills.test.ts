@@ -45,10 +45,10 @@ const manifest = (name: string, body = "See [the guide](./references/guide.md)."
   `---\nname: ${name}\ndescription: >\n  A demo\n  skill.\n---\n\n${body}\n`;
 
 describe("the public skills", () => {
-  it("publish paradoc and paradoc-react with a valid index", () => {
+  it("publish asterdoc and asterdoc-react with a valid index", () => {
     const { index, read } = publish(publicSkills, "public");
     expect(index.$schema).toBe(SKILLS_INDEX_SCHEMA);
-    expect(index.skills.map((skill) => skill.name)).toEqual(["paradoc", "paradoc-react"]);
+    expect(index.skills.map((skill) => skill.name)).toEqual(["asterdoc", "asterdoc-react"]);
     for (const skill of index.skills) {
       expect(skill.digest).toBe(sha256(read(skill.url)));
       expect(skill.description.length).toBeLessThanOrEqual(1024);

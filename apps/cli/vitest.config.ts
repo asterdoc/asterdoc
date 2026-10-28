@@ -24,7 +24,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@paradoc/core': coreEntry,
+      '@asterdoc/core': coreEntry,
       '@': path.resolve(__dirname, '../../packages/core/src'),
     },
   },

@@ -1,18 +1,18 @@
 ---
 title: check
 description: Check a React composition against its artifact without rendering a PDF
-ogTitle: paradoc check
+ogTitle: asterdoc check
 ogDescription: Find unsupported classes, unresolved field paths, and missing images in a composition before rendering it
 ---
 
-Checks a `@paradoc/react` composition against the form artifact whose React
+Checks a `@asterdoc/react` composition against the form artifact whose React
 layer it renders — the same tree walk the default PDF path runs — and
 reports every fault without producing PDF bytes.
 
 ## Usage
 
 ```bash
-paradoc check <target> [options]
+asterdoc check <target> [options]
 ```
 
 ## Arguments
@@ -31,7 +31,7 @@ paradoc check <target> [options]
 
 ## Description
 
-`paradoc check` resolves `target` to one artifact and one React layer, binds the
+`asterdoc check` resolves `target` to one artifact and one React layer, binds the
 layer's module to a component, and walks the rendered tree the way the
 default PDF path would — without invoking a PDF engine. It reports three
 kinds of fault, independently:
@@ -49,11 +49,11 @@ React layer resolves to it; passing the artifact file reads its declared
 layer directly. If more than one artifact points at the composition, or the
 artifact declares more than one React layer, pass `--layer` to pick one.
 
-The check runs through `@paradoc/react-pdf/check` and loads the composition
+The check runs through `@asterdoc/react-pdf/check` and loads the composition
 with `tsx`. Install them in the project:
 
 ```bash
-npm install @paradoc/react @paradoc/react-pdf react react-dom
+npm install @asterdoc/react @asterdoc/react-pdf react react-dom
 npm install -D tsx
 ```
 
@@ -63,8 +63,8 @@ manager.
 Whichever way the artifact is found, from the target, from a layer that
 points at the composition, or as a sibling of the same name, it must carry
 the current [schema version](/schemas#loading-rules) in `$schema`, as for
-`paradoc dev`. A missing, outdated, or unknown `$schema` exits 1 and points
-to [`paradoc migrate`](/cli/commands/migrate).
+`asterdoc dev`. A missing, outdated, or unknown `$schema` exits 1 and points
+to [`asterdoc migrate`](/cli/commands/migrate).
 
 Sample data, when `--data` is not given, is discovered **sibling-first** and may be partial: a
 `<composition>.sample.{ts,tsx,js,mjs,jsx}` file next to the composition wins
@@ -87,25 +87,25 @@ real data a serializer still rejects is.
 Check a composition by its own file:
 
 ```bash
-paradoc check ./compositions/purchase-order.tsx
+asterdoc check ./compositions/purchase-order.tsx
 ```
 
 Check the artifact directly, naming a layer:
 
 ```bash
-paradoc check ./artifacts/purchase-order.json --layer composition
+asterdoc check ./artifacts/purchase-order.json --layer composition
 ```
 
 Check against the Chromium adapter's rules instead of the default:
 
 ```bash
-paradoc check ./compositions/purchase-order.tsx --adapter chromium
+asterdoc check ./compositions/purchase-order.tsx --adapter chromium
 ```
 
 ## See also
 
 - [`add`](/cli/commands/add) — install document components from the
-  [Paradoc component registry](/components)
+  [Asterdoc component registry](/components)
 - [Components](/components) — the component vocabulary the check walks
 
-An artifact argument may be a file path or an installed `@namespace/name` reference from `.paradoc/lock.json`. An uninstalled reference fails with an error.
+An artifact argument may be a file path or an installed `@namespace/name` reference from `.asterdoc/lock.json`. An uninstalled reference fails with an error.

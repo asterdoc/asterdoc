@@ -5,15 +5,15 @@ import { consoleConfig } from "../config/index.js";
 
 /**
  * Create the 'console' command
- * Opens the Paradoc web console in browser
+ * Opens the Asterdoc web console in browser
  */
 export function createConsoleCommand(): Command {
 	const consoleCmd = new Command("console");
 
 	consoleCmd
-		.description("Open Paradoc web console in browser")
+		.description("Open Asterdoc web console in browser")
 		.action(async () => {
-			console.log(kleur.gray("Opening Paradoc console..."));
+			console.log(kleur.gray("Opening Asterdoc console..."));
 			await open(consoleConfig.baseUrl);
 		});
 

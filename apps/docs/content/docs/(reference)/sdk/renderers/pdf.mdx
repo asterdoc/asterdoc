@@ -3,16 +3,16 @@ title: pdfRenderer
 description: Fill PDF forms with AcroForm field support
 ---
 
-Fill PDF forms with Paradoc's dependency-light PDF implementation. It supports
+Fill PDF forms with Asterdoc's dependency-light PDF implementation. It supports
 AcroForm text fields, checkboxes, dropdowns, and radio buttons with automatic
 field formatting, plus coordinate-based text and image overlays.
 
 ## Example
 
 ```ts
-import { p } from '@paradoc/core'
-import { pdfRenderer } from '@paradoc/render/pdf'
-import { createFsResolver } from '@paradoc/resolvers/fs'
+import { p } from '@asterdoc/core'
+import { pdfRenderer } from '@asterdoc/render/pdf'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
 import { writeFileSync } from 'node:fs'
 
 const resolver = createFsResolver({ root: process.cwd() })
@@ -69,7 +69,7 @@ writeFileSync('w9-filled.pdf', output)
 From the unified package's PDF entry point:
 
 ```ts
-import { pdfRenderer } from '@paradoc/render/pdf'
+import { pdfRenderer } from '@asterdoc/render/pdf'
 ```
 
 ## API
@@ -79,7 +79,7 @@ import { pdfRenderer } from '@paradoc/render/pdf'
 Factory function that creates a configured PDF renderer instance.
 
 ```ts
-function pdfRenderer(options?: PdfRendererOptions): ParadocRenderer<
+function pdfRenderer(options?: PdfRendererOptions): AsterdocRenderer<
   RendererLayer & { type: 'pdf'; content: Uint8Array },
   Uint8Array
 >
@@ -100,7 +100,7 @@ function pdfRenderer(options?: PdfRendererOptions): ParadocRenderer<
 
 #### Returns
 
-Returns an `ParadocRenderer` object with:
+Returns an `AsterdocRenderer` object with:
 
 <PropertiesTable properties={[
   { name: 'id', type: '"pdf"', description: 'Renderer identifier' },
@@ -203,7 +203,7 @@ Returns `{ data, report }`. Failures throw `PdfExtractionError` with a `code`. A
 Use `inspectAcroFormFields()` to discover field names in a PDF template:
 
 ```ts
-import { inspectAcroFormFields } from '@paradoc/render/pdf'
+import { inspectAcroFormFields } from '@asterdoc/render/pdf'
 import fs from 'fs'
 
 const template = fs.readFileSync('form.pdf')
@@ -219,7 +219,7 @@ console.log(fields)
 
 ## PDF utilities
 
-`@paradoc/render/pdf` exports dependency-light helpers for working with PDF
+`@asterdoc/render/pdf` exports dependency-light helpers for working with PDF
 bytes directly.
 
 | Function | Description |
@@ -230,7 +230,7 @@ bytes directly.
 | `mergePdfs(pdfs)` | Concatenates PDFs into one, keeping every page in order. A single source returns unchanged |
 
 ```ts
-import { flattenPdf, inspectPdf, mergePdfs, selectPdfPages } from '@paradoc/render/pdf'
+import { flattenPdf, inspectPdf, mergePdfs, selectPdfPages } from '@asterdoc/render/pdf'
 
 const { pageCount } = await inspectPdf(filled)
 const flat = await flattenPdf(filled)
@@ -260,7 +260,7 @@ They do not sign: you produce the signature container (for example a CMS
 | `readPdfSignature(pdf)` | Reads the newest signature dictionary: its container, byte range, signed bytes, text entries and signing time. `coversWholeFile` is false when any byte outside the container is unsigned, such as an update appended after signing |
 
 ```ts
-import { embedPdfSignature, preparePdfSignature, signedBytes } from '@paradoc/render/pdf'
+import { embedPdfSignature, preparePdfSignature, signedBytes } from '@asterdoc/render/pdf'
 
 const prepared = await preparePdfSignature(pdf, { contentsSize: 16384, signingTime: new Date(), name: 'Ada Lovelace' })
 const signed = embedPdfSignature(prepared, createCmsSignature(signedBytes(prepared)))
@@ -275,7 +275,7 @@ initials.
 
 ## Binding Syntax
 
-PDF bindings map AcroForm field names to Paradoc paths, with special syntax for complex cases. A path may carry the `fields.` prefix (`fields.taxType` is `taxType`), and space around `:` and `,` is ignored. Filling, extraction, the fit check, and validation all parse a binding value this way, and all read a split part only from a whole number from 1.
+PDF bindings map AcroForm field names to Asterdoc paths, with special syntax for complex cases. A path may carry the `fields.` prefix (`fields.taxType` is `taxType`), and space around `:` and `,` is ignored. Filling, extraction, the fit check, and validation all parse a binding value this way, and all read a split part only from a whole number from 1.
 
 Every binding key must name a form field of the template. `renderPdf` fails with `PdfBindingKeyError`, naming each key the template does not have, instead of filling the rest. A binding value may name only paths the fill data carries: fields, `parties`, `defs`, `annexes`, and the signing roots `_signers` and `_captures`.
 
@@ -362,9 +362,9 @@ A value that does not fit is reduced in size, down to `MIN_FONT_SIZE` (6 points)
 
 ## Checking bindings before filling
 
-`validate()` fails a binding whose value is not a known Paradoc path, and `validateLayers()` fails a binding whose key is not an AcroForm field in the template. Both errors name the layer and the key.
+`validate()` fails a binding whose value is not a known Asterdoc path, and `validateLayers()` fails a binding whose key is not an AcroForm field in the template. Both errors name the layer and the key.
 
-`validateLayers()`, `paradoc validate`, and the `validate_artifact` AI tool also check each binding of a form's PDF layer to a text field before any data exists. The check builds values the bound field accepts and lays them out with the same code filling uses, in the font filling would choose: the layer's declared font, then the form's own font for the field, then Helvetica. A font supplied only at render time is not known to the check.
+`validateLayers()`, `asterdoc validate`, and the `validate_artifact` AI tool also check each binding of a form's PDF layer to a text field before any data exists. The check builds values the bound field accepts and lays them out with the same code filling uses, in the font filling would choose: the layer's declared font, then the form's own font for the field, then Helvetica. A font supplied only at render time is not known to the check.
 
 A text, email, uuid, or uri field is checked at its length bound: `maxLength` characters, or the length its `pattern` bounds, whichever is shorter. A uuid field without a pattern takes its 36-character canonical form. Two values of that length are laid out:
 
@@ -383,7 +383,7 @@ A bound text field with nothing bounding its length is a **warning** (`unbounded
 The check is also exported on its own:
 
 ```ts
-import { checkPdfBindingFit } from '@paradoc/render/pdf'
+import { checkPdfBindingFit } from '@asterdoc/render/pdf'
 
 const issues = await checkPdfBindingFit({ template: pdfBytes, form, bindings })
 // [{ field: 'amountSource', binding: 'fields.amountSource', paths: ['fields.amountSource'], severity: 'error', reason: 'overflow', value: 'typical', limit: 6, length: 200, message: '...' }]
@@ -412,7 +412,7 @@ Most official forms need no font configuration: their values are Latin-1 and fil
 A host application can supply a font at render time, for example a licensed corporate font. It wins over the layer's font:
 
 ```ts
-import { createLayerRenderer } from '@paradoc/render'
+import { createLayerRenderer } from '@asterdoc/render'
 
 const output = await filled.render({
   renderer: createLayerRenderer({ pdfFont: { bytes: corporateFont, source: 'corporate.ttf' } }),
@@ -424,7 +424,7 @@ const output = await filled.render({
 To lay out overlay text yourself, measure it first. `pdfFontMetrics(font)` reads a `PdfFont` and returns `canDraw(text)`, true when every character has a glyph and none needs shaping, and `width(text, size)`, the width in points that an overlay draws:
 
 ```ts
-import { pdfFontMetrics } from '@paradoc/render/pdf'
+import { pdfFontMetrics } from '@asterdoc/render/pdf'
 
 const metrics = pdfFontMetrics(font)
 if (metrics.canDraw(name) && metrics.width(name, 10) <= 495) {
@@ -448,7 +448,7 @@ A value that cannot be drawn faithfully fails with `PdfFieldFillError`. It names
 A supplied or declared font that cannot be used fails with `PdfFontError`, naming its `source` and the `problem`: `unreadable`, `unsupported-format`, or `not-embeddable` (its license forbids embedding). A declared font the resolver cannot find fails the same way a missing layer file does.
 
 ```ts
-import { PdfFieldFillError, PdfFontError, renderPdf } from '@paradoc/render/pdf'
+import { PdfFieldFillError, PdfFontError, renderPdf } from '@asterdoc/render/pdf'
 
 try {
   await renderPdf({ template, data, bindings })

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Artifact } from '@paradoc/core'
+import type { Artifact } from '@asterdoc/core'
 import { planRegistryItems, releasePath, type SourceEdition, type SourceRelease } from '../../src/utils/registry-build.js'
 
 const NOW = new Date('2026-06-15T12:00:00Z')

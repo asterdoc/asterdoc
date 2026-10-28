@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
  * taxpayer PDF is loaded here.
  */
 
-import { w9 } from "@paradoc/essentials";
+import { w9 } from "@asterdoc/essentials";
 import { vendorPacketData } from "./vendor-packet-data";
 import { VendorPacketDocument } from "./vendor-packet-document";
 

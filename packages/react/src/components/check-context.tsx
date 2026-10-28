@@ -17,7 +17,7 @@
  * When present, `field`, `item`, and `party` record an unresolved reference
  * instead of throwing and return something harmless enough to keep rendering
  * going: a blank placeholder field or an empty party list. Nothing outside
- * `@paradoc/react-pdf/check` ever supplies a collector, so ordinary rendering —
+ * `@asterdoc/react-pdf/check` ever supplies a collector, so ordinary rendering —
  * and every other consumer of this package — is unchanged.
  */
 
@@ -36,7 +36,7 @@ export interface CheckModeProviderProps {
   children?: ReactNode;
 }
 
-/** Turns on check mode for the tree below. `@paradoc/react-pdf/check` supplies this. */
+/** Turns on check mode for the tree below. `@asterdoc/react-pdf/check` supplies this. */
 export function CheckModeProvider({ collector, children }: CheckModeProviderProps) {
   return <CheckModeContext.Provider value={collector}>{children}</CheckModeContext.Provider>;
 }

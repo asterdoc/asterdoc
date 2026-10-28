@@ -5,8 +5,8 @@ import fs from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { createFsResolver } from '@paradoc/resolvers/fs'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { createFsResolver } from '@asterdoc/resolvers/fs'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -20,7 +20,7 @@ beforeAll(() => {
   if (!existsSync(builtCliPath)) {
     throw new Error(
       `Built binary not found at ${builtCliPath}. Run 'pnpm build' first, or run this suite through ` +
-        "'pnpm turbo run test --filter=@paradoc/cli'.",
+        "'pnpm turbo run test --filter=@asterdoc/cli'.",
     )
   }
 })
@@ -76,7 +76,7 @@ describe('CLI render command', () => {
     let tempDir: string
 
     beforeEach(async () => {
-      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-render-test-'))
+      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-render-test-'))
     })
 
     afterEach(async () => {
@@ -194,7 +194,7 @@ describe('CLI render command', () => {
     it('reports the same core error for a React layer with and without data', async () => {
       const artifactPath = path.join(tempDir, 'react-form.json')
       await fs.writeFile(artifactPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form',
         name: 'react-form',
         version: '1.0.0',
@@ -226,7 +226,7 @@ describe('CLI render command', () => {
     let outsideDir: string
 
     beforeEach(async () => {
-      sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-cli-resolver-'))
+      sandbox = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-cli-resolver-'))
       artifactDir = path.join(sandbox, 'artifacts', 'nested')
       outsideDir = path.join(sandbox, 'outside')
       await Promise.all([
@@ -247,7 +247,7 @@ describe('CLI render command', () => {
     async function writeArtifact(layerPath: string): Promise<string> {
       const artifactPath = path.join(artifactDir, 'artifact.json')
       await fs.writeFile(artifactPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'document',
         name: 'resolver-test',
         version: '1.0.0',

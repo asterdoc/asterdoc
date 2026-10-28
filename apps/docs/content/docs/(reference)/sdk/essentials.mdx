@@ -3,29 +3,29 @@ title: Essentials
 description: Ready-to-use artifacts for common business forms
 ---
 
-`@paradoc/essentials` ships finished artifacts for common business forms: IRS tax forms, the USCIS I-9, and ACH authorizations. Each one is a form instance with its spec and layers bundled in, so you fill, render, and seal it without loading files or configuring a resolver.
+`@asterdoc/essentials` ships finished artifacts for common business forms: IRS tax forms, the USCIS I-9, and ACH authorizations. Each one is a form instance with its spec and layers bundled in, so you fill, render, and seal it without loading files or configuring a resolver.
 
 ## Installation
 
 <Tabs items={['npm', 'pnpm', 'yarn', 'bun']} groupId="package-manager" persist>
   <Tab value="npm">
     ```bash
-    npm install @paradoc/essentials
+    npm install @asterdoc/essentials
     ```
   </Tab>
   <Tab value="pnpm">
     ```bash
-    pnpm add @paradoc/essentials
+    pnpm add @asterdoc/essentials
     ```
   </Tab>
   <Tab value="yarn">
     ```bash
-    yarn add @paradoc/essentials
+    yarn add @asterdoc/essentials
     ```
   </Tab>
   <Tab value="bun">
     ```bash
-    bun add @paradoc/essentials
+    bun add @asterdoc/essentials
     ```
   </Tab>
 </Tabs>
@@ -48,12 +48,12 @@ description: Ready-to-use artifacts for common business forms
 Import from a subpath or from the package root:
 
 ```ts
-import { w9 } from '@paradoc/essentials/tax'
-import { i9 } from '@paradoc/essentials/employment'
-import { achDirectDeposit } from '@paradoc/essentials/banking'
+import { w9 } from '@asterdoc/essentials/tax'
+import { i9 } from '@asterdoc/essentials/employment'
+import { achDirectDeposit } from '@asterdoc/essentials/banking'
 
 // or
-import { w9, i9, achDirectDeposit } from '@paradoc/essentials'
+import { w9, i9, achDirectDeposit } from '@asterdoc/essentials'
 ```
 
 ## Fill and render
@@ -61,7 +61,7 @@ import { w9, i9, achDirectDeposit } from '@paradoc/essentials'
 Each export is a `FormInstance`, so it has the full [form API](/sdk/artifacts/form). Every artifact has a `markdown` layer and one or more PDF layers built from the official form.
 
 ```ts
-import { w9 } from '@paradoc/essentials/tax'
+import { w9 } from '@asterdoc/essentials/tax'
 
 const draft = w9.fill({
   parties: {

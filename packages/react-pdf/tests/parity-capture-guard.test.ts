@@ -19,7 +19,7 @@
 
 import type { ElementHandle, Page } from "puppeteer";
 import { describe, expect, it, vi } from "vitest";
-import { FURNITURE_EDGE_INSET_PX, DEFAULT_PAGE_MARGIN_PX, PAGE_SIZES } from "@paradoc/react";
+import { FURNITURE_EDGE_INSET_PX, DEFAULT_PAGE_MARGIN_PX, PAGE_SIZES } from "@asterdoc/react";
 import {
   assertPainted,
   CAPTURE_SAMPLE_INSETS,

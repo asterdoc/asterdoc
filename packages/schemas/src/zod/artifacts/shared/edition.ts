@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ArtifactEdition } from '@paradoc/types';
+import type { ArtifactEdition } from '@asterdoc/types';
 import { EditionKeySchema } from '../../primitives/artifact-selectors';
 
 /**

@@ -15,7 +15,7 @@
 /** @jsxRuntime classic */
 import React from "react";
 import { useRef } from "react";
-import { scaleTextClasses, useDocumentTokens, useFitToWidth, usePdfPages, type PdfPaintReport } from "@paradoc/react";
+import { scaleTextClasses, useDocumentTokens, useFitToWidth, usePdfPages, type PdfPaintReport } from "@asterdoc/react";
 
 export interface AttachmentProps {
   /** Name the packet carries the content under. */
@@ -67,7 +67,7 @@ export function Attachment({
 }
 
 /** What a paint produced, whether or not it painted anything. */
-export type { PdfPaintReport } from "@paradoc/react";
+export type { PdfPaintReport } from "@asterdoc/react";
 
 export interface PdfPagesProps {
   /**

@@ -47,7 +47,7 @@ import {
   PAGE_COUNTER_ATTRIBUTE,
   type FurnitureBandSlot,
   type PageFurniture,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import type { PdfPageGeometry } from "../adapter";
 import { preparePdfTree, recordOnce } from "../tree";
 import { isPageCounter, PAGE_COUNTER_CLASSES } from "./counters";

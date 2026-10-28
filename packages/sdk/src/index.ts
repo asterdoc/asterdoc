@@ -1,18 +1,18 @@
 /**
- * @paradoc/sdk
+ * @asterdoc/sdk
  *
- * Umbrella package for the Paradoc framework. Re-exports everything from
- * @paradoc/core, @paradoc/format, and @paradoc/sessions, plus render's
+ * Umbrella package for the Asterdoc framework. Re-exports everything from
+ * @asterdoc/core, @asterdoc/format, and @asterdoc/sessions, plus render's
  * createLayerRenderer, the PDF placement helpers, and hostedSealAdapter.
  */
 
-// Re-export from @paradoc/core
-export * from '@paradoc/core'
+// Re-export from @asterdoc/core
+export * from '@asterdoc/core'
 
 // Re-export the MIME-selected renderer factory. Format-specific APIs live at
-// @paradoc/render/text, @paradoc/render/pdf, and @paradoc/render/docx.
-export { createLayerRenderer } from '@paradoc/render'
-export type { CreateLayerRendererOptions } from '@paradoc/render'
+// @asterdoc/render/text, @asterdoc/render/pdf, and @asterdoc/render/docx.
+export { createLayerRenderer } from '@asterdoc/render'
+export type { CreateLayerRendererOptions } from '@asterdoc/render'
 export { HOSTED_CONVERT_PATH, HostedConversionError, hostedSealAdapter } from './hosted-seal-adapter'
 export type { HostedSealAdapterOptions } from './hosted-seal-adapter'
 
@@ -30,11 +30,11 @@ export {
 	pdfContainsEncoding,
 	stripEncoding,
 	UnknownMarkerError,
-} from '@paradoc/render/pdf'
-export type { ExtractedField, LocateQuery, UnknownMarker } from '@paradoc/render/pdf'
+} from '@asterdoc/render/pdf'
+export type { ExtractedField, LocateQuery, UnknownMarker } from '@asterdoc/render/pdf'
 
 // Re-export the standalone presentation formatter for SDK consumers.
-export * from '@paradoc/format'
+export * from '@asterdoc/format'
 
-// Re-export from @paradoc/sessions
-export * from '@paradoc/sessions'
+// Re-export from @asterdoc/sessions
+export * from '@asterdoc/sessions'

@@ -1,4 +1,4 @@
-import type { ParadocToolsConfig } from '../config'
+import type { AsterdocToolsConfig } from '../config'
 import { ExtractInputSchema, type ExtractInput, type ExtractOutput } from '../contracts'
 import { artifactKind } from '../artifact'
 import { errorFromUnknown, toolError } from '../errors'
@@ -26,7 +26,7 @@ function base64ToBytes(value: string): Uint8Array {
 	return bytes
 }
 
-async function pdfBytes(input: ExtractInput, config?: ParadocToolsConfig): Promise<Uint8Array> {
+async function pdfBytes(input: ExtractInput, config?: AsterdocToolsConfig): Promise<Uint8Array> {
 	const hasInline = typeof input.pdf === 'string' && input.pdf.length > 0
 	const hasUrl = typeof input.pdf_url === 'string' && input.pdf_url.length > 0
 	if (hasInline === hasUrl) throw new ExtractInputError('invalid_input', 'Give the filled PDF as exactly one of pdf (base64) or pdf_url.')
@@ -37,11 +37,11 @@ async function pdfBytes(input: ExtractInput, config?: ParadocToolsConfig): Promi
 
 export async function executeExtract(
 	input: ExtractInput | Record<string, unknown>,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<ExtractOutput> {
 	try {
 		const normalized = ExtractInputSchema.parse(input)
-		const { isForm, loadFromObject, validate } = await import('@paradoc/core')
+		const { isForm, loadFromObject, validate } = await import('@asterdoc/core')
 		const { artifact } = await resolveSource(normalized, config)
 		const kind = artifactKind(artifact)
 		const validation = validate(artifact)

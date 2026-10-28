@@ -3,7 +3,7 @@
  *
  * Checks a registry.json manifest against the published schema and formats
  * its releases for display. Release resolution and ordering come from
- * `@paradoc/schemas`, so every reader agrees on them.
+ * `@asterdoc/schemas`, so every reader agrees on them.
  */
 
 import {
@@ -12,7 +12,7 @@ import {
   type RegistryIndex,
   type RegistryItemSummary,
   type RegistryRelease,
-} from '@paradoc/schemas'
+} from '@asterdoc/schemas'
 
 /** Where an issue is in a manifest, such as `items[0].editions.2024-03.latestVersion`. */
 export function formatIssuePath(path: readonly PropertyKey[]): string {

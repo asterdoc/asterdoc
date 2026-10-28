@@ -5,7 +5,7 @@
  * each expression returns the type its position requires.
  *
  * These are internal implementation details used by validateLogic(). For the
- * public API, use validateLogic() from '@paradoc/core'.
+ * public API, use validateLogic() from '@asterdoc/core'.
  *
  * @internal
  */

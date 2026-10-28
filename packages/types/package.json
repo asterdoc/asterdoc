@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/types",
-  "version": "0.8.0",
-  "description": "Type-only contracts for the Paradoc framework: artifact definitions, runtime data, and renderer, formatter and resolver interfaces",
+  "name": "@asterdoc/types",
+  "version": "0.9.0",
+  "description": "Type-only contracts for the Asterdoc framework: artifact definitions, runtime data, and renderer, formatter and resolver interfaces",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -20,8 +20,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
-    "paradoc",
+    "asterdoc",
     "forms",
     "types",
     "interfaces",
@@ -30,20 +29,20 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
   },
   "engines": {
     "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/paradoc-dev/paradoc.git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
     "directory": "packages/types"
   },
-  "homepage": "https://paradoc.dev",
+  "homepage": "https://asterdoc.com",
   "bugs": {
-    "url": "https://github.com/paradoc-dev/paradoc/issues"
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "publishConfig": {
     "access": "public"
@@ -64,8 +63,8 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",

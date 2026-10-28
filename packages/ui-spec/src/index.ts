@@ -1,7 +1,7 @@
 /**
- * @paradoc/ui-spec
+ * @asterdoc/ui-spec
  *
- * Headless UI specification for Paradoc artifacts.
+ * Headless UI specification for Asterdoc artifacts.
  * See README.md for usage.
  */
 
@@ -48,6 +48,6 @@ export type { MapperContext, TranslateOptionInput } from "./mapper.js";
 export { createSubmitFieldValueAction } from "./actions.js";
 export type { SubmitFieldValueAction } from "./actions.js";
 
-// Re-export the FormField type from @paradoc/types so consumers don't
-// need to also depend on @paradoc/types just to call the mapper.
-export type { FormField } from "@paradoc/types";
+// Re-export the FormField type from @asterdoc/types so consumers don't
+// need to also depend on @asterdoc/types just to call the mapper.
+export type { FormField } from "@asterdoc/types";

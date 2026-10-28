@@ -1,5 +1,5 @@
 import { parseIdentification } from '@/validation/parsers';
-import type { Identification } from '@paradoc/types';
+import type { Identification } from '@asterdoc/types';
 
 export interface IdentificationBuilder {
 	from(value: Identification): IdentificationBuilder;

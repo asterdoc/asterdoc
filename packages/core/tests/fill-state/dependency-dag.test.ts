@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import type { Form, FormField } from '@paradoc/types'
+import type { Form, FormField } from '@asterdoc/types'
 import { form } from '@/artifacts'
 import { buildFieldDependencyGraph, transitiveBlockers } from '@/fill-state/dependency-graph'
 import { topologicalSort } from '@/logic/shared/topological-sort'

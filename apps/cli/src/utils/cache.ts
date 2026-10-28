@@ -8,7 +8,7 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { LocalFileSystem } from './local-fs.js'
-import { paradocHomePath, userHomeDir } from './home.js'
+import { asterdocHomePath, userHomeDir } from './home.js'
 
 /**
  * Cache entry stored on disk
@@ -35,7 +35,7 @@ const CacheEntrySchema = z.object({
  * Cache configuration
  */
 interface CacheManagerConfig {
-  /** Cache directory path. Default: ~/.paradoc/cache */
+  /** Cache directory path. Default: ~/.asterdoc/cache */
   directory?: string
   /** Default TTL in seconds. 0 disables caching. Default: 3600 */
   defaultTtl?: number
@@ -54,10 +54,10 @@ export type CacheResult<T> =
 export const DEFAULT_CACHE_TTL = 3600
 
 /**
- * Default cache directory, `~/.paradoc/cache`
+ * Default cache directory, `~/.asterdoc/cache`
  */
 export function defaultCacheDir(): string {
-  return paradocHomePath('cache')
+  return asterdocHomePath('cache')
 }
 
 /**

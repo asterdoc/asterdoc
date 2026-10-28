@@ -1,7 +1,7 @@
 /**
- * Two-way parity between `@paradoc/types` and the Zod schemas (D2).
+ * Two-way parity between `@asterdoc/types` and the Zod schemas (D2).
  *
- * `@paradoc/types` stays Zod-free and is written by hand, so every exported
+ * `@asterdoc/types` stays Zod-free and is written by hand, so every exported
  * shape is proved equal to the `z.output` of its schema here. `toEqualTypeOf`
  * is a strict identity check: an optional key, a wider union member, or a
  * looser property type on either side fails `check-types`. `vitest run` runs
@@ -60,7 +60,7 @@ import type {
 	SignatureSlot,
 	SignatureSlotType,
 	ValidationRule,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import {
 	AddressSchema,
 	ALL_EXPRESSION_TYPES,

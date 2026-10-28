@@ -1,4 +1,4 @@
-import type { ParadocToolsConfig } from './config'
+import type { AsterdocToolsConfig } from './config'
 
 /**
  * Mutable only within one caller-owned request. The neutral package never
@@ -33,9 +33,9 @@ export function createToolExecutionContext(
 
 /** Compose application and framework cancellation into one per-call configuration. */
 export function configForExecution(
-	config: ParadocToolsConfig | undefined,
+	config: AsterdocToolsConfig | undefined,
 	frameworkSignal?: AbortSignal,
-): ParadocToolsConfig {
+): AsterdocToolsConfig {
 	const signals = [config?.signal, config?.context?.signal, frameworkSignal].filter(
 		(signal): signal is AbortSignal => signal !== undefined,
 	)

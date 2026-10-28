@@ -1,8 +1,8 @@
 import { describe, test, expect } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 import { form, FormValidationError } from '@/artifacts'
 import { load } from '@/serialization'
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 
 /**
  * Tests for FormInstance methods.
@@ -281,7 +281,7 @@ describe('FormInstance', () => {
     test('includes $schema by default', () => {
       const instance = createMinimalForm()
       const json = instance.toJSON()
-      expect(json.$schema).toBe(PARADOC_SCHEMA_URL)
+      expect(json.$schema).toBe(ASTERDOC_SCHEMA_URL)
     })
 
     test('is JSON.stringify compatible', () => {

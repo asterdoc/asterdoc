@@ -1,5 +1,5 @@
 {
-  "extends": "@paradoc/typescript-config/react-library.json",
+  "extends": "@asterdoc/typescript-config/react-library.json",
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -12,9 +12,9 @@
     // The sample documents the tests render import this package by name, and
     // they must type-check against this source, not a build of it.
     "paths": {
-      "@paradoc/react-pdf": ["./src/index.ts"],
-      "@paradoc/react-pdf/check": ["./src/check.ts"],
-      "@paradoc/react-pdf/chromium": ["./src/chromium.ts"]
+      "@asterdoc/react-pdf": ["./src/index.ts"],
+      "@asterdoc/react-pdf/check": ["./src/check.ts"],
+      "@asterdoc/react-pdf/chromium": ["./src/chromium.ts"]
     }
   },
   "include": ["src", "tests", "vitest.config.ts", "vitest.parity.config.ts"],

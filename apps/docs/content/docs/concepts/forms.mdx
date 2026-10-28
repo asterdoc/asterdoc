@@ -5,7 +5,7 @@ ogTitle: Anatomy of a Form
 ogDescription: Define form structure with typed fields, party roles, signatures, and attachments
 ---
 
-Forms are the central artifact of Paradoc. They can be used to create anything from a simple purchase order to a complex multi-party agreement involving numerous nested fields, annexes, and logic.
+Forms are the central artifact of Asterdoc. They can be used to create anything from a simple purchase order to a complex multi-party agreement involving numerous nested fields, annexes, and logic.
 
 In this section, we introduce the fundamental building blocks of a Form.
 
@@ -26,7 +26,7 @@ const form = p.form()
 
 ### Primitives
 
-Beyond basic types, Paradoc includes **primitives** for common real-world data—`address`, `money`, `phone`, `person`, `organization`, and others. Primitives carry semantic meaning: a `money` field includes currency and can be serialized appropriately for different locales.
+Beyond basic types, Asterdoc includes **primitives** for common real-world data—`address`, `money`, `phone`, `person`, `organization`, and others. Primitives carry semantic meaning: a `money` field includes currency and can be serialized appropriately for different locales.
 
 ```ts
 fields: {

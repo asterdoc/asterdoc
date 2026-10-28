@@ -1,8 +1,8 @@
 /**
- * Paradoc Project Manifest Schema
+ * Asterdoc Project Manifest Schema
  *
- * Defines the schema for `paradoc.json` files that identify
- * a directory as an Paradoc project.
+ * Defines the schema for `asterdoc.json` files that identify
+ * a directory as an Asterdoc project.
  */
 
 import { z } from 'zod';
@@ -48,7 +48,7 @@ export const ManifestArtifactConfigSchema = z.strictObject({
 });
 
 /**
- * Manifest schema for paradoc.json project files
+ * Manifest schema for asterdoc.json project files
  */
 export const ManifestSchema = z.object({
 	$schema: z.url()
@@ -83,8 +83,8 @@ export const ManifestSchema = z.object({
 		.describe('Security settings for layer downloads (overrides global config)')
 		.optional(),
 }).strict().meta({
-	title: 'Paradoc Project Manifest',
-	description: 'Schema for paradoc.json project manifest files',
+	title: 'Asterdoc Project Manifest',
+	description: 'Schema for asterdoc.json project manifest files',
 });
 
 /**

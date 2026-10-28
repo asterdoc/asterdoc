@@ -1,8 +1,8 @@
 ---
 title: get_artifact
-description: Retrieve one artifact and its instructions from a Paradoc registry
-ogTitle: get_artifact — Paradoc AI Tools
-ogDescription: Fetch an artifact and its human and agent instructions from a Paradoc registry by name
+description: Retrieve one artifact and its instructions from an Asterdoc registry
+ogTitle: get_artifact — Asterdoc AI Tools
+ogDescription: Fetch an artifact and its human and agent instructions from an Asterdoc registry by name
 ---
 
 Retrieves one artifact from a registry. The tool reads `registry.json`, finds the edition and version you asked for, and fetches that file. Without an edition or a version, it uses the current edition and the latest version, as the registry states them. It refuses a file whose SHA-256 differs from the one in `registry.json`. By default it also returns the artifact's `instructions` and `agentInstructions`.
@@ -45,7 +45,7 @@ Retrieves one artifact from a registry. The tool reads `registry.json`, finds th
 ## Direct usage
 
 ```typescript
-import { executeGetArtifact } from "@paradoc/ai-tools"
+import { executeGetArtifact } from "@asterdoc/ai-tools"
 
 const result = await executeGetArtifact({
   registry_url: "https://registry.acme.com",

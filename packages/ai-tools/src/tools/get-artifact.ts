@@ -1,4 +1,4 @@
-import type { ParadocToolsConfig } from '../config'
+import type { AsterdocToolsConfig } from '../config'
 import { GetArtifactInputSchema, type GetArtifactInput, type GetArtifactOutput, type InstructionContent } from '../contracts'
 import { errorFromUnknown } from '../errors'
 import {
@@ -31,7 +31,7 @@ function isText(mimeType: string): boolean {
 	return mimeType.startsWith('text/') || /json|xml|yaml|markdown/i.test(mimeType)
 }
 
-async function resolveRef(ref: ContentRef, artifactUrl: string, config?: ParadocToolsConfig): Promise<InstructionContent> {
+async function resolveRef(ref: ContentRef, artifactUrl: string, config?: AsterdocToolsConfig): Promise<InstructionContent> {
 	if (ref.kind === 'inline') return { kind: 'inline', content: ref.text, encoding: 'utf-8' }
 	const url = resolveRelativeUrl(new URL('.', artifactUrl).toString(), ref.path, 'Instruction path')
 	const response = await safeFetch(url.toString(), MAX_INSTRUCTIONS_SIZE, config?.fetch, fetchPolicyFromConfig(config))
@@ -47,7 +47,7 @@ async function resolveRef(ref: ContentRef, artifactUrl: string, config?: Paradoc
 
 export async function executeGetArtifact(
 	input: GetArtifactInput | Record<string, unknown>,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<GetArtifactOutput> {
 	try {
 		const normalized = GetArtifactInputSchema.parse(input)
@@ -59,7 +59,7 @@ export async function executeGetArtifact(
 			config?.fetch,
 			config,
 		)
-		const { assertCurrentSchemaVersion } = await import('@paradoc/core')
+		const { assertCurrentSchemaVersion } = await import('@asterdoc/core')
 		assertCurrentSchemaVersion(artifact, { required: true })
 		const output: GetArtifactOutput = {
 			artifact,

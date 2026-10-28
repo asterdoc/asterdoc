@@ -4,7 +4,7 @@ import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -18,7 +18,7 @@ describe('CLI Data Commands', () => {
   let tempDir: string
 
   beforeEach(async () => {
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-data-test-'))
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-data-test-'))
   })
 
   afterEach(async () => {
@@ -84,7 +84,7 @@ describe('CLI Data Commands', () => {
     it('uses an empty array for list fields', async () => {
       const formPath = path.join(tempDir, 'list-form.json')
       await fs.writeFile(formPath, JSON.stringify({
-        $schema: PARADOC_SCHEMA_URL,
+        $schema: ASTERDOC_SCHEMA_URL,
         kind: 'form', name: 'list-form', version: '1.0.0', title: 'List form',
         fields: {
           rows: { type: 'list', label: 'Rows', item: { type: 'text', label: 'Row' } },
@@ -382,7 +382,7 @@ describe('CLI Data Commands', () => {
   })
   describe('data validate and data fill agree with the SDK', () => {
     const leaseForm = {
-      $schema: PARADOC_SCHEMA_URL,
+      $schema: ASTERDOC_SCHEMA_URL,
       kind: 'form',
       name: 'lease-probe',
       version: '1.0.0',
@@ -400,7 +400,7 @@ describe('CLI Data Commands', () => {
 
     /** The errors `form.fill(data).validate()` reports for the payload. */
     async function sdkErrors(payload: Record<string, unknown>): Promise<unknown[]> {
-      const { form, FormValidationError } = await import('@paradoc/core')
+      const { form, FormValidationError } = await import('@asterdoc/core')
       const filled = form.from(leaseForm as never).safeFill(payload as never)
       if (!filled.success) {
         if (!(filled.error instanceof FormValidationError)) throw filled.error
@@ -483,7 +483,7 @@ describe('CLI Data Commands', () => {
       const formPath = path.join(tempDir, 'rule.json')
       await fs.writeFile(formPath, JSON.stringify(ruleForm))
       const payload = { fields: { hasPet: true, petName: 'Fido' }, parties: { tenant } }
-      const { form } = await import('@paradoc/core')
+      const { form } = await import('@asterdoc/core')
       const sdk = form.from(ruleForm as never).fill(payload as never).validate()
       expect(sdk.errors).toEqual([])
       expect(sdk.rules.errors.length).toBe(1)
@@ -516,7 +516,7 @@ describe('CLI Data Commands', () => {
 
   describe('data extract', () => {
     const extractForm = {
-      $schema: PARADOC_SCHEMA_URL,
+      $schema: ASTERDOC_SCHEMA_URL,
       kind: 'form',
       name: 'pet-addendum',
       version: '1.0.0',
@@ -556,7 +556,7 @@ describe('CLI Data Commands', () => {
       expect(result.exitCode).toBe(0)
       const output = JSON.parse(result.stdout)
       expect(output.data).toEqual(values)
-      const { form } = await import('@paradoc/core')
+      const { form } = await import('@asterdoc/core')
       const sdk = await form.from(extractForm as never).extract(new Uint8Array(await fs.readFile(pdfPath)))
       expect(output).toEqual({ file: pdfPath, ...JSON.parse(JSON.stringify(sdk)) })
     })

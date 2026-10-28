@@ -2,8 +2,8 @@ import { Command } from 'commander'
 import kleur from 'kleur'
 import ora, { type Ora } from 'ora'
 import prompts from 'prompts'
-import { assertCurrentSchemaVersion, validate, type Artifact } from '@paradoc/core'
-import { describeRegistryReleaseFailure, formatRegistryReference, resolveRegistryRelease } from '@paradoc/schemas'
+import { assertCurrentSchemaVersion, validate, type Artifact } from '@asterdoc/core'
+import { describeRegistryReleaseFailure, formatRegistryReference, resolveRegistryRelease } from '@asterdoc/schemas'
 import { LocalFileSystem } from '../utils/local-fs.js'
 
 import type { AddOptions, OutputFormat, ArtifactKind, ResolvedRegistry, RegistryItemSummary, RegistryRelease } from '../types.js'
@@ -160,7 +160,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
     assertCurrentSchemaVersion(registryItem, { required: true })
   } catch (error) {
     console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-    console.error(kleur.gray(`The registry serves ${artifactFull} for another schema version; its maintainer can upgrade it with paradoc migrate.`))
+    console.error(kleur.gray(`The registry serves ${artifactFull} for another schema version; its maintainer can upgrade it with asterdoc migrate.`))
     process.exit(1)
   }
 
@@ -456,7 +456,7 @@ export function createAddCommand(): Command {
 
   add
     .argument('<targets...>', 'Artifact reference (@namespace/name[/edition][@version]), namespace (@namespace), direct URL (https://...), or one or more document component names')
-    .description('Add an artifact from a registry, or one or more document components from the Paradoc component registry')
+    .description('Add an artifact from a registry, or one or more document components from the Asterdoc component registry')
     .option('--layers <layers>', 'Layers to download (comma-separated, or "all")')
     .option('--output <output>', 'Output format: json, yaml, typed (json + .d.ts), or ts (TypeScript module)')
     .option('--header <header>', 'HTTP header for direct URL auth (format: "Name: Value"). Can be used multiple times.', collectHeader, {})
@@ -478,7 +478,7 @@ export function createAddCommand(): Command {
         // A bare name that is not an item falls through and is rejected below,
         // naming both forms, rather than reaching the shadcn CLI to 404.
         //
-        // `paradoc add` is variadic so several components install in one call:
+        // `asterdoc add` is variadic so several components install in one call:
         // more than one target requires every one of them to be a known
         // component (mixing a component with an artifact reference, or
         // naming more than one artifact, is not supported), and each target
@@ -490,7 +490,7 @@ export function createAddCommand(): Command {
             console.error(
               kleur.red(
                 `Not a document component: ${unknown.join(', ')}. ` +
-                  'Several targets in one `paradoc add` must all be component names ' +
+                  'Several targets in one `asterdoc add` must all be component names ' +
                   `(${COMPONENT_ITEMS.join(', ')}); an artifact reference is added one at a time.`,
               ),
             )
@@ -535,7 +535,7 @@ export function createAddCommand(): Command {
         // An artifact always names its registry; there is no default namespace.
         if (!parsed && !nsOnly && BARE_NAME_PATTERN.test(artifact)) {
           console.error(kleur.red(`"${artifact}" is not a document component.`))
-          console.error(kleur.gray(`To add an artifact, name its registry: paradoc add @registry/${artifact}`))
+          console.error(kleur.gray(`To add an artifact, name its registry: asterdoc add @registry/${artifact}`))
           console.error(kleur.gray(`Document components: ${COMPONENT_ITEMS.join(', ')}`))
           process.exit(1)
         }
@@ -555,7 +555,7 @@ export function createAddCommand(): Command {
         const projectRoot = await findRepoRoot()
         if (!projectRoot) {
           console.error(kleur.red(PROJECT_REQUIRED_MESSAGE))
-          console.error(kleur.gray("Run 'paradoc init' to initialize a project first."))
+          console.error(kleur.gray("Run 'asterdoc init' to initialize a project first."))
           process.exit(1)
         }
 

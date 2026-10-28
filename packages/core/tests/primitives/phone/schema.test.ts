@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { phone } from '@/primitives/phone';
-import type { Phone } from '@paradoc/types';
+import type { Phone } from '@asterdoc/types';
 
 describe('Phone', () => {
 	// ============================================================================

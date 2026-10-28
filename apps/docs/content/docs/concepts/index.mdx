@@ -1,17 +1,17 @@
 ---
 title: Overview
-description: The core abstraction in Paradoc
+description: The core abstraction in Asterdoc
 ogTitle: Understanding Artifacts
 ogDescription: Learn about forms, documents, checklists, and bundles — the core building blocks
 ---
 
 ## About Artifacts
 
-At the heart of Paradoc is the **artifact**.
+At the heart of Asterdoc is the **artifact**.
 
 An artifact is a structured definition of a document (or a collection of documents) that describes its origin, metadata, parties, fields, logic, and/or content(s).
 
-Paradoc defines four artifact types:
+Asterdoc defines four artifact types:
 
 | Artifact   | Description                                                                                                                         |
 |------------|-------------------------------------------------------------------------------------------------------------------------------------|
@@ -27,7 +27,7 @@ Each type serves a different purpose, but all share the same foundational proper
 
 ## Design Time vs Runtime
 
-Paradoc draws a hard line between **design time** and **runtime**.
+Asterdoc draws a hard line between **design time** and **runtime**.
 
 **Design time** is when you define artifacts—what fields exist, what rules apply, what layers are available. **Runtime** is when you use those definitions—fill fields, validate inputs, render outputs, collect signatures.
 
@@ -65,14 +65,14 @@ Because artifacts are plain JSON, they integrate naturally with version control,
 
 ## Schema-Driven
 
-Artifacts follow the Paradoc JSON Schema specification. This means:
+Artifacts follow the Asterdoc JSON Schema specification. This means:
 - Artifacts can be validated with any JSON Schema validator
 - Tooling can provide autocomplete and type checking
 - AI agents can read the schema to generate valid artifacts or validate outputs
 
 ```json
 {
-  "$schema": "https://schema.paradoc.dev/__SCHEMA_VERSION__.json",
+  "$schema": "https://schema.asterdoc.com/__SCHEMA_VERSION__.json",
   "kind": "form",
   "name": "residential-lease",
   "version": "1.0.0",

@@ -1,11 +1,11 @@
 /**
  * CLI Type Definitions
  *
- * Types for the Paradoc CLI registry system.
+ * Types for the Asterdoc CLI registry system.
  */
 
 /**
- * Artifact kinds supported by Paradoc
+ * Artifact kinds supported by Asterdoc
  */
 export type ArtifactKind = 'form' | 'document' | 'checklist' | 'bundle'
 
@@ -21,11 +21,11 @@ export type OutputFormat = 'json' | 'yaml' | 'typed' | 'ts'
 /**
  * Per-registry cache configuration
  */
-import type { RegistryCacheConfig } from '@paradoc/schemas'
-export type { RegistryCacheConfig, CacheConfig, RegistryEntry } from '@paradoc/schemas'
+import type { RegistryCacheConfig } from '@asterdoc/schemas'
+export type { RegistryCacheConfig, CacheConfig, RegistryEntry } from '@asterdoc/schemas'
 
 /**
- * Project manifest (paradoc.json), lock file (.paradoc/lock.json) and their
+ * Project manifest (asterdoc.json), lock file (.asterdoc/lock.json) and their
  * entries: the published schemas' types, so the CLI reads and writes exactly
  * what the schemas describe.
  */
@@ -34,12 +34,12 @@ export type {
   LockFile,
   LockedArtifact,
   LockedLayer,
-} from '@paradoc/schemas'
+} from '@asterdoc/schemas'
 
 /**
  * Registry manifest (registry.json), its items, and one release of an item
  */
-export type { RegistryItemSummary, RegistryIndex, RegistryRelease } from '@paradoc/schemas'
+export type { RegistryItemSummary, RegistryIndex, RegistryRelease } from '@asterdoc/schemas'
 
 /**
  * Parsed artifact reference: `@namespace/name[/edition][@version]`

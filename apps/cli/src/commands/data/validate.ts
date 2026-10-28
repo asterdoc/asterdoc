@@ -1,6 +1,6 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
-import { isForm, type Form } from '@paradoc/core'
+import { isForm, type Form } from '@asterdoc/core'
 
 import { readTextInput, resolveArtifactTarget } from '../../utils/io.js'
 import { parseDataInput, toFormPayload } from '../../utils/data-input.js'

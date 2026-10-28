@@ -28,14 +28,14 @@ describe('CLI list command', () => {
     const result = await executeCliCommand(['list'], { cwd: os.tmpdir() })
 
     expect(result.exitCode).toBe(1)
-    expect(result.stderr).toContain('Not in a Paradoc project')
+    expect(result.stderr).toContain('Not in an Asterdoc project')
   })
 
   describe('list in a project', () => {
     let tempDir: string
 
     beforeEach(async () => {
-      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-list-test-'))
+      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-list-test-'))
       // Initialize a project
       await executeCliCommand(['init', '--yes', '--name', 'list-test'], { cwd: tempDir })
     })

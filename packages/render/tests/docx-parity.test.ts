@@ -1,5 +1,5 @@
-import { createFormatter } from '@paradoc/format'
-import type { Form } from '@paradoc/types'
+import { createFormatter } from '@asterdoc/format'
+import type { Form } from '@asterdoc/types'
 import { renderText } from '../src/text'
 import { readFile } from 'node:fs/promises'
 import { unzipSync, zipSync } from 'fflate'
@@ -144,7 +144,7 @@ describe('DOCX renderer behavior', () => {
     expect(documentXml(actual).match(/<w:tr>/g)).toHaveLength(2)
   })
 
-  it('matches the Paradoc renderer adapter data shape', async () => {
+  it('matches the Asterdoc renderer adapter data shape', async () => {
     const template = new Uint8Array(await readFile(new URL('./fixtures/pet-addendum.docx', import.meta.url)))
     const request = {
       kind: 'form',

@@ -4,11 +4,11 @@
  * The markers are keyed by slot, and a block finds its own by naming the party
  * and the field type it draws, so a party that signs and initials keeps two
  * markers apart. The seal that depends on this is tested in
- * `@paradoc/react-pdf` (`tests/seal-two-slots.test.tsx`).
+ * `@asterdoc/react-pdf` (`tests/seal-two-slots.test.tsx`).
  */
 
 import { describe, expect, it } from "vitest";
-import { INITIALS_RULE as CORE_INITIALS_RULE, SIGNATURE_RULE as CORE_SIGNATURE_RULE } from "@paradoc/core";
+import { INITIALS_RULE as CORE_INITIALS_RULE, SIGNATURE_RULE as CORE_SIGNATURE_RULE } from "@asterdoc/core";
 
 import { AmbiguousSigningMarkError, findSigningMark } from "../src/components/signing-context";
 import { INITIALS_RULE, SIGNATURE_RULE } from "../src";

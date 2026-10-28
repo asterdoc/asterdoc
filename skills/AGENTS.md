@@ -4,12 +4,12 @@ Guidance for AI agents working in this tree.
 
 ## Overview
 
-The official agent skills for [Paradoc](https://paradoc.dev), the documents-as-code framework. Users install them from `github.com/paradoc-dev/paradoc` with `npx skills add https://github.com/paradoc-dev/paradoc --skill <name>`.
+The official agent skills for [Asterdoc](https://asterdoc.com), the documents-as-code framework. Users install them from `github.com/asterdoc/asterdoc` with `npx skills add https://github.com/asterdoc/asterdoc --skill <name>`.
 
 Two skills:
 
-- `skills/paradoc/`: authoring, filling, validating, rendering and sealing artifacts on every surface (TypeScript SDK, `paradoc` CLI, raw JSON/YAML, AI agent tools, hosted MCP), plus the authoring workflow.
-- `skills/paradoc-react/`: composing, checking, previewing, rendering and sealing documents written in React with `@paradoc/react` and `@paradoc/react-pdf`.
+- `skills/asterdoc/`: authoring, filling, validating, rendering and sealing artifacts on every surface (TypeScript SDK, `asterdoc` CLI, raw JSON/YAML, AI agent tools, hosted MCP), plus the authoring workflow.
+- `skills/asterdoc-react/`: composing, checking, previewing, rendering and sealing documents written in React with `@asterdoc/react` and `@asterdoc/react-pdf`.
 
 ## Structure
 
@@ -18,7 +18,7 @@ Two skills:
 ├── AGENTS.md         # This file
 ├── README.md         # User-facing overview
 └── skills/
-    ├── paradoc/
+    ├── asterdoc/
     │   ├── SKILL.md
     │   ├── metadata.json
     │   └── references/
@@ -30,7 +30,7 @@ Two skills:
     │       ├── instructions.md, filling.md, sealing.md, essentials.md
     │       # Workflow refs
     │       └── workflow-author-form.md
-    └── paradoc-react/
+    └── asterdoc-react/
         ├── SKILL.md
         ├── metadata.json
         └── references/
@@ -38,9 +38,9 @@ Two skills:
             └── custom-components.md, render-and-seal.md, cli.md
 ```
 
-## Reference categories (`paradoc`)
+## Reference categories (`asterdoc`)
 
-`paradoc` spans five surfaces, so its references split three ways. `paradoc-react` covers one surface and keeps a flat set of topic references; do not force it into these categories.
+`asterdoc` spans five surfaces, so its references split three ways. `asterdoc-react` covers one surface and keeps a flat set of topic references; do not force it into these categories.
 
 | Category | Purpose | Examples |
 |---|---|---|
@@ -78,7 +78,7 @@ metadata:
 
 ### Naming
 
-- Skill directory: `paradoc` for the general skill; every other skill takes the `paradoc-` prefix (`paradoc-react`), so its name says whose it is.
+- Skill directory: `asterdoc` for the general skill; every other skill takes the `asterdoc-` prefix (`asterdoc-react`), so its name says whose it is.
 - `SKILL.md`: uppercase, exact.
 - Surface refs: one word (`sdk.md`). Topic refs: one concept (`fields.md`); hyphens only for a real compound (`safe-classes.md`).
 - Workflow refs: `workflow-` prefix, flat in `references/`.
@@ -97,12 +97,12 @@ Use relative links: `[fields](./fields.md)` between references, `[references/fie
 - Every example runs: artifacts validate, snippets reassign immutable returns and include their setup.
 - Files over 100 lines start with a `**Contents:**` line.
 
-## Global rules in `paradoc`
+## Global rules in `asterdoc`
 
 The skill states these in `SKILL.md`; repeat one in a reference only where it applies directly:
 
-- Schema version `2026-10-02`: `$schema` is `https://schema.paradoc.dev/2026-10-02.json` for every artifact kind. Migrate older files with `npx paradoc-cli migrate`.
-- Validate files with `npx paradoc-cli validate <file>`.
+- Schema version `2026-10-28`: `$schema` is `https://schema.asterdoc.com/2026-10-28.json` for every artifact kind.
+- Validate files with `npx asterdoc validate <file>`.
 - Artifact name pattern `^[A-Za-z0-9]([A-Za-z0-9]|-[A-Za-z0-9])*$`. Field, party, def and rule ids `^[a-z][a-zA-Z0-9_]*$`.
 - Use the most specific field type.
 - Templates name values as `{{fields.fieldName}}`; conditions are boolean. Signatures use the signing directives, bound to `signatures` slots.
@@ -110,15 +110,15 @@ The skill states these in `SKILL.md`; repeat one in a reference only where it ap
 ## Validation
 
 ```bash
-uvx --from skills-ref agentskills validate ./skills/paradoc
-uvx --from skills-ref agentskills validate ./skills/paradoc-react
+uvx --from skills-ref agentskills validate ./skills/asterdoc
+uvx --from skills-ref agentskills validate ./skills/asterdoc-react
 ```
 
 Tests tie the skills to the code:
 
-- `packages/schemas/tests/skill-docs.test.ts` checks `paradoc`: the field type lists and the signature slot types.
-- `packages/core/tests/skill-docs-examples.test.ts` checks every JSON example in `paradoc`. Label each JSON example that parses with its container, for example ```` ```json schema=fields ````. Labels: `artifact`, `form`, `fields`, `parties`, `defs`, `layers`, `layer`, `cli-config`, `registries`. An artifact example is merged into a minimal form and must pass the full `validate()`: schema, logic, template expressions, and layer references. A fragment that names a field or party must declare it, so use `form` for an example that needs them.
-- `packages/react-pdf/tests/pdf-class-vocabulary-docs.test.ts` checks the `## The verified families` table in `paradoc-react/references/safe-classes.md` against the PDF class vocabulary.
+- `packages/schemas/tests/skill-docs.test.ts` checks `asterdoc`: the field type lists and the signature slot types.
+- `packages/core/tests/skill-docs-examples.test.ts` checks every JSON example in `asterdoc`. Label each JSON example that parses with its container, for example ```` ```json schema=fields ````. Labels: `artifact`, `form`, `fields`, `parties`, `defs`, `layers`, `layer`, `cli-config`, `registries`. An artifact example is merged into a minimal form and must pass the full `validate()`: schema, logic, template expressions, and layer references. A fragment that names a field or party must declare it, so use `form` for an example that needs them.
+- `packages/react-pdf/tests/pdf-class-vocabulary-docs.test.ts` checks the `## The verified families` table in `asterdoc-react/references/safe-classes.md` against the PDF class vocabulary.
 
 ## When editing
 

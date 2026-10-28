@@ -3,21 +3,21 @@ title: React PDF
 description: Render a React composition to PDF on the server, and check it against its artifact first.
 ---
 
-`@paradoc/react-pdf` is the Node half of [`@paradoc/react`](/sdk/react). It renders a composed document to PDF bytes, checks a composition before a render, and plugs React layers into a form's `render()` call. The components it renders are the ones in the [Components](/components) area.
+`@asterdoc/react-pdf` is the Node half of [`@asterdoc/react`](/sdk/react). It renders a composed document to PDF bytes, checks a composition before a render, and plugs React layers into a form's `render()` call. The components it renders are the ones in the [Components](/components) area.
 
 ## Installation
 
 ```bash
-npm install @paradoc/react-pdf @paradoc/react react react-dom
+npm install @asterdoc/react-pdf @asterdoc/react react react-dom
 ```
 
 The default entry installs Takumi, the WebAssembly engine every render uses unless you pick another. Install the optional `puppeteer` and `tailwindcss` peers only if you use the Chromium adapter.
 
 | Entry | Purpose |
 | --- | --- |
-| `@paradoc/react-pdf` | `renderPdf`, the adapter types, the Takumi adapter, font and image resources, and React layer renderers |
-| `@paradoc/react-pdf/check` | `checkComposition` and `checkElement`, which check a composition without producing PDF bytes |
-| `@paradoc/react-pdf/chromium` | The experimental Chromium adapter |
+| `@asterdoc/react-pdf` | `renderPdf`, the adapter types, the Takumi adapter, font and image resources, and React layer renderers |
+| `@asterdoc/react-pdf/check` | `checkComposition` and `checkElement`, which check a composition without producing PDF bytes |
+| `@asterdoc/react-pdf/chromium` | The experimental Chromium adapter |
 
 ## Render a PDF
 
@@ -25,9 +25,9 @@ The default entry installs Takumi, the WebAssembly engine every render uses unle
 
 ```tsx
 import { writeFile } from "node:fs/promises";
-import { renderPdf } from "@paradoc/react-pdf";
-import { Document } from "@/components/paradoc/document";
-import { Field } from "@/components/paradoc/field";
+import { renderPdf } from "@asterdoc/react-pdf";
+import { Document } from "@/components/asterdoc/document";
+import { Field } from "@/components/asterdoc/field";
 
 const { bytes } = await renderPdf(
   <Document artifact={artifact} data={data}>
@@ -63,8 +63,8 @@ The preview's [`Pages`](/components/pages) component reports its plan through `o
 
 ```tsx
 import type { ReactElement } from "react";
-import { renderPdf, type PageBreakPlan, type PageFurniture } from "@paradoc/react-pdf";
-import { PageNumber } from "@/components/paradoc/page-number";
+import { renderPdf, type PageBreakPlan, type PageFurniture } from "@asterdoc/react-pdf";
+import { PageNumber } from "@/components/asterdoc/page-number";
 
 const furniture: PageFurniture = {
   header: <span>Northwind Partners LLP</span>,
@@ -96,8 +96,8 @@ npm install puppeteer tailwindcss
 ```
 
 ```tsx
-import { renderPdf } from "@paradoc/react-pdf";
-import { closeChromium } from "@paradoc/react-pdf/chromium";
+import { renderPdf } from "@asterdoc/react-pdf";
+import { closeChromium } from "@asterdoc/react-pdf/chromium";
 
 const { bytes } = await renderPdf(document, { adapter: "chromium" });
 await closeChromium();
@@ -110,7 +110,7 @@ await closeChromium();
 Pass any object that implements `PdfAdapter`.
 
 ```ts
-import { renderPdf, type PdfAdapter } from "@paradoc/react-pdf";
+import { renderPdf, type PdfAdapter } from "@asterdoc/react-pdf";
 
 const companyEngine: PdfAdapter = {
   name: "company-engine",
@@ -130,10 +130,10 @@ An adapter that omits `furniture` draws none, and a document that declares furni
 
 ## Check a composition
 
-`@paradoc/react-pdf/check` walks the same tree a render walks and reports what would fail, without producing a PDF. It is fast enough to run on every save. [`paradoc check`](/cli/commands/check) uses it.
+`@asterdoc/react-pdf/check` walks the same tree a render walks and reports what would fail, without producing a PDF. It is fast enough to run on every save. [`asterdoc check`](/cli/commands/check) uses it.
 
 ```ts
-import { checkComposition } from "@paradoc/react-pdf/check";
+import { checkComposition } from "@asterdoc/react-pdf/check";
 
 const result = await checkComposition({
   artifact,
@@ -161,8 +161,8 @@ The lists do not combine into a verdict. Whether `missingImages` fails your chec
 A form artifact can declare a layer with MIME type `text/tsx` or `text/jsx` whose path names a composition. `reactLayerRenderers(options)` returns renderers for both MIME types, so a form's `render()` call produces a PDF through that layer.
 
 ```ts
-import { p } from "@paradoc/core";
-import { reactLayerRenderers } from "@paradoc/react-pdf";
+import { p } from "@asterdoc/core";
+import { reactLayerRenderers } from "@asterdoc/react-pdf";
 
 const form = p.form(spec);
 
@@ -175,7 +175,7 @@ const bytes = await form.fill({ fields, parties }).render<Uint8Array>({
 });
 ```
 
-A layer binds through `components`, keyed by the layer's path or key, or by importing its path from `baseDir` and taking `exportName` (default `default`). Leaving `baseDir` unset turns the import route off entirely — `process.cwd()` is never used — so a layer absent from `components` fails naming both options. `paradoc check` passes the declaring artifact file's directory as `baseDir`; `paradoc dev` loads discovered modules through Vite instead. `pdf` passes `RenderPdfOptions` to every render. A layer that cannot be bound throws `UnboundReactLayerError`. `reactRenderer(options)` returns the single renderer, and `await bindComponent(layer, options)` resolves to the bound component without rendering.
+A layer binds through `components`, keyed by the layer's path or key, or by importing its path from `baseDir` and taking `exportName` (default `default`). Leaving `baseDir` unset turns the import route off entirely — `process.cwd()` is never used — so a layer absent from `components` fails naming both options. `asterdoc check` passes the declaring artifact file's directory as `baseDir`; `asterdoc dev` loads discovered modules through Vite instead. `pdf` passes `RenderPdfOptions` to every render. A layer that cannot be bound throws `UnboundReactLayerError`. `reactRenderer(options)` returns the single renderer, and `await bindComponent(layer, options)` resolves to the bound component without rendering.
 
 ## Fonts and images
 

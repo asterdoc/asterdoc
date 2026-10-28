@@ -1,16 +1,16 @@
 ---
 title: new
-description: Create new Paradoc artifacts
-ogTitle: paradoc new
+description: Create new Asterdoc artifacts
+ogTitle: asterdoc new
 ogDescription: Scaffold new forms, documents, checklists, and bundles
 ---
 
-Creates new Paradoc artifacts with interactive prompts or command-line options.
+Creates new Asterdoc artifacts with interactive prompts or command-line options.
 
 ## Usage
 
 ```bash
-paradoc new <type> <name> [options]
+asterdoc new <type> <name> [options]
 ```
 
 ## Subcommands
@@ -29,7 +29,7 @@ paradoc new <type> <name> [options]
 Create a new form artifact.
 
 ```bash
-paradoc new form <name> [options]
+asterdoc new form <name> [options]
 ```
 
 ### Options
@@ -47,20 +47,20 @@ paradoc new form <name> [options]
 | `--dry-run` | Preview without creating files |
 | `--format <format>` | Output format: `json` or `yaml` (default: json) |
 
-`type` must be one of the field types the schema accepts (`text`, `boolean`, `number`, `coordinate`, `bbox`, `money`, `address`, `phone`, `duration`, `email`, `uuid`, `uri`, `enum`, `date`, `datetime`, `time`, `person`, `organization`, `identification`, `multiselect`, `percentage`, `rating`, `fieldset`, `list`). An unknown type exits non-zero and lists the valid types. Every type scaffolds with the keys it requires, so the result passes `paradoc validate`: `enum` and `multiselect` get sample `enum` options, `fieldset` gets an empty `fields` map, and `list` gets a `text` `item`.
+`type` must be one of the field types the schema accepts (`text`, `boolean`, `number`, `coordinate`, `bbox`, `money`, `address`, `phone`, `duration`, `email`, `uuid`, `uri`, `enum`, `date`, `datetime`, `time`, `person`, `organization`, `identification`, `multiselect`, `percentage`, `rating`, `fieldset`, `list`). An unknown type exits non-zero and lists the valid types. Every type scaffolds with the keys it requires, so the result passes `asterdoc validate`: `enum` and `multiselect` get sample `enum` options, `fieldset` gets an empty `fields` map, and `list` gets a `text` `item`.
 
 ### Examples
 
 Interactive form creation:
 
 ```bash
-paradoc new form my-form
+asterdoc new form my-form
 ```
 
 Non-interactive with options:
 
 ```bash
-paradoc new form lease-agreement \
+asterdoc new form lease-agreement \
   --yes \
   --title "Lease Agreement" \
   --field "address:address" \
@@ -75,7 +75,7 @@ paradoc new form lease-agreement \
 Create a new document artifact.
 
 ```bash
-paradoc new document <name> [options]
+asterdoc new document <name> [options]
 ```
 
 ### Options
@@ -99,7 +99,7 @@ paradoc new document <name> [options]
 Create a new checklist artifact.
 
 ```bash
-paradoc new checklist <name> [options]
+asterdoc new checklist <name> [options]
 ```
 
 ### Options
@@ -120,7 +120,7 @@ paradoc new checklist <name> [options]
 ### Example
 
 ```bash
-paradoc new checklist move-in \
+asterdoc new checklist move-in \
   --yes \
   --title "Move-in Checklist" \
   --item "Collect keys" \
@@ -134,7 +134,7 @@ paradoc new checklist move-in \
 Create a new bundle artifact.
 
 ```bash
-paradoc new bundle <name> [options]
+asterdoc new bundle <name> [options]
 ```
 
 ### Options

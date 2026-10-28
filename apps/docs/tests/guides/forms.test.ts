@@ -2,7 +2,7 @@
  * Tests for code snippets in guides/forms.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@paradoc/sdk'
+import { p } from '@asterdoc/sdk'
 
 describe('Forms Guide', () => {
   // ============================================================================

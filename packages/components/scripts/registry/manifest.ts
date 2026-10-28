@@ -12,7 +12,7 @@
  *
  * What an item does NOT carry is the substrate. The document, page, token and
  * signing contexts, the page plan, the measuring pass, the token resolution and
- * the serializer-backed formatter stay in `@paradoc/react` and are imported
+ * the serializer-backed formatter stay in `@asterdoc/react` and are imported
  * from it, because a copied context is a different context: a `KeepTogether`
  * reading its own copy of the page context would never see the page `Pages` is
  * rendering. The installed file is the markup you own; the substrate underneath
@@ -20,16 +20,16 @@
  */
 
 /** The npm package every installed component imports its substrate from. */
-export const SUBSTRATE_PACKAGE = "@paradoc/react";
+export const SUBSTRATE_PACKAGE = "@asterdoc/react";
 
 /** The shadcn registry namespace consumers register in `components.json`. */
-export const REGISTRY_NAMESPACE = "@paradoc";
+export const REGISTRY_NAMESPACE = "@asterdoc";
 
 /** Where the registry is served from. */
-export const REGISTRY_HOMEPAGE = "https://docs.paradoc.dev";
+export const REGISTRY_HOMEPAGE = "https://docs.asterdoc.com";
 
 /** The directory an item installs into, under the consumer's project root. */
-export const INSTALL_DIR = "components/paradoc";
+export const INSTALL_DIR = "components/asterdoc";
 
 /**
  * The import alias an installed file uses to reach its sibling items. Every
@@ -47,7 +47,7 @@ export const INSTALL_ALIAS = `@/${INSTALL_DIR}`;
  * seals the same document. Keeping them out of the components folder is what
  * lets a consumer delete or rewrite the markup without touching the artifact.
  */
-export const ARTIFACT_DIR = "artifacts/paradoc";
+export const ARTIFACT_DIR = "artifacts/asterdoc";
 
 /**
  * shadcn's file types. A component is `registry:ui`; a helper the consumer owns
@@ -106,7 +106,7 @@ export interface RegistryManifestFile {
 
 /** One registry item. */
 export interface RegistryManifestItem {
-  /** Item name. `shadcn add @paradoc/<name>`. */
+  /** Item name. `shadcn add @asterdoc/<name>`. */
   name: string;
   /** shadcn item type. */
   type: RegistryItemType;
@@ -117,7 +117,7 @@ export interface RegistryManifestItem {
   /** Sources that travel with the item. */
   files: RegistryManifestFile[];
   /**
-   * npm packages the installed files import, beyond `react`. A `@paradoc/*`
+   * npm packages the installed files import, beyond `react`. A `@asterdoc/*`
    * entry is emitted with the public runtime version. This private source
    * workspace has no publish version of its own.
    */
@@ -208,7 +208,7 @@ export const REGISTRY_ITEMS: readonly RegistryManifestItem[] = [
     type: "registry:lib",
     title: "Document Styles",
     description: "Tailwind entry for document components; typography inherits from the application.",
-    files: [{ path: "styles.css", type: "registry:file", target: "styles/paradoc.css" }],
+    files: [{ path: "styles.css", type: "registry:file", target: "styles/asterdoc.css" }],
     dependencies: [],
     registryDependencies: [],
   },
@@ -239,7 +239,7 @@ export const REGISTRY_ITEMS: readonly RegistryManifestItem[] = [
     description:
       "Binds one form artifact and its data to the components beneath it. The only component that knows how the artifact is loaded.",
     files: [component("document")],
-    dependencies: [SUBSTRATE_PACKAGE, "@paradoc/types"],
+    dependencies: [SUBSTRATE_PACKAGE, "@asterdoc/types"],
     registryDependencies: [],
   },
   {
@@ -367,7 +367,7 @@ export const REGISTRY_ITEMS: readonly RegistryManifestItem[] = [
     type: "registry:ui",
     title: "Totals",
     description:
-      "The artifact's computed amounts, evaluated by @paradoc/core and printed by the serializer each def's type names.",
+      "The artifact's computed amounts, evaluated by @asterdoc/core and printed by the serializer each def's type names.",
     files: [component("totals")],
     dependencies: [SUBSTRATE_PACKAGE],
     registryDependencies: ["keep-together"],
@@ -409,7 +409,7 @@ export const REGISTRY_ITEMS: readonly RegistryManifestItem[] = [
     description:
       "Sample-owned row multiplication and subtotal arithmetic used by the priced document blocks.",
     files: [artifactFile("line-items", "line-items")],
-    dependencies: ["@paradoc/types"],
+    dependencies: ["@asterdoc/types"],
     registryDependencies: [],
   },
   {
@@ -423,8 +423,8 @@ export const REGISTRY_ITEMS: readonly RegistryManifestItem[] = [
       artifactFile("purchase-order-data", "purchase-order.data"),
       composition("purchase-order", "purchase-order-document"),
     ],
-    // `@paradoc/core` parses the artifact and `@paradoc/types` is what it is.
-    dependencies: [SUBSTRATE_PACKAGE, "@paradoc/core", "@paradoc/types"],
+    // `@asterdoc/core` parses the artifact and `@asterdoc/types` is what it is.
+    dependencies: [SUBSTRATE_PACKAGE, "@asterdoc/core", "@asterdoc/types"],
     registryDependencies: [
       "document",
       "field",
@@ -448,8 +448,8 @@ export const REGISTRY_ITEMS: readonly RegistryManifestItem[] = [
       artifactFile("invoice-data", "invoice.data"),
       composition("invoice", "invoice-document"),
     ],
-    // `@paradoc/core` parses the artifact and `@paradoc/types` is what it is.
-    dependencies: [SUBSTRATE_PACKAGE, "@paradoc/core", "@paradoc/types"],
+    // `@asterdoc/core` parses the artifact and `@asterdoc/types` is what it is.
+    dependencies: [SUBSTRATE_PACKAGE, "@asterdoc/core", "@asterdoc/types"],
     // No `signature`: an invoice is a demand for payment rather than an
     // agreement, so the artifact declares no slot and the composition draws no
     // signing block.
@@ -477,7 +477,7 @@ export const REGISTRY_ITEMS: readonly RegistryManifestItem[] = [
       artifactFile("engagement-letter-data", "engagement-letter.data"),
       composition("engagement-letter", "engagement-letter-document"),
     ],
-    dependencies: [SUBSTRATE_PACKAGE, "@paradoc/core", "@paradoc/types"],
+    dependencies: [SUBSTRATE_PACKAGE, "@asterdoc/core", "@asterdoc/types"],
     // No `table` and no `totals`: the letter prices nothing and lists nothing in
     // rows. What it does carry is `signature`, twice, and `list`, whose items
     // are the numbered clauses.
@@ -510,8 +510,8 @@ export const REGISTRY_ITEMS: readonly RegistryManifestItem[] = [
     ],
     dependencies: [
       SUBSTRATE_PACKAGE,
-      "@paradoc/core",
-      "@paradoc/types",
+      "@asterdoc/core",
+      "@asterdoc/types",
     ],
     registryDependencies: ["bundle", "pages", "part", "pdf-pages", "purchase-order"],
   },

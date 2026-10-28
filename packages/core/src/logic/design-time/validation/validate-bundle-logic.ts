@@ -3,8 +3,8 @@ import type {
   Bundle,
   BundleContentItem,
   CondExpr,
-} from '@paradoc/types'
-import { createTypeEnv } from '@paradoc/expr'
+} from '@asterdoc/types'
+import { createTypeEnv } from '@asterdoc/expr'
 import { parseExpression } from './expression-parser'
 import { validateFormDefs } from './validate-form-logic'
 import { buildBundleTypeAcc } from '../type-checking'
@@ -26,7 +26,7 @@ import { defsDependencyExpressions } from '../../shared/defs-dependencies'
  * Validates all defs expressions in a Bundle artifact.
  *
  * Checks:
- * 1. Expression syntax using the @paradoc/expr parser
+ * 1. Expression syntax using the @asterdoc/expr parser
  * 2. Variable references exist: definitions against the bundle's reference
  *    paths, and include conditions on inline items
  * 3. Definitions have no dependency cycle

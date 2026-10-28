@@ -5,7 +5,7 @@
  * Uses local-fs for all filesystem operations.
  */
 
-import { ARTIFACT_VERSION_PATTERN } from '@paradoc/schemas'
+import { ARTIFACT_VERSION_PATTERN } from '@asterdoc/schemas'
 import { LocalFileSystem } from './local-fs.js'
 
 /**

@@ -1,16 +1,16 @@
 ---
 title: init
-description: Initialize a new Paradoc project
-ogTitle: paradoc init
-ogDescription: Create a new Paradoc project with the CLI
+description: Initialize a new Asterdoc project
+ogTitle: asterdoc init
+ogDescription: Create a new Asterdoc project with the CLI
 ---
 
-Initializes a new Paradoc project in the current or specified directory.
+Initializes a new Asterdoc project in the current or specified directory.
 
 ## Usage
 
 ```bash
-paradoc init [directory] [options]
+asterdoc init [directory] [options]
 ```
 
 ## Arguments
@@ -32,12 +32,12 @@ paradoc init [directory] [options]
 
 ## Description
 
-The `init` command creates a new Paradoc project with the following structure:
+The `init` command creates a new Asterdoc project with the following structure:
 
 ```
 my-project/
-├── paradoc.json      # Project manifest
-└── .paradoc/         # CLI state directory (empty until an artifact is installed)
+├── asterdoc.json      # Project manifest
+└── .asterdoc/         # CLI state directory (empty until an artifact is installed)
 ```
 
 The manifest holds `$schema`, `name`, `title`, `description`, and `visibility`. The name is `@your-org/<title-slug>`; replace `your-org` with your own namespace. Add registries and other settings by hand (see [Projects](/cli/projects#the-project-manifest)).
@@ -53,25 +53,25 @@ In interactive mode, you'll be prompted for:
 Interactive initialization:
 
 ```bash
-paradoc init
+asterdoc init
 ```
 
 Non-interactive with all options:
 
 ```bash
-paradoc init --yes --name "My Project" --visibility private
+asterdoc init --yes --name "My Project" --visibility private
 ```
 
 Initialize in a specific directory:
 
 ```bash
-paradoc init my-new-project
+asterdoc init my-new-project
 ```
 
 Preview what would be created:
 
 ```bash
-paradoc init --dry-run --yes --name "Test Project"
+asterdoc init --dry-run --yes --name "Test Project"
 ```
 
 ## See also

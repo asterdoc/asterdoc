@@ -10,7 +10,7 @@ import type { ReactNode } from "react";
  * The rendered content gets an explicit, generic `font-family` rather than
  * inheriting the docs site's own "Geist Sans Variable" chrome font. A real
  * consuming project supplies its own typography for an installed component
- * (see `@paradoc/components`'s own `styles.css`), so this preview sandbox
+ * (see `@asterdoc/components`'s own `styles.css`), so this preview sandbox
  * should not stand in for one; it also keeps `Pages`' pagination measurement
  * from failing here, since that measurement requires an embeddable
  * `@font-face` for every font family it finds in the tree it measures, and

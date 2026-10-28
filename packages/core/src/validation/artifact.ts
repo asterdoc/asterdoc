@@ -1,5 +1,5 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { Form, Document, Checklist, Bundle, Resolver } from '@paradoc/types'
+import type { Form, Document, Checklist, Bundle, Resolver } from '@asterdoc/types'
 import { validateLogic, type LogicValidatableArtifact } from '@/logic'
 import {
   validateFileTemplates,

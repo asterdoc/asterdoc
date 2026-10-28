@@ -11,7 +11,7 @@ export function baseOptions(): BaseLayoutProps {
     // them out of the sidebar's menu items.
     links: [
       {
-        url: "https://x.com/paradochq",
+        url: "https://x.com/asterdoc",
         text: "X (Twitter)",
         type: "icon",
         on: "nav",
@@ -29,7 +29,7 @@ export function baseOptions(): BaseLayoutProps {
         ),
       },
       {
-        url: "https://github.com/paradoc-dev/paradoc",
+        url: "https://github.com/asterdoc/asterdoc",
         text: "GitHub",
         type: "icon",
         on: "nav",

@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { buildFormContext } from '@/logic/runtime/evaluation/context-builder'
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { getDefsValues, getFieldValueFromContext } from '../helpers/evaluation-helpers'
 
 /**

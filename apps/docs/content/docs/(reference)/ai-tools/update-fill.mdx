@@ -1,8 +1,8 @@
 ---
 title: update_fill
 description: Merge, clear, or reset values in an existing form or checklist draft
-ogTitle: update_fill — Paradoc AI Tools
-ogDescription: Change a Paradoc form or checklist draft while keeping untouched values and the evaluation context
+ogTitle: update_fill — Asterdoc AI Tools
+ogDescription: Change an Asterdoc form or checklist draft while keeping untouched values and the evaluation context
 ---
 
 Changes an existing draft. It merges a patch, then clears paths, then resets paths. Values you do not touch stay as they were, and the draft keeps its `evaluation_context`. The output has the same shape as [`fill`](/ai-tools/fill).
@@ -38,7 +38,7 @@ A path that the artifact does not declare fails the call.
 ## Direct usage
 
 ```typescript
-import { executeUpdateFill } from "@paradoc/ai-tools"
+import { executeUpdateFill } from "@asterdoc/ai-tools"
 
 const updated = await executeUpdateFill({
   source: "registry",

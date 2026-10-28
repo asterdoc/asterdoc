@@ -3,7 +3,7 @@ title: Primitive Reference
 description: Build and validate primitive data types
 ---
 
-Primitives are validated data types used throughout Paradoc. Object primitives accept plain objects and provide builders. Scalar primitives (`date`, `datetime`, `time`, `percentage`, and `rating`) accept one value and do not have builders. Every primitive provides `parse()` and `safeParse()` for validation.
+Primitives are validated data types used throughout Asterdoc. Object primitives accept plain objects and provide builders. Scalar primitives (`date`, `datetime`, `time`, `percentage`, and `rating`) accept one value and do not have builders. Every primitive provides `parse()` and `safeParse()` for validation.
 
 ## Available Primitives
 
@@ -34,7 +34,7 @@ Primitives are validated data types used throughout Paradoc. Object primitives a
 Pass a plain object for immediate validation:
 
 ```ts
-import { money } from '@paradoc/core'
+import { money } from '@asterdoc/core'
 
 // Validates and returns the Money object
 const price = money({ amount: 99.99, currency: 'USD' })
@@ -48,7 +48,7 @@ const invalid = money({ amount: 'not a number', currency: 'USD' })
 Chain methods to construct incrementally:
 
 ```ts
-import { money } from '@paradoc/core'
+import { money } from '@asterdoc/core'
 
 const price = money()
   .amount(99.99)
@@ -61,7 +61,7 @@ const price = money()
 Parse unknown data from external sources:
 
 ```ts
-import { money } from '@paradoc/core'
+import { money } from '@asterdoc/core'
 
 // Throws on error
 const price = money.parse(jsonData)
@@ -80,7 +80,7 @@ if (result.success) {
 Primitives are commonly used when filling form data:
 
 ```ts
-import { p, money, address } from '@paradoc/core'
+import { p, money, address } from '@asterdoc/core'
 
 const form = p.form({
   name: 'invoice',

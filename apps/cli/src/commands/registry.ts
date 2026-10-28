@@ -53,8 +53,8 @@ async function promptConfigTarget(action: string): Promise<ConfigTarget> {
     name: 'target',
     message: `Where would you like to ${action} this registry?`,
     choices: [
-      { title: 'Project config (paradoc.json)', value: 'project' },
-      { title: 'Global config (~/.paradoc/config.json)', value: 'global' },
+      { title: 'Project config (asterdoc.json)', value: 'project' },
+      { title: 'Global config (~/.asterdoc/config.json)', value: 'global' },
     ],
     initial: 0,
   })
@@ -76,8 +76,8 @@ export function createRegistryCommand(): Command {
     .argument('<first>', 'Registry namespace (e.g., @acme) or URL')
     .argument('[second]', 'Registry base URL (required when first arg is a namespace)')
     .option('--header <header>', 'Add HTTP header (format: "Name: Value")', collectHeader, {})
-    .option('--global', 'Save to global config (~/.paradoc/config.json)')
-    .option('--project', 'Save to project config (paradoc.json)')
+    .option('--global', 'Save to global config (~/.asterdoc/config.json)')
+    .option('--project', 'Save to project config (asterdoc.json)')
     .option('-y, --yes', 'Skip confirmation prompts (overwrites on conflict)')
     .description('Add or update a registry')
     .action(async (first: string, second: string | undefined, options: { header: Record<string, string>; global?: boolean; project?: boolean; yes?: boolean }) => {
@@ -96,8 +96,8 @@ export function createRegistryCommand(): Command {
             parsedUrl = new URL(first)
           } catch {
             console.error(kleur.red(`When using a single argument, it must be a valid URL.`))
-            console.error(kleur.gray('Usage: paradoc registry add <url>'))
-            console.error(kleur.gray('   or: paradoc registry add <namespace> <url>'))
+            console.error(kleur.gray('Usage: asterdoc registry add <url>'))
+            console.error(kleur.gray('   or: asterdoc registry add <namespace> <url>'))
             process.exit(1)
           }
 
@@ -268,8 +268,8 @@ export function createRegistryCommand(): Command {
     .command('remove')
     .alias('rm')
     .argument('[namespace]', 'Registry namespace to remove (interactive selection if omitted)')
-    .option('--global', 'Remove from global config (~/.paradoc/config.json)')
-    .option('--project', 'Remove from project config (paradoc.json)')
+    .option('--global', 'Remove from global config (~/.asterdoc/config.json)')
+    .option('--project', 'Remove from project config (asterdoc.json)')
     .description('Remove a registry')
     .action(async (namespace: string | undefined, options: { global?: boolean; project?: boolean }) => {
       try {
@@ -402,7 +402,7 @@ export function createRegistryCommand(): Command {
         } else {
           if (registries.length === 0) {
             console.log(kleur.gray('No registries configured.'))
-            console.log(kleur.gray("Run 'paradoc registry add @namespace https://...' to add one."))
+            console.log(kleur.gray("Run 'asterdoc registry add @namespace https://...' to add one."))
             return
           }
 
@@ -431,7 +431,7 @@ export function createRegistryCommand(): Command {
     .option('--description <description>', 'Registry description')
     .option('--homepage <url>', 'Registry homepage URL')
     .option('--no-registry-telemetry', 'Disable usage telemetry for this registry')
-    .option('--no-directory', 'Do not list this registry in the Paradoc Hub')
+    .option('--no-directory', 'Do not list this registry in the Asterdoc Hub')
     .option('-y, --yes', 'Skip confirmation prompts')
     .description(`Create a new ${REGISTRY_CONFIG_FILE}: the source file that registry compile builds a registry from`)
     .action(async (directory: string, options: {
@@ -573,8 +573,8 @@ export function createRegistryCommand(): Command {
         }
         console.log()
         console.log(kleur.gray('Next steps:'))
-        console.log(kleur.gray('  1. Add artifacts with: paradoc registry catalog add <artifact>'))
-        console.log(kleur.gray('  2. Compile registry with: paradoc registry compile'))
+        console.log(kleur.gray('  1. Add artifacts with: asterdoc registry catalog add <artifact>'))
+        console.log(kleur.gray('  2. Compile registry with: asterdoc registry compile'))
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
         process.exit(1)
@@ -689,7 +689,7 @@ export function createRegistryCommand(): Command {
         const configPath = storage.getAbsolutePath(options.config)
         if (!(await storage.exists(configPath))) {
           console.error(kleur.red(`Registry config not found: ${configPath}`))
-          console.error(kleur.gray('Run "paradoc registry make" to create one.'))
+          console.error(kleur.gray('Run "asterdoc registry make" to create one.'))
           process.exit(1)
         }
         const config = await readRegistryConfig(storage, configPath)
@@ -923,7 +923,7 @@ export function createRegistryCommand(): Command {
         const configPath = storage.getAbsolutePath(options.config)
         if (!(await storage.exists(configPath))) {
           console.error(kleur.red(`Registry config not found: ${configPath}`))
-          console.error(kleur.gray('Run "paradoc registry make" to create one.'))
+          console.error(kleur.gray('Run "asterdoc registry make" to create one.'))
           process.exit(1)
         }
 
@@ -1014,7 +1014,7 @@ export function createRegistryCommand(): Command {
         // Check if installed
         if (!lockFileManager.isInstalled(artifactRef.full)) {
           console.error(kleur.red(`Artifact not installed: ${artifact}`))
-          console.error(kleur.gray("Run 'paradoc add " + artifact + "' to install it."))
+          console.error(kleur.gray("Run 'asterdoc add " + artifact + "' to install it."))
           process.exit(1)
         }
 

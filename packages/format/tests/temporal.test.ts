@@ -10,7 +10,7 @@ import {
 	safeFormatValue,
 } from '../src/index'
 
-describe('@paradoc/format temporal values', () => {
+describe('@asterdoc/format temporal values', () => {
 	it('formats the four temporal families through direct and dynamic operations', () => {
 		const formatter = createFormatter({ locale: 'en-US' })
 
@@ -172,7 +172,7 @@ describe('@paradoc/format temporal values', () => {
 	})
 })
 
-describe('@paradoc/format duration messages', () => {
+describe('@asterdoc/format duration messages', () => {
 	it('reads the messages of a locale that shares the language when the region has none', () => {
 		expect(createFormatter({ locale: 'de-AT' }).formatDuration('P1D')).toBe('1 Tag')
 		expect(createFormatter({ locale: 'fr-CA' }).formatDuration('P2D')).toBe('2 jours')

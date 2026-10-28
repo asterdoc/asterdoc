@@ -1,5 +1,5 @@
 import { parseCoordinate } from '@/validation/parsers';
-import type { Coordinate } from '@paradoc/types';
+import type { Coordinate } from '@asterdoc/types';
 
 export interface CoordinateBuilder {
 	from(value: Coordinate): CoordinateBuilder;

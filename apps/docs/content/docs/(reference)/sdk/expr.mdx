@@ -1,26 +1,26 @@
 ---
 title: Expr
-description: Parse, evaluate, and type-check Paradoc expressions
+description: Parse, evaluate, and type-check Asterdoc expressions
 ---
 
-`@paradoc/expr` is the engine behind Paradoc's [expression language](/concepts/logic): the small language that powers `visible`, `required`, and computed values. This page documents the package API. For the language itself, its operators, functions, and `fields.<id>` addressing, see [Logic](/concepts/logic).
+`@asterdoc/expr` is the engine behind Asterdoc's [expression language](/concepts/logic): the small language that powers `visible`, `required`, and computed values. This page documents the package API. For the language itself, its operators, functions, and `fields.<id>` addressing, see [Logic](/concepts/logic).
 
 The package gives you three things: a `parse` that turns source into a typed AST, an `evaluate` that runs an expression against data, and a `check` that type-checks an expression against an artifact's field types at authoring time. It also ships `Decimal` for exact decimal arithmetic, so money and percentage math never drift.
 
 ## Installation
 
 ```bash
-npm install @paradoc/expr
+npm install @asterdoc/expr
 ```
 
 The same surface is re-exported through the SDK under an `expr` namespace, so you can reach it without a separate dependency:
 
 ```ts
 // Direct import.
-import { check, parse, evaluateExpression, Decimal } from '@paradoc/expr'
+import { check, parse, evaluateExpression, Decimal } from '@asterdoc/expr'
 
 // Or via the SDK namespace.
-import { expr } from '@paradoc/sdk'
+import { expr } from '@asterdoc/sdk'
 expr.check(/* ... */)
 ```
 
@@ -29,7 +29,7 @@ expr.check(/* ... */)
 `parse` returns `{ ast, errors }`. The AST is `null` when the source has syntax errors; the errors carry positioned diagnostics.
 
 ```ts
-import { parse } from '@paradoc/expr'
+import { parse } from '@asterdoc/expr'
 
 const { ast, errors } = parse('fields.age >= 18')
 // ast is the typed expression tree; errors is empty
@@ -40,7 +40,7 @@ const { ast, errors } = parse('fields.age >= 18')
 `evaluateExpression` parses and runs a source string against a context built with `createContext`. It returns a result, never throws on a bad expression. Values are tagged (`{ kind, value }`); use `valueToString` or the `Values` helpers to read them.
 
 ```ts
-import { evaluateExpression, createContext, valueToString } from '@paradoc/expr'
+import { evaluateExpression, createContext, valueToString } from '@asterdoc/expr'
 
 const ctx = createContext({ fields: { age: 25 } })
 
@@ -64,9 +64,9 @@ If you already have an AST, `evaluate(ast, ctx)` runs it directly.
 `check(source, env)` returns `{ type, diagnostics }`. The `env` is a `TypeEnv` that maps reference paths to types. Build one from an artifact's field types so the checker knows what `fields.age` is, then catch references that don't exist.
 
 ```ts
-import { check, createTypeEnv, T } from '@paradoc/expr'
+import { check, createTypeEnv, T } from '@asterdoc/expr'
 
-// The host (e.g. @paradoc/core) builds this from real field definitions.
+// The host (e.g. @asterdoc/core) builds this from real field definitions.
 const env = createTypeEnv({
   'fields.age': T.number,
   'fields.country': T.string,
@@ -93,7 +93,7 @@ For expressions used as gates (`visible`, `required`, `include`, rules), `checkB
 
 `sum`, `count`, `min`, `max`, `avg`, `any`, and `all` read their first argument as a path into a list rather than as a value; the [Logic](/concepts/logic#aggregating-lists) page covers the language rules. Two things are the host's to supply.
 
-**Row visibility.** Pass `rowVisible` to `createContext` to keep hidden rows out. It receives the list's path and the row's position at every list level, and every row counts when it is absent. `@paradoc/core` supplies it from the artifact's `visible` conditions.
+**Row visibility.** Pass `rowVisible` to `createContext` to keep hidden rows out. It receives the list's path and the row's position at every list level, and every row counts when it is absent. `@asterdoc/core` supplies it from the artifact's `visible` conditions.
 
 ```ts
 const ctx = createContext(
@@ -121,7 +121,7 @@ A money sum over rows in more than one currency fails with the `currency-mismatc
 `Decimal` is exact-decimal arithmetic backed by `bigint`. No floating point is used, so `19.95 * 3` is exactly `59.85` and money math doesn't accumulate rounding error. The constructor is private; build values with `Decimal.fromString` or `Decimal.fromInt`.
 
 ```ts
-import { Decimal } from '@paradoc/expr'
+import { Decimal } from '@asterdoc/expr'
 
 Decimal.fromString('0.1').add(Decimal.fromString('0.2')).toString()
 // "0.3"  (not 0.30000000000000004)

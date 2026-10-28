@@ -1,11 +1,11 @@
-// Generated from Paradoc's forms library (Fab release 248c4b7c-33a5-4c98-88cf-f8e16f1fbbee). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release 248c4b7c-33a5-4c98-88cf-f8e16f1fbbee). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@paradoc/core";
-import { createMemoryResolver } from "@paradoc/resolvers/memory";
+import { p } from "@asterdoc/core";
+import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.paradoc.dev/2026-10-02.json",
+  "$schema": "https://schema.asterdoc.com/2026-10-28.json",
   "kind": "form",
   "name": "ach-bank-account-info",
   "version": "1.0.0",

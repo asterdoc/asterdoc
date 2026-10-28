@@ -1,7 +1,7 @@
 /**
  * Shape tests for the artifact-kind discriminated union.
  *
- * `@paradoc/types` is Zod-free (D2): every check here is a compile-time
+ * `@asterdoc/types` is Zod-free (D2): every check here is a compile-time
  * assertion (`expectTypeOf`, or an `@ts-expect-error` that `check-types`
  * turns into a real failure if the guard it covers is ever loosened).
  * `vitest run` executes these as ordinary passing tests; `tsc --noEmit` is

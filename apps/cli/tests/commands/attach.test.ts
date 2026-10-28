@@ -13,7 +13,7 @@ describe('CLI attach command', () => {
   let tmpDir: string
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-attach-'))
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-attach-'))
     // Copy fixture artifact into temp dir so we can attach without modifying source
     await fs.copyFile(
       path.join(fixturesDir, 'pet-addendum.yaml'),

@@ -1,9 +1,9 @@
 /**
- * Registry-related schemas for Paradoc CLI
+ * Registry-related schemas for Asterdoc CLI
  *
  * These schemas define the structure for:
- * - Global user config (~/.paradoc/config.json)
- * - Lock files (.paradoc/lock.json)
+ * - Global user config (~/.asterdoc/config.json)
+ * - Lock files (.asterdoc/lock.json)
  * - Registry manifest (registry.json), and the releases it lists
  * - Registry items (r/{name}.json)
  */

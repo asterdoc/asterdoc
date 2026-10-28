@@ -1,16 +1,16 @@
 ---
 title: data
 description: Data operations for artifacts
-ogTitle: paradoc data
+ogTitle: asterdoc data
 ogDescription: Generate templates, fill forms with data, and extract data from filled PDFs
 ---
 
-Data operations for Paradoc artifacts.
+Data operations for Asterdoc artifacts.
 
 ## Usage
 
 ```bash
-paradoc data <command> [options]
+asterdoc data <command> [options]
 ```
 
 ## Subcommands
@@ -29,7 +29,7 @@ paradoc data <command> [options]
 Generate an instance template from a form artifact.
 
 ```bash
-paradoc data template <file> [options]
+asterdoc data template <file> [options]
 ```
 
 ### Arguments
@@ -52,13 +52,13 @@ paradoc data template <file> [options]
 Generate template to stdout:
 
 ```bash
-paradoc data template my-form.yaml
+asterdoc data template my-form.yaml
 ```
 
 Generate template to file:
 
 ```bash
-paradoc data template my-form.yaml --out data.yaml
+asterdoc data template my-form.yaml --out data.yaml
 ```
 
 ### Output
@@ -116,7 +116,7 @@ The placeholders are a starting point, not valid data. Replace each one before y
 Fill form data interactively, or from a data payload, and save it to an output file.
 
 ```bash
-paradoc data fill <file> --out <file> [options]
+asterdoc data fill <file> --out <file> [options]
 ```
 
 ### Arguments
@@ -145,13 +145,13 @@ With `--data`, it runs without prompts. The payload is a `{ fields, parties, ann
 Fill interactively:
 
 ```bash
-paradoc data fill my-form.yaml --out filled-data.yaml
+asterdoc data fill my-form.yaml --out filled-data.yaml
 ```
 
 Fill from a data file:
 
 ```bash
-paradoc data fill my-form.yaml --data input.json --out filled-data.yaml
+asterdoc data fill my-form.yaml --data input.json --out filled-data.yaml
 ```
 
 Interactive session:
@@ -178,7 +178,7 @@ Validate instance data against a form artifact. Exits with code 0 when the data 
 The data is a `{ fields, parties, annexes }` payload, or bare field values that are read as `fields`. The command reports the same errors as the SDK's `form.fill(data).validate()`: expression-based `required`, party role rules, annex values, rule failures, and unknown top-level keys. With `--json`, a valid result carries the filled payload as `data`; an invalid one carries `errors`, and `ruleErrors` when a form rule fails.
 
 ```bash
-paradoc data validate <form-file> <data> [options]
+asterdoc data validate <form-file> <data> [options]
 ```
 
 ### Arguments
@@ -200,23 +200,23 @@ paradoc data validate <form-file> <data> [options]
 Validate a data file:
 
 ```bash
-paradoc data validate my-form.yaml data.json
+asterdoc data validate my-form.yaml data.json
 ```
 
 Validate data from stdin and print a JSON result:
 
 ```bash
-cat data.json | paradoc data validate my-form.yaml - --json
+cat data.json | asterdoc data validate my-form.yaml - --json
 ```
 
 ---
 
 ## data extract
 
-Read filled PDF forms back into form data through the form's PDF layer bindings, and write the data and a report for each field as JSON. It reads fillable (AcroForm) fields only; flattened and scanned PDFs need the hosted Paradoc extraction service. The result is the same as the SDK's [`form.extract()`](/sdk/artifacts/form#extracting-data-from-a-filled-pdf).
+Read filled PDF forms back into form data through the form's PDF layer bindings, and write the data and a report for each field as JSON. It reads fillable (AcroForm) fields only; flattened and scanned PDFs need the hosted Asterdoc extraction service. The result is the same as the SDK's [`form.extract()`](/sdk/artifacts/form#extracting-data-from-a-filled-pdf).
 
 ```bash
-paradoc data extract <form-file> <pdf> [options]
+asterdoc data extract <form-file> <pdf> [options]
 ```
 
 ### Arguments
@@ -246,13 +246,13 @@ The command exits with code 1 when a PDF cannot be read: for example, `no_form_f
 Extract one PDF:
 
 ```bash
-paradoc data extract w-9.yaml completed-w9.pdf
+asterdoc data extract w-9.yaml completed-w9.pdf
 ```
 
 Extract a directory of filled copies against one layer and save the result:
 
 ```bash
-paradoc data extract 1099-nec.yaml ./filled --layer pdfCopyB --out extracted.json
+asterdoc data extract 1099-nec.yaml ./filled --layer pdfCopyB --out extracted.json
 ```
 
 ## See also
@@ -261,4 +261,4 @@ paradoc data extract 1099-nec.yaml ./filled --layer pdfCopyB --out extracted.jso
 - [render](/cli/commands/render) - Render forms with data
 - [inspect](/cli/commands/inspect) - List the raw AcroForm fields of a PDF
 
-An artifact argument may be a file path or an installed `@namespace/name` reference from `.paradoc/lock.json`. An uninstalled reference fails with an error.
+An artifact argument may be a file path or an installed `@namespace/name` reference from `.asterdoc/lock.json`. An uninstalled reference fails with an error.

@@ -6,7 +6,7 @@
  * composition owes the seal end to end. The answer is now short.
  *
  * Nothing here re-implements sealing, and nothing here converts anything.
- * `@paradoc/core`'s `seal()` runs the whole flow: it decides the signer
+ * `@asterdoc/core`'s `seal()` runs the whole flow: it decides the signer
  * bindings, renders the composition twice through the renderer registered for
  * its layer, locates the markers, checks for drift, flattens and hashes the
  * canonical PDF. The composition's own `Signature` blocks draw the markers,
@@ -24,9 +24,9 @@
  */
 
 import type { ProposalData } from "./proposal-data";
-import { reactLayerRenderers } from "@paradoc/react-pdf";
-import type { RenderPdfOptions } from "@paradoc/react-pdf";
-import type { PdfImage } from "@paradoc/react-pdf";
+import { reactLayerRenderers } from "@asterdoc/react-pdf";
+import type { RenderPdfOptions } from "@asterdoc/react-pdf";
+import type { PdfImage } from "@asterdoc/react-pdf";
 import { PROPOSAL_REACT_LAYER, PROPOSAL_REACT_LAYER_PATH, PROPOSAL_SIGNATURE_SLOTS, proposal } from "./proposal";
 import { ProposalDocument } from "./proposal-document";
 import { bindOrganizationSigners } from "./organization-signers";

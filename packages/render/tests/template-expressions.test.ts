@@ -8,8 +8,8 @@
  */
 
 import { unzipSync, zipSync } from 'fflate'
-import { buildRegistry, createContext, createTypeEnv, evaluateExpression, T, Values, type FnSignature } from '@paradoc/expr'
-import type { Form } from '@paradoc/types'
+import { buildRegistry, createContext, createTypeEnv, evaluateExpression, T, Values, type FnSignature } from '@asterdoc/expr'
+import type { Form } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
 import { checkTextTemplate, renderText, TemplateError, textRenderer, textTemplateSigningDirectives } from '../src/text'
 import { checkDocxTemplate, renderDocx } from '../src/docx'
@@ -179,7 +179,7 @@ describe('one condition language', () => {
 
   it('calls host-configured functions and refuses functions that are not configured', () => {
     const signatures: FnSignature[] = [{ name: 'shout', category: 'string', params: [{ name: 'value', type: T.string }], returns: { kind: 'fixed', type: T.string }, deterministic: true }]
-    const functions = { shout: ([value]: readonly import('@paradoc/expr').Value[]) => Values.string(`${value?.kind === 'string' ? value.value : ''}!`) }
+    const functions = { shout: ([value]: readonly import('@asterdoc/expr').Value[]) => Values.string(`${value?.kind === 'string' ? value.value : ''}!`) }
     expect(renderText({ data: { name: 'ada' }, template: '{{shout(fields.name)}}', expressions: { functions, signatures } })).toBe('ada!')
 
     expect(() => renderText({ data: { name: 'ada' }, template: '{{shout(fields.name)}}', layer: 'markdown' }))

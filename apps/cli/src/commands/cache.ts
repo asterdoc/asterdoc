@@ -3,7 +3,7 @@ import kleur from 'kleur'
 import ora from 'ora'
 
 import { registryClient } from '../utils/registry-client.js'
-import { configManager, normalizeNamespace, PARADOC_NAMESPACE } from '../utils/config.js'
+import { configManager, normalizeNamespace, ASTERDOC_NAMESPACE } from '../utils/config.js'
 import { findRepoRoot } from '../utils/project.js'
 import { resolveRegistry } from '../utils/registry.js'
 import { formatBytes } from '../utils/format.js'
@@ -77,7 +77,7 @@ export function createCacheCommand(): Command {
           await configManager.loadProjectManifest(projectRoot)
         }
         const cacheDir = await configManager.getCacheDirectory()
-        const defaultTtl = await configManager.getCacheTtl(PARADOC_NAMESPACE)
+        const defaultTtl = await configManager.getCacheTtl(ASTERDOC_NAMESPACE)
         await registryClient.initCache({ directory: cacheDir, defaultTtl })
 
         const { sessionEntries: _, ...stats } = await registryClient.getCacheStats()
@@ -241,7 +241,7 @@ export function createCacheCommand(): Command {
         console.log()
         console.log(kleur.gray('Default settings:'))
         console.log(kleur.gray('  TTL: 3600s (1 hour)'))
-        console.log(kleur.gray('  Directory: ~/.paradoc/cache'))
+        console.log(kleur.gray('  Directory: ~/.asterdoc/cache'))
       } catch (error) {
         spinner.fail('Failed to reset cache configuration')
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))

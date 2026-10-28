@@ -2,8 +2,8 @@
  * Tests for code snippets in concepts/index.mdx (Artifacts)
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@paradoc/sdk'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { p } from '@asterdoc/sdk'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 
 describe('Artifacts Concept', () => {
   // ============================================================================
@@ -46,7 +46,7 @@ describe('Artifacts Concept', () => {
 
   test('loads JSON artifact', () => {
     const json = {
-      $schema: PARADOC_SCHEMA_URL,
+      $schema: ASTERDOC_SCHEMA_URL,
       kind: 'form',
       name: 'residential-lease',
       version: '1.0.0',

@@ -1,13 +1,13 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
-import { createFormatter } from "@paradoc/format";
-import { pageTextRuns } from "@paradoc/render/pdf";
+import { createFormatter } from "@asterdoc/format";
+import { pageTextRuns } from "@asterdoc/render/pdf";
 import { Document } from "../../components/src/components/document";
 import { Field } from "../../components/src/components/field";
 import { Signature } from "../../components/src/components/signature";
-import { useTotals } from "@paradoc/react";
+import { useTotals } from "@asterdoc/react";
 import { renderPdf } from "../src/render";
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 it("uses one artifact override for preview fields, computed values, parties and PDF", async () => {
   const formatter = createFormatter({ overrides: { money: () => "Custom amount", person: () => "Custom person" } });

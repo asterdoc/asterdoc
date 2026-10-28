@@ -29,7 +29,7 @@ import { compile } from "tailwindcss";
 
 import type { PdfFontFile } from "../resources";
 import type { PdfPageGeometry } from "../adapter";
-import { LTR_ISOLATE_STYLESHEET } from "@paradoc/react";
+import { LTR_ISOLATE_STYLESHEET } from "@asterdoc/react";
 
 const require = createRequire(import.meta.url);
 
@@ -164,8 +164,8 @@ export async function chromiumStylesheets(
 
   const content = [
     compiled.build(classCandidates(markup)),
-    fonts.some((font) => font.family === "Paradoc Signing Marker")
-      ? 'body { font-family: sans-serif, "Paradoc Signing Marker"; }'
+    fonts.some((font) => font.family === "Asterdoc Signing Marker")
+      ? 'body { font-family: sans-serif, "Asterdoc Signing Marker"; }'
       : "",
     applicationCss ?? "",
     fonts.map(fontFace).join("\n\n"),

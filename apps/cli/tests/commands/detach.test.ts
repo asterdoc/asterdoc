@@ -13,7 +13,7 @@ describe('CLI detach command', () => {
   let tmpDir: string
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-detach-'))
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-detach-'))
     await fs.copyFile(
       path.join(fixturesDir, 'pet-addendum.yaml'),
       path.join(tmpDir, 'pet-addendum.yaml')

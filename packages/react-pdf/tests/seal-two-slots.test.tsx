@@ -13,15 +13,15 @@
  * this package pins.
  */
 
-import { p } from "@paradoc/core";
-import type { Form } from "@paradoc/types";
+import { p } from "@asterdoc/core";
+import type { Form } from "@asterdoc/types";
 import { describe, expect, it } from "vitest";
 
 import { Document } from "../../components/src/components/document";
 import { Section } from "../../components/src/components/section";
-import { INITIALS_RULE, SIGNATURE_RULE } from "@paradoc/react";
+import { INITIALS_RULE, SIGNATURE_RULE } from "@asterdoc/react";
 import { Signature } from "../../components/src/components/signature";
-import type { DocumentData } from "@paradoc/react";
+import type { DocumentData } from "@asterdoc/react";
 import { reactLayerRenderers } from "../src/layer";
 import { readPdf } from "./pdf-reader";
 
@@ -30,7 +30,7 @@ const LAYER = "composition";
 const SLOTS = { signature: "tenant-signature", initials: "tenant-initials" } as const;
 
 const spec = {
-  $schema: "https://schema.paradoc.dev/2026-10-02.json",
+  $schema: "https://schema.asterdoc.com/2026-10-28.json",
   kind: "form",
   name: "lease-rider",
   version: "1.0.0",

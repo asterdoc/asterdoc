@@ -12,7 +12,7 @@ describe('CLI init command', () => {
   let tmpDir: string
 
   beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'paradoc-init-'))
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-init-'))
   })
 
   afterEach(async () => {
@@ -47,7 +47,7 @@ describe('CLI init command', () => {
     expect(result.stdout).toContain('initialized successfully')
 
     // Verify files were created
-    const manifest = await fs.readFile(path.join(tmpDir, 'paradoc.json'), 'utf-8')
+    const manifest = await fs.readFile(path.join(tmpDir, 'asterdoc.json'), 'utf-8')
     expect(JSON.parse(manifest)).toHaveProperty('name')
   })
 
@@ -62,10 +62,10 @@ describe('CLI init command', () => {
 
     // Verify no files were actually created
     const files = await fs.readdir(tmpDir)
-    expect(files).not.toContain('paradoc.json')
+    expect(files).not.toContain('asterdoc.json')
   })
 
-  it('should fail if paradoc.json already exists', async () => {
+  it('should fail if asterdoc.json already exists', async () => {
     // Create a project first
     await executeCliCommand(
       ['init', '--yes', '--name', 'First Project'],

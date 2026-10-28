@@ -1,22 +1,22 @@
 ---
 title: configure
 description: Interactive configuration wizard
-ogTitle: paradoc configure
-ogDescription: Interactively configure Paradoc CLI settings
+ogTitle: asterdoc configure
+ogDescription: Interactively configure Asterdoc CLI settings
 ---
 
-Interactive configuration wizard for the Paradoc CLI.
+Interactive configuration wizard for the Asterdoc CLI.
 
 ## Usage
 
 ```bash
-paradoc configure
-paradoc config
+asterdoc configure
+asterdoc config
 ```
 
 ## Description
 
-Walks you through each CLI setting interactively. Press Enter to keep the current value, or select a new one. Settings are saved to `~/.paradoc/config.json`.
+Walks you through each CLI setting interactively. Press Enter to keep the current value, or select a new one. Settings are saved to `~/.asterdoc/config.json`.
 
 The wizard configures:
 
@@ -25,16 +25,16 @@ The wizard configures:
 3. **Cache duration** - How long to cache registry data before fetching fresh
 4. **Telemetry** - Whether the CLI sends anonymous usage data
 
-There is no registry setting. An artifact reference always names its namespace, as in `@acme/w9`. The built-in `@paradoc` namespace needs no configuration; add any other with [`paradoc registry add`](/cli/commands/registry/add).
+There is no registry setting. An artifact reference always names its namespace, as in `@acme/w9`. The built-in `@asterdoc` namespace needs no configuration; add any other with [`asterdoc registry add`](/cli/commands/registry/add).
 
 ## Examples
 
 ```bash
-paradoc configure
+asterdoc configure
 ```
 
 ```
-Paradoc CLI Configuration
+Asterdoc CLI Configuration
 Walk through each setting to configure the CLI.
 Press Enter to keep the current value, or select a new one.
 

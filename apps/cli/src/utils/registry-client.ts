@@ -28,7 +28,7 @@ import { cacheManager, type CacheResult } from './cache.js'
 import { formatBytes } from './format.js'
 import { computeHashFromContent } from './hash.js'
 import { checkRegistryManifest, parseRegistryManifest } from './registry-manifest.js'
-import { parse } from '@paradoc/core'
+import { parse } from '@asterdoc/core'
 
 /**
  * ContentRef from a registry item (inline text or file reference)
@@ -41,7 +41,7 @@ export type RegistryContentRef =
  * Registry item with full details: the artifact file of one release, fetched
  * from the path the manifest lists for it.
  *
- * A registry serves the artifact itself, flat, as `paradoc registry compile`
+ * A registry serves the artifact itself, flat, as `asterdoc registry compile`
  * writes it. `tags` and a file layer's `url` are registry metadata that the
  * installed artifact does not carry.
  */
@@ -87,7 +87,7 @@ export interface RegistryFileLayer extends RegistryLayerBase {
   url?: string
   /** Font a PDF layer draws with; downloaded beside the layer file. */
   font?: { path: string; checksum?: string }
-  /** PDF layers only: AcroForm field name to Paradoc path. */
+  /** PDF layers only: AcroForm field name to Asterdoc path. */
   bindings?: Record<string, string>
   /** PDF layers only: key of a sibling PDF layer whose bindings this layer reuses. */
   bindingsFrom?: string

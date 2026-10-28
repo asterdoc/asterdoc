@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/core'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/core'
 import {
 	configForExecution,
 	createToolExecutionContext,
@@ -50,7 +50,7 @@ const checklistArtifact = {
 }
 
 const documentArtifact = {
-	$schema: PARADOC_SCHEMA_URL,
+	$schema: ASTERDOC_SCHEMA_URL,
 	kind: 'document' as const,
 	name: 'notice',
 	version: '1.0.0',
@@ -132,7 +132,7 @@ describe('shared AI tool contract', () => {
 	})
 
 	it('keeps unsupported artifact results inside each tool output schema', async () => {
-		const bundle = { $schema: PARADOC_SCHEMA_URL, kind: 'bundle' as const, name: 'packet', contents: [] }
+		const bundle = { $schema: ASTERDOC_SCHEMA_URL, kind: 'bundle' as const, name: 'packet', contents: [] }
 		const documentFill = await executeFill({ source: 'artifact', artifact: documentArtifact, data: {} })
 		const bundleFill = await executeFill({ source: 'artifact', artifact: bundle, data: {} })
 		const bundleUpdate = await executeUpdateFill({ source: 'artifact', artifact: bundle, data: {} })

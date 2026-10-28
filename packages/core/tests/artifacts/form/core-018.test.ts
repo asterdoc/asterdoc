@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, test } from 'vitest'
 import { form, SealConfigError } from '@/artifacts'
-import type { SealAdapter, SignatureSlot } from '@paradoc/types'
+import type { SealAdapter, SignatureSlot } from '@asterdoc/types'
 
 const pdf = new Uint8Array(readFileSync(join(__dirname, 'fixtures', 'large-contract.pdf')))
 const adapter: SealAdapter = { convert: async () => ({ pdf }) }

@@ -1,11 +1,11 @@
 /**
  * Lock File Manager
  *
- * Manages .paradoc/lock.json for tracking installed artifacts
+ * Manages .asterdoc/lock.json for tracking installed artifacts
  */
 
 import { createHash } from 'node:crypto'
-import { LockFileSchema, SCHEMA_BASE } from '@paradoc/schemas'
+import { LockFileSchema, SCHEMA_BASE } from '@asterdoc/schemas'
 import { LocalFileSystem } from './local-fs.js'
 import { formatConfigIssues, isMissingFileError } from './config.js'
 
@@ -18,7 +18,7 @@ import type {
 } from '../types.js'
 
 // Lock file path within project
-const LOCK_FILE_DIR = '.paradoc'
+const LOCK_FILE_DIR = '.asterdoc'
 const LOCK_FILE_NAME = 'lock.json'
 const LOCK_FILE_VERSION = 1
 const LOCK_FILE_SCHEMA_URL = `${SCHEMA_BASE}/lock.json`

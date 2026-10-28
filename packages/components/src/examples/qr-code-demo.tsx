@@ -15,6 +15,6 @@ import { shortProposalData } from "./proposal-data";
 
 export function QRCodeDemo() {
   return (
-    <QRCode url={`https://docs.paradoc.dev/p/${String(shortProposalData.fields.proposalNumber)}`} />
+    <QRCode url={`https://docs.asterdoc.com/p/${String(shortProposalData.fields.proposalNumber)}`} />
   );
 }

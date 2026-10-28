@@ -1,17 +1,17 @@
 ---
 title: add
 description: Add an artifact from a registry, or document components and blocks
-ogTitle: paradoc add
-ogDescription: Install artifacts from Paradoc registries, and document components from the Paradoc component registry
+ogTitle: asterdoc add
+ogDescription: Install artifacts from Asterdoc registries, and document components from the Asterdoc component registry
 ---
 
 Adds an artifact from a registry into your project, or one or more document
-components and blocks from the [Paradoc component registry](/components).
+components and blocks from the [Asterdoc component registry](/components).
 
 ## Usage
 
 ```bash
-paradoc add <targets...> [options]
+asterdoc add <targets...> [options]
 ```
 
 ## Arguments
@@ -25,11 +25,11 @@ paradoc add <targets...> [options]
 | Option | Description |
 |--------|-------------|
 | `--layers <layers>` | Layers to download (comma-separated, or `"all"`) |
-| `--output <format>` | Output format: `json`, `yaml`, `typed` (json + .d.ts), or `ts` (TypeScript module). Default: `artifacts.output` in `paradoc.json`, then `defaults.output` in global config, then `json` |
+| `--output <format>` | Output format: `json`, `yaml`, `typed` (json + .d.ts), or `ts` (TypeScript module). Default: `artifacts.output` in `asterdoc.json`, then `defaults.output` in global config, then `json` |
 | `--header <header>` | HTTP header for direct URL auth (format: `"Name: Value"`). Can be used multiple times. A malformed header fails the command. |
 | `--cache-ttl <seconds>` | Cache TTL in seconds (`0` = no cache, default: use config) |
 | `--no-cache` | Skip cache and fetch fresh |
-| `--registry <url>` | Component registry URL template for `@paradoc` (must contain `{name}`) |
+| `--registry <url>` | Component registry URL template for `@asterdoc` (must contain `{name}`) |
 | `--dry-run` | For a component, print the install command instead of running it |
 
 ## Description
@@ -51,7 +51,7 @@ By default, only the artifact definition is downloaded. Use `--layers` to also d
 
 **Content reference files** (`instructions`, `agentInstructions`) that use `kind: "file"` are downloaded automatically — no `--layers` flag needed. These are typically small text files essential for the artifact to function correctly. Every downloaded file requires a checksum; a missing checksum or requested layer fails the install without writing the artifact or lock entry.
 
-A direct URL fetches that exact JSON or YAML resource without requesting a registry manifest. No manifest means no checksum and no identity check for the artifact file: you get what the URL serves. `--output ts` writes the TypeScript module and keeps a JSON source for other Paradoc commands; the lock points to that JSON source.
+A direct URL fetches that exact JSON or YAML resource without requesting a registry manifest. No manifest means no checksum and no identity check for the artifact file: you get what the URL serves. `--output ts` writes the TypeScript module and keeps a JSON source for other Asterdoc commands; the lock points to that JSON source.
 
 When called with just a namespace (`@namespace`), the command enters browse mode and lets you interactively select artifacts to install.
 
@@ -60,39 +60,39 @@ When called with just a namespace (`@namespace`), the command enters browse mode
 A bare name is a document component rather than an artifact: an artifact
 reference always carries a namespace or is a URL, so the two cannot be confused.
 An artifact always names its namespace. A bare name that is not a component, such as
-`paradoc add w9`, fails and asks for the registry: `paradoc add @registry/w9`.
-The built-in `@paradoc` namespace needs no configuration; any other namespace
-must be added with `paradoc registry add @<ns> <url>` first (see
+`asterdoc add w9`, fails and asks for the registry: `asterdoc add @registry/w9`.
+The built-in `@asterdoc` namespace needs no configuration; any other namespace
+must be added with `asterdoc registry add @<ns> <url>` first (see
 [Namespaces](/concepts/registries#namespaces)).
 
 ```bash
-paradoc add field
+asterdoc add field
 ```
 
 Name several components to install them in one call. Each one reports its own result:
 
 ```bash
-paradoc add field image
+asterdoc add field image
 ```
 
-That writes the `@paradoc` namespace into the project's `components.json` if it
-is not already there, then runs `npx shadcn@4 add @paradoc/field`. The shadcn
+That writes the `@asterdoc` namespace into the project's `components.json` if it
+is not already there, then runs `npx shadcn@4 add @asterdoc/field`. The shadcn
 major is pinned rather than `latest`, because the registry's install proof runs
-that major. The component's source lands in `components/paradoc/` and is yours
+that major. The component's source lands in `components/asterdoc/` and is yours
 to edit; see [Components](/components) for the full list and what stays in
-`@paradoc/react`.
+`@asterdoc/react`.
 
 A block installs the same way and is one of these names too. It brings a whole
-document rather than one component, so `paradoc add purchase-order` lands the
+document rather than one component, so `asterdoc add purchase-order` lands the
 artifact, its sample data and the composition that binds them; the composition
-goes to `components/paradoc/` and the other two to `artifacts/paradoc/`.
+goes to `components/asterdoc/` and the other two to `artifacts/asterdoc/`.
 
 Only a name the registry ships is read as a component. Any other bare argument
 is reported as an invalid artifact reference, listing both forms, rather than
 being sent to the shadcn CLI to fail on a missing item.
 
 The command needs a shadcn project: run `npx shadcn@latest init` first if there
-is no `components.json`. A `@paradoc` namespace already pointing at a different
+is no `components.json`. A `@asterdoc` namespace already pointing at a different
 registry is left alone and reported, so a project running its own mirror is not
 silently repointed.
 
@@ -101,61 +101,61 @@ silently repointed.
 Add an artifact:
 
 ```bash
-paradoc add @acme/residential-lease
+asterdoc add @acme/residential-lease
 ```
 
 Add one edition and version:
 
 ```bash
-paradoc add @acme/w-9/2024-03@1.0.0
+asterdoc add @acme/w-9/2024-03@1.0.0
 ```
 
 Add with all layers:
 
 ```bash
-paradoc add @acme/residential-lease --layers all
+asterdoc add @acme/residential-lease --layers all
 ```
 
 Add specific layers:
 
 ```bash
-paradoc add @acme/residential-lease --layers pdf,markdown
+asterdoc add @acme/residential-lease --layers pdf,markdown
 ```
 
 Add with a specific output format:
 
 ```bash
-paradoc add @acme/residential-lease --output yaml
+asterdoc add @acme/residential-lease --output yaml
 ```
 
 Add as a TypeScript module:
 
 ```bash
-paradoc add @acme/residential-lease --output ts
+asterdoc add @acme/residential-lease --output ts
 ```
 
 Browse all artifacts in a namespace:
 
 ```bash
-paradoc add @acme
+asterdoc add @acme
 ```
 
 Add from a direct URL:
 
 ```bash
-paradoc add https://registry.example.com/r/my-form.json
+asterdoc add https://registry.example.com/r/my-form.json
 ```
 
 Add from a URL with authentication:
 
 ```bash
-paradoc add https://registry.example.com/r/my-form.json --header "Authorization: Bearer token123"
+asterdoc add https://registry.example.com/r/my-form.json --header "Authorization: Bearer token123"
 ```
 
 Add a document component:
 
 ```bash
-paradoc add field
+asterdoc add field
 ```
 
 ## Output
@@ -199,6 +199,6 @@ Registry: https://registry.acme.com
 - [search](/cli/commands/search) - Find artifacts in registries
 - [list](/cli/commands/list) - List installed artifacts
 - [show](/cli/commands/show) - View artifact details
-- [Components](/components) - The document component registry `paradoc add <name>` installs from
+- [Components](/components) - The document component registry `asterdoc add <name>` installs from
 
 A conflicting registry mapping stops installation without writing files. Correct or remove the mapping, then retry. Component installation invokes the package runner with `--yes`.

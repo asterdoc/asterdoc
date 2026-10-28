@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { PARADOC_SCHEMA_URL, SCHEMA_VERSION, schemaVersionUrl } from '@paradoc/core'
+import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION } from '@asterdoc/core'
 import { executeFill } from '../src/tools/fill'
 import { executeGetArtifact } from '../src/tools/get-artifact'
 import { registryFetch as serveRegistry } from './helpers/registry'
@@ -12,6 +12,8 @@ const form = (schema?: string) => ({
 	fields: { x: { type: 'text', label: 'X' } },
 })
 
+const UNPUBLISHED = 'https://schema.asterdoc.com/2025-01-01.json'
+
 const registryFetch = (artifact: Record<string, unknown>) => vi.fn(serveRegistry('https://registry.example', [{ artifact }]))
 
 const fillFromUrl = (artifact: unknown) =>
@@ -22,41 +24,42 @@ const fillFromUrl = (artifact: unknown) =>
 
 describe('AI tools apply the schema version rules', () => {
 	it('fills a current artifact read from a URL', async () => {
-		expect((await fillFromUrl(form(PARADOC_SCHEMA_URL))).accepted).toBe(true)
+		expect((await fillFromUrl(form(ASTERDOC_SCHEMA_URL))).accepted).toBe(true)
 	})
 
 	it.each([
 		['missing', undefined, 'missing-version'],
-		['outdated', schemaVersionUrl('2026-08-10'), 'outdated-version'],
-		['unknown', 'https://schema.paradoc.dev/schema.json', 'unknown-version'],
+		['unpublished', UNPUBLISHED, 'unknown-version'],
+		['undated', 'https://schema.asterdoc.com/schema.json', 'unknown-version'],
 	])('refuses a %s $schema read from a URL', async (_label, schema, code) => {
 		const result = await fillFromUrl(form(schema))
 		expect(result.accepted).toBe(false)
 		expect(result.error?.code).toBe(code)
 		expect(result.error?.message).toContain(SCHEMA_VERSION)
-		expect(result.error?.message).toContain('paradoc migrate')
+		expect(result.error?.message).toContain('asterdoc migrate')
 	})
 
-	it('refuses an outdated artifact from a registry', async () => {
+	it('refuses an artifact of another version from a registry', async () => {
 		const result = await executeGetArtifact(
 			{ registry_url: 'https://registry.example', artifact_name: 'intake' },
-			{ fetch: registryFetch(form(schemaVersionUrl('2026-08-10'))) },
+			{ fetch: registryFetch(form(UNPUBLISHED)) },
 		)
 		expect(result.artifact).toBeUndefined()
-		expect(result.error?.code).toBe('outdated-version')
-		expect(result.error?.message).toContain('2026-08-10')
+		expect(result.error?.code).toBe('unknown-version')
+		expect(result.error?.message).toContain('2025-01-01')
 
 		const current = await executeGetArtifact(
 			{ registry_url: 'https://registry.example', artifact_name: 'intake' },
-			{ fetch: registryFetch(form(PARADOC_SCHEMA_URL)) },
+			{ fetch: registryFetch(form(ASTERDOC_SCHEMA_URL)) },
 		)
 		expect(current.artifact).toMatchObject({ name: 'intake' })
 	})
 
-	it('accepts an inline artifact without $schema but refuses one that declares an old version', async () => {
+	it('accepts an inline artifact without $schema but refuses one that declares another version', async () => {
 		const plain = await executeFill({ source: 'artifact', artifact: form(), data: { fields: { x: 'a' } } })
 		expect(plain.accepted).toBe(true)
-		const old = await executeFill({ source: 'artifact', artifact: form(schemaVersionUrl('2026-08-06')), data: { fields: { x: 'a' } } })
-		expect(old.error?.code).toBe('outdated-version')
+		const other = await executeFill({ source: 'artifact', artifact: form(UNPUBLISHED), data: { fields: { x: 'a' } } })
+		expect(other.accepted).toBe(false)
+		expect(other.error?.code).toBe('unknown-version')
 	})
 })

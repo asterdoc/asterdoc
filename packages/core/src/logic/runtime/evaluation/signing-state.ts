@@ -3,7 +3,7 @@
  * filled form's signing records.
  */
 
-import type { Attestation, SignatureCapture } from '@paradoc/types'
+import type { Attestation, SignatureCapture } from '@asterdoc/types'
 
 /**
  * Who has signed, as the signing predicates (`signedCount`, `allSigned`,

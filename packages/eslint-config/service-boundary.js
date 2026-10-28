@@ -2,7 +2,7 @@
  * The `service.ts` import boundary.
  *
  * A domain capability package bundles its wire contract (`./contracts`), its
- * router (which pulls `@paradoc/api-kernel` for auth/policy/middleware), and its
+ * router (which pulls `@shared/api-kernel` for auth/policy/middleware), and its
  * pure service. The service is API-free: it holds the business logic and must
  * not reach up into the contract/router layer.
  *
@@ -33,9 +33,9 @@ const serviceBoundary = [
                 "A service.ts is api-free: it must not import its co-located ./contracts (the wire/router layer). Keep business logic decoupled from the contract; move shared types to a service-neutral module.",
             },
             {
-              group: ["@paradoc/api-kernel", "@paradoc/api-kernel/**"],
+              group: ["@shared/api-kernel", "@shared/api-kernel/**"],
               message:
-                "A service.ts is api-free: it must not import @paradoc/api-kernel (auth/policy/middleware/procedure). That belongs in the router layer, not the service.",
+                "A service.ts is api-free: it must not import @shared/api-kernel (auth/policy/middleware/procedure). That belongs in the router layer, not the service.",
             },
           ],
         },

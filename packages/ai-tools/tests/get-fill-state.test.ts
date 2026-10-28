@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/core'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/core'
 import { FillStateOutputSchema, executeGetFillState } from '../src'
 
 const ruledForm = {
@@ -76,7 +76,7 @@ describe('get_fill_state rule results', () => {
 
 	it('keeps rule arrays structured for an unsupported artifact', async () => {
 		const document = {
-			$schema: PARADOC_SCHEMA_URL,
+			$schema: ASTERDOC_SCHEMA_URL,
 			kind: 'document' as const,
 			name: 'notice',
 			layers: { text: { kind: 'inline' as const, mimeType: 'text/plain', text: 'A notice.' } },

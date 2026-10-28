@@ -11,7 +11,7 @@ In this guide, you build an agent that fills a form through a conversation. It a
 
 ## The design: your app keeps the draft
 
-The draft is the form data collected so far. Your app stores it, one draft for each conversation, and the model never sees the whole draft. The model sends only the values it just learned, and your code merges them into the draft with Paradoc.
+The draft is the form data collected so far. Your app stores it, one draft for each conversation, and the model never sees the whole draft. The model sends only the values it just learned, and your code merges them into the draft with Asterdoc.
 
 You can also give the model the adapter's `fill` and `update_fill` tools and let it pass the whole draft in every call. That needs no code of your own, but every call sends the full draft twice, in the tool input and in the result, so the token cost grows with the form. The model can also drop or change values that it was not asked to change.
 
@@ -19,7 +19,7 @@ You can also give the model the adapter's `fill` and `update_fill` tools and let
 <Step>
 ## Keep the draft in your app
 
-This module uses the execute functions of `@paradoc/ai-tools`. It does not depend on an AI framework.
+This module uses the execute functions of `@asterdoc/ai-tools`. It does not depend on an AI framework.
 
 ```typescript title="draft.ts"
 import {
@@ -29,10 +29,10 @@ import {
   executeInspectArtifact,
   executeRender,
   executeUpdateFill,
-  type ParadocToolsConfig,
-} from "@paradoc/ai-tools"
+  type AsterdocToolsConfig,
+} from "@asterdoc/ai-tools"
 
-const config: ParadocToolsConfig = { defaultRegistryUrl: "https://public.paradoc.dev" } // a demo registry
+const config: AsterdocToolsConfig = { defaultRegistryUrl: "https://public.asterdoc.com" } // a demo registry
 const source = { source: "registry", artifact_name: "pet-addendum" } as const
 
 type Draft = { data: Record<string, unknown>; evaluation_context?: Record<string, unknown> }
@@ -131,7 +131,7 @@ The model gets two tools of your own: `update_draft` and `finish`. Pick your fra
 <Tabs items={['Vercel AI SDK', 'TanStack AI', 'Mastra']} groupId="ai-framework" persist>
   <Tab value="Vercel AI SDK">
     ```bash
-    npm install @paradoc/ai-tools ai @ai-sdk/openai zod
+    npm install @asterdoc/ai-tools ai @ai-sdk/openai zod
     ```
 
     ```typescript title="intake.ts"
@@ -185,7 +185,7 @@ The model gets two tools of your own: `update_draft` and `finish`. Pick your fra
   </Tab>
   <Tab value="TanStack AI">
     ```bash
-    npm install @paradoc/ai-tools @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod
+    npm install @asterdoc/ai-tools @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod
     ```
 
     ```typescript title="intake.ts"
@@ -241,7 +241,7 @@ The model gets two tools of your own: `update_draft` and `finish`. Pick your fra
   </Tab>
   <Tab value="Mastra">
     ```bash
-    npm install @paradoc/ai-tools @mastra/core zod
+    npm install @asterdoc/ai-tools @mastra/core zod
     ```
 
     ```typescript title="intake.ts"

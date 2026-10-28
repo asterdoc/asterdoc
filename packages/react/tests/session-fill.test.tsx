@@ -2,7 +2,7 @@
 /**
  * A document being filled by a session.
  *
- * The engine is the real one: `createParadocRuntime` over the purchase order
+ * The engine is the real one: `createAsterdocRuntime` over the purchase order
  * artifact, `execute` for every answer, and `sessionPayload` for what has been
  * answered so far. Nothing here fakes a session, because what is under test is
  * the whole path an agent drives, from an empty log to a document that is ready
@@ -37,7 +37,7 @@ import {
   type ArtifactRuntime,
   type FormSession,
   type SessionPayload,
-} from "@paradoc/sessions";
+} from "@asterdoc/sessions";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { Pages } from "../../components/src/components/pages";

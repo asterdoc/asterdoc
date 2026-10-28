@@ -13,23 +13,23 @@
 
 import { useRef } from "react";
 
-import { Bundle } from "@/components/paradoc/bundle";
-import { Document } from "@/components/paradoc/document";
-import { Field } from "@/components/paradoc/field";
-import { KeepTogether } from "@/components/paradoc/keep-together";
-import { Page, Pages } from "@/components/paradoc/pages";
-import { Paper, Sheet, useFitToWidth } from "@/components/paradoc/paper";
-import { Section } from "@/components/paradoc/section";
-import { Signature } from "@/components/paradoc/signature";
-import { Table } from "@/components/paradoc/table";
-import { Totals } from "@/components/paradoc/totals";
-import { PurchaseOrderDocument } from "@/components/paradoc/purchase-order";
-import { VendorPacketDocument } from "@/components/paradoc/vendor-packet";
-import { purchaseOrderData } from "@/artifacts/paradoc/purchase-order.data";
-import { purchaseOrderForm } from "@/artifacts/paradoc/purchase-order.artifact";
-import { vendorPacketBundle } from "@/artifacts/paradoc/vendor-packet.artifact";
-import { vendorPacketData } from "@/artifacts/paradoc/vendor-packet.data";
-import { planPages, type DocumentTokensInput, type PagePlan } from "@paradoc/react";
+import { Bundle } from "@/components/asterdoc/bundle";
+import { Document } from "@/components/asterdoc/document";
+import { Field } from "@/components/asterdoc/field";
+import { KeepTogether } from "@/components/asterdoc/keep-together";
+import { Page, Pages } from "@/components/asterdoc/pages";
+import { Paper, Sheet, useFitToWidth } from "@/components/asterdoc/paper";
+import { Section } from "@/components/asterdoc/section";
+import { Signature } from "@/components/asterdoc/signature";
+import { Table } from "@/components/asterdoc/table";
+import { Totals } from "@/components/asterdoc/totals";
+import { PurchaseOrderDocument } from "@/components/asterdoc/purchase-order";
+import { VendorPacketDocument } from "@/components/asterdoc/vendor-packet";
+import { purchaseOrderData } from "@/artifacts/asterdoc/purchase-order.data";
+import { purchaseOrderForm } from "@/artifacts/asterdoc/purchase-order.artifact";
+import { vendorPacketBundle } from "@/artifacts/asterdoc/vendor-packet.artifact";
+import { vendorPacketData } from "@/artifacts/asterdoc/vendor-packet.data";
+import { planPages, type DocumentTokensInput, type PagePlan } from "@asterdoc/react";
 
 /** A tenant's branding, declared at the document root. */
 const tokens: DocumentTokensInput = {
@@ -129,7 +129,7 @@ export function PurchaseOrder() {
  * The vendor packet block, rendered from its own sample.
  *
  * The annex is bytes the block installs; the W-9's PDF is the one thing the
- * consumer supplies, because filling it needs `@paradoc/essentials` and an
+ * consumer supplies, because filling it needs `@asterdoc/essentials` and an
  * engine, which is why the block declares that package as a dependency.
  */
 export function VendorPacket({ taxpayer }: { taxpayer: Uint8Array }) {

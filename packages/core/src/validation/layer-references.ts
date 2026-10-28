@@ -7,9 +7,9 @@
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { Layer } from '@paradoc/types'
-import { isDocxMimeType, isPdfMimeType, isTextTemplateMimeType } from '@paradoc/schemas'
-import { textTemplateSigningDirectives, type SigningDirectiveUse } from '@paradoc/render/text'
+import type { Layer } from '@asterdoc/types'
+import { isDocxMimeType, isPdfMimeType, isTextTemplateMimeType } from '@asterdoc/schemas'
+import { textTemplateSigningDirectives, type SigningDirectiveUse } from '@asterdoc/render/text'
 import { hasSignatureSlots } from '@/artifacts/form/seal-slots'
 
 /** An artifact that may declare layers, a default layer, and parties. */

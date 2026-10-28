@@ -7,7 +7,7 @@
  *
  * @example
  * ```typescript
- * import { evaluateFormDefs } from '@paradoc/core'
+ * import { evaluateFormDefs } from '@asterdoc/core'
  *
  * // Evaluate all form expressions at once (Public API)
  * const result = evaluateFormDefs(form, { fields: { age: 25 } })

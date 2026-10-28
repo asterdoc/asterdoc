@@ -1,11 +1,11 @@
 /**
- * Composite value shapes come from one source, the @paradoc/schemas
+ * Composite value shapes come from one source, the @asterdoc/schemas
  * primitives. These tests pin every member path, the compiled data schema, and
  * the agent shapes against a full sample value of each shape.
  */
 import { describe, expect, test } from 'vitest'
-import type { Form } from '@paradoc/types'
-import { T, type ExprType } from '@paradoc/expr'
+import type { Form } from '@asterdoc/types'
+import { T, type ExprType } from '@asterdoc/expr'
 import {
 	CANONICAL_SHAPES,
 	COMPOSITE_VALUE_SCHEMAS,

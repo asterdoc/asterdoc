@@ -11,7 +11,7 @@ import {
   ManifestSchema,
   REGISTRY_SCHEMA_ID,
   SCHEMA_BASE,
-} from '@paradoc/schemas'
+} from '@asterdoc/schemas'
 import { describe, expect, it } from 'vitest'
 
 const repo = path.resolve(import.meta.dirname, '../../../..')
@@ -31,9 +31,9 @@ describe('framework-cli-seam-006: config sub-objects reject unknown keys', () =>
     const root = mkdtempSync(path.join(tmpdir(), 'seam006-'))
     const home = path.join(root, 'home')
     const work = path.join(root, 'work')
-    mkdirSync(path.join(home, '.paradoc'), { recursive: true })
+    mkdirSync(path.join(home, '.asterdoc'), { recursive: true })
     mkdirSync(work, { recursive: true })
-    writeFileSync(path.join(home, '.paradoc', 'config.json'), JSON.stringify({ cache: { tll: 0 } }))
+    writeFileSync(path.join(home, '.asterdoc', 'config.json'), JSON.stringify({ cache: { tll: 0 } }))
 
     try {
       const result = run(['cache', 'stats'], work, home)
@@ -50,7 +50,7 @@ describe('framework-cli-seam-006: config sub-objects reject unknown keys', () =>
     expect(manifestJson.properties.artifacts.additionalProperties).toBe(false)
     expect(configJson.properties.cache.additionalProperties).toBe(false)
 
-    const base = { $schema: 'https://schema.paradoc.dev/manifest.json', name: '@test/p', title: 'P', visibility: 'private' }
+    const base = { $schema: 'https://schema.asterdoc.com/manifest.json', name: '@test/p', title: 'P', visibility: 'private' }
     const results = [
       ManifestSchema.safeParse({ ...base, artifacts: { format: 'yaml' } }),
       ManifestSchema.safeParse({ ...base, cache: { tll: 0 } }),

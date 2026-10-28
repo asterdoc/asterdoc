@@ -14,7 +14,7 @@ export const docs = defineDocs({
   dir: "content/docs",
   docs: {
     files:
-      process.env.PARADOC_DOCS_PLATFORM_API === "true"
+      process.env.ASTERDOC_DOCS_PLATFORM_API === "true"
         ? ["**/*.{md,mdx}"]
         : [DOCS_FILES_WITHOUT_PLATFORM_API],
     schema: pageSchema.extend({

@@ -1,6 +1,6 @@
-import { Document, Table } from '@paradoc/components'
-import type { DocumentData } from '@paradoc/react'
-import type { Form } from '@paradoc/types'
+import { Document, Table } from '@asterdoc/components'
+import type { DocumentData } from '@asterdoc/react'
+import type { Form } from '@asterdoc/types'
 
 /**
  * Carries no `sample` export of its own: the sibling `.sample.ts` file

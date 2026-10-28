@@ -9,7 +9,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { PdfExtractionError, type FormField, type PdfExtractionEntry } from '@paradoc/core'
+import { PdfExtractionError, type FormField, type PdfExtractionEntry } from '@asterdoc/core'
 import * as essentials from '../src/index.js'
 import { w9 } from '../src/tax/w-9.js'
 import { f1099NEC } from '../src/tax/1099-nec.js'

@@ -1,11 +1,11 @@
-import type { ParadocToolsConfig } from '../config'
+import type { AsterdocToolsConfig } from '../config'
 import { GetRegistryInputSchema, type GetRegistryInput, type GetRegistryOutput } from '../contracts'
 import { errorFromUnknown } from '../errors'
 import { fetchRegistryIndex, registryUrlFromConfig, summarizeRegistryReleases } from '../registry-client'
 
 export async function executeGetRegistry(
 	input: GetRegistryInput | Record<string, unknown> = {},
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<GetRegistryOutput> {
 	try {
 		const normalized = GetRegistryInputSchema.parse(input)

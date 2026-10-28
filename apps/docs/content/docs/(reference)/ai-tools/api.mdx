@@ -1,14 +1,14 @@
 ---
-title: "@paradoc/ai-tools API"
-description: The framework-neutral Paradoc tool contract, with schemas, execute functions, and a registry client
-ogTitle: "@paradoc/ai-tools API"
+title: "@asterdoc/ai-tools API"
+description: The framework-neutral Asterdoc tool contract, with schemas, execute functions, and a registry client
+ogTitle: "@asterdoc/ai-tools API"
 ogDescription: Tool definitions, execute functions, configuration, request context, registry client, schemas, and types
 ---
 
-`@paradoc/ai-tools` is the contract every Paradoc AI adapter wraps. It has the ten tool definitions, their Zod input and output schemas, an execute function per tool, and a registry client. To start using it, see [Use another framework](/ai/other-frameworks).
+`@asterdoc/ai-tools` is the contract every Asterdoc AI adapter wraps. It has the ten tool definitions, their Zod input and output schemas, an execute function per tool, and a registry client. To start using it, see [Use another framework](/ai/other-frameworks).
 
 ```bash
-npm install @paradoc/ai-tools
+npm install @asterdoc/ai-tools
 ```
 
 ## Tool definitions
@@ -16,7 +16,7 @@ npm install @paradoc/ai-tools
 `toolDefinitions` maps each tool name to its definition:
 
 ```typescript
-import { toolDefinitions } from "@paradoc/ai-tools"
+import { toolDefinitions } from "@asterdoc/ai-tools"
 
 const { name, description, input_schema, output_schema, execute } = toolDefinitions.render
 ```
@@ -35,7 +35,7 @@ An adapter maps each definition to its framework's tool type. See [Write an adap
 
 ## Execute functions
 
-Each tool has an execute function. They take the tool's snake_case input and an optional [`ParadocToolsConfig`](#configuration):
+Each tool has an execute function. They take the tool's snake_case input and an optional [`AsterdocToolsConfig`](#configuration):
 
 | Function | Tool |
 |----------|------|
@@ -52,7 +52,7 @@ Each tool has an execute function. They take the tool's snake_case input and an 
 
 The execute functions do not throw for tool failures. They return a result with an `error` object (`code`, `message`, and optional `path` and `retryable`).
 
-An artifact read from a URL or a registry must carry the current dated `$schema`. An inline artifact may omit it, but one it declares must be current. Otherwise the error code is `missing-version`, `outdated-version`, or `unknown-version`, and the message names the current version and `paradoc migrate`. See [loading rules](/schemas#loading-rules).
+An artifact read from a URL or a registry must carry the current dated `$schema`. An inline artifact may omit it, but one it declares must be current. Otherwise the error code is `missing-version`, `outdated-version`, or `unknown-version`, and the message names the current version and `asterdoc migrate`. See [loading rules](/schemas#loading-rules).
 
 The execute functions parse their input with the tool's Zod schema. Pass the snake_case field names shown on each tool page. [Use another framework](/ai/other-frameworks#call-the-tools-from-your-code) has a full example.
 
@@ -65,7 +65,7 @@ The execute functions parse their input with the tool's Zod schema. Pass the sna
 `createToolExecutionContext(options?)` makes a `ToolExecutionContext` that caches registry responses and carries an abort signal for one request or tool turn. Pass it as `config.context`. Options are `signal` and `maxCacheEntries` (default 32).
 
 ```typescript
-import { createToolExecutionContext, executeGetArtifact } from "@paradoc/ai-tools"
+import { createToolExecutionContext, executeGetArtifact } from "@asterdoc/ai-tools"
 
 const context = createToolExecutionContext({ signal: request.signal })
 
@@ -79,7 +79,7 @@ Create a new context for each request. The package never shares a cache between 
 
 ## Registry client
 
-These helpers fetch from a Paradoc registry with the same URL and size checks the tools use:
+These helpers fetch from an Asterdoc registry with the same URL and size checks the tools use:
 
 | Export | Description |
 |--------|-------------|
@@ -89,7 +89,7 @@ These helpers fetch from a Paradoc registry with the same URL and size checks th
 | `fetchRegistryArtifact` | Fetch one edition and version of an artifact from a registry, and check its SHA-256 and identity against `registry.json` |
 | `summarizeRegistryReleases` | List the editions and versions of a `registry.json` item, without paths or checksums |
 | `RegistryArtifactError` | The error `fetchRegistryArtifact` throws. Its `code` says why the artifact could not be read |
-| `resolveRelativeUrl` | Resolve an instruction or item path against a base URL. Layer files are read with `@paradoc/resolvers/http` |
+| `resolveRelativeUrl` | Resolve an instruction or item path against a base URL. Layer files are read with `@asterdoc/resolvers/http` |
 | `bytesToBase64`, `bytesToText` | Encode fetched bytes |
 
 ## Model output
@@ -111,10 +111,10 @@ The package exports every input and output schema, such as `FillInputSchema` and
 
 ## Configuration
 
-Every execute function and every adapter accepts `ParadocToolsConfig`:
+Every execute function and every adapter accepts `AsterdocToolsConfig`:
 
 ```typescript
-paradocTools({
+asterdocTools({
   defaultRegistryUrl: "https://registry.acme.com",
   fetch: customFetchWithAuth,
   approvedOrigins: ["https://registry.acme.com"],

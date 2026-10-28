@@ -1,6 +1,6 @@
-import { Document, Field, KeepTogether } from '@paradoc/components'
-import type { DocumentData } from '@paradoc/react'
-import type { Form } from '@paradoc/types'
+import { Document, Field, KeepTogether } from '@asterdoc/components'
+import type { DocumentData } from '@asterdoc/react'
+import type { Form } from '@asterdoc/types'
 
 /** An image whose `src` is not a `data:` URI: a render would need bytes for it. */
 export default function RemoteImageComposition({ artifact, data }: { artifact: Form; data: DocumentData }) {

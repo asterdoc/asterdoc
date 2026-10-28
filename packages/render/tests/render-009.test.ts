@@ -5,7 +5,7 @@
  * Expected: the box holds "B" (the value) and extraction returns 'B'.
  * Actual (screened commit): extraction matches the label "B" first and returns 'A'.
  */
-import type { Form } from '@paradoc/types'
+import type { Form } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
 import { extractPdfData, renderPdf } from '../src/pdf'
 import { acroFormPdf } from './pdf-fixtures'

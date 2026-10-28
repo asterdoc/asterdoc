@@ -1,4 +1,4 @@
-export interface ParadocToolsConfig {
+export interface AsterdocToolsConfig {
 	/** Default registry URL (e.g. 'https://registry.acme.com') */
 	defaultRegistryUrl?: string
 	/** Custom fetch implementation (for auth headers, test mocks, etc.) */

@@ -4,12 +4,12 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, expectTypeOf, test } from 'vitest'
 import { p, type ChecklistBuilderInterface, type FormBuilderInterface } from '@/artifacts'
 import { validate } from '@/index'
-import { createMemoryResolver } from '@paradoc/resolvers/memory'
-import { createLayerRenderer } from '@paradoc/render'
-import { inspectAcroFormFields } from '@paradoc/render/pdf'
+import { createMemoryResolver } from '@asterdoc/resolvers/memory'
+import { createLayerRenderer } from '@asterdoc/render'
+import { inspectAcroFormFields } from '@asterdoc/render/pdf'
 
 /**
- * Bindings exist only on PDF layers: they map AcroForm field names to Paradoc
+ * Bindings exist only on PDF layers: they map AcroForm field names to Asterdoc
  * paths. A text or DOCX template names a value as `{{fields.x}}`, and the
  * `bindings` render option applies to PDF layers only.
  *

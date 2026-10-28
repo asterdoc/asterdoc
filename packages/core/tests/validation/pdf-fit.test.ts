@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { createMemoryResolver } from '@paradoc/resolvers/memory'
+import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 import { validate, validateLayers } from '@/index'
 
 const encoder = new TextEncoder()

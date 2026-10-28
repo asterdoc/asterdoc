@@ -2,7 +2,7 @@ import { Command } from 'commander'
 import kleur from 'kleur'
 import { LocalFileSystem } from '../utils/local-fs.js'
 import { formatTable } from '../utils/table.js'
-import { inspectAcroFormFields, type PdfFieldInfo } from '@paradoc/render/pdf'
+import { inspectAcroFormFields, type PdfFieldInfo } from '@asterdoc/render/pdf'
 
 import { readBinaryInput } from '../utils/io.js'
 

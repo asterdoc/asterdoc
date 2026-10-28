@@ -1,8 +1,8 @@
 ---
 title: Quickstart
-description: Give an agent the Paradoc tools and have it fill a real form
+description: Give an agent the Asterdoc tools and have it fill a real form
 ogTitle: AI agent quickstart
-ogDescription: Give an AI agent the Paradoc tools and have it fill a lease addendum and return a PDF
+ogDescription: Give an AI agent the Asterdoc tools and have it fill a lease addendum and return a PDF
 ---
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
@@ -20,21 +20,21 @@ Pick your framework. Each tab is a complete program.
 <Tabs items={['Vercel AI SDK', 'TanStack AI', 'Mastra']} groupId="ai-framework" persist>
   <Tab value="Vercel AI SDK">
     ```bash
-    npm install @paradoc/ai-sdk ai @ai-sdk/openai zod
+    npm install @asterdoc/ai-sdk ai @ai-sdk/openai zod
     ```
 
     ```typescript title="agent.ts"
     import { writeFile } from "node:fs/promises"
     import { openai } from "@ai-sdk/openai"
-    import { paradocTools } from "@paradoc/ai-sdk"
+    import { asterdocTools } from "@asterdoc/ai-sdk"
     import { generateText, isStepCount } from "ai"
 
     const result = await generateText({
       model: openai("gpt-4o"),
-      tools: paradocTools({ defaultRegistryUrl: "https://public.paradoc.dev" }),
+      tools: asterdocTools({ defaultRegistryUrl: "https://public.asterdoc.com" }),
       stopWhen: isStepCount(10),
       system: [
-        "You fill documents with the Paradoc tools.",
+        "You fill documents with the Asterdoc tools.",
         "Leave registry_url out: the tools use the configured registry.",
         "Call get_artifact first and follow its agent instructions.",
         "Pass the data from the last fill result to render.",
@@ -64,23 +64,23 @@ Pick your framework. Each tab is a complete program.
   </Tab>
   <Tab value="TanStack AI">
     ```bash
-    npm install @paradoc/tanstack-ai@0.8.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod
+    npm install @asterdoc/tanstack-ai@0.8.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod
     ```
 
     ```typescript title="agent.ts"
     import { writeFile } from "node:fs/promises"
     import { chat, maxIterations } from "@tanstack/ai"
     import { openaiText } from "@tanstack/ai-openai"
-    import { paradocTools, type RenderOutput } from "@paradoc/tanstack-ai"
+    import { asterdocTools, type RenderOutput } from "@asterdoc/tanstack-ai"
 
     let pdf: RenderOutput | undefined
 
     const text = await chat({
       adapter: openaiText("gpt-4o"),
-      tools: paradocTools({ defaultRegistryUrl: "https://public.paradoc.dev" }),
+      tools: asterdocTools({ defaultRegistryUrl: "https://public.asterdoc.com" }),
       agentLoopStrategy: maxIterations(10),
       systemPrompts: [
-        "You fill documents with the Paradoc tools.",
+        "You fill documents with the Asterdoc tools.",
         "Leave registry_url out: the tools use the configured registry.",
         "Call get_artifact first and follow its agent instructions.",
         "Pass the data from the last fill result to render.",
@@ -114,26 +114,26 @@ Pick your framework. Each tab is a complete program.
     }
     ```
 
-    `@paradoc/tanstack-ai` needs `@tanstack/ai` at exactly 0.53.0. The middleware gives your code each tool result.
+    `@asterdoc/tanstack-ai` needs `@tanstack/ai` at exactly 0.53.0. The middleware gives your code each tool result.
 
   </Tab>
   <Tab value="Mastra">
     ```bash
-    npm install @paradoc/mastra @mastra/core zod
+    npm install @asterdoc/mastra @mastra/core zod
     ```
 
     ```typescript title="agent.ts"
     import { writeFile } from "node:fs/promises"
     import { Agent } from "@mastra/core/agent"
-    import { paradocTools, type RenderOutput } from "@paradoc/mastra"
+    import { asterdocTools, type RenderOutput } from "@asterdoc/mastra"
 
     const agent = new Agent({
       id: "document-agent",
       name: "Document agent",
       model: "openai/gpt-4o",
-      tools: paradocTools({ defaultRegistryUrl: "https://public.paradoc.dev" }),
+      tools: asterdocTools({ defaultRegistryUrl: "https://public.asterdoc.com" }),
       instructions: [
-        "You fill documents with the Paradoc tools.",
+        "You fill documents with the Asterdoc tools.",
         "Leave registry_url out: the tools use the configured registry.",
         "Call get_artifact first and follow its agent instructions.",
         "Pass the data from the last fill result to render.",
@@ -203,7 +203,7 @@ The model writes its own answer, so the text changes from run to run. Sometimes 
 <Step>
 ## Open the PDF
 
-`pet-addendum.pdf` is in the current folder, with the values filled in. It is not signed. Paradoc can [seal](/guides/sealing-and-conversion) it for signing.
+`pet-addendum.pdf` is in the current folder, with the values filled in. It is not signed. Asterdoc can [seal](/guides/sealing-and-conversion) it for signing.
 </Step>
 </Steps>
 

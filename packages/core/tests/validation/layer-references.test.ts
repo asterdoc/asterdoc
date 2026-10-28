@@ -1,6 +1,6 @@
 /**
  * `validate()` and `validateLayers()` report what a layer or an instruction
- * refers to and cannot resolve: a PDF binding whose value is not a Paradoc
+ * refers to and cannot resolve: a PDF binding whose value is not an Asterdoc
  * path (an inverted binding among them), a binding whose key is not an
  * AcroForm field of the template, and a template or instructions file that
  * cannot be read. Each is an error, because render or seal would fail on it.
@@ -8,7 +8,7 @@
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { createMemoryResolver } from '@paradoc/resolvers/memory'
+import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 import { validate, validateLayers } from '@/index'
 
 /** A real PDF whose AcroForm holds `name`, `weight`, `species` and `hasVaccination`. */
@@ -72,8 +72,8 @@ describe('PDF binding values', () => {
   it('fails an inverted binding, naming the key and saying the binding is inverted', () => {
     const result = validate(pdfForm({ petName: 'name' }))
     expect(result.issues).toEqual([{
-      message: 'Layer "pdf", binding "petName": "name" is not a known Paradoc path (Unknown field path "name"). '
-        + 'The key "petName" is a field of this artifact: bindings map AcroForm field names (keys) to Paradoc paths (values).',
+      message: 'Layer "pdf", binding "petName": "name" is not a known Asterdoc path (Unknown field path "name"). '
+        + 'The key "petName" is a field of this artifact: bindings map AcroForm field names (keys) to Asterdoc paths (values).',
       path: ['layers', 'pdf', 'bindings', 'petName'],
     }])
   })
@@ -81,7 +81,7 @@ describe('PDF binding values', () => {
   it('fails an unknown value path, naming the key', () => {
     const result = validate(pdfForm({ ...correctBindings, name: 'fields.nickname' }))
     expect(result.issues).toEqual([{
-      message: 'Layer "pdf", binding "name": "fields.nickname" is not a known Paradoc path (Unknown field path "fields.nickname").',
+      message: 'Layer "pdf", binding "name": "fields.nickname" is not a known Asterdoc path (Unknown field path "fields.nickname").',
       path: ['layers', 'pdf', 'bindings', 'name'],
     }])
   })
@@ -89,7 +89,7 @@ describe('PDF binding values', () => {
   it('checks each part of a joined binding', () => {
     const result = validate(pdfForm({ name: 'petName, owner' }))
     expect(result.issues).toEqual([expect.objectContaining({
-      message: expect.stringMatching(/^Layer "pdf", binding "name": "owner" is not a known Paradoc path/),
+      message: expect.stringMatching(/^Layer "pdf", binding "name": "owner" is not a known Asterdoc path/),
       path: ['layers', 'pdf', 'bindings', 'name'],
     })])
   })
@@ -111,7 +111,7 @@ describe('PDF binding values', () => {
   it('fails a binding to a root fill data never carries', () => {
     const result = validate(pdfForm({ ...correctBindings, name: 'title' }))
     expect(result.issues).toEqual([expect.objectContaining({
-      message: 'Layer "pdf", binding "name": "title" is not a known Paradoc path (Unknown field path "title").',
+      message: 'Layer "pdf", binding "name": "title" is not a known Asterdoc path (Unknown field path "title").',
     })])
   })
 

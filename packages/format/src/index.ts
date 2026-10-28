@@ -1,5 +1,5 @@
 /**
- * @paradoc/format
+ * @asterdoc/format
  *
  * Immutable, locale-aware presentation of structured artifact values.
  *

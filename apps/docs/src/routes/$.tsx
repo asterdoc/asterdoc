@@ -43,8 +43,8 @@ export const Route = createFileRoute("/$")({
     meta: [
       {
         title: loaderData?.title
-          ? `${loaderData.title} | Paradoc Docs`
-          : "Paradoc Docs",
+          ? `${loaderData.title} | Asterdoc Docs`
+          : "Asterdoc Docs",
       },
       {
         name: "description",
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/$")({
       },
       {
         property: "og:title",
-        content: loaderData?.ogTitle ?? loaderData?.title ?? "Paradoc Documentation",
+        content: loaderData?.ogTitle ?? loaderData?.title ?? "Asterdoc Documentation",
       },
       {
         property: "og:description",
@@ -61,7 +61,7 @@ export const Route = createFileRoute("/$")({
       {
         property: "og:image",
         content: loaderData?.ogImageUrl
-          ? `https://docs.paradoc.dev${loaderData.ogImageUrl}`
+          ? `https://docs.asterdoc.com${loaderData.ogImageUrl}`
           : "https://assets.paradoc.dev/paradoc-og-docs.png",
       },
       {
@@ -72,7 +72,7 @@ export const Route = createFileRoute("/$")({
       },
       {
         name: "twitter:title",
-        content: loaderData?.ogTitle ?? loaderData?.title ?? "Paradoc Documentation",
+        content: loaderData?.ogTitle ?? loaderData?.title ?? "Asterdoc Documentation",
       },
       {
         name: "twitter:description",
@@ -81,7 +81,7 @@ export const Route = createFileRoute("/$")({
       {
         name: "twitter:image",
         content: loaderData?.ogImageUrl
-          ? `https://docs.paradoc.dev${loaderData.ogImageUrl}`
+          ? `https://docs.asterdoc.com${loaderData.ogImageUrl}`
           : "https://assets.paradoc.dev/paradoc-og-docs.png",
       },
     ],

@@ -4,7 +4,7 @@
  * from it) fails `check-types`.
  *
  * Parity of these types with the Zod schemas is proved in
- * `@paradoc/schemas` (tests/types-parity.test.ts), since this package stays
+ * `@asterdoc/schemas` (tests/types-parity.test.ts), since this package stays
  * Zod-free (D2).
  */
 import { describe, expectTypeOf, it } from 'vitest'

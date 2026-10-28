@@ -243,12 +243,12 @@ describe('codegen', () => {
 				expect(result).toContain('} as const;')
 			})
 
-			test('imports open from @paradoc/sdk', () => {
+			test('imports open from @asterdoc/sdk', () => {
 				const result = jsonToTsModule(
 					{ kind: 'form', name: 'test' },
 					{ artifactKind: 'form', exportName: 'test' }
 				)
-				expect(result).toContain("import { p } from '@paradoc/sdk';")
+				expect(result).toContain("import { p } from '@asterdoc/sdk';")
 			})
 		})
 

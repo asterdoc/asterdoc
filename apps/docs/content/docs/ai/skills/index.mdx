@@ -1,68 +1,68 @@
 ---
 title: Agent skills
-description: Install the Paradoc agent skills into Claude Code, Claude.ai, or any agent that supports the Agent Skills specification
-ogTitle: Paradoc Agent Skills
-ogDescription: Reference and workflow guidance for AI coding assistants working with Paradoc
+description: Install the Asterdoc agent skills into Claude Code, Claude.ai, or any agent that supports the Agent Skills specification
+ogTitle: Asterdoc Agent Skills
+ogDescription: Reference and workflow guidance for AI coding assistants working with Asterdoc
 ---
 
-Paradoc ships two agent skills. A skill is a reference package that teaches an AI coding assistant how to use Paradoc, so it does not need to read the docs site mid-task. The assistant loads only the references the current task needs.
+Asterdoc ships two agent skills. A skill is a reference package that teaches an AI coding assistant how to use Asterdoc, so it does not need to read the docs site mid-task. The assistant loads only the references the current task needs.
 
 | Skill | Use it for |
 |---|---|
-| `paradoc` | Authoring, filling, validating, rendering, and sealing artifacts with the TypeScript SDK, the `paradoc` CLI, raw JSON/YAML, the AI agent tools, or the hosted MCP server |
-| [`paradoc-react`](/ai/skills/paradoc-react) | Composing, checking, previewing, rendering, and sealing documents written in React with `@paradoc/react` and `@paradoc/react-pdf` |
+| `asterdoc` | Authoring, filling, validating, rendering, and sealing artifacts with the TypeScript SDK, the `asterdoc` CLI, raw JSON/YAML, the AI agent tools, or the hosted MCP server |
+| [`asterdoc-react`](/ai/skills/asterdoc-react) | Composing, checking, previewing, rendering, and sealing documents written in React with `@asterdoc/react` and `@asterdoc/react-pdf` |
 
-Install `paradoc-react` on its own when composing documents in React is the only Paradoc work in play. Install both when you also author the artifacts.
+Install `asterdoc-react` on its own when composing documents in React is the only Asterdoc work in play. Install both when you also author the artifacts.
 
-## The paradoc skill
+## The asterdoc skill
 
-The `paradoc` skill has three kinds of references:
+The `asterdoc` skill has three kinds of references:
 
 | Kind | Files | What they cover |
 |---|---|---|
-| **Surface** | `sdk`, `cli`, `schemas`, `ai-tools`, `mcp` | How to work on each surface: TypeScript SDK, `paradoc` CLI, raw JSON/YAML, AI agent tools in your own code, hosted MCP |
+| **Surface** | `sdk`, `cli`, `schemas`, `ai-tools`, `mcp` | How to work on each surface: TypeScript SDK, `asterdoc` CLI, raw JSON/YAML, AI agent tools in your own code, hosted MCP |
 | **Topic** | `artifacts`, `fields`, `parties`, `annexes`, `logic`, `layers`, `templates`, `pdf`, `rendering`, `formatting`, `instructions`, `filling`, `sealing`, `essentials` | Concepts that apply on every surface |
 | **Workflow** | `workflow-author-form` | A staged pipeline for creating a form from requirements or converting a PDF form |
 
-The skill activates when the assistant sees Paradoc work: `@paradoc/*` imports, the `paradoc` CLI, JSON/YAML artifacts, the AI tool packages, or `mcp.paradoc.dev`.
+The skill activates when the assistant sees Asterdoc work: `@asterdoc/*` imports, the `asterdoc` CLI, JSON/YAML artifacts, the AI tool packages, or `mcp.asterdoc.com`.
 
 ## Installation
 
 <Tabs items={['Claude Code', 'Claude.ai', 'Other agents']} groupId="skill-client" persist>
   <Tab value="Claude Code">
     ```bash
-    npx skills add https://github.com/paradoc-dev/paradoc --skill paradoc
-    npx skills add https://github.com/paradoc-dev/paradoc --skill paradoc-react
+    npx skills add https://github.com/asterdoc/asterdoc --skill asterdoc
+    npx skills add https://github.com/asterdoc/asterdoc --skill asterdoc-react
     ```
 
     To install manually:
 
     ```bash
-    git clone https://github.com/paradoc-dev/paradoc.git
-    cp -r paradoc/skills/skills/paradoc ~/.claude/skills/
-    cp -r paradoc/skills/skills/paradoc-react ~/.claude/skills/
+    git clone https://github.com/asterdoc/asterdoc.git
+    cp -r framework/skills/skills/asterdoc ~/.claude/skills/
+    cp -r framework/skills/skills/asterdoc-react ~/.claude/skills/
     ```
   </Tab>
   <Tab value="Claude.ai">
     Add a skill to your project knowledge:
 
-    1. Clone the [Paradoc repository](https://github.com/paradoc-dev/paradoc)
-    2. Upload `skills/skills/paradoc/SKILL.md` (or `skills/skills/paradoc-react/SKILL.md`) and the relevant files from its `references/` folder to your Claude.ai project knowledge
+    1. Clone the [Asterdoc repository](https://github.com/asterdoc/asterdoc)
+    2. Upload `skills/skills/asterdoc/SKILL.md` (or `skills/skills/asterdoc-react/SKILL.md`) and the relevant files from its `references/` folder to your Claude.ai project knowledge
   </Tab>
   <Tab value="Other agents">
     The skills follow the [Agent Skills specification](https://agentskills.io/specification.md), so they work with any agent that supports the spec (Cursor, Windsurf, Codex, and others).
 
     ```bash
-    git clone https://github.com/paradoc-dev/paradoc.git
+    git clone https://github.com/asterdoc/asterdoc.git
     ```
 
-    Point your agent's skill loader at `skills/skills/paradoc/SKILL.md` and `skills/skills/paradoc-react/SKILL.md`.
+    Point your agent's skill loader at `skills/skills/asterdoc/SKILL.md` and `skills/skills/asterdoc-react/SKILL.md`.
   </Tab>
 </Tabs>
 
 ## Fetch the skills from the site
 
-An agent with no clone of the repository can read the skills from `https://docs.paradoc.dev/.well-known/agent-skills/index.json`, which follows the [Agent Skills discovery index](https://github.com/cloudflare/agent-skills-discovery-rfc). Each entry gives a `.tar.gz` archive with `SKILL.md` and every reference, and a `sha256` digest of the archive bytes to check before use. The same index is served at `https://paradoc.dev/.well-known/agent-skills/index.json`.
+An agent with no clone of the repository can read the skills from `https://docs.asterdoc.com/.well-known/agent-skills/index.json`, which follows the [Agent Skills discovery index](https://github.com/cloudflare/agent-skills-discovery-rfc). Each entry gives a `.tar.gz` archive with `SKILL.md` and every reference, and a `sha256` digest of the archive bytes to check before use. The same index is served at `https://asterdoc.com/.well-known/agent-skills/index.json`.
 
 ## Pairing with MCP
 
@@ -72,11 +72,11 @@ The skills and the hosted MCP server do different jobs:
 |---|---|---|
 | **Provides** | Reference and workflow guidance | Runtime tools: `validate`, `fill`, `render`, and the registry tools |
 | **Loaded** | On demand by the agent | Connected as a tool server |
-| **Needs** | Nothing | A Paradoc credential: an OAuth sign-in or an API key |
+| **Needs** | Nothing | An Asterdoc credential: an OAuth sign-in or an API key |
 | **Best for** | Writing code, designing artifacts, debugging | Browsing the registry, rendering live artifacts |
 
-To give your own agent Paradoc tools in code, use the [AI tool packages](/ai) instead of MCP.
+To give your own agent Asterdoc tools in code, use the [AI tool packages](/ai) instead of MCP.
 
 ## Source
 
-The skills live in the Paradoc repository under [`skills/`](https://github.com/paradoc-dev/paradoc/tree/main/skills). Issues and contributions are welcome there.
+The skills live in the Asterdoc repository under [`skills/`](https://github.com/asterdoc/asterdoc/tree/main/skills). Issues and contributions are welcome there.

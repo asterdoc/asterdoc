@@ -1,8 +1,8 @@
 ---
 title: render
-description: Render a Paradoc form, document, or checklist through one of its layers
-ogTitle: render — Paradoc AI Tools
-ogDescription: Render a Paradoc form, document, or checklist to text, PDF, or DOCX
+description: Render an Asterdoc form, document, or checklist through one of its layers
+ogTitle: render — Asterdoc AI Tools
+ogDescription: Render an Asterdoc form, document, or checklist to text, PDF, or DOCX
 ---
 
 Renders a form, document, or checklist through one of its layers. The tool validates the artifact, fills forms and checklists with `data`, and renders with the layer's renderer: text layers (`text/plain`, `text/markdown`, `text/html`), PDF, and DOCX. Output is always inline: text as UTF-8, binary as base64.
@@ -42,7 +42,7 @@ Takes a [source](/ai-tools#sources) plus:
 ## Direct usage
 
 ```typescript
-import { executeRender } from "@paradoc/ai-tools"
+import { executeRender } from "@asterdoc/ai-tools"
 
 const result = await executeRender({
   source: "artifact",

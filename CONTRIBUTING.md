@@ -1,6 +1,6 @@
-# Contributing to Paradoc
+# Contributing to Asterdoc
 
-Thank you for your interest in contributing to Paradoc! We welcome contributions from the community and are excited to have you here.
+Thank you for your interest in contributing to Asterdoc! We welcome contributions from the community and are excited to have you here.
 
 ## Code of Conduct
 
@@ -24,8 +24,8 @@ We are committed to providing a welcoming and inclusive environment for all cont
 
 2. **Clone your fork**:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/paradoc.git
-   cd paradoc
+   git clone https://github.com/YOUR_USERNAME/asterdoc.git
+   cd asterdoc
    ```
 
 3. **Install dependencies**:
@@ -189,13 +189,13 @@ The project uses [Changesets](https://github.com/changesets/changesets) for vers
 
 ## Questions or Need Help?
 
-- Open an issue on [GitHub](https://github.com/paradoc-dev/paradoc/issues)
-- Start a discussion on [GitHub Discussions](https://github.com/paradoc-dev/paradoc/discussions)
+- Open an issue on [GitHub](https://github.com/asterdoc/asterdoc/issues)
+- Start a discussion on [GitHub Discussions](https://github.com/asterdoc/asterdoc/discussions)
 
 ## License
 
-By contributing to Paradoc, you agree that your contributions will be licensed under the MIT License.
+By contributing to Asterdoc, you agree that your contributions will be licensed under the MIT License.
 
 ---
 
-Thank you for contributing to Paradoc! 🎉
+Thank you for contributing to Asterdoc! 🎉

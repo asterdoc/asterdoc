@@ -54,7 +54,7 @@ describe.each(DOCUMENTED_COMPONENTS)('%s docs content', (name) => {
   test('has a 2-8 line usage snippet with a rewritten import', () => {
     const snippet = USAGE_SNIPPETS[name]
     expect(snippet).toBeTruthy()
-    expect(snippet).toContain(`@/components/paradoc/${name}`)
+    expect(snippet).toContain(`@/components/asterdoc/${name}`)
     expect(snippet.split('\n').length).toBeLessThanOrEqual(9)
   })
 
@@ -85,8 +85,8 @@ test("table's page shows its three extensions, each through the prop it document
 
 test("field's props table matches its real, currently-shipping props interface", () => {
   // Regression check for reading the props table from the wrong file
-  // (paradoc/packages/react's parallel substrate component instead of the
-  // real, shipping paradoc/packages/components one): the two have already
+  // (framework/packages/react's parallel substrate component instead of the
+  // real, shipping framework/packages/components one): the two have already
   // diverged, so asserting the real shape here is meaningful, not tautological.
   const names = PROPS_TABLES.field?.map((prop) => prop.name).sort()
   expect(names).toEqual(['as', 'className', 'height', 'label', 'paragraphs', 'path', 'rule', 'src', 'width'])

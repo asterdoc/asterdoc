@@ -1,7 +1,7 @@
 /**
  * Primitive Parsers
  *
- * Ready-to-use parse functions for all Paradoc primitives.
+ * Ready-to-use parse functions for all Asterdoc primitives.
  * These use Zod schemas directly for strict validation.
  */
 
@@ -16,7 +16,7 @@ import type {
 	Organization,
 	Person,
 	Phone,
-} from '@paradoc/types'
+} from '@asterdoc/types'
 import {
 	AddressSchema,
 	BboxSchema,
@@ -28,7 +28,7 @@ import {
 	OrganizationSchema,
 	PersonSchema,
 	PhoneSchema,
-} from '@paradoc/schemas'
+} from '@asterdoc/schemas'
 import { createParser } from './zod-parser'
 
 // ─────────────────────────────────────────────────────────────

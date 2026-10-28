@@ -20,7 +20,7 @@ import {
   type PageFurniture,
   type TextDirection,
   type DocumentTokens,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 import type { PdfFontFile, PdfImage } from "./resources";
 import type { PageBreakPlan } from "./tree";
 

@@ -10,10 +10,10 @@ export default defineConfig({
 	sourcemap: false,
 	clean: true,
 	external: [
-		'@paradoc/core',
-		'@paradoc/render',
-		'@paradoc/resolvers',
-		'@paradoc/schemas',
+		'@asterdoc/core',
+		'@asterdoc/render',
+		'@asterdoc/resolvers',
+		'@asterdoc/schemas',
 		'zod',
 	],
 })

@@ -10,8 +10,8 @@ export function userHomeDir(): string {
 }
 
 /**
- * A path inside the CLI's global directory, `~/.paradoc`.
+ * A path inside the CLI's global directory, `~/.asterdoc`.
  */
-export function paradocHomePath(...segments: string[]): string {
-  return join(userHomeDir(), '.paradoc', ...segments)
+export function asterdocHomePath(...segments: string[]): string {
+  return join(userHomeDir(), '.asterdoc', ...segments)
 }

@@ -12,7 +12,7 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { scaleTextClasses, useDocumentTokens, usePartyContact, type PartyContactPaths } from "@paradoc/react";
+import { scaleTextClasses, useDocumentTokens, usePartyContact, type PartyContactPaths } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface PartyProps {

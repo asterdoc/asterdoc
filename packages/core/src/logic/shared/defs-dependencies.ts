@@ -2,7 +2,7 @@
  * The dependency text of each definition, for ordering and cycle detection.
  */
 
-import type { DefsSection, Form } from '@paradoc/types'
+import type { DefsSection, Form } from '@asterdoc/types'
 import { rowConditionsOfExpression } from './list-paths'
 import { isScalarExpressionType } from './expression-types'
 

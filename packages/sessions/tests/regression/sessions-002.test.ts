@@ -2,13 +2,13 @@
 // Input: artifact with required field `name` (answered) and required annex `proof`.
 // Expected: phase is not "ready" while the annex is open. Actual: phase "ready".
 import { expect, it } from "vitest";
-import { createParadocRuntime } from "../../src/engine/paradoc-runtime";
+import { createAsterdocRuntime } from "../../src/engine/asterdoc-runtime";
 import type { FormSession } from "../../src/engine/types";
 import { execute } from "../../src/engine/execute";
 import { deriveView } from "../../src/engine/derive";
 
 it("sessions-002: required annex keeps the session out of ready", () => {
-  const runtime = createParadocRuntime(artifact({ fields: { name: { type: "text", required: true } }, annexes: { proof: { required: true } } }));
+  const runtime = createAsterdocRuntime(artifact({ fields: { name: { type: "text", required: true } }, annexes: { proof: { required: true } } }));
   const r = execute(session(), runtime, { kind: "answer", fieldPath: "name", value: "Ada", source: "user" }, { kind: "user" });
   expect(r.ok).toBe(true);
   if (!r.ok) return;
@@ -17,7 +17,7 @@ it("sessions-002: required annex keeps the session out of ready", () => {
 
 export function artifact(extra: Record<string, unknown>) {
   return {
-    $schema: "https://schema.paradoc.dev/2026-10-02.json", kind: "form", name: "v", version: "1.0.0", title: "V",
+    $schema: "https://schema.asterdoc.com/2026-10-28.json", kind: "form", name: "v", version: "1.0.0", title: "V",
     parties: {}, fields: {},
     layers: { composition: { kind: "file", mimeType: "text/plain", path: "v.txt" } }, defaultLayer: "composition",
     ...extra,

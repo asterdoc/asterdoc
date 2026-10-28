@@ -12,7 +12,7 @@ import { shortProposalData } from "./proposal-data";
 export function QRCodeVariantCustomColors() {
   return (
     <QRCode
-      url={`https://docs.paradoc.dev/p/${String(shortProposalData.fields.proposalNumber)}`}
+      url={`https://docs.asterdoc.com/p/${String(shortProposalData.fields.proposalNumber)}`}
       color="#1d4ed8"
       backgroundColor="#eff6ff"
     />

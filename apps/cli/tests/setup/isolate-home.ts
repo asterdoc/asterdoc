@@ -1,7 +1,7 @@
 /**
  * Vitest setupFiles entry: points this worker at its own temporary home before
  * any test module loads. Every in-process config call and every spawned CLI
- * inherits it, so no test can touch the real `~/.paradoc`.
+ * inherits it, so no test can touch the real `~/.asterdoc`.
  *
  * A test that needs a specific home still sets its own HOME on the child it spawns.
  */

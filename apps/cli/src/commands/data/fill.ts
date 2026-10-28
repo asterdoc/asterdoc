@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
 import prompts from 'prompts'
-import { toYAML, isForm, createSafeRegex, type Form, type FormField } from '@paradoc/core'
+import { toYAML, isForm, createSafeRegex, type Form, type FormField } from '@asterdoc/core'
 import { LocalFileSystem } from '../../utils/local-fs.js'
 
 import { readTextInput, resolveArtifactTarget } from '../../utils/io.js'

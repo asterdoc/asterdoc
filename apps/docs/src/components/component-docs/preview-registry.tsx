@@ -1,6 +1,6 @@
 /** Live previews derived from the exports of the component examples package. */
 import type { ComponentType } from "react";
-import * as examples from "@paradoc/components/examples";
+import * as examples from "@asterdoc/components/examples";
 
 function kebabCase(value: string): string {
   return value

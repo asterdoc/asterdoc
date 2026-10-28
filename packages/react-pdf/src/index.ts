@@ -1,5 +1,5 @@
 /**
- * `@paradoc/react-pdf` — the Node-only surface that turns the composed document
+ * `@asterdoc/react-pdf` — the Node-only surface that turns the composed document
  * into PDF bytes and serves the seal marker pass owned by core.
  *
  * Everything here is re-exported from a module beside it. `render.ts` holds the
@@ -51,13 +51,13 @@ export {
   type PageCounter,
   type PageFurniture,
   type StampMeasure,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 export { withDrawnPaper, withTokenOverride } from "./token-override";
 export {
   SigningMarkerProvider,
   useSigningMarks,
   type SigningMarkerProviderProps,
-} from "@paradoc/react";
+} from "@asterdoc/react";
 export {
   bindComponent,
   MissingSigningMarkerError,

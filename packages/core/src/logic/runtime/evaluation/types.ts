@@ -7,9 +7,9 @@
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { AsOf } from '@paradoc/expr'
-import type { HostFunction, Registry } from '@paradoc/expr'
-import type { EvalErrorCode, Span } from '@paradoc/expr'
+import type { AsOf } from '@asterdoc/expr'
+import type { HostFunction, Registry } from '@asterdoc/expr'
+import type { EvalErrorCode, Span } from '@asterdoc/expr'
 import type { RowOrigin } from '../../shared/list-paths'
 
 /**
@@ -124,7 +124,7 @@ export const ROW_ORIGINS: unique symbol = Symbol('rowOrigins')
 
 /**
  * Context object passed to expression evaluation.
- * This is the shape the @paradoc/expr context adapter receives.
+ * This is the shape the @asterdoc/expr context adapter receives.
  *
  * @example
  * ```typescript

@@ -12,8 +12,8 @@
  */
 
 import { z } from 'zod'
-import { REGISTRY_VERSION_PATTERN, SCHEMA_BASE, compareArtifactVersions, type RegistryIndex, type RegistryItemSummary } from '@paradoc/schemas'
-import type { Artifact } from '@paradoc/core'
+import { REGISTRY_VERSION_PATTERN, SCHEMA_BASE, compareArtifactVersions, type RegistryIndex, type RegistryItemSummary } from '@asterdoc/schemas'
+import type { Artifact } from '@asterdoc/core'
 import type { LocalFileSystem } from './local-fs.js'
 import { fileReferencesOf, loadValidatedArtifact } from './artifact-file.js'
 import { computeHashFromContent } from './hash.js'

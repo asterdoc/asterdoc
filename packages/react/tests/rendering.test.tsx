@@ -1,4 +1,4 @@
-import { createFormatter } from "@paradoc/format";
+import { createFormatter } from "@asterdoc/format";
 /**
  * Rendering tests.
  *
@@ -7,7 +7,7 @@ import { createFormatter } from "@paradoc/format";
  * values the artifact's serializers produce, not that a browser laid them out.
  */
 
-import type { FormField } from "@paradoc/types";
+import type { FormField } from "@asterdoc/types";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { Document } from "../../components/src/components/document";
@@ -104,7 +104,7 @@ describe("the full reference document prints correctly under both registries", (
 
   it("keeps money on the artifact's declared currency, not the EU registry's default", () => {
     // The EU registry defaults an amount with no declared currency to EUR
-    // (see `createFormatter` in `@paradoc/format`), but every
+    // (see `createFormatter` in `@asterdoc/format`), but every
     // money value this artifact prints — every line item, and the subtotal,
     // tax, and total defs — carries an explicit `currency: "fields.currency"`,
     // which this document sets to "USD". Switching the registry to EU

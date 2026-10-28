@@ -1,8 +1,8 @@
 ---
 title: get_fill_state
 description: Report a draft's progress, open targets, rules, and the next target to fill
-ogTitle: get_fill_state — Paradoc AI Tools
-ogDescription: Tell an agent how far a Paradoc form or checklist draft has got and what to ask for next
+ogTitle: get_fill_state — Asterdoc AI Tools
+ogDescription: Tell an agent how far an Asterdoc form or checklist draft has got and what to ask for next
 ---
 
 Reports where a form or checklist draft stands: how many required targets are done, which are still open or blocked, whether the rules pass, and which target to fill next. An agent uses it to decide its next question.
@@ -53,7 +53,7 @@ A `FillTarget` has `kind` (`field`, `party`, or `annex` for forms; `item` for ch
 ## Direct usage
 
 ```typescript
-import { executeGetFillState } from "@paradoc/ai-tools"
+import { executeGetFillState } from "@asterdoc/ai-tools"
 
 const state = await executeGetFillState({
   source: "registry",

@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type { Form, FormField } from '@paradoc/types'
+import type { Form, FormField } from '@asterdoc/types'
 import { checkPdfBindingFit, PdfFieldFillError, renderPdf, TYPICAL_TEXT } from '../src/pdf'
 import { analyzePattern } from '../src/pdf/pattern-bounds'
 import { syntheticFont } from './font-fixtures'

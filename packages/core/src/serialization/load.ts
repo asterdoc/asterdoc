@@ -1,4 +1,4 @@
-import type { Form, Document, Bundle, Checklist } from '@paradoc/types'
+import type { Form, Document, Bundle, Checklist } from '@asterdoc/types'
 import { parse } from './serialization'
 import { LoadError } from './load-error'
 import { assertCurrentSchemaVersion } from './schema-version'
@@ -95,7 +95,7 @@ export function isChecklistInstance(instance: AnyArtifactInstance): instance is 
  *
  * @example
  * ```typescript
- * import { load } from '@paradoc/core'
+ * import { load } from '@asterdoc/core'
  *
  * // With generic parameter - compile-time typing
  * const checklist = load<'checklist'>(fileContents)
@@ -144,7 +144,7 @@ export function load(content: string, options?: ArtifactInstanceOptions): AnyArt
  *
  * @example
  * ```typescript
- * import { loadFromObject } from '@paradoc/core'
+ * import { loadFromObject } from '@asterdoc/core'
  *
  * // With generic parameter - compile-time typing
  * const parsed = JSON.parse(fileContents)
@@ -242,7 +242,7 @@ function loadArtifactObject(
  *
  * @example
  * ```typescript
- * import { safeLoad } from '@paradoc/core'
+ * import { safeLoad } from '@asterdoc/core'
  *
  * // With generic parameter - compile-time typing
  * const result = safeLoad<'checklist'>(fileContents)
@@ -302,7 +302,7 @@ export function safeLoad(
  *
  * @example
  * ```typescript
- * import { safeLoadFromObject } from '@paradoc/core'
+ * import { safeLoadFromObject } from '@asterdoc/core'
  *
  * // With generic parameter - compile-time typing
  * const parsed = JSON.parse(fileContents)

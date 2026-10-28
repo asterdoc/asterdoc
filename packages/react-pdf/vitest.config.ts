@@ -22,12 +22,12 @@ export default defineConfig({
   resolve: {
     // The sample documents import this package by name. They get this source,
     // the same modules the tests import, so an error class or a font registry
-    // is never two copies of itself. `@paradoc/react` is the built package, as
+    // is never two copies of itself. `@asterdoc/react` is the built package, as
     // it is for any consumer.
     alias: [
-      { find: /^@paradoc\/react-pdf$/, replacement: path.resolve(__dirname, "./src/index.ts") },
-      { find: /^@paradoc\/react-pdf\/check$/, replacement: path.resolve(__dirname, "./src/check.ts") },
-      { find: /^@paradoc\/react-pdf\/chromium$/, replacement: path.resolve(__dirname, "./src/chromium.ts") },
+      { find: /^@asterdoc\/react-pdf$/, replacement: path.resolve(__dirname, "./src/index.ts") },
+      { find: /^@asterdoc\/react-pdf\/check$/, replacement: path.resolve(__dirname, "./src/check.ts") },
+      { find: /^@asterdoc\/react-pdf\/chromium$/, replacement: path.resolve(__dirname, "./src/chromium.ts") },
     ],
   },
 });

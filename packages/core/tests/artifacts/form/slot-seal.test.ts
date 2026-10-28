@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, test, expect } from 'vitest'
 import { form, SealConfigError } from '@/artifacts'
-import type { SealAdapter, SealAdapterRequest, SignatureSlot } from '@paradoc/types'
+import type { SealAdapter, SealAdapterRequest, SignatureSlot } from '@asterdoc/types'
 
 /**
  * Signature-slot sealing: one `signatures` map per layer, one engine

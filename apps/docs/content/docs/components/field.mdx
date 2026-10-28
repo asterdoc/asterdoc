@@ -29,7 +29,7 @@ and rendering one outside a `Document` throws. Most fields sit inside a
 nothing requires that — the Preview above renders three `Field`s directly
 inside `Document`, with no `Section` around them.
 
-The `path` prop follows Paradoc's shared path grammar: a top-level field name
+The `path` prop follows Asterdoc's shared path grammar: a top-level field name
 like `customer`, or a path into a list item like `lineItems[0].unitPrice`.
 Numeric indexes can also use dot notation (`lineItems.0.unitPrice`). Empty
 segments and the unsafe object members `__proto__`, `prototype`, and
@@ -60,7 +60,7 @@ An attachment is not a field value — the artifact declares annex slots and the
 filled data carries one per slot — so the path is `annexes.<slot>`, the
 heading comes from the slot's own title, and `width` and `height` say how big
 to draw it. An attachment whose MIME type is not a picture prints its file
-name instead, and `paradoc check` reports the mismatch. See
+name instead, and `asterdoc check` reports the mismatch. See
 [`Image`](/components/image).
 
 ## Variants

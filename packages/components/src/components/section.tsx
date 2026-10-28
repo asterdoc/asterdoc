@@ -1,6 +1,6 @@
 /** @jsxRuntime classic */
 import React from "react";
-import { RENDER_ATTRIBUTES, scaleTextClasses, useDocumentTokens, useSectionVisible } from "@paradoc/react";
+import { RENDER_ATTRIBUTES, scaleTextClasses, useDocumentTokens, useSectionVisible } from "@asterdoc/react";
 import type { ReactNode } from "react";
 import { KeepTogether } from "./keep-together";
 

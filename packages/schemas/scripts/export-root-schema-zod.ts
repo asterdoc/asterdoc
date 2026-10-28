@@ -1,13 +1,13 @@
 #!/usr/bin/env tsx
 /**
- * Export the root Paradoc schema to JSON Schema 2020-12 compliant format
+ * Export the root Asterdoc schema to JSON Schema 2020-12 compliant format
  *
  * This script uses Zod's registry approach (z.toJSONSchema with globalRegistry)
  * to generate JSON Schema with proper $refs and $defs.
  *
- * Output structure (for schema.paradoc.dev):
- * - schema.json ($id: https://schema.paradoc.dev/schema.json)
- * - {version}.json ($id: https://schema.paradoc.dev/{version}.json)
+ * Output structure (for schema.asterdoc.com):
+ * - schema.json ($id: https://schema.asterdoc.com/schema.json)
+ * - {version}.json ($id: https://schema.asterdoc.com/{version}.json)
  */
 
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -32,11 +32,11 @@ const OUTPUT_DIR = join(SCHEMAS_PKG_DIR, 'schemas');
  */
 export async function generateBundledSchema(schemaId: string, isLatest: boolean): Promise<Record<string, unknown>> {
 	// Import the registry (which has all schemas registered with IDs)
-	const { ParadocRegistry } = await import('../src/zod/module.js');
+	const { AsterdocRegistry } = await import('../src/zod/module.js');
 
 	// Use Zod's registry-based JSON Schema generation
 	// This automatically creates proper $refs between schemas
-	const result = z.toJSONSchema(ParadocRegistry, {
+	const result = z.toJSONSchema(AsterdocRegistry, {
 		target: 'draft-2020-12',
 	}) as { schemas: Record<string, Record<string, unknown>> };
 
@@ -48,15 +48,15 @@ export async function generateBundledSchema(schemaId: string, isLatest: boolean)
 
 	// Build the final bundled schema
 	const description = isLatest
-		? 'Paradoc JSON Schema specification (latest version)'
-		: `Paradoc JSON Schema specification version ${SCHEMA_VERSION}`;
+		? 'Asterdoc JSON Schema specification (latest version)'
+		: `Asterdoc JSON Schema specification version ${SCHEMA_VERSION}`;
 
 	return {
 		$schema: 'https://json-schema.org/draft/2020-12/schema',
 		$id: schemaId,
-		title: 'Paradoc Schema',
+		title: 'Asterdoc Schema',
 		description,
-		$ref: '#/$defs/Paradoc',
+		$ref: '#/$defs/Asterdoc',
 		$defs,
 	};
 }
@@ -65,7 +65,7 @@ export async function generateBundledSchema(schemaId: string, isLatest: boolean)
  * Main export function
  */
 async function main() {
-	console.log('Exporting Paradoc schemas to JSON Schema 2020-12...\n');
+	console.log('Exporting Asterdoc schemas to JSON Schema 2020-12...\n');
 
 	try {
 		// Ensure output directory exists
@@ -86,16 +86,16 @@ async function main() {
 		console.log(`  $id: ${SCHEMA_VERSIONED_ID}`);
 
 		console.log('\nBundle export complete!');
-		console.log(`\nUpload contents of ${relative(SCHEMAS_PKG_DIR, OUTPUT_DIR)}/ to schema.paradoc.dev`);
+		console.log(`\nUpload contents of ${relative(SCHEMAS_PKG_DIR, OUTPUT_DIR)}/ to schema.asterdoc.com`);
 	} catch (error) {
-		console.error('Failed to export Paradoc schema:', error);
+		console.error('Failed to export Asterdoc schema:', error);
 		process.exit(1);
 	}
 }
 
 if (process.argv[1] === __filename) {
 	main().catch((error) => {
-		console.error('Unhandled error while exporting Paradoc schema:', error);
+		console.error('Unhandled error while exporting Asterdoc schema:', error);
 		process.exitCode = 1;
 	});
 }

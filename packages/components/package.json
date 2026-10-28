@@ -1,5 +1,5 @@
 {
-  "name": "@paradoc/components",
+  "name": "@asterdoc/components",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,17 +12,17 @@
     "regenerate:styles": "tsx scripts/generate-shared-styles.ts"
   },
   "dependencies": {
-    "@paradoc/core": "workspace:^",
-    "@paradoc/essentials": "workspace:^",
-    "@paradoc/format": "workspace:^",
-    "@paradoc/react": "workspace:^",
-    "@paradoc/react-pdf": "workspace:^",
-    "@paradoc/types": "workspace:^",
+    "@asterdoc/core": "workspace:^",
+    "@asterdoc/essentials": "workspace:^",
+    "@asterdoc/format": "workspace:^",
+    "@asterdoc/react": "workspace:^",
+    "@asterdoc/react-pdf": "workspace:^",
+    "@asterdoc/types": "workspace:^",
     "qrcode.react": "catalog:",
     "react": "catalog:"
   },
   "devDependencies": {
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@takumi-rs/helpers": "catalog:",

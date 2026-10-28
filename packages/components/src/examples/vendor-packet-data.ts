@@ -9,13 +9,13 @@
  * can render without inventing any of them.
  *
  * The W-9 itself is not here, and that is deliberate: this data module carries
- * values only. The block preview imports `@paradoc/essentials`; other consumers
+ * values only. The block preview imports `@asterdoc/essentials`; other consumers
  * may resolve the packet's registry part through their own application wiring.
  * So this carries the taxpayer's values and nothing else. A consumer holds them
  * against the artifact:
  *
  * ```ts
- * import { w9 } from "@paradoc/essentials";
+ * import { w9 } from "@asterdoc/essentials";
  *
  * const parsed = w9.safeParseData(vendorPacketTaxpayerData);
  * const draft = w9
@@ -26,7 +26,7 @@
  * const pdf = await draft.render({ layer: "pdf" });
  * ```
  *
- * No resolver is passed: `@paradoc/essentials` binds each artifact's bundled
+ * No resolver is passed: `@asterdoc/essentials` binds each artifact's bundled
  * resolver when it constructs the form, and every instance derived from it —
  * including the one every mutator above returns — carries it.
  */

@@ -18,7 +18,7 @@ export {
 export type { SchemaVersion, SchemaAddress } from './config';
 
 // Module and Registry
-export { ParadocSchema, ParadocRegistry } from './module';
+export { AsterdocSchema, AsterdocRegistry } from './module';
 
 // Artifacts
 export {

@@ -1,6 +1,6 @@
 /** @jsxRuntime classic */
 import React from "react";
-import { createFormatter } from "@paradoc/format";
+import { createFormatter } from "@asterdoc/format";
 /**
  * The proposal, composed from the components.
  *
@@ -10,21 +10,21 @@ import { createFormatter } from "@paradoc/format";
  * the PDF renders.
  */
 
-import type { Form } from "@paradoc/types";
+import type { Form } from "@asterdoc/types";
 
 import { Image } from "../components/image";
 import { Bundle } from "../components/bundle";
 import { Document } from "../components/document";
-import type { FormatOptions } from "@paradoc/react";
-import type { DocumentData } from "@paradoc/react";
+import type { FormatOptions } from "@asterdoc/react";
+import type { DocumentData } from "@asterdoc/react";
 import { Field } from "../components/field";
 import { Section } from "../components/section";
 import { Signature } from "../components/signature";
 import { Table } from "../components/table";
 import { Text } from "../components/text";
-import { markDocumentRoot, scaleTextClasses, useDocumentTokens } from "@paradoc/react";
+import { markDocumentRoot, scaleTextClasses, useDocumentTokens } from "@asterdoc/react";
 import { Totals } from "../components/totals";
-import type { DocumentTokensInput } from "@paradoc/react";
+import type { DocumentTokensInput } from "@asterdoc/react";
 import { proposalForm } from "./proposal";
 import {
   PROPOSAL_LOGO_HEIGHT_PX,
@@ -85,7 +85,7 @@ export interface ProposalDocumentProps {
  *
  * One section still sizes its own lines: "Prepared for" sets its three at the
  * tighter `text-sm` pitch. The proposal is the sample the recorded preview plan
- * (`tests/preview-plan.ts` in `@paradoc/react`) was measured on, and the body
+ * (`tests/preview-plan.ts` in `@asterdoc/react`) was measured on, and the body
  * pitch would move that section's height and so the plan's first break. Moving
  * it means measuring the plan again in a browser, which is the parity lab's
  * job, not a composition's. The masthead's values are free to move because the

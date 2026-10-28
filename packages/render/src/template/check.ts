@@ -9,7 +9,7 @@
  */
 
 import { unzipSync } from 'fflate'
-import { checkAst, formatType, T, type Diagnostic, type Expr, type ExprType, type TypeEnv } from '@paradoc/expr'
+import { checkAst, formatType, T, type Diagnostic, type Expr, type ExprType, type TypeEnv } from '@asterdoc/expr'
 import { removedSyntaxHint, TemplateError, type TemplateDiagnostic, type TemplatePosition } from './errors'
 import { expressionSlot, parseTemplate, type ExpressionSlot, type TemplateNode } from './markers'
 import { frameFor, LOOP_FUNCTION_NAMES, referenceSegments, withLoopFunctions } from './scope'

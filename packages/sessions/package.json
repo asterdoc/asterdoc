@@ -1,7 +1,7 @@
 {
-  "name": "@paradoc/sessions",
-  "version": "0.8.0",
-  "description": "Deterministic form-completion session engine for Paradoc artifacts. Event-sourced command/view core with storage-agnostic persistence: you persist and rehydrate the event log yourself.",
+  "name": "@asterdoc/sessions",
+  "version": "0.9.0",
+  "description": "Deterministic form-completion session engine for Asterdoc artifacts. Event-sourced command/view core with storage-agnostic persistence: you persist and rehydrate the event log yourself.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -20,7 +20,7 @@
     "LICENSE"
   ],
   "keywords": [
-    "paradoc",
+    "asterdoc",
     "forms",
     "sessions",
     "event-sourcing",
@@ -28,8 +28,17 @@
   ],
   "license": "MIT",
   "author": {
-    "name": "Paradoc",
-    "url": "https://paradoc.dev"
+    "name": "Asterdoc",
+    "url": "https://asterdoc.com"
+  },
+  "homepage": "https://asterdoc.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asterdoc/asterdoc.git",
+    "directory": "packages/sessions"
+  },
+  "bugs": {
+    "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "engines": {
     "node": ">=18"
@@ -50,11 +59,11 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@paradoc/core": "workspace:^"
+    "@asterdoc/core": "workspace:^"
   },
   "devDependencies": {
-    "@paradoc/eslint-config": "workspace:*",
-    "@paradoc/typescript-config": "workspace:*",
+    "@asterdoc/eslint-config": "workspace:*",
+    "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",

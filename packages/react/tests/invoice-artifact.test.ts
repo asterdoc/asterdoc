@@ -8,7 +8,7 @@
  * different kind of document.
  */
 
-import { evaluateFormDefs, validateArtifact } from "@paradoc/core";
+import { evaluateFormDefs, validateArtifact } from "@asterdoc/core";
 import { describe, expect, it } from "vitest";
 
 import {

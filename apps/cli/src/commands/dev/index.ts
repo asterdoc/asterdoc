@@ -1,5 +1,5 @@
 /**
- * `paradoc dev` — every composition in the project, live, beside its PDF.
+ * `asterdoc dev` — every composition in the project, live, beside its PDF.
  *
  * The command itself is thin: find the compositions, print what was found, and
  * hand the rest to the dev server. `--list` stops after the printing, which is
@@ -28,9 +28,9 @@ interface DevOptions {
 /** The default port. One below the lab's, so both can run at once. */
 const DEFAULT_PORT = '5180'
 
-/** What `paradoc dev` previews, in the words the conventions are documented in. */
+/** What `asterdoc dev` previews, in the words the conventions are documented in. */
 const NOTHING_FOUND =
-	'No compositions found. paradoc dev previews every .tsx or .jsx file under a compositions/ ' +
+	'No compositions found. asterdoc dev previews every .tsx or .jsx file under a compositions/ ' +
 	'directory, bound to the artifact whose file layer of MIME type text/tsx or text/jsx names it.'
 
 export function createDevCommand(): Command {
@@ -76,8 +76,8 @@ export function createDevCommand(): Command {
 					process.exit(1)
 				}
 
-				if (!existsSync(resolve(root, 'components/paradoc/pages.tsx'))) {
-					throw new Error('The preview needs components/paradoc/pages.tsx. Install it with: paradoc add pages')
+				if (!existsSync(resolve(root, 'components/asterdoc/pages.tsx'))) {
+					throw new Error('The preview needs components/asterdoc/pages.tsx. Install it with: asterdoc add pages')
 				}
 
 				const { startDevServer } = await import('./server.js')
@@ -89,7 +89,7 @@ export function createDevCommand(): Command {
 				})
 
 				console.log()
-				console.log(kleur.bold('  Paradoc compositions'), kleur.gray(server.url))
+				console.log(kleur.bold('  Asterdoc compositions'), kleur.gray(server.url))
 				console.log()
 				for (const entry of compositions) {
 					const mark = entry.problems.length > 0 ? kleur.red('!') : kleur.green('·')

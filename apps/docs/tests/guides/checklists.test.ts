@@ -2,8 +2,8 @@
  * Tests for code snippets in guides/checklists.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@paradoc/core'
-import { createLayerRenderer } from '@paradoc/render'
+import { p } from '@asterdoc/core'
+import { createLayerRenderer } from '@asterdoc/render'
 
 describe('Checklists Guide', () => {
   // ============================================================================

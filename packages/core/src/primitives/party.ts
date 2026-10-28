@@ -6,7 +6,7 @@
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec';
-import type { Party, Person, Organization, RuntimeParty } from '@paradoc/types';
+import type { Party, Person, Organization, RuntimeParty } from '@asterdoc/types';
 import { validatePerson, validateOrganization, type Validator } from '@/validation/validators';
 
 /** Organization-specific property names (not present on Person). */

@@ -1,4 +1,4 @@
-import type { ParadocToolsConfig } from '../config'
+import type { AsterdocToolsConfig } from '../config'
 import { ValidateInputValueSchema, type ValidateInputOutput, type ValidateInputValue } from '../contracts'
 import { artifactKind } from '../artifact'
 import { errorFromUnknown, toolError, validationErrors } from '../errors'
@@ -15,11 +15,11 @@ function failure(input: ValidateInputValue, kind: ReturnType<typeof artifactKind
 
 export async function executeValidateInput(
 	input: ValidateInputValue | Record<string, unknown>,
-	config?: ParadocToolsConfig,
+	config?: AsterdocToolsConfig,
 ): Promise<ValidateInputOutput> {
 	try {
 		const normalized = ValidateInputValueSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject } = await import('@paradoc/core')
+		const { isChecklist, isForm, loadFromObject } = await import('@asterdoc/core')
 		const { artifact } = await resolveSource(normalized, config)
 		const kind = artifactKind(artifact)
 

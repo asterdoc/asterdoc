@@ -1,8 +1,8 @@
 import { describe, test, expect } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 import { bundle, document, form } from '@/artifacts'
 import { load } from '@/serialization'
-import type { ParadocRenderer, RendererLayer } from '@paradoc/types'
+import type { AsterdocRenderer, RendererLayer } from '@asterdoc/types'
 
 /**
  * Tests for BundleInstance methods.
@@ -187,7 +187,7 @@ describe('BundleInstance', () => {
     test('render and assemble name a React part by the PDF it produced, not text/tsx', async () => {
       const pdf = new TextEncoder().encode('%PDF-1.7 stand-in')
       const renderers = {
-        'text/tsx': { id: 'stub', render: () => pdf } as ParadocRenderer<RendererLayer, Uint8Array>,
+        'text/tsx': { id: 'stub', render: () => pdf } as AsterdocRenderer<RendererLayer, Uint8Array>,
       }
       const composed = form()
         .name('composed')
@@ -225,7 +225,7 @@ describe('BundleInstance', () => {
     test('includes $schema by default', () => {
       const instance = createMinimalBundle()
       const json = instance.toJSON()
-      expect(json.$schema).toBe(PARADOC_SCHEMA_URL)
+      expect(json.$schema).toBe(ASTERDOC_SCHEMA_URL)
     })
 
     test('is JSON.stringify compatible', () => {

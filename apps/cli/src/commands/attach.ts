@@ -1,8 +1,8 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
 import prompts from 'prompts'
-import { validate, type Artifact, type Layer } from '@paradoc/core'
-import { IDENTIFIER_PATTERN } from '@paradoc/schemas'
+import { validate, type Artifact, type Layer } from '@asterdoc/core'
+import { IDENTIFIER_PATTERN } from '@asterdoc/schemas'
 import { LocalFileSystem } from '../utils/local-fs.js'
 
 import { readTextInput, resolveArtifactTarget } from '../utils/io.js'

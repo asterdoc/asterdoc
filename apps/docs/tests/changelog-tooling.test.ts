@@ -16,7 +16,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
 describe('changelog tooling', () => {
   it('drafts only commits that touched the public subtree', () => {
-    const repository = mkdtempSync(path.join(tmpdir(), 'paradoc-changelog-'))
+    const repository = mkdtempSync(path.join(tmpdir(), 'asterdoc-changelog-'))
     try {
       execFileSync('git', ['init'], { cwd: repository })
       execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd: repository })
@@ -25,8 +25,8 @@ describe('changelog tooling', () => {
       writeFileSync(path.join(repository, 'platform/private.txt'), 'private')
       execFileSync('git', ['add', '.'], { cwd: repository })
       execFileSync('git', ['commit', '-m', 'fix(platform): private only'], { cwd: repository })
-      mkdirSync(path.join(repository, 'paradoc'))
-      writeFileSync(path.join(repository, 'paradoc/public.txt'), 'public')
+      mkdirSync(path.join(repository, 'framework'))
+      writeFileSync(path.join(repository, 'framework/public.txt'), 'public')
       execFileSync('git', ['add', '.'], { cwd: repository })
       execFileSync('git', ['commit', '-m', 'fix(docs): public change'], { cwd: repository })
 
@@ -88,9 +88,9 @@ describe('changelog tooling', () => {
     )
 
     expect(releases.map(({ version }) => version)).toEqual(['2.0.0', '1.0.0'])
-    expect(page).toContain('title: "Paradoc v2.0.0"')
+    expect(page).toContain('title: "Asterdoc v2.0.0"')
     expect(page).toContain('description: "Released 2026-09-25"')
-    expect(page).toContain('ogDescription: "Release notes for Paradoc v2.0.0"')
+    expect(page).toContain('ogDescription: "Release notes for Asterdoc v2.0.0"')
     expect(page).toContain('Second release.')
     expect(page).toMatch(/^## Highlights$/m)
     expect(page).not.toMatch(/^### /m)

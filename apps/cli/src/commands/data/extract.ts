@@ -1,6 +1,6 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
-import { form as formApi, isForm, type Form, type FormExtraction } from '@paradoc/core'
+import { form as formApi, isForm, type Form, type FormExtraction } from '@asterdoc/core'
 import { LocalFileSystem } from '../../utils/local-fs.js'
 import { readTextInput, resolveArtifactTarget } from '../../utils/io.js'
 import { loadValidatedArtifact } from '../../utils/artifact-file.js'

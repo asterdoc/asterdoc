@@ -1,5 +1,5 @@
-import { defaultFormatter } from '@paradoc/format'
-import type { Form, Formatter } from '@paradoc/types'
+import { defaultFormatter } from '@asterdoc/format'
+import type { Form, Formatter } from '@asterdoc/types'
 import { unzipSync, zipSync } from 'fflate'
 import { formatFieldData } from '../text/field-formatter'
 import { loopFrames, loopRows, renderTemplateNodes, type SigningDirective, type TemplateRenderOptions } from '../text/template'

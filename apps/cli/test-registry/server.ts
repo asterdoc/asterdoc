@@ -2,7 +2,7 @@
  * ACME Test Registry Server
  *
  * A simple HTTP server that serves the ACME registry for testing: the
- * compiled registry in r/, which `paradoc registry compile --config
+ * compiled registry in r/, which `asterdoc registry compile --config
  * test-registry/registry.config.json --output test-registry/r` writes from
  * the source files beside this file.
  *

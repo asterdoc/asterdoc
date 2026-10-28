@@ -8,11 +8,11 @@ import { fileURLToPath } from 'node:url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Every command runs against a throwaway home, never the real ~/.paradoc.
+// Every command runs against a throwaway home, never the real ~/.asterdoc.
 let testHome: string
 
 beforeEach(async () => {
-  testHome = await fs.mkdtemp(path.join(tmpdir(), 'paradoc-home-'))
+  testHome = await fs.mkdtemp(path.join(tmpdir(), 'asterdoc-home-'))
 })
 
 afterEach(async () => {
@@ -57,8 +57,8 @@ describe('CLI cache command', () => {
     })
 
     it('reports the configured effective TTL without a session-entry field', async () => {
-      await fs.mkdir(path.join(testHome, '.paradoc'), { recursive: true })
-      await fs.writeFile(path.join(testHome, '.paradoc', 'config.json'), JSON.stringify({ cache: { ttl: 60 } }))
+      await fs.mkdir(path.join(testHome, '.asterdoc'), { recursive: true })
+      await fs.writeFile(path.join(testHome, '.asterdoc', 'config.json'), JSON.stringify({ cache: { ttl: 60 } }))
 
       const result = await executeCliCommand(['cache', 'stats', '--json'])
       const stats = JSON.parse(result.stdout)
@@ -130,18 +130,18 @@ describe('CLI cache command', () => {
       expect(result.exitCode).toBe(1)
     })
 
-    it('refuses the reserved @paradoc: its registry is not available yet', async () => {
-      const result = await executeCliCommand(['cache', 'invalidate', '@paradoc'])
+    it('refuses the reserved @asterdoc: its registry is not available yet', async () => {
+      const result = await executeCliCommand(['cache', 'invalidate', '@asterdoc'])
 
       expect(result.exitCode).toBe(1)
-      expect(result.stderr).toContain('The Paradoc registry is not available yet, so @paradoc cannot be resolved.')
+      expect(result.stderr).toContain('The Asterdoc registry is not available yet, so @asterdoc cannot be resolved.')
     })
 
     it('fails for an unconfigured namespace, naming the add command', async () => {
       const result = await executeCliCommand(['cache', 'invalidate', '@nonexistent'])
 
       expect(result.exitCode).toBe(1)
-      expect(result.stderr).toContain('No registry is configured for @nonexistent. Run: paradoc registry add @nonexistent <url>')
+      expect(result.stderr).toContain('No registry is configured for @nonexistent. Run: asterdoc registry add @nonexistent <url>')
     })
   })
 })

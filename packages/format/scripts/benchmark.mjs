@@ -1,7 +1,7 @@
 import { performance } from 'node:perf_hooks'
 import { createFormatter } from '../dist/index.js'
 
-const iterations = Number.parseInt(process.env.PARADOC_FORMAT_BENCH_ITERATIONS ?? '5000', 10)
+const iterations = Number.parseInt(process.env.ASTERDOC_FORMAT_BENCH_ITERATIONS ?? '5000', 10)
 const rounds = 5
 
 function exercise(formatter, index) {

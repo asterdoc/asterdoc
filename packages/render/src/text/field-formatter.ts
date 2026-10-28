@@ -11,8 +11,8 @@ import type {
 	DefsSection,
 	Bindings,
 	MoneyFormatOptions,
-} from '@paradoc/types'
-import { MISSING_RATING_SCALE, UNSUPPORTED_LIST_JOIN } from '@paradoc/format'
+} from '@asterdoc/types'
+import { MISSING_RATING_SCALE, UNSUPPORTED_LIST_JOIN } from '@asterdoc/format'
 import { bindingDataPath } from '../layer-bindings'
 import { pathSegments } from '../path'
 

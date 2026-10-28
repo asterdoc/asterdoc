@@ -11,7 +11,7 @@ import { createBundleCommand } from "./bundle.js";
 export function createNewCommand(): Command {
 	const newCmd = new Command("new");
 
-	newCmd.description("Create new Paradoc artifacts");
+	newCmd.description("Create new Asterdoc artifacts");
 
 	// Add all artifact subcommands
 	newCmd.addCommand(createFormCommand());

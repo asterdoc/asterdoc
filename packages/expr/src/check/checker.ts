@@ -4,8 +4,8 @@
  * types) and the function registry, emitting positioned diagnostics. This is
  * what an authoring editor lints with.
  *
- * @paradoc/expr stays decoupled from the artifact schema: the host (e.g.
- * @paradoc/core) builds the TypeEnv from real field definitions.
+ * @asterdoc/expr stays decoupled from the artifact schema: the host (e.g.
+ * @asterdoc/core) builds the TypeEnv from real field definitions.
  */
 
 import type { Expr } from '../ast/nodes'

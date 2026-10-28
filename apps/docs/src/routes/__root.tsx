@@ -18,7 +18,7 @@ const meta = () => ({
       content: "width=device-width, initial-scale=1",
     },
     {
-      title: "Paradoc",
+      title: "Asterdoc",
     },
     {
       name: "description",
@@ -31,7 +31,7 @@ const meta = () => ({
     },
     {
       property: "og:title",
-      content: "Paradoc Documentation",
+      content: "Asterdoc Documentation",
     },
     {
       property: "og:description",
@@ -43,7 +43,7 @@ const meta = () => ({
     },
     {
       property: "og:url",
-      content: "https://docs.paradoc.dev",
+      content: "https://docs.asterdoc.com",
     },
     // Twitter
     {
@@ -52,7 +52,7 @@ const meta = () => ({
     },
     {
       name: "twitter:title",
-      content: "Paradoc Documentation",
+      content: "Asterdoc Documentation",
     },
     {
       name: "twitter:description",

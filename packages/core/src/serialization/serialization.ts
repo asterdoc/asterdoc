@@ -1,5 +1,5 @@
 import { stringify as stringifyYaml, parse as parseYaml } from "yaml"
-import { PARADOC_SCHEMA_URL } from "@paradoc/schemas"
+import { ASTERDOC_SCHEMA_URL } from "@asterdoc/schemas"
 
 // Re-export types from centralized types.ts
 export type { SerializationFormat, SerializationOptions } from "@/types"
@@ -45,7 +45,7 @@ export function toYAML(
     })
 
     if (includeSchema) {
-      return `# yaml-language-server: $schema=${PARADOC_SCHEMA_URL}\n${yaml}`
+      return `# yaml-language-server: $schema=${ASTERDOC_SCHEMA_URL}\n${yaml}`
     }
 
     return yaml

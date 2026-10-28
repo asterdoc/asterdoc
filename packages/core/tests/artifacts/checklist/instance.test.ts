@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { PARADOC_SCHEMA_URL } from '@paradoc/schemas'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 import { checklist, UnboundResolverError } from '@/artifacts'
 import { load } from '@/serialization'
 
@@ -127,7 +127,7 @@ describe('ChecklistInstance', () => {
     test('includes $schema by default', () => {
       const instance = createMinimalChecklist()
       const json = instance.toJSON()
-      expect(json.$schema).toBe(PARADOC_SCHEMA_URL)
+      expect(json.$schema).toBe(ASTERDOC_SCHEMA_URL)
     })
 
     test('is JSON.stringify compatible', () => {

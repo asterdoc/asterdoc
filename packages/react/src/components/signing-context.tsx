@@ -6,7 +6,7 @@
  * marker in the first PDF and gives the box to the clean one. For a layer core
  * renders itself it writes the marker into the text. For a composition it
  * cannot, so it hands the markers to the layer's renderer instead, and
- * `@paradoc/react-pdf` puts them here.
+ * `@asterdoc/react-pdf` puts them here.
  *
  * They travel by context rather than by prop because a composition is written
  * once and rendered in both passes. Threading a seal-only prop from the
@@ -24,7 +24,7 @@
  */
 
 import { createContext, useContext, type ReactNode } from "react";
-import type { SigningMarker } from "@paradoc/types";
+import type { SigningMarker } from "@asterdoc/types";
 
 /**
  * Flow markers for one seal pass, keyed by slot id.

@@ -3,7 +3,7 @@
  * as form definitions are.
  */
 import { describe, expect, test } from 'vitest'
-import type { Bundle, Form } from '@paradoc/types'
+import type { Bundle, Form } from '@asterdoc/types'
 import { validateBundleDefs } from '@/logic/design-time/validation/validate-bundle-logic'
 
 const main = {

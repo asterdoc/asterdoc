@@ -3,7 +3,7 @@
  * form data, and the draft/final(/signable/executed) JSON phase unions.
  *
  * See tests/artifact-union.test.ts for the testing idiom this file follows:
- * `@paradoc/types` has no runtime values, so every assertion here is either
+ * `@asterdoc/types` has no runtime values, so every assertion here is either
  * an `expectTypeOf` compile-time check or an `@ts-expect-error` that
  * `check-types` fails if the guard it covers is loosened.
  */

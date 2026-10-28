@@ -6,11 +6,11 @@
  * the blocks close ten clauses of running prose, so where the last page starts
  * is decided by where a paragraph broke rather than by a row pitch, and the
  * markers still have to be found there. Nothing here reaches inside the seal —
- * `@paradoc/core` runs it, and this package supplies only the renderer its
+ * `@asterdoc/core` runs it, and this package supplies only the renderer its
  * React layer is registered under.
  */
 
-import type { SigningField } from "@paradoc/types";
+import type { SigningField } from "@asterdoc/types";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { engagementLetterData, ENGAGEMENT_LETTER_SIGNATURE_SLOTS } from "../../components/src/examples";
