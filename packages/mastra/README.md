@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://asterdoc.com?utm_source=github&utm_medium=mastra" target="_blank" rel="noopener noreferrer">
-    <img src="https://assets.paradoc.dev/logo-400x400.png" height="64" alt="Asterdoc logo">
+    <img src="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" height="64" alt="Asterdoc logo">
   </a>
 </p>
 

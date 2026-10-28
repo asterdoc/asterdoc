@@ -39,7 +39,7 @@ const meta = () => ({
     },
     {
       property: "og:image",
-      content: "https://assets.paradoc.dev/paradoc-og-docs.png",
+      content: "https://assets.asterdoc.com/asterdoc-og-docs.png",
     },
     {
       property: "og:url",
@@ -60,7 +60,7 @@ const meta = () => ({
     },
     {
       name: "twitter:image",
-      content: "https://assets.paradoc.dev/paradoc-og-docs.png",
+      content: "https://assets.asterdoc.com/asterdoc-og-docs.png",
     },
   ],
   links: [

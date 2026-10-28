@@ -62,7 +62,7 @@ export const Route = createFileRoute("/$")({
         property: "og:image",
         content: loaderData?.ogImageUrl
           ? `https://docs.asterdoc.com${loaderData.ogImageUrl}`
-          : "https://assets.paradoc.dev/paradoc-og-docs.png",
+          : "https://assets.asterdoc.com/asterdoc-og-docs.png",
       },
       {
         property: "og:url",
@@ -82,7 +82,7 @@ export const Route = createFileRoute("/$")({
         name: "twitter:image",
         content: loaderData?.ogImageUrl
           ? `https://docs.asterdoc.com${loaderData.ogImageUrl}`
-          : "https://assets.paradoc.dev/paradoc-og-docs.png",
+          : "https://assets.asterdoc.com/asterdoc-og-docs.png",
       },
     ],
   }),

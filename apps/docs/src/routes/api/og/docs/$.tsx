@@ -2,16 +2,16 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ImageResponse } from "workers-og";
 import { source } from "@/lib/source";
 
-const BACKGROUND_URL = "https://assets.paradoc.dev/paradoc-og-docs-background.png";
+const BACKGROUND_URL = "https://assets.asterdoc.com/asterdoc-og-docs-background.png";
 // Finished static card, used as the fallback if generation ever fails, so the
 // OG image is never a blank 200.
-const FALLBACK_OG_URL = "https://assets.paradoc.dev/paradoc-og-docs.png";
+const FALLBACK_OG_URL = "https://assets.asterdoc.com/asterdoc-og-docs.png";
 // Fetched cross-origin from the assets bucket. It must NOT come from
 // docs.asterdoc.com: fetching this Worker's own domain is a self-request that
 // returns the app's HTML instead of the font, which crashes the renderer
 // (Satori: "Unsupported OpenType signature") and yields a blank image.
 const GEIST_FONT_URL =
-  "https://assets.paradoc.dev/fonts/geist-sans-latin-600-normal.woff";
+  "https://assets.asterdoc.com/fonts/geist-sans-latin-600-normal.woff";
 let geistFontPromise: Promise<ArrayBuffer> | undefined;
 
 function getGeistFont(): Promise<ArrayBuffer> {
