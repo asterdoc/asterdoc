@@ -95,7 +95,7 @@ describe('bundle JSON round trip', () => {
 		expect(decode(outputs.f!.content)).toContain('Form: x')
 	})
 
-	test('keeps phases through the hand-written deserializer when it passes the timestamps (core-002)', () => {
+	test('keeps phases through the hand-written deserializer when it passes the timestamps', () => {
 		const signable = everyKind().draft.prepareForSigning()
 		const json = JSON.parse(JSON.stringify(signable.toJSON()))
 		const reloaded = runtimeBundleFromJSON(json, (m) => {
@@ -136,7 +136,7 @@ describe('bundle JSON round trip', () => {
 	})
 })
 
-describe('bundle load checks (core-006)', () => {
+describe('bundle load checks', () => {
 	const signableJSON = () => JSON.parse(JSON.stringify(everyKind().draft.prepareForSigning().toJSON()))
 
 	test('rejects a draft included member in a signable bundle', () => {
@@ -180,7 +180,7 @@ describe('bundle load checks (core-006)', () => {
 	})
 })
 
-describe('bundle clock (core-003)', () => {
+describe('bundle clock', () => {
 	const dated = () => form().name('f').version('1.0.0').title('F').fields({ d: { type: 'date', label: 'D' } }).build()
 	const plain = () => form().name('g').version('1.0.0').title('G').fields({ x: { type: 'text', label: 'X' } }).build()
 	const definition = () =>
@@ -217,7 +217,7 @@ describe('bundle clock (core-003)', () => {
 		expect(reload(executed).getInclusion('g').status).toBe('included')
 	})
 
-	test('members filled moments apart resolve without an explicit clock (core-003 repro)', async () => {
+	test('members filled moments apart resolve without an explicit clock', async () => {
 		const fi = dated().fill({ fields: { d: '2020-01-01' } })
 		await new Promise((resolve) => setTimeout(resolve, 5))
 		const gi = plain().fill({ fields: { x: 'y' } })
@@ -246,7 +246,7 @@ describe('signing boundaries', () => {
 	const required = () =>
 		form().name('f').version('1.0.0').title('F').fields({ a: { type: 'text', label: 'A', required: true } }).build()
 
-	test('an excluded incomplete member does not block signing and stays a draft (core-004)', () => {
+	test('an excluded incomplete member does not block signing and stays a draft', () => {
 		const f = required()
 		const g = memberForm()
 		const b = bundle().name('b').version('1.0.0').title('B').inline('f', f, false).inline('g', g).build()
@@ -265,7 +265,7 @@ describe('signing boundaries', () => {
 		expect(() => b.prepare({ f: f.fill() }).prepareForSigning()).toThrow('Missing required field: fields.a')
 	})
 
-	test('a missing included member blocks signing (core-005)', () => {
+	test('a missing included member blocks signing', () => {
 		const f = memberForm()
 		const b = bundle().name('b').version('1.0.0').title('B').inline('lease', f).inline('extra', f, false).build()
 		expect(() => b.prepare({}).prepareForSigning()).toThrow('Content "lease" is included but has no content.')
@@ -281,7 +281,7 @@ describe('signing boundaries', () => {
 	})
 })
 
-describe('bundle include roots (core-007)', () => {
+describe('bundle include roots', () => {
 	test('checklist and document roots are unknown variables', () => {
 		const cl = memberChecklist()
 		const doc = memberDocument()
@@ -293,7 +293,7 @@ describe('bundle include roots (core-007)', () => {
 	})
 })
 
-describe('bundle object definitions (core-041)', () => {
+describe('bundle object definitions', () => {
 	test('a nested member orders its def after the defs it reads and resolves', () => {
 		const optional = memberDocument()
 		const definition = bundle()

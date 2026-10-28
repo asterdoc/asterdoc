@@ -21,7 +21,7 @@ const issueMessages = (f: Form): string[] => {
 	return 'issues' in result && result.issues ? result.issues.map((issue) => issue.message) : []
 }
 
-describe('rule context (core-031)', () => {
+describe('rule context', () => {
 	test('a rule can call today() when the form carries a clock', () => {
 		const def = form({
 			kind: 'form',
@@ -69,7 +69,7 @@ describe('rule context (core-031)', () => {
 	})
 })
 
-describe('row visibility in aggregates (core-032)', () => {
+describe('row visibility in aggregates', () => {
 	const lines = {
 		kind: 'form',
 		name: 'lines',
@@ -116,7 +116,7 @@ describe('row visibility in aggregates (core-032)', () => {
 	})
 })
 
-describe('defs cannot replace context roots or settings (core-034)', () => {
+describe('defs cannot replace context roots or settings', () => {
 	test('a def named asOf does not replace the clock', () => {
 		const f = {
 			kind: 'form',
@@ -161,7 +161,7 @@ describe('defs cannot replace context roots or settings (core-034)', () => {
 	})
 })
 
-describe('one gate evaluator (core-039)', () => {
+describe('one gate evaluator', () => {
 	const rule: ValidationRule = { expr: 'fields.tags', message: 'tags must be non-empty' }
 
 	test('a rule treats an empty list as false, as truthy() does', () => {
@@ -173,7 +173,7 @@ describe('one gate evaluator (core-039)', () => {
 	})
 })
 
-describe('unconvertible values (core-050)', () => {
+describe('unconvertible values', () => {
 	test('a NaN field value fails evaluation instead of reading as null', () => {
 		const product = evaluateExpression('fields.amount * 2', { fields: { amount: Number.NaN } })
 		const isNull = evaluateExpression('fields.amount == null', { fields: { amount: Number.NaN } })
@@ -191,7 +191,7 @@ describe('unconvertible values (core-050)', () => {
 	})
 })
 
-describe('signing predicates (core-033, core-048)', () => {
+describe('signing predicates', () => {
 	const signingForm = {
 		kind: 'form',
 		name: 'signing',

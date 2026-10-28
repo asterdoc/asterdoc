@@ -83,7 +83,7 @@ const inlineBundle = (...keys: string[]): Bundle => ({
 })
 
 describe('rendering a checklist part', () => {
-	test('a bundle renders a checklist template exactly as a direct render does (core-001)', async () => {
+	test('a bundle renders a checklist template exactly as a direct render does', async () => {
 		const cl = doneChecklist()
 		const filled = cl.fill({ done: true })
 		const direct = await filled.render({ renderer: createLayerRenderer() })
@@ -93,7 +93,7 @@ describe('rendering a checklist part', () => {
 		expect(out).toBe(String(direct))
 	})
 
-	test('assembleBundle and RuntimeBundle.render give the same checklist part (core-069)', async () => {
+	test('assembleBundle and RuntimeBundle.render give the same checklist part', async () => {
 		const cl = doneChecklist()
 		const b = bundle().name('b').version('1.0.0').title('B').inline('cl', cl).build()
 		const viaAssemble = await assembleBundle(b.toJSON() as Bundle, { contents: { cl: cl.fill({ done: true }) } })
@@ -110,7 +110,7 @@ describe('rendering a checklist part', () => {
 	})
 })
 
-describe('rendering a document or form part (core-068)', () => {
+describe('rendering a document or form part', () => {
 	test('a document renders through the registry in both bundle paths', async () => {
 		const renderers = { [STUB_MIME]: stub }
 		const assembled = await assembleBundle(inlineBundle('doc'), { renderers, contents: { doc: stubDocument().prepare() } })
@@ -196,7 +196,7 @@ describe('naming and sealing bytes parts', () => {
 			.addSignatory('client', 'client-0', { signerId: 's1' })
 	const packet = inlineBundle('first', 'annex')
 
-	test('an Application/PDF annex is named .pdf and sealed as a PDF (core-070)', async () => {
+	test('an Application/PDF annex is named .pdf and sealed as a PDF', async () => {
 		const annex = { kind: 'bytes' as const, content: cleanPdf, mimeType: 'Application/PDF' }
 		const assembled = await assembleBundle(packet, {
 			renderers: { 'text/tsx': reactRenderer() },
@@ -223,7 +223,7 @@ describe('naming and sealing bytes parts', () => {
 		).rejects.toBeInstanceOf(BundleSealError)
 	})
 
-	test('a png annex with no filename takes the png extension in assembly and sealing (core-071)', async () => {
+	test('a png annex with no filename takes the png extension in assembly and sealing', async () => {
 		const annex = { kind: 'bytes' as const, content: png, mimeType: 'image/png' }
 		const assembled = await assembleBundle(packet, {
 			renderers: { 'text/tsx': reactRenderer() },

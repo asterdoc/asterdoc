@@ -386,7 +386,7 @@ describe('codegen', () => {
 
 		// core-075: an artifact whose name starts with a digit (e.g. "1099-nec",
 		// camelCased to "1099Nec" by the CLI) must not produce an invalid identifier.
-		describe('identifier safety (core-075)', () => {
+		describe('identifier safety', () => {
 			test('prefixes a digit-leading export name so the module parses', () => {
 				const result = jsonToTsModule(
 					{ kind: 'form', name: '1099-nec' },

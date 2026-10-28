@@ -1,7 +1,7 @@
-// DOCX control blocks: custom delimiters on one-paragraph blocks (render-003),
-// closers and ELSE that must match their block (render-020), paragraph
-// numbering in error locations (render-021), and the removed INS and {{& }}
-// aliases (render-027).
+// DOCX control blocks: custom delimiters on one-paragraph blocks,
+// closers and ELSE that must match their block, paragraph
+// numbering in error locations, and the removed INS and {{& }}
+// aliases.
 import { createTypeEnv, T } from '@asterdoc/expr'
 import { unzipSync, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
@@ -33,7 +33,7 @@ const env = createTypeEnv({
 
 const brackets = { cmdDelimiter: ['[[', ']]'] as [string, string] }
 
-describe('one-paragraph blocks with custom delimiters (render-003)', () => {
+describe('one-paragraph blocks with custom delimiters', () => {
   it('renders an inline IF with the default delimiters', async () => {
     expect(visible(await renderDocx({ template: docx(['{{IF fields.a}}Yes{{END-IF}}']), data: { a: true } }))).toBe('Yes')
   })
@@ -66,7 +66,7 @@ describe('one-paragraph blocks with custom delimiters (render-003)', () => {
   })
 })
 
-describe('block closers and ELSE match their block (render-020)', () => {
+describe('block closers and ELSE match their block', () => {
   const cases: Array<[string, string[], RegExp]> = [
     ['END-FOR closing an IF', ['{{IF fields.a}}', 'X', '{{END-FOR}}'], /END-FOR cannot close IF fields\.a; write END-IF/],
     ['END-IF closing a FOR', ['{{FOR line IN fields.lines}}', 'X', '{{END-IF}}'], /END-IF cannot close FOR line IN fields\.lines; write END-FOR/],
@@ -105,7 +105,7 @@ describe('block closers and ELSE match their block (render-020)', () => {
   })
 })
 
-describe('error locations count every paragraph (render-021)', () => {
+describe('error locations count every paragraph', () => {
   it('numbers paragraphs that carry properties', async () => {
     const styled = (text: string) => `<w:p w:rsidR="00AB"><w:pPr><w:pStyle w:val="Body"/></w:pPr><w:r><w:t>${text}</w:t></w:r></w:p>`
     const run = renderDocx({ template: docx(['intro', 'more', '{{fields.name +}}'], styled), data: { name: 'x' } })
@@ -113,7 +113,7 @@ describe('error locations count every paragraph (render-021)', () => {
   })
 })
 
-describe('removed aliases (render-027)', () => {
+describe('removed aliases', () => {
   it('refuses the DOCX INS form, naming the replacement', async () => {
     await expect(renderDocx({ template: docx(['{{INS fields.name}}']), data: { name: 'Ada' } }))
       .rejects.toThrow(/The INS form is removed/)

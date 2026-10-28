@@ -193,12 +193,12 @@ describe('a bundle offered a resolver', () => {
 
 	// core-086: BundleResolverError extends LoadError, so safeLoad no longer
 	// re-wraps it and callers keep its specific type.
-	test('is itself a LoadError (core-086)', () => {
+	test('is itself a LoadError', () => {
 		expect(() => load('kind: bundle\nname: x', { resolver })).toThrow(LoadError)
 		expect(() => load('kind: bundle\nname: x', { resolver })).toThrow(BundleResolverError)
 	})
 
-	test('safeLoad preserves the BundleResolverError type (core-086)', () => {
+	test('safeLoad preserves the BundleResolverError type', () => {
 		const result = safeLoad('kind: bundle\nname: x', { resolver })
 		expect(result.success).toBe(false)
 		if (!result.success) {
