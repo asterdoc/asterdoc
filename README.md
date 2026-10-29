@@ -271,7 +271,7 @@ if (result.success) {
 }
 ```
 
-For a complete production example, see `/incubator/apps/demo/src/demos/leasing`. For API reference and advanced patterns, visit [docs.asterdoc.com](https://docs.asterdoc.com).
+For API reference and advanced patterns, visit [docs.asterdoc.com](https://docs.asterdoc.com).
 
 ## Changelog
 

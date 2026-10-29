@@ -46,10 +46,10 @@ export async function freePort(): Promise<number> {
 }
 
 /** The workspace package this suite drives. */
-const LAB_PACKAGE = "@incubator/react-lab";
+const LAB_PACKAGE = "@tools/react-lab";
 
 /** Where that package sits, relative to the workspace root. */
-const LAB_DIRECTORY = "incubator/apps/react-lab";
+const LAB_DIRECTORY = "tools/react-lab";
 
 /**
  * The workspace root the lab is a package of.
