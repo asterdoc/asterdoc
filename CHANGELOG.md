@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Paradoc. Packages are versioned in lockstep.
+All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versioned in lockstep.
 
 ## [Unreleased]
 
