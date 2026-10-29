@@ -78,8 +78,8 @@ Paradoc 0.7.1 fixes problems that real models hit with the AI tools. Renders no 
 
 #### Adapters
 
-- `@paradoc/mastra` creates its tools with `strict: false`.
-- `@paradoc/ai-sdk`, `@paradoc/mastra` and `@paradoc/tanstack-ai` export the `FillTarget` and `FillItemState` types.
+- `@asterdoc/mastra` creates its tools with `strict: false`.
+- `@asterdoc/ai-sdk`, `@asterdoc/mastra` and `@asterdoc/tanstack-ai` export the `FillTarget` and `FillItemState` types.
 
 ## [0.7.0] - 2026-10-08
 
@@ -89,7 +89,7 @@ Paradoc 0.7 records who issued a form and which edition an artifact encodes, and
 
 - Artifacts carry an optional `issuer` and `edition` (`key`, `label`, `date`, `effectiveFrom`), and `code` is the form number as the issuer prints it.
 - Registry coordinates take the form `@org/repo/name[/edition][@version]`, with helpers to parse and format them.
-- `@paradoc/render/pdf` can prepare, embed and read a PDF digital signature.
+- `@asterdoc/render/pdf` can prepare, embed and read a PDF digital signature.
 - PDF text overlays can each use their own font, and `pdfFontMetrics()` reports whether a font can draw a string and how wide it is.
 - `paradoc migrate` moves artifacts to schema `2026-10-02`.
 
@@ -112,7 +112,7 @@ Paradoc 0.7 records who issued a form and which edition an artifact encodes, and
 ### Upgrading from 0.6
 
 1. Run `paradoc migrate <file-or-directory> --dry-run`, review the changes, then rerun without `--dry-run`. The step removes `releaseDate` and moves a slug's `@version` into `version`.
-2. Correct by hand any registry slug that is not `@org/repo/name[@version]`, such as `@paradoc/essentials/tax/w-9@1.0.0`. The migration stops on it.
+2. Correct by hand any registry slug that is not `@org/repo/name[@version]`, such as `@asterdoc/essentials/tax/w-9@1.0.0`. The migration stops on it.
 3. Replace `.releaseDate()` with `.issuer()` and `.edition()`, and pass full `@org/repo/name` coordinates to `.registry()`.
 4. Read `issuer` from an essentials form's `spec` instead of `spec.metadata.issuer`.
 
@@ -120,7 +120,7 @@ Paradoc 0.7 records who issued a form and which edition an artifact encodes, and
 
 #### Schemas and types
 
-- `@paradoc/schemas` exports `parseArtifactCoordinate`, `formatArtifactCoordinate`, `ArtifactCoordinateSchema`, the edition and version selector schemas, and the reserved edition keys. `@paradoc/types` exports `ArtifactEdition`.
+- `@asterdoc/schemas` exports `parseArtifactCoordinate`, `formatArtifactCoordinate`, `ArtifactCoordinateSchema`, the edition and version selector schemas, and the reserved edition keys. `@asterdoc/types` exports `ArtifactEdition`.
 
 #### Core
 
@@ -147,10 +147,10 @@ Paradoc 0.6.1 tightens prerelease schema distribution and makes the documentatio
 
 ### Highlights
 
-- `@paradoc/schemas` now packages only the current dated schema set and live-root schemas, while older prerelease schemas remain available through Git history.
+- `@asterdoc/schemas` now packages only the current dated schema set and live-root schemas, while older prerelease schemas remain available through Git history.
 - The documentation publishes a permanent page for each release alongside the latest changelog index.
 - Canonical URLs, a generated sitemap, and improved Markdown responses make documentation routes easier for search engines and agents to discover.
-- `@paradoc/eslint-config/service-boundary` enforces API-free service modules by preventing imports from co-located contracts and `@paradoc/api-kernel`.
+- `@asterdoc/eslint-config/service-boundary` enforces API-free service modules by preventing imports from co-located contracts and `@shared/api-kernel`.
 
 ### Other changes
 
@@ -169,8 +169,8 @@ Paradoc 0.6 turns documents into a complete application surface: compose them in
 - React layers, live `paradoc dev` previews, `paradoc check`, and the copyable component registry provide an end-to-end document composition workflow.
 - `sealBundle` prepares and seals multi-part packets with one canonical PDF, packet-wide signer mapping, and part-level provenance.
 - PDF rendering now embeds fonts, follows AcroForm appearance settings, rejects encrypted inputs, and can extract filled values back into artifact data.
-- Templates and artifact logic share `@paradoc/expr`, including typed conditions, list aggregates, party data, and row-aware expressions.
-- `@paradoc/format` replaces serialization with locale-aware formatting shared by text, DOCX, PDF, and React output.
+- Templates and artifact logic share `@asterdoc/expr`, including typed conditions, list aggregates, party data, and row-aware expressions.
+- `@asterdoc/format` replaces serialization with locale-aware formatting shared by text, DOCX, PDF, and React output.
 - AI SDK, TanStack AI, and Mastra adapters expose the same validated document operations, including extraction and progressive filling.
 
 ### Breaking changes
@@ -193,29 +193,29 @@ Paradoc 0.6 turns documents into a complete application surface: compose them in
 
 #### Rendering and React
 
-- Import PDF runtime APIs from `@paradoc/react-pdf`; `@paradoc/react` now contains the headless React runtime and discovery APIs.
+- Import PDF runtime APIs from `@asterdoc/react-pdf`; `@asterdoc/react` now contains the headless React runtime and discovery APIs.
 - Text and DOCX templates must use full paths such as `{{fields.name}}`; binding aliases are supported only on PDF file layers.
 - PDF bindings now fail on missing fields, invalid roots, and malformed qualifiers; use AcroForm field names as keys and Paradoc paths as values.
 - Replace legacy template helpers and Handlebars context paths with artifact expressions, `item`, `parent`, and `index(item)`.
 - Application styles own typography; remove `fontFamily` tokens and registered package font families.
-- Remove PDF signature rendering options and deprecated SDK renderer wrappers; use built-in rendering or `@paradoc/render` subpaths.
+- Remove PDF signature rendering options and deprecated SDK renderer wrappers; use built-in rendering or `@asterdoc/render` subpaths.
 
 #### CLI, sessions, AI, and resolvers
 
-- The CLI, `@paradoc/ai-tools`, `@paradoc/ai-sdk`, and `@paradoc/tanstack-ai` require Node.js 22 or newer.
+- The CLI, `@asterdoc/ai-tools`, `@asterdoc/ai-sdk`, and `@asterdoc/tanstack-ai` require Node.js 22 or newer.
 - Invoke the CLI as `paradoc`; the `para` binary is removed.
 - Configure every registry explicitly; the CLI no longer falls back to a default registry.
 - Session projections now include annexes and richer party state; persist events directly instead of using the removed spine adapter.
-- Use the unified `@paradoc/ai-tools` operation contracts and renamed validation outputs.
-- Import resolvers from `@paradoc/resolvers/fs`, `/http`, or `/memory`; the package root exports nothing.
-- Replace `@paradoc/serialization` with `@paradoc/format` and pass a formatter through render context.
+- Use the unified `@asterdoc/ai-tools` operation contracts and renamed validation outputs.
+- Import resolvers from `@asterdoc/resolvers/fs`, `/http`, or `/memory`; the package root exports nothing.
+- Replace `@paradoc/serialization` with `@asterdoc/format` and pass a formatter through render context.
 
 ### Upgrading from 0.5
 
 1. Upgrade CLI and AI runtimes to Node.js 22 or newer.
 2. Run `paradoc migrate <file-or-directory> --dry-run`, review the schema and signature-slot changes, then rerun without `--dry-run`.
 3. Rename `para` imports to `p`, bind resolvers when artifacts are constructed, and replace removed draft and fill helpers.
-4. Install `@paradoc/react-pdf` for React PDF rendering, checking, or Chromium output and update imports from `@paradoc/react`.
+4. Install `@asterdoc/react-pdf` for React PDF rendering, checking, or Chromium output and update imports from `@asterdoc/react`.
 5. Replace template binding aliases and helpers, then run `paradoc validate` and `paradoc check` across the migrated project.
 
 ### Other changes
@@ -242,8 +242,8 @@ Paradoc 0.6 turns documents into a complete application surface: compose them in
 
 #### Packages
 
-- `@paradoc/react`, `@paradoc/react-pdf`, `@paradoc/format`, and `@paradoc/mastra` join the public framework.
-- `@paradoc/resolvers/http` safely resolves file-backed layers beneath a base URL in any runtime with `fetch`.
+- `@asterdoc/react`, `@asterdoc/react-pdf`, `@asterdoc/format`, and `@asterdoc/mastra` join the public framework.
+- `@asterdoc/resolvers/http` safely resolves file-backed layers beneath a base URL in any runtime with `fetch`.
 - Essentials artifacts and examples use current schemas, signature slots, formatter behavior, and rendering limits.
 
 ## [0.5.0] - 2026-08-10
@@ -277,7 +277,7 @@ Paradoc 0.4 consolidates rendering into one dependency-light package and makes M
 
 ### Highlights
 
-- `@paradoc/render` renders text, Markdown, HTML, PDF, and DOCX layers through one public package.
+- `@asterdoc/render` renders text, Markdown, HTML, PDF, and DOCX layers through one public package.
 - Form rendering and sealing select built-in renderers by MIME type while preserving custom renderer overrides.
 - Recursive list fields work across builders, schemas, validation, serialization, and rendering.
 - Sealing can flatten PDFs locally and delegate non-PDF conversion through an adapter.
@@ -286,7 +286,7 @@ Paradoc 0.4 consolidates rendering into one dependency-light package and makes M
 
 #### Render
 
-- Replace `@paradoc/renderers` and the format-specific renderer packages with `@paradoc/render` and its `/text`, `/pdf`, and `/docx` subpaths.
+- Replace `@paradoc/renderers` and the format-specific renderer packages with `@asterdoc/render` and its `/text`, `/pdf`, and `/docx` subpaths.
 
 ### Upgrading from 0.3
 
@@ -305,8 +305,8 @@ Paradoc 0.3 adds a purpose-built expression language and publishes the determini
 
 ### Highlights
 
-- `@paradoc/expr` provides a typed parser, evaluator, and artifact-aware checker with exact decimal and temporal values.
-- `@paradoc/sessions` provides an event-sourced, storage-agnostic form-completion engine.
+- `@asterdoc/expr` provides a typed parser, evaluator, and artifact-aware checker with exact decimal and temporal values.
+- `@asterdoc/sessions` provides an event-sourced, storage-agnostic form-completion engine.
 - Fill state reports one visibility and requirement status, transitive blockers, and the next field in dependency order.
 - The SDK exposes expression APIs through `expr`, including parsing, checking, and `Decimal`.
 
@@ -314,7 +314,7 @@ Paradoc 0.3 adds a purpose-built expression language and publishes the determini
 
 #### Core
 
-- Artifact logic runs on `@paradoc/expr`, and hidden fieldsets now hide their full subtree.
+- Artifact logic runs on `@asterdoc/expr`, and hidden fieldsets now hide their full subtree.
 - The `expr-eval-fork` dependency is removed.
 
 ## [0.2.0] - 2026-05-19
@@ -369,5 +369,5 @@ The first public Paradoc release establishes documents as typed, machine-readabl
 - Typed builders define forms, documents, checklists, bundles, parties, fields, annexes, and output layers.
 - Core validation checks artifact definitions and filled data against shared Zod and JSON Schema contracts.
 - Text, PDF, and DOCX renderers produce multiple outputs from the same artifact definition.
-- `@paradoc/sdk` provides the all-in-one framework entry point, with CLI and AI adapter packages alongside it.
+- `@asterdoc/sdk` provides the all-in-one framework entry point, with CLI and AI adapter packages alongside it.
 - The published packages support Node.js 18 and are released in lockstep under the MIT license.
