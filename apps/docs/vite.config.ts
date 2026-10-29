@@ -9,6 +9,7 @@ import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import mdx from "fumadocs-mdx/vite";
 import * as MdxConfig from "./source.config";
+import { webAnalyticsDefines } from "./build-web-analytics";
 
 const require = createRequire(import.meta.url);
 
@@ -78,6 +79,7 @@ const config = defineConfig({
     __ASTERDOC_DOCS_PLATFORM_API__: JSON.stringify(
       process.env.ASTERDOC_DOCS_PLATFORM_API === "true",
     ),
+    ...webAnalyticsDefines(),
   },
   server: {
     fs: {

@@ -7,6 +7,7 @@ import {
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
 
 import appCss from "../styles.css?url";
+import { WEB_ANALYTICS_BEACON } from "@/lib/web-analytics";
 
 const meta = () => ({
   meta: [
@@ -93,6 +94,9 @@ function RootDocument() {
           </RootProvider>
         </TanstackProvider>
         <Scripts />
+        {__WEB_ANALYTICS__ && (
+          <script defer src={WEB_ANALYTICS_BEACON.src} data-cf-beacon={WEB_ANALYTICS_BEACON.beacon} />
+        )}
       </body>
     </html>
   );
