@@ -1,4 +1,21 @@
-# @asterdoc/tanstack-ai
+<p align="center">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=tanstack-ai" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" type="image/png">
+      <img src="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" height="64" alt="Asterdoc logo">
+    </picture>
+  </a>
+  <br />
+</p>
+
+<h1 align="center">@asterdoc/tanstack-ai</h1>
+
+<div align="center">
+
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=tanstack-ai)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/asterdoc)
+
+</div>
 
 Experimental [TanStack AI](https://tanstack.com/ai) tools for Asterdoc document workflows. The adapter is tested against TanStack AI `0.53.0` and remains experimental until TanStack AI reaches a stable release. TanStack AI's pre-1.0 API may change between releases.
 

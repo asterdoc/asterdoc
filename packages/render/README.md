@@ -1,4 +1,21 @@
-# @asterdoc/render
+<p align="center">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=render" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" type="image/png">
+      <img src="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" height="64" alt="Asterdoc logo">
+    </picture>
+  </a>
+  <br />
+</p>
+
+<h1 align="center">@asterdoc/render</h1>
+
+<div align="center">
+
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=render)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/asterdoc)
+
+</div>
 
 Dependency-light text, PDF, and DOCX rendering for Asterdoc. It works in modern
 browsers and on the server. Forms use the MIME-selected renderer automatically

@@ -6,6 +6,13 @@
 
 <h1 align="center">@asterdoc/cli</h1>
 
+<div align="center">
+
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=cli)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/asterdoc)
+
+</div>
+
 Asterdoc treats documents as structured, machine-readable artifacts. The CLI initializes projects, manages artifacts and registries, validates data, and runs local document workflows.
 
 ## Installation

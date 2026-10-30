@@ -1,4 +1,21 @@
-# @asterdoc/ai-sdk
+<p align="center">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=ai-sdk" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" type="image/png">
+      <img src="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" height="64" alt="Asterdoc logo">
+    </picture>
+  </a>
+  <br />
+</p>
+
+<h1 align="center">@asterdoc/ai-sdk</h1>
+
+<div align="center">
+
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=ai-sdk)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/asterdoc)
+
+</div>
 
 Native [AI SDK 7](https://ai-sdk.dev/) tools for Asterdoc document workflows. The adapter consumes the canonical schemas, descriptions, result contracts, and execution functions from `@asterdoc/ai-tools`.
 

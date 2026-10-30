@@ -1,4 +1,21 @@
-# @asterdoc/react
+<p align="center">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=react" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" type="image/png">
+      <img src="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" height="64" alt="Asterdoc logo">
+    </picture>
+  </a>
+  <br />
+</p>
+
+<h1 align="center">@asterdoc/react</h1>
+
+<div align="center">
+
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=react)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/asterdoc)
+
+</div>
 
 Headless React bindings for Asterdoc artifacts, document settings, pagination, signing, and packet previews. The package supplies maintained behavior without choosing visible markup or shipping a stylesheet.
 

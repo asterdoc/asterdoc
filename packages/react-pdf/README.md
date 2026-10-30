@@ -1,4 +1,21 @@
-# @asterdoc/react-pdf
+<p align="center">
+  <a href="https://asterdoc.com?utm_source=github&utm_medium=react-pdf" target="_blank" rel="noopener noreferrer">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" type="image/png">
+      <img src="https://assets.asterdoc.com/asterdoc-logo-400x400-dark.png" height="64" alt="Asterdoc logo">
+    </picture>
+  </a>
+  <br />
+</p>
+
+<h1 align="center">@asterdoc/react-pdf</h1>
+
+<div align="center">
+
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=react-pdf)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/asterdoc)
+
+</div>
 
 Explicit Node integration for rendering `@asterdoc/react` compositions to PDF and checking them before rendering. The default entry installs Takumi. Install the optional `puppeteer` and `tailwindcss` peers only when using `@asterdoc/react-pdf/chromium`.
 

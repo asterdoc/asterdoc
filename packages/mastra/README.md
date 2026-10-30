@@ -6,6 +6,13 @@
 
 <h1 align="center">@asterdoc/mastra</h1>
 
+<div align="center">
+
+[![Asterdoc documentation](https://img.shields.io/badge/Documentation-Asterdoc-red.svg)](https://docs.asterdoc.com?utm_source=github&utm_medium=mastra)
+[![Follow on Twitter](https://img.shields.io/twitter/follow/asterdoc?style=social)](https://x.com/asterdoc)
+
+</div>
+
 [Asterdoc](https://asterdoc.com) is documents as code. This package exposes the shared Asterdoc document operations as native [Mastra](https://mastra.ai) tools.
 
 ## Installation
