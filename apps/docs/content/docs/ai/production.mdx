@@ -81,4 +81,4 @@ In your own code, check `error.code` before you use a result:
 
 ## Publish artifacts on the current schema
 
-An artifact that the tools load from a registry or a URL must declare the current schema version in `$schema`. When you upgrade the Asterdoc packages, run [`asterdoc migrate`](/cli/commands/migrate) on your artifacts and publish them again. See [loading rules](/schemas#loading-rules).
+An artifact that the tools load from a registry or a URL must declare the current schema version in `$schema`. When you upgrade the Asterdoc packages, run [`asterdoc migrate`](/cli/commands/migrate) on your artifacts and publish them again. See [loading rules](/schemas#loading-rules). An artifact written for Paradoc also needs `--from`; the [version history](/schemas#version-history) names its version.

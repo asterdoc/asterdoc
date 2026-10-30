@@ -4,6 +4,58 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-29
+
+Paradoc is now Asterdoc. 0.9 renames the packages, the CLI, the project files and the hosts, and starts a new schema history at `2026-10-28`. The artifact format is the same as in Paradoc 0.8.
+
+### Highlights
+
+- The packages are `@asterdoc/*`. The CLI is `@asterdoc/cli`, or the `asterdoc` package, and the command is `asterdoc`.
+- Schemas are at `https://schema.asterdoc.com`. The current version, `2026-10-28`, has the same shape as Paradoc's `2026-10-02`.
+- Hosts move from `*.paradoc.dev` to `*.asterdoc.com`. The documentation is at `docs.asterdoc.com` and the public registry is at `public.asterdoc.com`.
+- The source is at `github.com/asterdoc/asterdoc`.
+
+### Breaking changes
+
+#### All packages
+
+- Each `@paradoc/*` package is now the `@asterdoc/*` package with the same name. The `@paradoc/*` packages get no more releases.
+
+#### Schemas
+
+- The schema host is `schema.asterdoc.com`, and `SCHEMA_VERSIONS` starts again at `2026-10-28`. The Paradoc versions and their migration steps are removed, so a `schema.paradoc.dev` address reads as `unknown-version`.
+- A signature `timestamp` and a lock file `installedAt` must include seconds.
+
+#### CLI
+
+- The command is `asterdoc`, from `@asterdoc/cli` or the `asterdoc` package. It replaces `paradoc` from `@paradoc/cli` or `paradoc-cli`.
+- A project uses `asterdoc.json` and `.asterdoc/`, and user settings are in `~/.asterdoc/config.json`.
+- Environment variables start with `ASTERDOC_` in place of `PARADOC_`: `ASTERDOC_SCHEMA_URL`, `ASTERDOC_NAMESPACE`, `ASTERDOC_NO_UPDATE_CHECK`, `ASTERDOC_TELEMETRY_DISABLED`, `ASTERDOC_TELEMETRY_URL` and `ASTERDOC_TELEMETRY_DEBUG`.
+
+#### React
+
+- The document root has the class `asterdoc-document` in place of `paradoc-document`.
+
+#### Agent skills
+
+- The skills are `asterdoc` and `asterdoc-react`, from `github.com/asterdoc/asterdoc`.
+
+### Upgrading from 0.8
+
+1. Replace each `@paradoc/*` dependency with the `@asterdoc/*` package of the same name at `0.9.0`, and change the imports.
+2. Remove `paradoc-cli` or `@paradoc/cli`, and install the CLI with `npm install -g asterdoc`.
+3. In each project, rename `paradoc.json` to `asterdoc.json` and `.paradoc/` to `.asterdoc/`. Move `~/.paradoc/config.json` to `~/.asterdoc/config.json`.
+4. Rename each `PARADOC_*` environment variable to `ASTERDOC_*`.
+5. If an artifact is older than Paradoc's `2026-10-02`, bring it to `2026-10-02` with `paradoc migrate` from Paradoc 0.8. Then run `asterdoc migrate <files> --from 2026-10-28`. It changes only `$schema`, to `https://schema.asterdoc.com/2026-10-28.json`.
+6. Change registry URLs and links from `*.paradoc.dev` to `*.asterdoc.com`, and publish your hosted artifacts again after step 5.
+7. Install the agent skills again from `github.com/asterdoc/asterdoc`.
+
+### Other changes
+
+#### CLI
+
+- `undici` and `vite` move to patched releases.
+
 ## [0.8.0] - 2026-10-19
 
 Paradoc 0.8 gives registries editions and versions. A registry manifest now lists every release of an artifact with its checksum, and the CLI and AI tools can ask for one edition or version.
