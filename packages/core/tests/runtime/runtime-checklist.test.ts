@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { p, ChecklistValidationError, DraftChecklist, type InferChecklistPayload } from '@/index'
+import { a, ChecklistValidationError, DraftChecklist, type InferChecklistPayload } from '@/index'
 
 describe('DraftChecklist', () => {
   // ============================================================================
@@ -7,7 +7,7 @@ describe('DraftChecklist', () => {
   // ============================================================================
 
   const createBooleanChecklist = () =>
-    p.checklist({
+    a.checklist({
       name: 'boolean-checklist',
       version: '1.0.0',
       title: 'Boolean Checklist',
@@ -19,7 +19,7 @@ describe('DraftChecklist', () => {
     })
 
   const createEnumChecklist = () =>
-    p.checklist({
+    a.checklist({
       name: 'enum-checklist',
       version: '1.0.0',
       title: 'Enum Checklist',
@@ -40,7 +40,7 @@ describe('DraftChecklist', () => {
     })
 
   const createMixedChecklist = () =>
-    p.checklist({
+    a.checklist({
       name: 'mixed-checklist',
       version: '1.0.0',
       title: 'Mixed Checklist',
@@ -288,7 +288,7 @@ describe('DraftChecklist', () => {
 
   describe('InferChecklistPayload type', () => {
     test('infers correct type for boolean checklist', () => {
-      const checklist = p.checklist({
+      const checklist = a.checklist({
         name: 'typed-checklist',
         items: [
           { id: 'task1', title: 'Task 1', status: { kind: 'boolean' as const } },
@@ -306,7 +306,7 @@ describe('DraftChecklist', () => {
     })
 
     test('infers correct type for enum checklist', () => {
-      const checklist = p.checklist({
+      const checklist = a.checklist({
         name: 'typed-enum-checklist',
         items: [
           {
@@ -335,7 +335,7 @@ describe('DraftChecklist', () => {
 
   describe('progressive lifecycle', () => {
     const createLifecycleChecklist = () =>
-      p.checklist({
+      a.checklist({
         name: 'lifecycle-checklist',
         items: [
           { id: 'reviewed', title: 'Reviewed', status: { kind: 'boolean', default: false } },

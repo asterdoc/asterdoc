@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 import { createLayerRenderer } from '@asterdoc/render'
 import { createFsResolver } from '@asterdoc/resolvers/fs'
 
@@ -22,7 +22,7 @@ describe('Text Layers Guide', () => {
 
   const resolver = createFsResolver({ root: fixturesRoot })
 
-  const leaseAgreement = p.form({
+  const leaseAgreement = a.form({
     name: 'lease-agreement',
     title: 'Residential Lease Agreement',
     fields: {

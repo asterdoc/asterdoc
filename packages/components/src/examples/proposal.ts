@@ -25,7 +25,7 @@
  * out by the caller with `computeLineAmounts`.
  */
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import type { Form } from "@asterdoc/types";
 
 /** The layer that names the composition, and the layer the seal targets. */
@@ -312,7 +312,7 @@ export const proposalSpec = {
 } as const;
 
 /** The parsed, validated proposal form. */
-export const proposal = p.form(proposalSpec);
+export const proposal = a.form(proposalSpec);
 
 /**
  * The same validated artifact as a plain `Form`. Everything that renders or

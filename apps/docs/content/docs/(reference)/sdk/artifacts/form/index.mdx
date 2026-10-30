@@ -11,7 +11,7 @@ Create Form artifacts for interactive forms with fields, signing parties, and do
 
 ```ts
 // Object pattern
-const form = p.form({
+const form = a.form({
   name: 'lease-agreement',
   version: '1.0.0',
   title: 'Residential Lease Agreement',
@@ -34,7 +34,7 @@ const form = p.form({
 })
 
 // Builder pattern
-const form = p.form()
+const form = a.form()
   .name('lease-agreement')
   .version('1.0.0')
   .title('Residential Lease Agreement')
@@ -55,7 +55,7 @@ const form = p.form()
 
 ```ts
 // Inline instructions
-const form = p.form({
+const form = a.form({
   name: 'w9-form',
   instructions: { kind: 'inline', text: 'See IRS instructions for Form W-9...' },
   agentInstructions: { kind: 'inline', text: 'Present fields in this order: name, TIN, address.' },
@@ -63,7 +63,7 @@ const form = p.form({
 })
 
 // File-backed instructions (builder pattern)
-const form = p.form()
+const form = a.form()
   .name('w9-form')
   .instructions({ kind: 'file', path: './w9-instructions.md', mimeType: 'text/markdown' })
   .agentInstructions({ kind: 'inline', text: 'Present fields in this order: name, TIN, address.' })
@@ -74,10 +74,10 @@ const form = p.form()
 
 ```ts
 // Parse and validate unknown input (throws on error)
-const form = p.form.from(jsonData)
+const form = a.form.from(jsonData)
 
 // Safe parsing (returns result object)
-const result = p.form.safeFrom(jsonData)
+const result = a.form.safeFrom(jsonData)
 if (result.success) {
   const form = result.data
 }
@@ -131,7 +131,7 @@ const output = await executed.render()
 ### Object Pattern
 
 ```ts
-p.form(input: FormInput, options?: ArtifactInstanceOptions): FormInstance
+a.form(input: FormInput, options?: ArtifactInstanceOptions): FormInstance
 ```
 
 `options.resolver` reads the bytes of any file-backed layer this form
@@ -210,7 +210,7 @@ Returns a `FormInstance` with the following properties and methods:
 Chain methods to build a form incrementally:
 
 <MethodChain
-  starter="p.form()"
+  starter="a.form()"
   methods={[
     { name: 'from', params: 'value: Form', description: 'Initialize from an existing form definition, keeping every definition key' },
     { name: 'name', params: 'value: string', description: 'Set form name (required)' },

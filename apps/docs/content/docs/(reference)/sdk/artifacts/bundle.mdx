@@ -10,7 +10,7 @@ Create Bundle artifacts to group multiple documents, forms, and checklists into 
 ### Creating a bundle
 
 ```ts
-const lease = p.form({
+const lease = a.form({
   name: 'lease',
   fields: {
     pets: { type: 'list', item: { type: 'text' } },
@@ -18,10 +18,10 @@ const lease = p.form({
   },
 })
 
-const disclosureDoc = p.document({ name: 'disclosure' })
+const disclosureDoc = a.document({ name: 'disclosure' })
 
 // Object pattern
-const bundle = p.bundle({
+const bundle = a.bundle({
   name: 'lease-package',
   version: '1.0.0',
   title: 'Residential Lease Package',
@@ -34,7 +34,7 @@ const bundle = p.bundle({
 })
 
 // Builder pattern
-const bundle = p.bundle()
+const bundle = a.bundle()
   .name('lease-package')
   .version('1.0.0')
   .title('Residential Lease Package')
@@ -49,10 +49,10 @@ const bundle = p.bundle()
 
 ```ts
 // Parse and validate unknown input (throws on error)
-const bundle = p.bundle.from(jsonData)
+const bundle = a.bundle.from(jsonData)
 
 // Safe parsing (returns result object)
-const result = p.bundle.safeFrom(jsonData)
+const result = a.bundle.safeFrom(jsonData)
 if (result.success) {
   const bundle = result.data
 }
@@ -90,7 +90,7 @@ for (const [key, output] of Object.entries(assembled.outputs)) {
 ### Object Pattern
 
 ```ts
-p.bundle(input: BundleInput): BundleInstance
+a.bundle(input: BundleInput): BundleInstance
 ```
 
 #### Parameters
@@ -144,7 +144,7 @@ Returns a `BundleInstance` with the following properties and methods:
 Chain methods to build a bundle incrementally:
 
 <MethodChain
-  starter="p.bundle()"
+  starter="a.bundle()"
   methods={[
     { name: 'name', params: 'value: string', description: 'Set bundle name (required)' },
     { name: 'version', params: 'value: string', description: 'Set semantic version' },
@@ -195,7 +195,7 @@ Use builder methods to add content:
 .path('addendum', './pet-addendum.yaml', 'hasPets')
 
 // Inline - embedded artifacts
-.inline('disclosure', p.document({...}))
+.inline('disclosure', a.document({...}))
 ```
 
 ### Content Item Types
@@ -251,7 +251,7 @@ A two-segment value such as `@acme/disclosure` throws.
 All item types support conditional inclusion using defs. Item keys start with a letter and contain only letters, digits, `_`, and `-`:
 
 ```ts
-const bundle = p.bundle()
+const bundle = a.bundle()
   .name('lease-package')
   // Define typed computed values
   .def('hasPets', 'forms.lease.fields.pets.length > 0')

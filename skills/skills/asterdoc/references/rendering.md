@@ -25,11 +25,11 @@ Bind a resolver when you construct the form, fill it, and render a layer. The bu
 
 ```typescript
 import { readFile, writeFile } from "node:fs/promises";
-import { p } from "@asterdoc/sdk";
+import { a } from "@asterdoc/sdk";
 import { createFsResolver } from "@asterdoc/resolvers/fs";
 
 const schema = JSON.parse(await readFile("lease.json", "utf8"));
-const form = p.form(schema, { resolver: createFsResolver({ root: "." }) });
+const form = a.form(schema, { resolver: createFsResolver({ root: "." }) });
 
 const draft = form.fill({
   fields: { tenantName: "Ada Lovelace", monthlyRent: { amount: 1500, currency: "USD" } },
@@ -42,7 +42,7 @@ await writeFile("lease.pdf", pdf);
 
 - Text layers return a `string`. PDF, DOCX and React layers return a `Uint8Array`.
 - The resolver root is the artifact file's directory. Layer paths resolve inside it.
-- Every instance derived from the form (each `fill`, each `update`) carries the resolver. Bind it the same way with `p.load(content, { resolver })`, `p.document(def, { resolver })`, `p.checklist(def, { resolver })` or a builder's `.build({ resolver })`.
+- Every instance derived from the form (each `fill`, each `update`) carries the resolver. Bind it the same way with `a.load(content, { resolver })`, `a.document(def, { resolver })`, `a.checklist(def, { resolver })` or a builder's `.build({ resolver })`.
 - Inline layers need no resolver.
 - A draft renders before every required field is filled. `progressive` sets how missing values print.
 

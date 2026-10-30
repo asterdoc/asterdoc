@@ -20,9 +20,9 @@ Every part must reach PDF. A form with a React layer does, through the renderer 
 Start from the agreement in the [React Layers](/guides/react-layers) guide. The statement of work follows the same pattern:
 
 ```ts title="documents/statement-of-work.ts"
-import { p } from '@asterdoc/core'
+import { a } from '@asterdoc/core'
 
-export const statementOfWork = p
+export const statementOfWork = a
   .form()
   .name('statement-of-work')
   .version('1.0.0')
@@ -67,11 +67,11 @@ export default function StatementOfWorkDocument({ artifact, data }: ReactLayerCo
 The bundle names the parts and their order. Each content key is how the rest of the packet refers to that part.
 
 ```ts title="documents/onboarding.ts"
-import { p } from '@asterdoc/core'
+import { a } from '@asterdoc/core'
 import { agreement } from './agreement'
 import { statementOfWork } from './statement-of-work'
 
-export const onboarding = p.bundle({
+export const onboarding = a.bundle({
   name: 'client-onboarding',
   version: '1.0.0',
   title: 'Client Onboarding',

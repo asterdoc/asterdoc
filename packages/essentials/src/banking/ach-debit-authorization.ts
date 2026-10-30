@@ -1,7 +1,7 @@
 // Generated from Asterdoc's forms library (Fab release b97ac294-b040-47cb-abc4-37b4c9f6eb9a). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
@@ -850,7 +850,7 @@ const resolver = createMemoryResolver({ contents });
  *
  * Authorization by which a payer (consumer or business) authorizes a named originator to initiate ACH debit entries against a deposit account at a named financial institution. Supports one-time and recurring debits, fixed or variable amounts, and is governed by NACHA Operating Rules and (for consumers) Regulation E.
  */
-export const achDebitAuthorization = Object.assign(p.form(schema, { resolver }), {
+export const achDebitAuthorization = Object.assign(a.form(schema, { resolver }), {
   /** The raw form spec, exactly as released. */
   spec: schema,
 });

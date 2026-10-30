@@ -62,7 +62,7 @@ export {
   resolveLayerKey,
   UnboundResolverError,
   // Unified namespace
-  p,
+  a,
 } from "./artifacts";
 
 export type {

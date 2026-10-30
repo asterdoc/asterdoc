@@ -11,13 +11,13 @@ Validate rating values. The Rating primitive ensures numeric values represent va
 
 ```ts
 // Direct validation (defaults: min=1, max=5, step=1)
-const rating = p.rating(4)
+const rating = a.rating(4)
 
 // Parse with options for half-star ratings
-const rating = p.rating.parse(input, { min: 1, max: 5, step: 0.5 })
+const rating = a.rating.parse(input, { min: 1, max: 5, step: 0.5 })
 
 // Check validity without throwing
-if (p.rating.isValid(4)) {
+if (a.rating.isValid(4)) {
   console.log('Valid rating')
 }
 ```
@@ -26,10 +26,10 @@ if (p.rating.isValid(4)) {
 
 ```ts
 // Parse unknown input (throws on error)
-const rating = p.rating.parse(userInput)
+const rating = a.rating.parse(userInput)
 
 // Safe parsing (returns result object)
-const result = p.rating.safeParse(userInput)
+const result = a.rating.safeParse(userInput)
 if (result.success) {
   console.log(`Rating: ${result.data} stars`)
 } else {
@@ -37,7 +37,7 @@ if (result.success) {
 }
 
 // Parse with constraints
-const rating = p.rating.parse(userInput, {
+const rating = a.rating.parse(userInput, {
   min: 1,
   max: 5,
   step: 0.5  // Only allow 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
@@ -47,7 +47,7 @@ const rating = p.rating.parse(userInput, {
 ### Using with forms
 
 ```ts
-const form = p.form({
+const form = a.form({
   name: 'review',
   fields: {
     overallRating: { type: 'rating', label: 'Overall Rating', min: 1, max: 5 },
@@ -57,8 +57,8 @@ const form = p.form({
 
 const filled = form.fill({
   fields: {
-    overallRating: p.rating(4),
-    serviceRating: p.rating.parse(8, { min: 1, max: 10 })
+    overallRating: a.rating(4),
+    serviceRating: a.rating.parse(8, { min: 1, max: 10 })
   }
 })
 ```
@@ -68,13 +68,13 @@ const filled = form.fill({
 ### Direct Call
 
 ```ts
-p.rating(input: number): number
+a.rating(input: number): number
 ```
 
 Pass a number for validation. Returns the validated number or throws on error.
 
 ```ts
-const rating = p.rating(4)
+const rating = a.rating(4)
 ```
 
 ### Static Methods
@@ -99,16 +99,16 @@ When a `step` is specified, ratings must align to the step value:
 
 ```ts
 // Step of 1 (whole stars only)
-p.rating.parse(4, { step: 1 })      // Valid: 4
-p.rating.parse(4.5, { step: 1 })    // Throws: not aligned
+a.rating.parse(4, { step: 1 })      // Valid: 4
+a.rating.parse(4.5, { step: 1 })    // Throws: not aligned
 
 // Step of 0.5 (half stars)
-p.rating.parse(4, { step: 0.5 })    // Valid: 4
-p.rating.parse(4.5, { step: 0.5 })  // Valid: 4.5
-p.rating.parse(4.3, { step: 0.5 })  // Throws: not aligned
+a.rating.parse(4, { step: 0.5 })    // Valid: 4
+a.rating.parse(4.5, { step: 0.5 })  // Valid: 4.5
+a.rating.parse(4.3, { step: 0.5 })  // Throws: not aligned
 
 // Step of 0.1 (tenths)
-p.rating.parse(4.7, { step: 0.1 })  // Valid: 4.7
+a.rating.parse(4.7, { step: 0.1 })  // Valid: 4.7
 ```
 
 ## Common Rating Scales
@@ -130,22 +130,22 @@ The Rating primitive validates:
 
 ```ts
 // Valid with defaults (min=1, max=5, step=1)
-p.rating(1)
-p.rating(3)
-p.rating(5)
+a.rating(1)
+a.rating(3)
+a.rating(5)
 
 // With custom options
-p.rating.parse(4.5, { min: 1, max: 5, step: 0.5 }) // Valid: half-stars enabled
-p.rating.parse(0, { min: 0, max: 5 })              // Valid: custom min
+a.rating.parse(4.5, { min: 1, max: 5, step: 0.5 }) // Valid: half-stars enabled
+a.rating.parse(0, { min: 0, max: 5 })              // Valid: custom min
 
 // Invalid with defaults - throws Error
-p.rating(0)
+a.rating(0)
 
-p.rating(4.5)
+a.rating(4.5)
 
-p.rating(NaN)
+a.rating(NaN)
 
-p.rating.parse(6, { min: 1, max: 5 })
+a.rating.parse(6, { min: 1, max: 5 })
 ```
 
 ## Related

@@ -1,7 +1,7 @@
 // Generated from Asterdoc's forms library (Fab release e8fbba02-ef4e-42d0-981f-f9228f846a24). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
@@ -1697,7 +1697,7 @@ const resolver = createMemoryResolver({ contents });
  *
  * Used by U.S. employers to verify the identity and employment authorization of every new hire. Section 1 captures the employee's self-attestation of citizenship or immigration status; Section 2 captures the employer's certification that they physically examined acceptable List A or List B+C documents.
  */
-export const i9 = Object.assign(p.form(schema, { resolver }), {
+export const i9 = Object.assign(a.form(schema, { resolver }), {
   /** The raw form spec, exactly as released. */
   spec: schema,
 });

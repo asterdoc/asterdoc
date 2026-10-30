@@ -2,7 +2,7 @@
  * Tests for code snippets in concepts/forms.mdx (Anatomy of a Form)
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 
 describe('Forms Concept', () => {
   // ============================================================================
@@ -10,7 +10,7 @@ describe('Forms Concept', () => {
   // ============================================================================
 
   describe('fields', () => {
-    const form = p
+    const form = a
       .form()
       .name('application')
       .fields({
@@ -32,7 +32,7 @@ describe('Forms Concept', () => {
   // ============================================================================
 
   describe('primitives', () => {
-    const form = p
+    const form = a
       .form()
       .name('primitives-example')
       .fields({
@@ -54,12 +54,12 @@ describe('Forms Concept', () => {
   // ============================================================================
 
   describe('parties', () => {
-    const form = p
+    const form = a
       .form()
       .name('lease')
       .parties({
-        landlord: p.party().label('Landlord'),
-        tenant: p.party().label('Tenant').max(4),
+        landlord: a.party().label('Landlord'),
+        tenant: a.party().label('Tenant').max(4),
       })
       .build()
 
@@ -74,12 +74,12 @@ describe('Forms Concept', () => {
   // ============================================================================
 
   describe('signatures', () => {
-    const form = p
+    const form = a
       .form()
       .name('purchase')
       .parties({
-        buyer: p.party().label('Buyer').signature({ required: true, witnesses: 1 }),
-        seller: p.party().label('Seller').signature({ required: true }),
+        buyer: a.party().label('Buyer').signature({ required: true, witnesses: 1 }),
+        seller: a.party().label('Seller').signature({ required: true }),
       })
       .build()
 
@@ -95,12 +95,12 @@ describe('Forms Concept', () => {
   // ============================================================================
 
   describe('annexes', () => {
-    const form = p
+    const form = a
       .form()
       .name('lease-application')
       .annexes({
-        photoId: p.annex().title('Photo ID').required(true),
-        proofOfIncome: p.annex().title('Proof of Income').required(true),
+        photoId: a.annex().title('Photo ID').required(true),
+        proofOfIncome: a.annex().title('Proof of Income').required(true),
       })
       .build()
 

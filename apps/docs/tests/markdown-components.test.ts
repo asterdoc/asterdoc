@@ -98,7 +98,7 @@ describe("docs components as Markdown", () => {
 
     const chain = render(
       jsx("MethodChain", [
-        string("starter", "p.form()"),
+        string("starter", "a.form()"),
         expression("methods", [
           { name: "name", params: "value: string", description: "Set the name" },
           { name: "build", params: "", description: "Build it", terminal: true },
@@ -106,7 +106,7 @@ describe("docs components as Markdown", () => {
         expression("returns", { intermediate: "FormBuilder", terminal: "Form" }),
       ]),
     );
-    expect(chain).toContain("Start with `p.form()`. Each method returns `FormBuilder` and can be chained.");
+    expect(chain).toContain("Start with `a.form()`. Each method returns `FormBuilder` and can be chained.");
     expect(chain).toContain("| `name(value: string)` | Set the name |");
     expect(chain).toContain("Terminal methods return `Form`.");
     expect(chain).toContain("| `build()` | Build it |");

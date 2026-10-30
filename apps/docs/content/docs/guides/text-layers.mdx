@@ -188,12 +188,12 @@ file-backed, so bind a resolver when you construct the form — every instance
 you derive from `leaseAgreement` later carries the same resolver.
 
 ```ts
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: '.' })
 
-const leaseAgreement = p.form({
+const leaseAgreement = a.form({
   name: 'lease-agreement',
   title: 'Residential Lease Agreement',
   fields: {

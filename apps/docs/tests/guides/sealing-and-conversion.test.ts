@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test, vi } from 'vitest'
-import { p } from '@asterdoc/core'
+import { a } from '@asterdoc/core'
 import { hostedSealAdapter } from '@asterdoc/sdk'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -11,7 +11,7 @@ const canonicalPdf = readFileSync(path.resolve(__dirname, '../fixtures/pdfs/w9.p
 
 describe('Sealing and Conversion Guide', () => {
   test('seals a PDF layer locally without an adapter', async () => {
-    const form = p.form(
+    const form = a.form(
       {
         name: 'local-pdf',
         fields: {},
@@ -57,7 +57,7 @@ describe('Sealing and Conversion Guide', () => {
         },
       })
     })
-    const form = p.form({
+    const form = a.form({
       name: 'hosted-markdown',
       fields: { name: { type: 'text', required: true } },
       parties: { signer: { label: 'Signer', partyType: 'person', signature: { required: true } } },

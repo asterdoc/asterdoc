@@ -2,7 +2,7 @@
  * Tests for code snippets in guides/documents.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p, UnboundResolverError } from '@asterdoc/core'
+import { a, UnboundResolverError } from '@asterdoc/core'
 
 describe('Documents Guide', () => {
   // ============================================================================
@@ -10,7 +10,7 @@ describe('Documents Guide', () => {
   // ============================================================================
 
   describe('object pattern', () => {
-    const privacyPolicy = p.document({
+    const privacyPolicy = a.document({
       name: 'privacy-policy',
       version: '1.0.0',
       title: 'Privacy Policy',
@@ -33,7 +33,7 @@ describe('Documents Guide', () => {
   // ============================================================================
 
   describe('builder pattern', () => {
-    const privacyPolicy = p
+    const privacyPolicy = a
       .document()
       .name('privacy-policy')
       .version('1.0.0')
@@ -55,7 +55,7 @@ describe('Documents Guide', () => {
   // ============================================================================
 
   describe('document with inline layers', () => {
-    const privacyPolicy = p.document({
+    const privacyPolicy = a.document({
       name: 'privacy-policy',
       version: '1.0.0',
       title: 'Privacy Policy',
@@ -133,7 +133,7 @@ Your data is used to provide and improve our services.
       },
     }
 
-    const privacyPolicy = p.document(
+    const privacyPolicy = a.document(
       {
         name: 'privacy-policy',
         version: '1.0.0',
@@ -162,7 +162,7 @@ Your data is used to provide and improve our services.
     })
 
     test('throws UnboundResolverError when no resolver is bound', async () => {
-      const unbound = p.document({
+      const unbound = a.document({
         name: 'privacy-policy',
         version: '1.0.0',
         title: 'Privacy Policy',
@@ -179,7 +179,7 @@ Your data is used to provide and improve our services.
   // ============================================================================
 
   describe('serialization', () => {
-    const privacyPolicy = p.document({
+    const privacyPolicy = a.document({
       name: 'privacy-policy',
       version: '1.0.0',
       title: 'Privacy Policy',
@@ -209,14 +209,14 @@ Your data is used to provide and improve our services.
 
     test('round-trips through JSON', () => {
       const jsonStr = JSON.stringify(privacyPolicy.toJSON())
-      const loaded = p.load(jsonStr)
+      const loaded = a.load(jsonStr)
       expect(loaded.kind).toBe('document')
       expect(loaded.name).toBe('privacy-policy')
     })
 
     test('round-trips through YAML', () => {
       const yaml = privacyPolicy.toYAML()
-      const loaded = p.load(yaml)
+      const loaded = a.load(yaml)
       expect(loaded.kind).toBe('document')
       expect(loaded.name).toBe('privacy-policy')
     })

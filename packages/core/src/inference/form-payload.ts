@@ -319,7 +319,7 @@ export type InferFormData<Form> = [Form] extends [never]
  *
  * @example
  * ```typescript
- * const myForm = p.form({
+ * const myForm = a.form({
  *   kind: 'form',
  *   name: 'example',
  *   version: '1.0.0',

@@ -394,17 +394,17 @@ Fields render in definition order: identity, contact, domain data, conditional f
 
 ## SDK
 
-The builder chain takes field builders, plain objects, or a mix, and validates each field at `build()`. `p.form({ ... })` takes plain objects only ([sdk.md § Define an artifact](./sdk.md#define-an-artifact)).
+The builder chain takes field builders, plain objects, or a mix, and validates each field at `build()`. `a.form({ ... })` takes plain objects only ([sdk.md § Define an artifact](./sdk.md#define-an-artifact)).
 
 ```typescript
-import { p } from "@asterdoc/sdk";
+import { a } from "@asterdoc/sdk";
 
-const builtForm = p
+const builtForm = a
   .form()
   .name("intake")
   .fields({
-    fullName: p.field.text().label("Full name").required().maxLength(100),
-    status: p.field.enum().options([{ value: "new" }, { value: "returning" }]),
+    fullName: a.field.text().label("Full name").required().maxLength(100),
+    status: a.field.enum().options([{ value: "new" }, { value: "returning" }]),
     deposit: { type: "money", currency: "USD" },
   })
   .build();
@@ -412,7 +412,7 @@ const builtForm = p
 
 ### Field builder methods
 
-`p.field.<type>()` exists for all 24 types. Every builder has `.label()`, `.description()`, `.required(cond = true)`, `.visible(cond = true)` and `.build()`. Every type except `fieldset` and `list` has `.default(value)`. The type-specific methods mirror the properties above:
+`a.field.<type>()` exists for all 24 types. Every builder has `.label()`, `.description()`, `.required(cond = true)`, `.visible(cond = true)` and `.build()`. Every type except `fieldset` and `list` has `.default(value)`. The type-specific methods mirror the properties above:
 
 <!-- dep:C6 -->
 | Builder | Methods |

@@ -30,7 +30,7 @@
  * it renders bare so a caller who puts it inside a packet supplies the bundle.
  */
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import type { Form } from "@asterdoc/types";
 
 import type { DocumentTokensInput } from "@asterdoc/react";
@@ -322,7 +322,7 @@ export const invoiceSpec = {
 } as const;
 
 /** The parsed, validated invoice form. */
-export const invoice = p.form(invoiceSpec);
+export const invoice = a.form(invoiceSpec);
 
 /**
  * The same validated artifact as a plain `Form`. Everything that renders or

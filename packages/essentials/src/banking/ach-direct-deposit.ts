@@ -1,7 +1,7 @@
 // Generated from Asterdoc's forms library (Fab release 9e4c3ddc-3390-4ceb-a443-be167cf7dc19). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
@@ -864,7 +864,7 @@ const resolver = createMemoryResolver({ contents });
  *
  * Authorization by which an employee authorizes their employer (directly or through a payroll service provider) to deposit net pay—in whole or split across up to four deposit accounts—via ACH credit entries to the named depository institution(s). Governed by NACHA Operating Rules and (for non-exempt employee protections) FLSA and state wage law.
  */
-export const achDirectDeposit = Object.assign(p.form(schema, { resolver }), {
+export const achDirectDeposit = Object.assign(a.form(schema, { resolver }), {
   /** The raw form spec, exactly as released. */
   spec: schema,
 });

@@ -29,7 +29,7 @@ const happyPathInputs = {
 } as const;
 
 describe("ach-bank-account-info", () => {
-  it("loads via p.form()", () => {
+  it("loads via a.form()", () => {
     expect(achBankAccountInfo.isValid()).toBe(true);
   });
 

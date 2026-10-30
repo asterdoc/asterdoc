@@ -41,7 +41,7 @@ npm install @asterdoc/sdk @asterdoc/resolvers
 Define forms with parties, fields, and output layers:
 
 ```typescript
-import { p } from "@asterdoc/sdk";
+import { a } from "@asterdoc/sdk";
 import { createFsResolver } from "@asterdoc/resolvers/fs";
 
 // A file-backed layer's bytes come from a resolver, bound once when the form
@@ -49,7 +49,7 @@ import { createFsResolver } from "@asterdoc/resolvers/fs";
 // carries the same resolver.
 const resolver = createFsResolver({ root: process.cwd() });
 
-const leaseAgreement = p
+const leaseAgreement = a
   .form()
   .name("residential-lease-agreement")
   .version("1.0.0")
@@ -68,11 +68,11 @@ const leaseAgreement = p
     },
   })
   .parties({
-    landlord: p
+    landlord: a
       .party()
       .label("Landlord")
       .signature({ required: true }),
-    tenant: p
+    tenant: a
       .party()
       .label("Tenant")
       .min(1)
@@ -119,7 +119,7 @@ const html = await filledLease.render({
 Add file attachments and advanced field types:
 
 ```typescript
-const advancedLease = p
+const advancedLease = a
   .form()
   .name("commercial-lease")
   .version("1.0.0")
@@ -134,15 +134,15 @@ const advancedLease = p
   })
   .allowAdditionalAnnexes(true)
   .annexes({
-    photoId: p.annex().title("Photo ID").required(true),
-    proofOfIncome: p.annex().title("Proof of Income").required(true),
+    photoId: a.annex().title("Photo ID").required(true),
+    proofOfIncome: a.annex().title("Proof of Income").required(true),
   })
   .parties({
-    landlord: p
+    landlord: a
       .party()
       .label("Landlord")
       .signature({ required: true }),
-    tenant: p
+    tenant: a
       .party()
       .label("Tenant")
       .max(4)
@@ -169,7 +169,7 @@ const advancedLease = p
 Define static documents and workflow checklists:
 
 ```typescript
-const leadPaintDisclosure = p
+const leadPaintDisclosure = a
   .document()
   .name("lead-paint-disclosure")
   .version("1.0.0")
@@ -179,7 +179,7 @@ const leadPaintDisclosure = p
   .edition({ key: "2025-12", label: "Rev. December 2025", date: "2025-12" })
   .metadata({ agency: "EPA/HUD", cfr: "40 CFR 745" })
   .layers({
-    pdf: p
+    pdf: a
       .layer()
       .file()
       .path("fixtures/lead-paint-disclosure.pdf")
@@ -188,7 +188,7 @@ const leadPaintDisclosure = p
   .defaultLayer("pdf")
   .build();
 
-const leaseChecklist = p
+const leaseChecklist = a
   .checklist()
   .name("lease-application-checklist")
   .version("1.0.0")
@@ -217,7 +217,7 @@ const leaseChecklist = p
 Combine forms, documents, and checklists into a bundle:
 
 ```typescript
-const leaseBundle = p
+const leaseBundle = a
   .bundle()
   .name("residential-lease-bundle")
   .version("1.0.0")

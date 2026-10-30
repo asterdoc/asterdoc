@@ -1,4 +1,4 @@
-import { p, type Form, type InferFormData, type InferFormPayload, type NumberField } from '@/index'
+import { a, type Form, type InferFormData, type InferFormPayload, type NumberField } from '@/index'
 
 const f0: Form = {
   kind: 'form',
@@ -27,7 +27,7 @@ const f0: Form = {
 }
 console.log(f0)
 
-const f1 = p.form({
+const f1 = a.form({
   version: '1.0.0',
   name: 'pet-adoption',
   title: 'Pet Adoption Form',
@@ -62,7 +62,7 @@ const f1 = p.form({
 })
 console.log(f1)
 
-const f3 = p
+const f3 = a
   .form()
   .name('pet-adoption')
   .version('1.0.0')
@@ -71,7 +71,7 @@ const f3 = p
     isAdult: { type: 'boolean', value: 'fields.age >= 18' },
   })
   .fields({
-    age: p.field
+    age: a.field
       .number()
       .label('Age')
       .description('The age of the pet')

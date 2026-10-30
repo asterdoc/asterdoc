@@ -67,7 +67,7 @@ export {
 	annexBuilder,
 } from './builders'
 
-// Import builders for p namespace construction
+// Import builders for a namespace construction
 import {
 	field,
 	party,
@@ -194,16 +194,16 @@ export type {
 	BundleBuilderInterface,
 } from './bundle'
 
-// Import artifacts for p namespace
+// Import artifacts for a namespace
 import { form } from './form'
 import { document } from './document'
 import { checklist } from './checklist'
 import { bundle } from './bundle'
 
-// Import load from serialization for p namespace
+// Import load from serialization for a namespace
 import { load, safeLoad } from '../serialization'
 
-// Import primitives for p namespace top-level
+// Import primitives for a namespace top-level
 import {
 	address,
 	attachment,
@@ -225,38 +225,38 @@ import {
 } from '../primitives'
 
 /**
- * The `p` namespace provides a unified API for building Asterdoc artifacts.
+ * The `a` namespace provides a unified API for building Asterdoc artifacts.
  *
  * This is the recommended entry point. It exposes:
- * - Artifact builders: `p.form()`, `p.document()`, `p.checklist()`, `p.bundle()`
- * - Field builders: `p.field.*` (for composing fields in forms)
- * - Primitive parsers: `p.money(...)`, `p.percentage(...)`, etc. (for parsing/validating raw values)
- * - Loaders: `p.load()`, `p.safeLoad()` (for loading artifacts from JSON/YAML)
+ * - Artifact builders: `a.form()`, `a.document()`, `a.checklist()`, `a.bundle()`
+ * - Field builders: `a.field.*` (for composing fields in forms)
+ * - Primitive parsers: `a.money(...)`, `a.percentage(...)`, etc. (for parsing/validating raw values)
+ * - Loaders: `a.load()`, `a.safeLoad()` (for loading artifacts from JSON/YAML)
  *
  * @example Build a form
  * ```ts
- * import { p } from '@asterdoc/core';
+ * import { a } from '@asterdoc/core';
  *
- * const leaseForm = p.form()
+ * const leaseForm = a.form()
  *   .name('lease-agreement')
  *   .parties({
- *     landlord: p.party().label('Landlord').signature({ required: true }),
- *     tenant: p.party().label('Tenant').signature({ required: true }),
+ *     landlord: a.party().label('Landlord').signature({ required: true }),
+ *     tenant: a.party().label('Tenant').signature({ required: true }),
  *   })
  *   .fields({
- *     address: p.field.address().label('Property Address').required(),
- *     monthlyRent: p.field.money().label('Monthly Rent').required(),
+ *     address: a.field.address().label('Property Address').required(),
+ *     monthlyRent: a.field.money().label('Monthly Rent').required(),
  *   })
  *   .build();
  * ```
  *
  * @example Parse primitives directly
  * ```ts
- * const pct = p.percentage(75.5);
- * const amount = p.money.parse(userInput);
+ * const pct = a.percentage(75.5);
+ * const amount = a.money.parse(userInput);
  * ```
  */
-export const p = {
+export const a = {
 	// Artifacts
 	form,
 	document,
@@ -299,4 +299,4 @@ export const p = {
 	time,
 } as const
 
-export type Asterdoc = typeof p
+export type Asterdoc = typeof a

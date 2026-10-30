@@ -39,7 +39,7 @@ const happyPathInputs = {
 } as const;
 
 describe("4506-t", () => {
-  it("loads via p.form()", () => {
+  it("loads via a.form()", () => {
     expect(f4506T.isValid()).toBe(true);
   });
 

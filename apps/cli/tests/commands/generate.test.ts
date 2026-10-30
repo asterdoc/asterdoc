@@ -183,8 +183,8 @@ title: My Document
       const tsContent = await fs.readFile(tsFile, 'utf-8')
       expect(tsContent).toContain('const schema =')
       expect(tsContent).toContain('as const')
-      expect(tsContent).toContain("import { p } from '@asterdoc/sdk'")
-      expect(tsContent).toContain('export const myBundle = p.bundle(schema)')
+      expect(tsContent).toContain("import { a } from '@asterdoc/sdk'")
+      expect(tsContent).toContain('export const myBundle = a.bundle(schema)')
       expect(tsContent).toContain('export type MyBundleBundle = typeof myBundle')
     })
 
@@ -210,7 +210,7 @@ fields:
       const tsContent = await fs.readFile(tsFile, 'utf-8')
       expect(tsContent).toContain('const schema =')
       expect(tsContent).toContain('as const')
-      expect(tsContent).toContain('export const yamlForm = p.form(schema)')
+      expect(tsContent).toContain('export const yamlForm = a.form(schema)')
 
       // JSON file should NOT be created (schema is embedded)
       const jsonFile = join(tempDir, 'yaml-form.json')
@@ -233,7 +233,7 @@ fields:
 
       const tsFile = join(tempDir, 'my-complex-form-name.ts')
       const tsContent = await fs.readFile(tsFile, 'utf-8')
-      expect(tsContent).toContain('export const myComplexFormName = p.form(schema)')
+      expect(tsContent).toContain('export const myComplexFormName = a.form(schema)')
     })
   })
 
@@ -246,7 +246,7 @@ fields:
       expect(result.exitCode).toBe(0)
 
       const tsContent = await fs.readFile(join(tempDir, 'form.ts'), 'utf-8')
-      expect(tsContent).toContain('p.form(schema)')
+      expect(tsContent).toContain('a.form(schema)')
       expect(tsContent).toContain('FPayload') // Forms get payload type named from the artifact
     })
 
@@ -258,7 +258,7 @@ fields:
       expect(result.exitCode).toBe(0)
 
       const tsContent = await fs.readFile(join(tempDir, 'doc.ts'), 'utf-8')
-      expect(tsContent).toContain('p.document(schema)')
+      expect(tsContent).toContain('a.document(schema)')
       expect(tsContent).not.toContain('Payload') // Documents don't get payload type
     })
 
@@ -270,7 +270,7 @@ fields:
       expect(result.exitCode).toBe(0)
 
       const tsContent = await fs.readFile(join(tempDir, 'checklist.ts'), 'utf-8')
-      expect(tsContent).toContain('p.checklist(schema)')
+      expect(tsContent).toContain('a.checklist(schema)')
       expect(tsContent).toContain('CPayload') // Checklists get payload type named from the artifact
     })
 
@@ -282,7 +282,7 @@ fields:
       expect(result.exitCode).toBe(0)
 
       const tsContent = await fs.readFile(join(tempDir, 'bundle.ts'), 'utf-8')
-      expect(tsContent).toContain('p.bundle(schema)')
+      expect(tsContent).toContain('a.bundle(schema)')
       expect(tsContent).not.toContain('Payload') // Bundles don't get payload type
     })
   })
@@ -295,7 +295,7 @@ fields:
       const result = await executeCliCommand(['generate', file, '--output', 'typed'])
       expect(result.exitCode).toBe(0)
       expect(result.stdout).toContain("import schema from './hint-test.json'")
-      expect(result.stdout).toContain("import { p } from '@asterdoc/sdk'")
+      expect(result.stdout).toContain("import { a } from '@asterdoc/sdk'")
     })
 
     it('shows ts import hint for ts output', async () => {

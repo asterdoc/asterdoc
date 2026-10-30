@@ -276,7 +276,7 @@ export interface RuntimeChecklistRenderOptions<Output = unknown> {
  *
  * @example
  * ```typescript
- * const form = p.form({
+ * const form = a.form({
  *   name: 'my-form',
  *   version: '1.0.0',
  *   fields: { name: { type: 'text' } }
@@ -291,7 +291,7 @@ export type FormInput = Omit<Form, 'kind'> & { kind?: 'form' }
  *
  * @example
  * ```typescript
- * const doc = p.document({
+ * const doc = a.document({
  *   name: 'my-document',
  *   version: '1.0.0',
  *   layers: { markdown: { kind: 'inline', mimeType: 'text/markdown', text: '# Hello' } }
@@ -306,7 +306,7 @@ export type DocumentInput = Omit<Document, 'kind'> & { kind?: 'document' }
  *
  * @example
  * ```typescript
- * const bundle = p.bundle({
+ * const bundle = a.bundle({
  *   name: 'my-bundle',
  *   version: '1.0.0',
  *   contents: [{ ref: './form.yaml' }]
@@ -321,7 +321,7 @@ export type BundleInput = DeepReadonly<Omit<Bundle, 'kind'>> & { readonly kind?:
  *
  * @example
  * ```typescript
- * const checklist = p.checklist({
+ * const checklist = a.checklist({
  *   name: 'my-checklist',
  *   version: '1.0.0',
  *   items: [{ id: 'item-1', label: 'First item' }]

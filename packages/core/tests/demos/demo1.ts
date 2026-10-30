@@ -1,6 +1,6 @@
-import { p } from "@/index";
+import { a } from "@/index";
 
-const myForm = p
+const myForm = a
   .form()
   .name("pet-addendum")
   .title("Pet Addendum")
@@ -8,7 +8,7 @@ const myForm = p
   .edition({ key: "2025-01", label: "Rev. January 2025", date: "2025-01" })
   .description("This is a simple pet addendum.")
   .fields({
-    name: p.field
+    name: a.field
       .text()
       .label("Name")
       .description("The name of the pet")
@@ -16,14 +16,14 @@ const myForm = p
       .maxLength(100)
       .required(true)
       .build(),
-    type: p.field
+    type: a.field
       .enum()
       .options([{ value: "dog" }, { value: "cat" }, { value: "bird" }, { value: "turtle" }])
       .label("Species")
       .description("The species of the pet")
       .required(true)
       .build(),
-    age: p.field
+    age: a.field
       .number()
       .label("Age")
       .description("The age of the pet")

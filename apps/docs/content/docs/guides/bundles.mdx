@@ -16,10 +16,10 @@ Bundles group forms, documents, and checklists into a single package. This guide
 A lease transaction needs multiple artifacts. Start with the form from the previous guide, then add a disclosure document and a move-in checklist.
 
 ```ts tab="Object Pattern"
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 
 // Lease Agreement Form
-const lease = p.form({
+const lease = a.form({
   name: 'lease-agreement',
   version: '1.0.0',
   title: 'Residential Lease Agreement',
@@ -40,7 +40,7 @@ const lease = p.form({
 })
 
 // Lead Paint Disclosure Document
-const disclosure = p.document({
+const disclosure = a.document({
   name: 'lead-paint-disclosure',
   version: '1.0.0',
   title: 'Lead Paint Disclosure',
@@ -52,7 +52,7 @@ const disclosure = p.document({
 })
 
 // Move-In Checklist
-const moveInChecklist = p.checklist({
+const moveInChecklist = a.checklist({
   name: 'move-in-checklist',
   version: '1.0.0',
   title: 'Move-In Checklist',
@@ -67,10 +67,10 @@ const moveInChecklist = p.checklist({
 ```
 
 ```ts tab="Builder Pattern"
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 
 // Lease Agreement Form
-const lease = p
+const lease = a
   .form()
   .name('lease-agreement')
   .version('1.0.0')
@@ -82,15 +82,15 @@ const lease = p
     endDate: { type: 'date', label: 'End Date', required: true },
   })
   .parties({
-    landlord: p.party().label('Landlord').partyType('person').signature({ required: true }),
-    tenant: p.party().label('Tenant').partyType('person').signature({ required: true }),
+    landlord: a.party().label('Landlord').partyType('person').signature({ required: true }),
+    tenant: a.party().label('Tenant').partyType('person').signature({ required: true }),
   })
   .defaultLayer('markdown')
   .inlineLayer('markdown', { mimeType: 'text/markdown', text: '# Lease\n\n{{fields.address}}' })
   .build()
 
 // Lead Paint Disclosure Document
-const disclosure = p
+const disclosure = a
   .document()
   .name('lead-paint-disclosure')
   .version('1.0.0')
@@ -101,7 +101,7 @@ const disclosure = p
   .build()
 
 // Move-In Checklist
-const moveInChecklist = p
+const moveInChecklist = a
   .checklist()
   .name('move-in-checklist')
   .version('1.0.0')
@@ -121,7 +121,7 @@ const moveInChecklist = p
 Use `.inline()` to embed artifacts directly in the bundle:
 
 ```ts tab="Object Pattern"
-const leaseBundle = p.bundle({
+const leaseBundle = a.bundle({
   name: 'lease-transaction',
   version: '1.0.0',
   title: 'Complete Lease Package',
@@ -134,7 +134,7 @@ const leaseBundle = p.bundle({
 ```
 
 ```ts tab="Builder Pattern"
-const leaseBundle = p
+const leaseBundle = a
   .bundle()
   .name('lease-transaction')
   .version('1.0.0')
@@ -283,7 +283,7 @@ Bundles support three content types:
 | `registry` | Reference to a registry artifact by coordinate (e.g., `@org/repo/artifact/2024-03@1.0.0`) |
 
 ```ts
-const bundle = p
+const bundle = a
   .bundle()
   .name('mixed-bundle')
   .inline('embedded', someForm)           // Embedded

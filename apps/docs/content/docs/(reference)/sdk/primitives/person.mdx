@@ -11,12 +11,12 @@ Build and validate person information. The Person primitive captures individual 
 
 ```ts
 // Object pattern
-const person = p.person({
+const person = a.person({
   name: 'John Michael Smith'
 })
 
 // Builder pattern
-const person = p.person()
+const person = a.person()
   .name('John Michael Smith')
   .title('Dr.')
   .firstName('John')
@@ -26,7 +26,7 @@ const person = p.person()
   .build()
 
 // Copy and modify
-const updated = p.person()
+const updated = a.person()
   .from(person)
   .title('Prof.')
   .build()
@@ -36,10 +36,10 @@ const updated = p.person()
 
 ```ts
 // Parse unknown input (throws on error)
-const person = p.person.parse(jsonData)
+const person = a.person.parse(jsonData)
 
 // Safe parsing (returns result object)
-const result = p.person.safeParse(jsonData)
+const result = a.person.safeParse(jsonData)
 if (result.success) {
   console.log(`Name: ${result.data.name}`)
 } else {
@@ -50,7 +50,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = p.form({
+const form = a.form({
   name: 'registration',
   fields: {
     applicant: { type: 'person', label: 'Applicant Information' }
@@ -59,7 +59,7 @@ const form = p.form({
 
 const filled = form.fill({
   fields: {
-    applicant: p.person()
+    applicant: a.person()
       .name('Jane Doe')
       .firstName('Jane')
       .lastName('Doe')
@@ -73,13 +73,13 @@ const filled = form.fill({
 ### Object Pattern
 
 ```ts
-p.person(input: Person): Person
+a.person(input: Person): Person
 ```
 
 Pass a Person object for validation. Returns the validated Person or throws on error.
 
 ```ts
-const person = p.person({ name: 'Jane Doe' })
+const person = a.person({ name: 'Jane Doe' })
 ```
 
 ### Builder Pattern
@@ -87,7 +87,7 @@ const person = p.person({ name: 'Jane Doe' })
 Chain methods to build a Person value incrementally:
 
 <MethodChain
-  starter="p.person()"
+  starter="a.person()"
   methods={[
     { name: 'name', params: 'value: string', description: 'Set full display name' },
     { name: 'title', params: 'value: string | undefined', description: 'Set honorific (Mr., Dr., etc.)' },
@@ -153,8 +153,8 @@ The Person primitive validates:
 
 ```ts
 // Valid
-p.person({ name: 'John Doe' })
-p.person({
+a.person({ name: 'John Doe' })
+a.person({
   name: 'Dr. John Michael Smith Jr.',
   title: 'Dr.',
   firstName: 'John',
@@ -164,9 +164,9 @@ p.person({
 })
 
 // Invalid - throws Error
-p.person({})
+a.person({})
 
-p.person({ name: '' })
+a.person({ name: '' })
 ```
 
 ## Related

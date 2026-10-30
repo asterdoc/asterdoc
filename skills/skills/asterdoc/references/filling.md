@@ -14,9 +14,9 @@ A **draft** is a filled but unsealed form. `fill()` creates it; `update()`, `cle
 The examples use this form:
 
 ```typescript
-import { p } from "@asterdoc/sdk";
+import { a } from "@asterdoc/sdk";
 
-const lease = p.form({
+const lease = a.form({
   name: "residential-lease",
   fields: {
     propertyAddress: { type: "address", label: "Property address", required: true },
@@ -199,7 +199,7 @@ A sealed form serializes `signatureMap` and `canonicalPdfHash`, not `canonicalPd
 `@asterdoc/sessions` (re-exported by `@asterdoc/sdk`) runs a conversational intake as an event log. Every change is a command; the state is the replayed log. Use it when answers arrive turn by turn, get deferred or revised, and must be stored and replayed.
 
 ```typescript
-import { p, createAsterdocRuntime, execute, deriveView, sessionPayload, type FormSession } from "@asterdoc/sdk";
+import { a, createAsterdocRuntime, execute, deriveView, sessionPayload, type FormSession } from "@asterdoc/sdk";
 
 const definition = {
   $schema: "https://schema.asterdoc.com/2026-10-28.json",
@@ -232,7 +232,7 @@ view.nextParty;  // { roleId, label } or null
 view.nextAnnex;  // { annexId, label } or null
 view.progress;   // { answered, requiredRemaining, optionalRemaining, deferredCount, ... }
 
-const draft = p.form(definition).fill(sessionPayload(view.projected, runtime)); // { fields, parties, annexes } answered so far
+const draft = a.form(definition).fill(sessionPayload(view.projected, runtime)); // { fields, parties, annexes } answered so far
 ```
 
 Only one of `next`, `nextParty`, and `nextAnnex` is set at a time. Continue until `view.phase === "ready"`.

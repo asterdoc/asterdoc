@@ -95,12 +95,12 @@ Every instance you derive from it afterward — every `fill`, every render —
 carries the same resolver:
 
 ```typescript
-import { p } from "@asterdoc/sdk";
+import { a } from "@asterdoc/sdk";
 import { createFsResolver } from "@asterdoc/resolvers/fs";
 
 const resolver = createFsResolver({ root: "./templates" });
 
-const form = p.form(formSchema, { resolver });
+const form = a.form(formSchema, { resolver });
 
 const result = await form
   .fill({

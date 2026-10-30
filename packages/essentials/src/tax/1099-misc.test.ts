@@ -64,7 +64,7 @@ const happyPathInputs = {
 } as const;
 
 describe("1099-misc", () => {
-  it("loads via p.form()", () => {
+  it("loads via a.form()", () => {
     expect(f1099MISC.isValid()).toBe(true);
   });
 

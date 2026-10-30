@@ -2,7 +2,7 @@
  * Tests for code snippets in guides/forms.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 
 describe('Forms Guide', () => {
   // ============================================================================
@@ -10,7 +10,7 @@ describe('Forms Guide', () => {
   // ============================================================================
 
   describe('object pattern', () => {
-    const lease = p.form({
+    const lease = a.form({
       name: 'lease-agreement',
       version: '1.0.0',
       title: 'Residential Lease Agreement',
@@ -41,20 +41,20 @@ describe('Forms Guide', () => {
   // ============================================================================
 
   describe('builder pattern', () => {
-    const lease = p
+    const lease = a
       .form()
       .name('lease-agreement')
       .version('1.0.0')
       .title('Residential Lease Agreement')
       .parties({
-        landlord: p.party().label('Landlord').partyType('person').signature({ required: true }),
-        tenant: p.party().label('Tenant').partyType('person').signature({ required: true }),
+        landlord: a.party().label('Landlord').partyType('person').signature({ required: true }),
+        tenant: a.party().label('Tenant').partyType('person').signature({ required: true }),
       })
       .fields({
-        address: p.field.address().label('Property Address').required(),
-        monthlyRent: p.field.money().label('Monthly Rent').required(),
-        startDate: p.field.date().label('Start Date').required(),
-        endDate: p.field.date().label('End Date').required(),
+        address: a.field.address().label('Property Address').required(),
+        monthlyRent: a.field.money().label('Monthly Rent').required(),
+        startDate: a.field.date().label('Start Date').required(),
+        endDate: a.field.date().label('End Date').required(),
       })
       .build()
 
@@ -71,7 +71,7 @@ describe('Forms Guide', () => {
   // ============================================================================
 
   describe('form with inline layer', () => {
-    const lease = p.form({
+    const lease = a.form({
       name: 'lease-agreement',
       version: '1.0.0',
       title: 'Residential Lease Agreement',
@@ -172,14 +172,14 @@ describe('Forms Guide', () => {
 
     test('loads from JSON string', () => {
       const jsonStr = JSON.stringify(lease.toJSON())
-      const loaded = p.load(jsonStr)
+      const loaded = a.load(jsonStr)
       expect(loaded.kind).toBe('form')
       expect(loaded.name).toBe('lease-agreement')
     })
 
     test('loads from YAML string', () => {
       const yaml = lease.toYAML()
-      const loaded = p.load(yaml)
+      const loaded = a.load(yaml)
       expect(loaded.kind).toBe('form')
       expect(loaded.name).toBe('lease-agreement')
     })

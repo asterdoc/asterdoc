@@ -11,7 +11,7 @@ Create Document artifacts for disclosures, pamphlets, or any static content that
 
 ```ts
 // Object pattern
-const doc = p.document({
+const doc = a.document({
   name: 'privacy-disclosure',
   version: '1.0.0',
   title: 'Privacy Disclosure',
@@ -22,7 +22,7 @@ const doc = p.document({
 })
 
 // Builder pattern
-const doc = p.document()
+const doc = a.document()
   .name('privacy-disclosure')
   .version('1.0.0')
   .title('Privacy Disclosure')
@@ -35,10 +35,10 @@ const doc = p.document()
 
 ```ts
 // Parse and validate unknown input (throws on error)
-const doc = p.document.from(jsonData)
+const doc = a.document.from(jsonData)
 
 // Safe parsing (returns result object)
-const result = p.document.safeFrom(jsonData)
+const result = a.document.safeFrom(jsonData)
 if (result.success) {
   const doc = result.data
 }
@@ -49,7 +49,7 @@ if (result.success) {
 ### Object Pattern
 
 ```ts
-p.document(input: DocumentInput, options?: ArtifactInstanceOptions): DocumentInstance
+a.document(input: DocumentInput, options?: ArtifactInstanceOptions): DocumentInstance
 ```
 
 `options.resolver` reads the bytes of any file-backed layer this document
@@ -108,7 +108,7 @@ Returns a `DocumentInstance` with the following properties and methods:
 Chain methods to build a document incrementally:
 
 <MethodChain
-  starter="p.document()"
+  starter="a.document()"
   methods={[
     { name: 'name', params: 'value: string', description: 'Set document name (required)' },
     { name: 'version', params: 'value: string', description: 'Set semantic version' },

@@ -2,7 +2,7 @@
  * Tests for code snippets in concepts/rendering.mdx (Layers & Rendering)
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 import { UnregisteredLayerRendererError } from '@asterdoc/core'
 
 describe('Rendering Concept', () => {
@@ -11,7 +11,7 @@ describe('Rendering Concept', () => {
   // ============================================================================
 
   describe('what layers are', () => {
-    const form = p
+    const form = a
       .form()
       .name('invoice')
       .fields({
@@ -20,7 +20,7 @@ describe('Rendering Concept', () => {
       })
       .defaultLayer('markdown')
       .layers({
-        markdown: p
+        markdown: a
           .layer()
           .inline()
           .mimeType('text/markdown')
@@ -31,7 +31,7 @@ Customer: {{fields.customer}}
 Total: {{fields.total}}
     `,
           ),
-        pdf: p.layer().file().mimeType('application/pdf').path('templates/invoice.pdf'),
+        pdf: a.layer().file().mimeType('application/pdf').path('templates/invoice.pdf'),
       })
       .build()
 
@@ -50,14 +50,14 @@ Total: {{fields.total}}
   // ============================================================================
 
   describe('templates and bindings', () => {
-    const form = p
+    const form = a
       .form()
       .name('lease-with-bindings')
       .fields({
         tenant: { type: 'text' },
       })
       .layers({
-        pdf: p
+        pdf: a
           .layer()
           .file()
           .mimeType('application/pdf')
@@ -81,7 +81,7 @@ Total: {{fields.total}}
   // ============================================================================
 
   describe('renderers', () => {
-    const form = p
+    const form = a
       .form()
       .name('renderable-form')
       .fields({
@@ -89,7 +89,7 @@ Total: {{fields.total}}
       })
       .defaultLayer('markdown')
       .layers({
-        markdown: p
+        markdown: a
           .layer()
           .inline()
           .mimeType('text/markdown')
@@ -110,12 +110,12 @@ Total: {{fields.total}}
   // ============================================================================
 
   describe('react layers', () => {
-    const form = p
+    const form = a
       .form()
       .name('invoice')
       .fields({ customer: { type: 'text' } })
       .layers({
-        composition: p.layer().file().mimeType('text/tsx').path('./invoice.tsx'),
+        composition: a.layer().file().mimeType('text/tsx').path('./invoice.tsx'),
       })
       .build()
 
@@ -126,10 +126,10 @@ Total: {{fields.total}}
 
     test.each(['text/tsx', 'text/jsx', 'TEXT/TSX'])('rejects an inline %s layer', (mimeType) => {
       expect(() =>
-        p
+        a
           .form()
           .name('invoice')
-          .layers({ composition: p.layer().inline().mimeType(mimeType).text('<Invoice />') })
+          .layers({ composition: a.layer().inline().mimeType(mimeType).text('<Invoice />') })
           .build(),
       ).toThrow(/React layers must be file layers/)
     })

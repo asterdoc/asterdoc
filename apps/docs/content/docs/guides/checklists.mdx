@@ -16,9 +16,9 @@ This guide walks through creating a checklist with items, filling it with data, 
 A checklist needs a name, version, title, and items. Each item has an ID, title, and status configuration.
 
 ```ts tab="Object Pattern"
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 
-const onboarding = p.checklist({
+const onboarding = a.checklist({
   name: 'employee-onboarding',
   version: '1.0.0',
   title: 'Employee Onboarding Checklist',
@@ -31,9 +31,9 @@ const onboarding = p.checklist({
 ```
 
 ```ts tab="Builder Pattern"
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 
-const onboarding = p
+const onboarding = a
   .checklist()
   .name('employee-onboarding')
   .version('1.0.0')
@@ -53,7 +53,7 @@ const onboarding = p
 Items can use enum statuses for multi-state workflows.
 
 ```ts tab="Object Pattern"
-const approvals = p.checklist({
+const approvals = a.checklist({
   name: 'approval-workflow',
   version: '1.0.0',
   title: 'Approval Workflow',
@@ -87,7 +87,7 @@ const approvals = p.checklist({
 ```
 
 ```ts tab="Builder Pattern"
-const approvals = p
+const approvals = a
   .checklist()
   .name('approval-workflow')
   .version('1.0.0')
@@ -172,7 +172,7 @@ console.log(draft.getItem('completed-training')) // false (original unchanged)
 Add a layer to render the checklist in a specific format.
 
 ```ts tab="Object Pattern"
-const onboarding = p.checklist({
+const onboarding = a.checklist({
   name: 'employee-onboarding',
   version: '1.0.0',
   title: 'Employee Onboarding Checklist',
@@ -199,7 +199,7 @@ const onboarding = p.checklist({
 ```
 
 ```ts tab="Builder Pattern"
-const onboarding = p
+const onboarding = a
   .checklist()
   .name('employee-onboarding')
   .version('1.0.0')
@@ -311,10 +311,10 @@ items:
       kind: boolean
 ```
 
-Load it back with `p.load()`:
+Load it back with `a.load()`:
 
 ```ts
-const loaded = p.load(jsonString) // works with JSON or YAML
+const loaded = a.load(jsonString) // works with JSON or YAML
 ```
 </Step>
 </Steps>

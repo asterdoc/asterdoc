@@ -313,9 +313,9 @@ Form `fill()` and `update()` reject `NaN` and `Infinity` before expressions run.
 `today()` and `now()` read the instance's retained clock, never the wall clock during evaluation. `fill()` captures the current instant once, and the instance keeps it through `update()` and `toJSON()`. Pass `asOf` to fix it for reproducible results and tests:
 
 ```typescript
-import { p } from "@asterdoc/sdk";
+import { a } from "@asterdoc/sdk";
 
-const form = p.form({
+const form = a.form({
   $schema: "https://schema.asterdoc.com/2026-10-28.json",
   name: "age-check",
   kind: "form",
@@ -465,12 +465,12 @@ Naming: boolean defs start with `is` or `has` (`isHighRisk`). Computed values sa
 
 ## SDK
 
-In `p.form({ ... })`, `defs` and `rules` take the same objects as the JSON above. The builder adds a def with `.def(name, expression)`: a string makes a boolean def; pass `{ type, value }` for any other type.
+In `a.form({ ... })`, `defs` and `rules` take the same objects as the JSON above. The builder adds a def with `.def(name, expression)`: a string makes a boolean def; pass `{ type, value }` for any other type.
 
 ```typescript
-import { p, validateLogic } from "@asterdoc/sdk";
+import { a, validateLogic } from "@asterdoc/sdk";
 
-const term = p.form()
+const term = a.form()
   .name("term")
   .fields({ leaseTermMonths: { type: "number" } })
   .def("isLongTerm", "fields.leaseTermMonths >= 12")

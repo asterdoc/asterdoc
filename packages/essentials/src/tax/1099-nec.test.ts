@@ -54,7 +54,7 @@ const happyPathInputs = {
 } as const;
 
 describe("1099-nec", () => {
-  it("loads via p.form()", () => {
+  it("loads via a.form()", () => {
     expect(f1099NEC.isValid()).toBe(true);
   });
 

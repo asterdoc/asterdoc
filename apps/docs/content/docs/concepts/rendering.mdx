@@ -18,7 +18,7 @@ A layer is a **view** of an artifact. It combines a template with the artifact's
 Layers are not transformations—they don't change the artifact. They're representations: different ways of looking at the same source of truth.
 
 ```ts
-const form = p.form()
+const form = a.form()
   .name("invoice")
   .fields({
     customer: { type: "text" },
@@ -26,12 +26,12 @@ const form = p.form()
   })
   .defaultLayer("markdown")
   .layers({
-    markdown: p.layer().inline().mimeType("text/markdown").text(`
+    markdown: a.layer().inline().mimeType("text/markdown").text(`
 # Invoice
 Customer: {{fields.customer}}
 Total: {{fields.total}}
     `),
-    pdf: p.layer().file().mimeType("application/pdf").path("templates/invoice.pdf"),
+    pdf: a.layer().file().mimeType("application/pdf").path("templates/invoice.pdf"),
   })
   .build()
 ```
@@ -63,7 +63,7 @@ Only PDF layers take `bindings` and `bindingsFrom`; validation rejects them on
 any other layer.
 
 ```ts
-pdf: p.layer()
+pdf: a.layer()
   .file()
   .mimeType("application/pdf")
   .path("templates/lease.pdf")
@@ -85,7 +85,7 @@ that same resolver, so render calls don't repeat it.
 ```ts
 import { createFsResolver } from "@asterdoc/resolvers/fs";
 
-const form = p.form()
+const form = a.form()
   .name("invoice")
   // ...fields, layers...
   .build({ resolver: createFsResolver({ root: "./templates" }) })
@@ -141,11 +141,11 @@ entries for both `text/tsx` and `text/jsx`.
 import { reactLayerRenderers } from "@asterdoc/react-pdf";
 import Invoice from "./invoice.tsx";
 
-const form = p.form()
+const form = a.form()
   .name("invoice")
   .fields({ customer: { type: "text" } })
   .layers({
-    composition: p.layer().file().mimeType("text/tsx").path("./invoice.tsx"),
+    composition: a.layer().file().mimeType("text/tsx").path("./invoice.tsx"),
   })
   .build()
 

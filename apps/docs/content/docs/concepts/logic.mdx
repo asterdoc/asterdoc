@@ -18,7 +18,7 @@ Logic expressions can control:
 - **`required`** — whether a field or annex must be filled
 
 ```ts
-const form = p.form()
+const form = a.form()
   .name("application")
   .fields({
     hasVehicle: { type: "boolean", label: "Do you have a vehicle?" },
@@ -61,7 +61,7 @@ Parties are addressed as `parties.<role>`: `parties.buyer.name`, `parties.seller
 Inside a list item, `item` refers to the current row. Use it in the `visible` and `required` conditions of the item and of the fields inside it:
 
 ```ts
-const form = p.form()
+const form = a.form()
   .name("expenses")
   .fields({
     lines: {
@@ -187,7 +187,7 @@ A list field holds rows. Seven functions compute one value from them:
 The first argument is a path into a list. `fields.lineItems.amount` reads the `amount` of every row, and `fields.lineItems` on its own is the rows, which is what `count` usually takes. The second argument is an optional filter: a boolean expression over the same rows, evaluated once per row, so `fields.lineItems.taxable` in the filter means that row's `taxable`.
 
 ```ts
-const invoice = p.form()
+const invoice = a.form()
   .name("invoice")
   .fields({
     currency: { type: "text" },
@@ -276,7 +276,7 @@ visible: "fields.hasVehicle.value"
 When the same logic appears in multiple places, define it once in the `defs` section and reference it by name:
 
 ```ts
-const form = p.form()
+const form = a.form()
   .name("application")
   .fields({
     age: { type: "number" },
@@ -314,13 +314,13 @@ A computed value **fails** when the operation that errors did not read a missing
 Annexes support the same logic properties as fields:
 
 ```ts
-const form = p.form()
+const form = a.form()
   .name("lease-application")
   .fields({
     hasPets: { type: "boolean", label: "Do you have pets?" },
   })
   .annexes({
-    petPhoto: p.annex()
+    petPhoto: a.annex()
       .title("Pet Photo")
       .visible("fields.hasPets")
       .required("fields.hasPets"),

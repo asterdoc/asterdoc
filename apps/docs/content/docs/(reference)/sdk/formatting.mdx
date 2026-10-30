@@ -135,10 +135,10 @@ React compositions use the `partial` option instead; see [@asterdoc/react](/sdk/
 ## Use one formatter for an artifact
 
 ```ts
-import { createFormatter, p, createLayerRenderer } from '@asterdoc/sdk'
+import { createFormatter, a, createLayerRenderer } from '@asterdoc/sdk'
 
 const formatter = createFormatter({ locale: 'fr-FR' })
-const output = await p.form(formDefinition).fill(data).render({
+const output = await a.form(formDefinition).fill(data).render({
   renderer: createLayerRenderer({ formatter }),
   layer: 'markdown',
 })

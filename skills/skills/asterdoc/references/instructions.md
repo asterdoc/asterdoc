@@ -112,17 +112,17 @@ Use a formal tone. When confirming ssn or ein, show only the last 4 digits.
 ## SDK
 
 ```typescript
-import { p } from "@asterdoc/sdk";
+import { a } from "@asterdoc/sdk";
 
-const w2 = p
+const w2 = a
   .form()
   .name("w2-wage-statement")
   .instructions({ kind: "file", path: "instructions/w2.instructions.md", mimeType: "text/markdown" })
   .agentInstructions({ kind: "inline", text: "Ask for employerEin before wages." })
-  .fields({ employerEin: p.field.text().label("Employer EIN") })
+  .fields({ employerEin: a.field.text().label("Employer EIN") })
   .build();
 
 w2.agentInstructions; // { kind: "inline", text: "Ask for employerEin before wages." }
 ```
 
-In the object form, `instructions` and `agentInstructions` are top-level properties of the definition passed to `p.form({ ... })`.
+In the object form, `instructions` and `agentInstructions` are top-level properties of the definition passed to `a.form({ ... })`.

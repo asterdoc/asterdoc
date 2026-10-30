@@ -28,7 +28,7 @@ const happyPathInputs = {
 } as const;
 
 describe("w-9", () => {
-  it("loads via p.form()", () => {
+  it("loads via a.form()", () => {
     expect(w9.isValid()).toBe(true);
   });
 

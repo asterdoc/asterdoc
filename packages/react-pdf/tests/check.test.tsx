@@ -5,7 +5,7 @@
 
 import { createElement } from "react";
 import { describe, expect, it } from "vitest";
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import type { Form } from "@asterdoc/types";
 
 import { checkComposition, checkElement } from "../src/check";
@@ -50,7 +50,7 @@ const spec = {
   },
 } as const;
 
-const fixtureForm: Form = p.form(spec).toJSON() as Form;
+const fixtureForm: Form = a.form(spec).toJSON() as Form;
 
 const fixtureData: DocumentData = { fields: { name: "Ada Lovelace" }, parties: {} };
 
@@ -73,7 +73,7 @@ const totalsSpec = {
   },
 } as const;
 
-const totalsForm: Form = p.form(totalsSpec).toJSON() as Form;
+const totalsForm: Form = a.form(totalsSpec).toJSON() as Form;
 
 /** A composition whose only content is a `Totals` block over a money def. */
 const TotalsOverDef: ReactLayerComponent = ({ artifact, data }) => (

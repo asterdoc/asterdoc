@@ -161,10 +161,10 @@ The lists do not combine into a verdict. Whether `missingImages` fails your chec
 A form artifact can declare a layer with MIME type `text/tsx` or `text/jsx` whose path names a composition. `reactLayerRenderers(options)` returns renderers for both MIME types, so a form's `render()` call produces a PDF through that layer.
 
 ```ts
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import { reactLayerRenderers } from "@asterdoc/react-pdf";
 
-const form = p.form(spec);
+const form = a.form(spec);
 
 const bytes = await form.fill({ fields, parties }).render<Uint8Array>({
   layer: "document",

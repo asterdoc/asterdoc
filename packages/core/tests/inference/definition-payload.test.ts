@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { p, type InferFormPayload, type ProgressiveFormPayload } from '@/index'
+import { a, type InferFormPayload, type ProgressiveFormPayload } from '@/index'
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false
 
 describe('definition payload inference', () => {
 	test('keeps requiredness equivalent between literal and builder forms', () => {
-		const literal = p.form({
+		const literal = a.form({
 			kind: 'form',
 			name: 'literal',
 			fields: {
@@ -13,12 +13,12 @@ describe('definition payload inference', () => {
 				comment: { type: 'text' },
 			},
 		})
-		const built = p
+		const built = a
 			.form()
 			.name('built')
 			.fields({
-				age: p.field.number().required(),
-				comment: p.field.text(),
+				age: a.field.number().required(),
+				comment: a.field.text(),
 			})
 			.build()
 
@@ -34,12 +34,12 @@ describe('definition payload inference', () => {
 	})
 
 	test('allows optional party and annex sections to be omitted', () => {
-		const form = p
+		const form = a
 			.form()
 			.name('optional-sections')
 			.fields({ age: { type: 'number', required: true } })
-			.parties({ buyer: p.party().label('Buyer').required(false).min(0) })
-			.annexes({ proof: p.annex().title('Proof').required(false) })
+			.parties({ buyer: a.party().label('Buyer').required(false).min(0) })
+			.annexes({ proof: a.annex().title('Proof').required(false) })
 			.build()
 
 		const draft = form.fill({ fields: { age: 42 } })
@@ -47,12 +47,12 @@ describe('definition payload inference', () => {
 	})
 
 	test('keeps singular builder definitions in the inferred payload', () => {
-		const form = p
+		const form = a
 			.form()
 			.name('singular-builder')
-			.field('age', p.field.number().required())
-			.party('buyer', p.party().label('Buyer').required(false).min(0))
-			.annex('proof', p.annex().required(false))
+			.field('age', a.field.number().required())
+			.party('buyer', a.party().label('Buyer').required(false).min(0))
+			.annex('proof', a.annex().required(false))
 			.build()
 
 		type Payload = InferFormPayload<typeof form>
@@ -62,26 +62,26 @@ describe('definition payload inference', () => {
 
 	test('accepts extra annex keys only when the form allows additional annexes', () => {
 		const attachment = { name: 'extra.pdf', mimeType: 'application/pdf' }
-		const openBuilt = p
+		const openBuilt = a
 			.form()
 			.name('open-built')
-			.annexes({ proof: p.annex().required(true) })
+			.annexes({ proof: a.annex().required(true) })
 			.allowAdditionalAnnexes(true)
 			.build()
-		const openLiteral = p.form({
+		const openLiteral = a.form({
 			kind: 'form',
 			name: 'open-literal',
 			annexes: { proof: { required: true } },
 			allowAdditionalAnnexes: true,
 		})
-		const closedBuilt = p.form().name('closed-built').annexes({ proof: p.annex().required(true) }).build()
-		const closedExplicit = p
+		const closedBuilt = a.form().name('closed-built').annexes({ proof: a.annex().required(true) }).build()
+		const closedExplicit = a
 			.form()
 			.name('closed-explicit')
-			.annexes({ proof: p.annex().required(true) })
+			.annexes({ proof: a.annex().required(true) })
 			.allowAdditionalAnnexes(false)
 			.build()
-		const closedLiteral = p.form({ kind: 'form', name: 'closed-literal', annexes: { proof: { required: true } } })
+		const closedLiteral = a.form({ kind: 'form', name: 'closed-literal', annexes: { proof: { required: true } } })
 
 		const openBuiltPayload: InferFormPayload<typeof openBuilt> = {
 			fields: {},
@@ -111,16 +111,16 @@ describe('definition payload inference', () => {
 	})
 
 	test('preserves nested fieldset and list inference through fluent builders', () => {
-		const profileBuilder = p.field
+		const profileBuilder = a.field
 			.fieldset()
-			.field('age', p.field.number().required())
-		const formBuilder = p
+			.field('age', a.field.number().required())
+		const formBuilder = a
 			.form()
 			.name('nested-builder')
 			.field('profile', profileBuilder)
-			.field('phones', p.field.list().item(p.field.phone()))
+			.field('phones', a.field.list().item(a.field.phone()))
 		const before = formBuilder.build()
-		profileBuilder.field('nickname', p.field.text())
+		profileBuilder.field('nickname', a.field.text())
 		const form = formBuilder.build()
 		expect((before.fields.profile as any).fields.nickname).toBeUndefined()
 		expect((form.fields.profile as any).fields.nickname).toEqual({ type: 'text' })
@@ -136,7 +136,7 @@ describe('definition payload inference', () => {
 	})
 
 	test('allows recursive nested patches while preserving full payload strictness', () => {
-		const form = p.form({
+		const form = a.form({
 			kind: 'form',
 			name: 'progressive-nested',
 			fields: {
@@ -182,8 +182,8 @@ describe('definition payload inference', () => {
 			items: [{ id: 'first', title: 'First', status: { kind: 'boolean' } }],
 		} as const
 
-		const bundle = p.bundle(bundleSchema)
-		const checklist = p.checklist(checklistSchema)
+		const bundle = a.bundle(bundleSchema)
+		const checklist = a.checklist(checklistSchema)
 		const mutableBundleSchema = {
 			kind: 'bundle' as const,
 			name: 'mutable-bundle',
@@ -194,8 +194,8 @@ describe('definition payload inference', () => {
 			name: 'mutable-checklist',
 			items: [{ id: 'first', title: 'First', status: { kind: 'boolean' as const } }],
 		}
-		p.bundle(mutableBundleSchema)
-		p.checklist(mutableChecklistSchema)
+		a.bundle(mutableBundleSchema)
+		a.checklist(mutableChecklistSchema)
 		mutableBundleSchema.contents.push({ type: 'path', key: 'second', path: './second.json' })
 		mutableChecklistSchema.items.push({ id: 'second', title: 'Second', status: { kind: 'boolean' } })
 		expect(bundle.contents).toHaveLength(1)

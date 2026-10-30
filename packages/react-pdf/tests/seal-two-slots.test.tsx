@@ -13,7 +13,7 @@
  * this package pins.
  */
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import type { Form } from "@asterdoc/types";
 import { describe, expect, it } from "vitest";
 
@@ -72,7 +72,7 @@ const spec = {
   },
 } as const;
 
-const rider = p.form(spec);
+const rider = a.form(spec);
 
 /** The composition: one block per slot, both for the same party. */
 function LeaseRider({ artifact, data }: { artifact: Form; data: DocumentData }) {

@@ -67,7 +67,7 @@ const happyPathInputs = {
 } as const;
 
 describe("ach-credit-authorization", () => {
-  it("loads via p.form()", () => {
+  it("loads via a.form()", () => {
     expect(achCreditAuthorization.isValid()).toBe(true);
   });
 

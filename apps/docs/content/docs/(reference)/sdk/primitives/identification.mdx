@@ -11,13 +11,13 @@ Build and validate identification document information. The Identification primi
 
 ```ts
 // Object pattern
-const id = p.identification({
+const id = a.identification({
   type: 'passport',
   number: 'AB1234567'
 })
 
 // Builder pattern
-const id = p.identification()
+const id = a.identification()
   .type('passport')
   .number('AB1234567')
   .issuer('US')
@@ -26,7 +26,7 @@ const id = p.identification()
   .build()
 
 // Copy and modify
-const renewed = p.identification()
+const renewed = a.identification()
   .from(id)
   .issueDate('2024-01-15')
   .expiryDate('2034-01-14')
@@ -37,10 +37,10 @@ const renewed = p.identification()
 
 ```ts
 // Parse unknown input (throws on error)
-const id = p.identification.parse(jsonData)
+const id = a.identification.parse(jsonData)
 
 // Safe parsing (returns result object)
-const result = p.identification.safeParse(jsonData)
+const result = a.identification.safeParse(jsonData)
 if (result.success) {
   console.log(`${result.data.type}: ${result.data.number}`)
 } else {
@@ -51,7 +51,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = p.form({
+const form = a.form({
   name: 'kyc',
   fields: {
     primaryId: { type: 'identification', label: 'Primary ID' },
@@ -61,7 +61,7 @@ const form = p.form({
 
 const filled = form.fill({
   fields: {
-    primaryId: p.identification()
+    primaryId: a.identification()
       .type('drivers_license')
       .number('D1234567')
       .issuer('CA')
@@ -76,13 +76,13 @@ const filled = form.fill({
 ### Object Pattern
 
 ```ts
-p.identification(input: Identification): Identification
+a.identification(input: Identification): Identification
 ```
 
 Pass an Identification object for validation. Returns the validated Identification or throws on error.
 
 ```ts
-const id = p.identification({
+const id = a.identification({
   type: 'national_id',
   number: '123-45-6789'
 })
@@ -93,7 +93,7 @@ const id = p.identification({
 Chain methods to build an Identification value incrementally:
 
 <MethodChain
-  starter="p.identification()"
+  starter="a.identification()"
   methods={[
     { name: 'type', params: 'val: string', description: 'Set document type (passport, drivers_license, etc.)' },
     { name: 'number', params: 'val: string', description: 'Set document number' },
@@ -145,8 +145,8 @@ The Identification primitive validates:
 
 ```ts
 // Valid
-p.identification({ type: 'passport', number: 'AB123456' })
-p.identification({
+a.identification({ type: 'passport', number: 'AB123456' })
+a.identification({
   type: 'drivers_license',
   number: 'D9876543',
   issuer: 'CA',
@@ -154,9 +154,9 @@ p.identification({
 })
 
 // Invalid - throws Error
-p.identification({ type: 'passport' })
+a.identification({ type: 'passport' })
 
-p.identification({ type: '', number: 'AB123456' })
+a.identification({ type: '', number: 'AB123456' })
 ```
 
 ## Related

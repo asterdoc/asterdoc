@@ -11,7 +11,7 @@ Build and validate postal addresses with structured components. The Address prim
 
 ```ts
 // Object pattern
-const addr = p.address({
+const addr = a.address({
   line1: '123 Main Street',
   locality: 'New York',
   region: 'NY',
@@ -20,7 +20,7 @@ const addr = p.address({
 })
 
 // Builder pattern
-const addr = p.address()
+const addr = a.address()
   .line1('123 Main Street')
   .line2('Suite 400')
   .locality('New York')
@@ -30,7 +30,7 @@ const addr = p.address()
   .build()
 
 // Copy and modify
-const updated = p.address()
+const updated = a.address()
   .from(addr)
   .line2('Suite 500')
   .build()
@@ -40,10 +40,10 @@ const updated = p.address()
 
 ```ts
 // Parse unknown input (throws on error)
-const addr = p.address.parse(jsonData)
+const addr = a.address.parse(jsonData)
 
 // Safe parsing (returns result object)
-const result = p.address.safeParse(jsonData)
+const result = a.address.safeParse(jsonData)
 if (result.success) {
   console.log(`${result.data.locality}, ${result.data.region}`)
 } else {
@@ -54,7 +54,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = p.form({
+const form = a.form({
   name: 'shipping',
   fields: {
     shippingAddress: { type: 'address', label: 'Shipping Address' }
@@ -63,7 +63,7 @@ const form = p.form({
 
 const filled = form.fill({
   fields: {
-    shippingAddress: p.address()
+    shippingAddress: a.address()
       .line1('456 Oak Avenue')
       .locality('Los Angeles')
       .region('CA')
@@ -79,13 +79,13 @@ const filled = form.fill({
 ### Object Pattern
 
 ```ts
-p.address(input: Address): Address
+a.address(input: Address): Address
 ```
 
 Pass an Address object for validation. Returns the validated Address or throws on error.
 
 ```ts
-const addr = p.address({
+const addr = a.address({
   line1: '123 Main St',
   locality: 'Boston',
   region: 'MA',
@@ -99,7 +99,7 @@ const addr = p.address({
 Chain methods to build an Address value incrementally:
 
 <MethodChain
-  starter="p.address()"
+  starter="a.address()"
   methods={[
     { name: 'line1', params: 'value: string', description: 'Set primary street address' },
     { name: 'line2', params: 'value: string | undefined', description: 'Set secondary address (apt, suite)' },
@@ -144,7 +144,7 @@ The Address primitive validates:
 
 ```ts
 // Valid
-p.address({
+a.address({
   line1: '123 Main St',
   locality: 'NYC',
   region: 'NY',
@@ -153,7 +153,7 @@ p.address({
 })
 
 // With optional line2
-p.address({
+a.address({
   line1: '123 Main St',
   line2: 'Apt 4B',
   locality: 'NYC',
@@ -163,7 +163,7 @@ p.address({
 })
 
 // Invalid - throws Error
-p.address({ line1: '123 Main St' })
+a.address({ line1: '123 Main St' })
 ```
 
 ## Related

@@ -16,9 +16,9 @@ This guide walks through creating a static document with multiple layers and ren
 A document needs a name, version, and title. Unlike forms, documents don't have fields or parties—they're static content with one or more layers.
 
 ```ts tab="Object Pattern"
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 
-const privacyPolicy = p.document({
+const privacyPolicy = a.document({
   name: 'privacy-policy',
   version: '1.0.0',
   title: 'Privacy Policy',
@@ -28,9 +28,9 @@ const privacyPolicy = p.document({
 ```
 
 ```ts tab="Builder Pattern"
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 
-const privacyPolicy = p
+const privacyPolicy = a
   .document()
   .name('privacy-policy')
   .version('1.0.0')
@@ -47,7 +47,7 @@ const privacyPolicy = p
 Documents support multiple layers for different formats. Add inline layers for text, HTML, or Markdown content.
 
 ```ts tab="Object Pattern"
-const privacyPolicy = p.document({
+const privacyPolicy = a.document({
   name: 'privacy-policy',
   version: '1.0.0',
   title: 'Privacy Policy',
@@ -80,7 +80,7 @@ Your data is used to provide and improve our services.
 ```
 
 ```ts tab="Builder Pattern"
-const privacyPolicy = p
+const privacyPolicy = a
   .document()
   .name('privacy-policy')
   .version('1.0.0')
@@ -122,7 +122,7 @@ import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: process.cwd() })
 
-const privacyPolicy = p.document({
+const privacyPolicy = a.document({
   name: 'privacy-policy',
   version: '1.0.0',
   title: 'Privacy Policy',
@@ -147,7 +147,7 @@ import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: process.cwd() })
 
-const privacyPolicy = p
+const privacyPolicy = a
   .document()
   .name('privacy-policy')
   .version('1.0.0')
@@ -237,10 +237,10 @@ layers:
 defaultLayer: markdown
 ```
 
-Load it back with `p.load()`:
+Load it back with `a.load()`:
 
 ```ts
-const loaded = p.load(jsonString) // works with JSON or YAML
+const loaded = a.load(jsonString) // works with JSON or YAML
 ```
 </Step>
 </Steps>

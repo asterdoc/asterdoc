@@ -87,11 +87,11 @@ A **signer** is a person who signs. A **signatory** binds a signer to one filled
 
 ```typescript
 import { readFile } from 'node:fs/promises'
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const schema = JSON.parse(await readFile('pet-addendum.json', 'utf8'))
-const form = p.form(schema, { resolver: createFsResolver({ root: process.cwd() }) })
+const form = a.form(schema, { resolver: createFsResolver({ root: process.cwd() }) })
 
 let draft = form.fill({
   fields: { petName: 'Rex', weight: 30 },
@@ -267,7 +267,7 @@ A packet is a bundle that a signer receives and signs as one document. `sealBund
 
 ```typescript
 import { readFile } from 'node:fs/promises'
-import { p, sealBundle, BundleSealError } from '@asterdoc/sdk'
+import { a, sealBundle, BundleSealError } from '@asterdoc/sdk'
 import { w9 } from '@asterdoc/essentials'
 
 // `form` and the `draft` bound to signer "jane" come from steps 1 and 2.
@@ -283,7 +283,7 @@ const w9Draft = w9
   .addSigner('jane', { person: { name: 'Jane Smith' } })
   .addSignatory('taxpayer', 'taxpayer-0', { signerId: 'jane' })
 
-const bundle = p.bundle({
+const bundle = a.bundle({
   $schema: 'https://schema.asterdoc.com/2026-10-28.json',
   name: 'move-in-packet',
   version: '1.0.0',

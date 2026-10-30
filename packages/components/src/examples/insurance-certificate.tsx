@@ -15,7 +15,7 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import type { Form } from "@asterdoc/types";
 
 import { Document } from "../components/document";
@@ -65,7 +65,7 @@ export const insuranceCertificateSpec = {
 } as const;
 
 /** The parsed certificate form. */
-export const insuranceCertificate = p.form(insuranceCertificateSpec);
+export const insuranceCertificate = a.form(insuranceCertificateSpec);
 
 /** The same artifact as a plain `Form`. */
 export const insuranceCertificateForm: Form = insuranceCertificate.toJSON() as Form;

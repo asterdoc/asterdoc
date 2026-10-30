@@ -1,6 +1,6 @@
-import { p, toYAML } from '@/index'
+import { a, toYAML } from '@/index'
 
-const myForm = p.form({
+const myForm = a.form({
   kind: 'form',
   version: '1.0.0',
   name: 'pet-addendum',

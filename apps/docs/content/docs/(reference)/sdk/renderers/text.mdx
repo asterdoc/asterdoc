@@ -13,10 +13,10 @@ are formatted from their schema types.
 ## Example
 
 ```ts
-import { p } from '@asterdoc/core'
+import { a } from '@asterdoc/core'
 import { textRenderer } from '@asterdoc/render/text'
 
-const form = p.form({
+const form = a.form({
   name: 'receipt',
   fields: {
     customer: { type: 'text', label: 'Customer' },
@@ -172,7 +172,7 @@ function textTemplateSigningDirectives(template: string): SigningDirectiveUse[] 
 When a form schema is provided, field values are automatically serialized based on their types:
 
 ```ts
-const form = p.form({
+const form = a.form({
   name: 'demo',
   fields: {
     price: { type: 'money' },
@@ -234,7 +234,7 @@ Signing directives place signature and initials marks. They are template directi
 ### Example with Signatures
 
 ```ts
-const form = p.form({
+const form = a.form({
   name: 'lease',
   fields: { /* ... */ },
   parties: {

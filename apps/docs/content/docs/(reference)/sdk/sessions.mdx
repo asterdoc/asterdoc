@@ -113,9 +113,9 @@ The session is `ready` only when no required field, party, or annex is open. `pr
 `sessionPayload` turns a projected session into the artifact's own shape: nested `fields`, `parties` by role, and `annexes` by id. It takes the runtime too, because a role with `max` above 1 is always an array, even with one party. Pass the payload to `fill`, then render or seal the draft like any other. It is valid part-way through a fill: a field, party, or annex nobody has answered is absent.
 
 ```ts
-import { p, deriveView, sessionPayload } from '@asterdoc/sdk'
+import { a, deriveView, sessionPayload } from '@asterdoc/sdk'
 
-const form = p.form(definition)
+const form = a.form(definition)
 
 const view = deriveView(session, runtime)
 const draft = form.fill(sessionPayload(view.projected, runtime))

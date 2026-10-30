@@ -63,7 +63,7 @@ A dated per-kind address such as `https://schema.asterdoc.com/2026-10-28/form.js
 These surfaces refuse an artifact whose `$schema` is not current: `load()` and `loadFromObject()` in the SDK, every CLI command that reads an artifact file, `@asterdoc/ai-tools`, and `asterdoc add`.
 
 <!-- dep:C2 -->
-`p.form()` and each kind's `.from()` apply the same rules.
+`a.form()` and each kind's `.from()` apply the same rules.
 
 | `$schema` | Error code | Message starts with |
 |-----------|------------|---------------------|

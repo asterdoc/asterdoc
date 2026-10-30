@@ -47,27 +47,27 @@ npm install @asterdoc/core
 Define forms with parties, fields, and validation rules:
 
 ```typescript
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 
-const leaseAgreement = p
+const leaseAgreement = a
   .form()
   .name("residential-lease-agreement")
   .version("1.0.0")
   .title("Residential Lease Agreement")
   .defaultLayer("markdown")
   .layers({
-    markdown: p
+    markdown: a
       .layer()
       .file()
       .mimeType("text/markdown")
       .path("fixtures/lease-agreement.md"),
   })
   .parties({
-    landlord: p
+    landlord: a
       .party()
       .label("Landlord")
       .signature({ required: true }),
-    tenant: p
+    tenant: a
       .party()
       .label("Tenant")
       .min(1)
@@ -90,10 +90,10 @@ const leaseAgreement = p
 Define repeated values with recursive List fields:
 
 ```typescript
-const contacts = p.field
+const contacts = a.field
   .list()
   .label("Contacts")
-  .item(p.field.email().label("Email").required().build())
+  .item(a.field.email().label("Email").required().build())
   .minItems(1)
   .build();
 ```
@@ -101,22 +101,22 @@ const contacts = p.field
 Add file attachments and advanced field types:
 
 ```typescript
-const advancedLease = p
+const advancedLease = a
   .form()
   .name("commercial-lease")
   .version("1.0.0")
   .title("Commercial Lease Agreement")
   .allowAdditionalAnnexes(true)
   .annexes({
-    photoId: p.annex().title("Photo ID").required(true),
-    proofOfIncome: p.annex().title("Proof of Income").required(true),
+    photoId: a.annex().title("Photo ID").required(true),
+    proofOfIncome: a.annex().title("Proof of Income").required(true),
   })
   .parties({
-    landlord: p
+    landlord: a
       .party()
       .label("Landlord")
       .signature({ required: true }),
-    tenant: p
+    tenant: a
       .party()
       .label("Tenant")
       .max(4)
@@ -143,7 +143,7 @@ const advancedLease = p
 Define static documents with metadata:
 
 ```typescript
-const leadPaintDisclosure = p
+const leadPaintDisclosure = a
   .document()
   .name("lead-paint-disclosure")
   .version("1.0.0")
@@ -153,7 +153,7 @@ const leadPaintDisclosure = p
   .edition({ key: "2025-12", label: "Rev. December 2025", date: "2025-12" })
   .metadata({ agency: "EPA/HUD", cfr: "40 CFR 745" })
   .layers({
-    pdf: p
+    pdf: a
       .layer()
       .file()
       .path("fixtures/lead-paint-disclosure.pdf")
@@ -166,7 +166,7 @@ const leadPaintDisclosure = p
 Define workflow checklists with status tracking:
 
 ```typescript
-const leaseChecklist = p
+const leaseChecklist = a
   .checklist()
   .name("lease-application-checklist")
   .version("1.0.0")
@@ -202,21 +202,21 @@ const propertyAddress = {
 };
 const monthlyRent = { type: "money", label: "Monthly Rent", required: true };
 
-const residentialLease = p
+const residentialLease = a
   .form()
   .name("residential-lease")
   .version("1.0.0")
   .fields({ leaseId: { type: "uuid" }, propertyAddress, monthlyRent })
   .build();
 
-const commercialLease = p
+const commercialLease = a
   .form()
   .name("commercial-lease")
   .version("1.0.0")
   .fields({ leaseId: { type: "uuid" }, propertyAddress, monthlyRent })
   .build();
 
-const leaseBundle = p
+const leaseBundle = a
   .bundle()
   .name("residential-lease-bundle")
   .version("1.0.0")

@@ -1,7 +1,7 @@
 // Generated from Asterdoc's forms library (Fab release 248c4b7c-33a5-4c98-88cf-f8e16f1fbbee). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
@@ -664,7 +664,7 @@ const resolver = createMemoryResolver({ contents });
  *
  * Standalone vendor / payee bank-account-information collection form for ACH credit destination setup. Captures account-holder identity (individual or organization), bank routing/account/type, and (for organizations) W-9-adjacent entity classification. Pairs with a separate authorization document (vendor agreement, W-9, MSA); the form itself is data-collection only and does not carry an authorization clause.
  */
-export const achBankAccountInfo = Object.assign(p.form(schema, { resolver }), {
+export const achBankAccountInfo = Object.assign(a.form(schema, { resolver }), {
   /** The raw form spec, exactly as released. */
   spec: schema,
 });

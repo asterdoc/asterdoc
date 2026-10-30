@@ -1,7 +1,7 @@
 // Generated from Asterdoc's forms library (Fab release 85ffeaf1-9fb2-42bf-85d3-62b261508d40). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
@@ -591,7 +591,7 @@ const resolver = createMemoryResolver({ contents });
  *
  * Standalone form by which an account holder requests a change to an existing ACH arrangement (direct deposit, ACH credit, or ACH debit) already authorized with an originator. Captures change type, identification of the existing arrangement, new account or amount/frequency information, and an effective date. Governed by NACHA Operating Rules and the legal framework of the underlying authorization.
  */
-export const achChangeForm = Object.assign(p.form(schema, { resolver }), {
+export const achChangeForm = Object.assign(a.form(schema, { resolver }), {
   /** The raw form spec, exactly as released. */
   spec: schema,
 });

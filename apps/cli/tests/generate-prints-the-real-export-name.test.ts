@@ -46,7 +46,7 @@ describe('generate prints the real export name', () => {
     fs.writeFileSync(file, JSON.stringify(artifact, null, 2))
     const r = run(['generate', file], dir)
     expect(r.exitCode).toBe(0)
-    const m = /const (\S+) = p\.form\(schema\)/.exec(r.stdout)
+    const m = /const (\S+) = a\.form\(schema\)/.exec(r.stdout)
     expect(m?.[1]).toMatch(/^[A-Za-z_$][\w$]*$/)
   })
   it('an upper-case extension is stripped from the output name', () => {

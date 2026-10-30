@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { form, p, renderLayer, UnboundResolverError } from '@/artifacts'
+import { form, a, renderLayer, UnboundResolverError } from '@/artifacts'
 import { BundleResolverError, LoadError, load, safeLoad, loadFromObject } from '@/serialization'
 import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 
@@ -65,7 +65,7 @@ describe('a resolver bound at construction', () => {
 	})
 
 	const filled = () =>
-		p
+		a
 			.form(definition, { resolver })
 			.fill({
 				fields: { name: 'Ada' },
@@ -98,7 +98,7 @@ describe('a resolver bound at construction', () => {
 	})
 
 	test('reaches the form instance render as well as the runtime one', async () => {
-		const output = await p
+		const output = await a
 			.form(definition, { resolver })
 			.render({ data: { fields: { name: 'Grace' } }, layer: 'markdown' })
 

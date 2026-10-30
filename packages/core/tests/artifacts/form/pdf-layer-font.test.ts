@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
-import { layer, p } from '@/artifacts'
+import { layer, a } from '@/artifacts'
 import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 import { createLayerRenderer } from '@asterdoc/render'
 import { LayerSchema } from '@asterdoc/schemas'
@@ -47,7 +47,7 @@ const resolver = createMemoryResolver({ contents: { 'form.pdf': template, 'fonts
 const latin1 = new TextDecoder('latin1')
 
 const filled = (layerFont?: { path: string }) =>
-	p.form(definition(layerFont), { resolver })
+	a.form(definition(layerFont), { resolver })
 		.fill({ fields: { name: 'Жук' }, parties: { signer: { id: 'signer-0', name: 'Ада' } } })
 
 describe('a PDF layer that declares a font', () => {
@@ -78,7 +78,7 @@ describe('a PDF layer that declares a font', () => {
 	})
 
 	test('fails the way a missing layer file does when the resolver cannot find the font', async () => {
-		const missingPdf = await p.form(definition(), { resolver: createMemoryResolver({ contents: {} }) })
+		const missingPdf = await a.form(definition(), { resolver: createMemoryResolver({ contents: {} }) })
 			.fill({ fields: { name: 'Ada' } })
 			.render({ renderer: createLayerRenderer() })
 			.then(() => undefined, (error: unknown) => error as Error)

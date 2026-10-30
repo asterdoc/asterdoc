@@ -59,7 +59,7 @@ const happyPathInputs = {
 } as const;
 
 describe("ach-debit-authorization", () => {
-  it("loads via p.form()", () => {
+  it("loads via a.form()", () => {
     expect(achDebitAuthorization.isValid()).toBe(true);
   });
 

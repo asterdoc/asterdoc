@@ -136,8 +136,8 @@ export const agreement = loadFromObject<'form'>(agreementJson)
 
 | Where the code runs | Load with |
 |---|---|
-| Anything a composition or preview imports | `loadFromObject(json)`, or a builder module (`p.form(spec)`) |
-| Node-only scripts and tests | `p.load(await readFile(path, 'utf8'))` is also fine |
+| Anything a composition or preview imports | `loadFromObject(json)`, or a builder module (`a.form(spec)`) |
+| Node-only scripts and tests | `a.load(await readFile(path, 'utf8'))` is also fine |
 
 ## Render through the layer
 
@@ -344,12 +344,12 @@ part.
 
 ```ts
 import { readFile, writeFile } from 'node:fs/promises'
-import { p, sealBundle } from '@asterdoc/core'
+import { a, sealBundle } from '@asterdoc/core'
 import { reactLayerRenderers } from '@asterdoc/react-pdf'
 import { agreement } from './agreement'
 import AgreementDocument from './agreement-document'
 
-const onboarding = p.bundle({
+const onboarding = a.bundle({
   name: 'client-onboarding',
   version: '1.0.0',
   title: 'Client Onboarding',

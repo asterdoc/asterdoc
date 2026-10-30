@@ -1,7 +1,7 @@
 // Generated from Asterdoc's forms library (Fab release a53ef863-f03c-4397-8a17-69d08bf680b2). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
@@ -920,7 +920,7 @@ const resolver = createMemoryResolver({ contents });
  *
  * A U.S. person gives this form to a requester to certify their legal name, federal tax classification, and Taxpayer Identification Number (SSN or EIN). The completed form is retained by the requester for information-return reporting and is not sent to the IRS.
  */
-export const w9 = Object.assign(p.form(schema, { resolver }), {
+export const w9 = Object.assign(a.form(schema, { resolver }), {
   /** The raw form spec, exactly as released. */
   spec: schema,
 });

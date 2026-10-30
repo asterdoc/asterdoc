@@ -265,15 +265,15 @@ A PDF layer places every slot by coordinates or anchor:
 
 ## SDK builders
 
-Declare a layer with `signatures` as an object, or use `.signatures()` on either `p.layer().file()` or `p.layer().inline()`.
+Declare a layer with `signatures` as an object, or use `.signatures()` on either `a.layer().file()` or `a.layer().inline()`.
 
 ```typescript
-import { p } from "@asterdoc/sdk";
+import { a } from "@asterdoc/sdk";
 
-const lease = p
+const lease = a
   .form()
   .name("lease")
-  .fields({ tenantName: p.field.text().label("Tenant name") })
+  .fields({ tenantName: a.field.text().label("Tenant name") })
   .fileLayer("markdown", { mimeType: "text/markdown", path: "templates/lease.md" })
   .layer("pdf", {
     kind: "file",
@@ -285,4 +285,4 @@ const lease = p
   .build();
 ```
 
-`.inlineLayer(key, { mimeType, text, signatures? })` adds an inline layer. `.layers({ ... })` takes a record of objects or `p.layer()` chains. A chain reads `p.layer().file().path("templates/lease.pdf").mimeType("application/pdf").bindings({ Tenant_Name: "tenantName" })`, with `.title()`, `.description()`, `.checksum()`, `.font()`, `.format()`, `.signatures()` and `.bindingsFrom()`. `p.layer().inline()` has `.signatures()` too.
+`.inlineLayer(key, { mimeType, text, signatures? })` adds an inline layer. `.layers({ ... })` takes a record of objects or `a.layer()` chains. A chain reads `a.layer().file().path("templates/lease.pdf").mimeType("application/pdf").bindings({ Tenant_Name: "tenantName" })`, with `.title()`, `.description()`, `.checksum()`, `.font()`, `.format()`, `.signatures()` and `.bindingsFrom()`. `a.layer().inline()` has `.signatures()` too.

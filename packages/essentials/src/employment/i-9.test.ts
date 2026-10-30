@@ -50,7 +50,7 @@ const happyPathInputs = {
 } as const;
 
 describe("i-9", () => {
-  it("loads via p.form()", () => {
+  it("loads via a.form()", () => {
     expect(i9.isValid()).toBe(true);
   });
 

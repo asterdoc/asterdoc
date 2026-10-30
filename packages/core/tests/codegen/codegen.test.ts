@@ -248,7 +248,7 @@ describe('codegen', () => {
 					{ kind: 'form', name: 'test' },
 					{ artifactKind: 'form', exportName: 'test' }
 				)
-				expect(result).toContain("import { p } from '@asterdoc/sdk';")
+				expect(result).toContain("import { a } from '@asterdoc/sdk';")
 			})
 		})
 
@@ -258,7 +258,7 @@ describe('codegen', () => {
 					{ kind: 'form', name: 'w9' },
 					{ artifactKind: 'form', exportName: 'w9' }
 				)
-				expect(result).toContain('export const w9 = p.form(schema);')
+				expect(result).toContain('export const w9 = a.form(schema);')
 			})
 
 			test('exports document artifact with correct builder', () => {
@@ -266,7 +266,7 @@ describe('codegen', () => {
 					{ kind: 'document', name: 'test-doc' },
 					{ artifactKind: 'document', exportName: 'testDoc' }
 				)
-				expect(result).toContain('export const testDoc = p.document(schema);')
+				expect(result).toContain('export const testDoc = a.document(schema);')
 			})
 
 			test('exports bundle artifact with correct builder', () => {
@@ -274,7 +274,7 @@ describe('codegen', () => {
 					{ kind: 'bundle', name: 'test-bundle' },
 					{ artifactKind: 'bundle', exportName: 'testBundle' }
 				)
-				expect(result).toContain('export const testBundle = p.bundle(schema);')
+				expect(result).toContain('export const testBundle = a.bundle(schema);')
 			})
 
 			test('exports checklist artifact with correct builder', () => {
@@ -282,7 +282,7 @@ describe('codegen', () => {
 					{ kind: 'checklist', name: 'test-checklist' },
 					{ artifactKind: 'checklist', exportName: 'testChecklist' }
 				)
-				expect(result).toContain('export const testChecklist = p.checklist(schema);')
+				expect(result).toContain('export const testChecklist = a.checklist(schema);')
 			})
 		})
 
@@ -379,7 +379,7 @@ describe('codegen', () => {
 				expect(result).toContain('} as const;')
 
 				// Should have exports
-				expect(result).toContain('export const simpleForm = p.form(schema);')
+				expect(result).toContain('export const simpleForm = a.form(schema);')
 				expect(result).toContain('export type SimpleFormForm = typeof simpleForm;')
 			})
 		})
@@ -392,7 +392,7 @@ describe('codegen', () => {
 					{ kind: 'form', name: '1099-nec' },
 					{ artifactKind: 'form', exportName: '1099Nec' }
 				)
-				expect(result).toContain('export const _1099Nec = p.form(schema);')
+				expect(result).toContain('export const _1099Nec = a.form(schema);')
 				expect(result).toContain('export type _1099NecForm = typeof _1099Nec;')
 				expect(result).not.toMatch(/export const 1099Nec/)
 			})
@@ -412,7 +412,7 @@ describe('codegen', () => {
 
 			test('leaves a valid export name untouched', () => {
 				const result = jsonToTsModule({ kind: 'form', name: 'w9' }, { artifactKind: 'form', exportName: 'w9' })
-				expect(result).toContain('export const w9 = p.form(schema);')
+				expect(result).toContain('export const w9 = a.form(schema);')
 			})
 		})
 	})

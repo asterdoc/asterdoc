@@ -132,8 +132,8 @@ export function createGenerateCommand(): Command {
           console.log()
           console.log(kleur.gray('You can now import the artifact with full type safety:'))
           console.log(kleur.cyan(`  import schema from './${baseFileName}.json'`))
-          console.log(kleur.cyan(`  import { p } from '@asterdoc/sdk'`))
-          console.log(kleur.cyan(`  const ${result.exportName} = p.${artifact.kind}(schema)`))
+          console.log(kleur.cyan(`  import { a } from '@asterdoc/sdk'`))
+          console.log(kleur.cyan(`  const ${result.exportName} = a.${artifact.kind}(schema)`))
         }
       } catch (error) {
         console.error(kleur.red('Failed to generate types'))

@@ -47,7 +47,7 @@ const happyPathInputs = {
 } as const;
 
 describe("ach-change-form", () => {
-  it("loads via p.form()", () => {
+  it("loads via a.form()", () => {
     expect(achChangeForm.isValid()).toBe(true);
   });
 

@@ -1,7 +1,7 @@
 // Generated from Asterdoc's forms library (Fab release a4feccdc-ed09-453c-bd42-1dbf34705cbd). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
@@ -531,7 +531,7 @@ const resolver = createMemoryResolver({ contents });
  *
  * Request transcripts of previously filed tax returns or related information returns from the IRS. Filed by taxpayers (or authorized representatives) to obtain Return Transcripts, Account Transcripts, Records of Account, Verification of Non-filing, or Wage & Income transcripts.
  */
-export const f4506T = Object.assign(p.form(schema, { resolver }), {
+export const f4506T = Object.assign(a.form(schema, { resolver }), {
   /** The raw form spec, exactly as released. */
   spec: schema,
 });

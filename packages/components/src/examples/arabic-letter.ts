@@ -22,7 +22,7 @@
  * hidden inside the tree, where `RootTokenMismatchError` would catch it.
  */
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import type { Form } from "@asterdoc/types";
 
 import type { DocumentTokensInput } from "@asterdoc/react";
@@ -265,7 +265,7 @@ export const arabicLetterSpec = {
 } as const;
 
 /** The parsed, validated letter form. */
-export const arabicLetter = p.form(arabicLetterSpec);
+export const arabicLetter = a.form(arabicLetterSpec);
 
 /** The same validated artifact as a plain `Form`. */
 export const arabicLetterForm: Form = arabicLetter.toJSON() as Form;

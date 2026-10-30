@@ -1,4 +1,4 @@
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -36,7 +36,7 @@ const EXAMPLES = [
 ] as const;
 
 function evaluate(spec: unknown, fields: Record<string, unknown>) {
-  const form = p.form(spec as Parameters<typeof p.form>[0]);
+  const form = a.form(spec as Parameters<typeof a.form>[0]);
   const draft = form.safeFill({ fields, parties: {} } as never);
   if (!draft.success) throw new Error(`the fill did not parse: ${draft.error.message}`);
   const state = draft.data.runtimeState;

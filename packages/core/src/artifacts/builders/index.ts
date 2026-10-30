@@ -84,5 +84,5 @@ export {
 	type AnnexBuilder,
 } from './annex';
 
-// Note: The complete `p` namespace is exported from artifacts/index.ts,
+// Note: The complete `a` namespace is exported from artifacts/index.ts,
 // which includes form, document, checklist, and bundle in addition to these builders

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { p } from '@/artifacts'
+import { a } from '@/artifacts'
 
 /**
  * `form.extract` reads field values as PDF text strings: UTF-16BE after a
@@ -32,7 +32,7 @@ function oneFieldPdf(valueHex: string): Uint8Array {
 	return encoder.encode(body)
 }
 
-const form = p.form({
+const form = a.form({
 	kind: 'form',
 	name: 'extract-text-strings',
 	version: '1.0.0',

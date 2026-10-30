@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 import { createLayerRenderer } from '@asterdoc/render'
 import { inspectAcroFormFields } from '@asterdoc/render/pdf'
 import { createFsResolver } from '@asterdoc/resolvers/fs'
@@ -55,7 +55,7 @@ describe('PDF Layers Guide', () => {
   describe('form with PDF layer and bindings', () => {
     const resolver = createFsResolver({ root: fixturesRoot })
 
-    const w9Form = p.form({
+    const w9Form = a.form({
       name: 'w9-tax-form',
       fields: {
         name: { type: 'text', label: 'Name', required: true },

@@ -2,7 +2,7 @@
  * Tests for code snippets in concepts/index.mdx (Artifacts)
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 
 describe('Artifacts Concept', () => {
@@ -12,7 +12,7 @@ describe('Artifacts Concept', () => {
 
   describe('design time vs runtime', () => {
     // Design time: define the form
-    const lease = p
+    const lease = a
       .form()
       .name('lease')
       .fields({
@@ -56,7 +56,7 @@ describe('Artifacts Concept', () => {
       },
     }
 
-    const loaded = p.load(JSON.stringify(json))
+    const loaded = a.load(JSON.stringify(json))
     expect(loaded.kind).toBe('form')
     expect(loaded.name).toBe('residential-lease')
   })

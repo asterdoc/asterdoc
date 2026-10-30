@@ -2,7 +2,7 @@
  * Tests for code snippets in guides/bundles.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@asterdoc/core'
+import { a } from '@asterdoc/core'
 
 describe('Bundles Guide', () => {
   // ============================================================================
@@ -10,7 +10,7 @@ describe('Bundles Guide', () => {
   // ============================================================================
 
   describe('object pattern artifacts', () => {
-    const lease = p.form({
+    const lease = a.form({
       name: 'lease-agreement',
       version: '1.0.0',
       title: 'Residential Lease Agreement',
@@ -30,7 +30,7 @@ describe('Bundles Guide', () => {
       },
     })
 
-    const disclosure = p.document({
+    const disclosure = a.document({
       name: 'lead-paint-disclosure',
       version: '1.0.0',
       title: 'Lead Paint Disclosure',
@@ -41,7 +41,7 @@ describe('Bundles Guide', () => {
       },
     })
 
-    const moveInChecklist = p.checklist({
+    const moveInChecklist = a.checklist({
       name: 'move-in-checklist',
       version: '1.0.0',
       title: 'Move-In Checklist',
@@ -71,7 +71,7 @@ describe('Bundles Guide', () => {
     // ============================================================================
 
     describe('compose bundle (object pattern)', () => {
-      const leaseBundle = p.bundle({
+      const leaseBundle = a.bundle({
         name: 'lease-transaction',
         version: '1.0.0',
         title: 'Complete Lease Package',
@@ -103,7 +103,7 @@ describe('Bundles Guide', () => {
     // ============================================================================
 
     describe('compose bundle (builder pattern)', () => {
-      const leaseBundle = p
+      const leaseBundle = a
         .bundle()
         .name('lease-transaction')
         .version('1.0.0')
@@ -168,7 +168,7 @@ describe('Bundles Guide', () => {
   // ============================================================================
 
   describe('serialization', () => {
-    const lease = p.form({
+    const lease = a.form({
       name: 'lease-agreement',
       version: '1.0.0',
       title: 'Residential Lease Agreement',
@@ -181,7 +181,7 @@ describe('Bundles Guide', () => {
       },
     })
 
-    const leaseBundle = p
+    const leaseBundle = a
       .bundle()
       .name('lease-transaction')
       .version('1.0.0')
@@ -207,14 +207,14 @@ describe('Bundles Guide', () => {
   // ============================================================================
 
   describe('content types', () => {
-    const someForm = p.form({
+    const someForm = a.form({
       name: 'some-form',
       version: '1.0.0',
       title: 'Some Form',
     })
 
     test('supports inline, path, and registry content types', () => {
-      const bundle = p
+      const bundle = a
         .bundle()
         .name('mixed-bundle')
         .inline('embedded', someForm)

@@ -1,7 +1,7 @@
 // Generated from Asterdoc's forms library (Fab release e2800547-98fb-4237-a584-e10a1b378fea). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
@@ -861,7 +861,7 @@ const resolver = createMemoryResolver({ contents });
  *
  * Authorization by which a payee (consumer or organization) authorizes a named originator to initiate ACH credit entries to a deposit account at a named financial institution. Supports one-time and recurring credits, fixed or variable amounts, and optional B2B remittance / addenda fields. Used for vendor / accounts-payable, refunds, dividends, insurance claim payouts, government benefits, and royalty disbursements; governed by NACHA Operating Rules.
  */
-export const achCreditAuthorization = Object.assign(p.form(schema, { resolver }), {
+export const achCreditAuthorization = Object.assign(a.form(schema, { resolver }), {
   /** The raw form spec, exactly as released. */
   spec: schema,
 });

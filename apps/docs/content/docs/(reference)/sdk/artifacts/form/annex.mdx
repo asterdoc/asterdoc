@@ -36,7 +36,7 @@ const parentConsent = annex()
 
 ```ts
 // Object pattern
-const form = p.form({
+const form = a.form({
   name: 'application',
   annexes: {
     photoId: { title: 'Photo ID', required: true },
@@ -46,7 +46,7 @@ const form = p.form({
 })
 
 // Builder pattern
-const form = p.form()
+const form = a.form()
   .name('application')
   .annex('photoId', annex().title('Photo ID').required().build())
   .annex('proofOfAddress', annex().title('Proof of Address').build())
@@ -110,7 +110,7 @@ Chain methods to build an annex incrementally:
 Use defs for conditional requirements:
 
 ```ts
-const form = p.form()
+const form = a.form()
   .name('loan-application')
   .field('amount', field.number().label('Loan amount').build())
   .field('age', field.number().label('Applicant age').build())
@@ -135,7 +135,7 @@ const form = p.form()
 Set `allowAdditionalAnnexes: true` on the form to permit additional attachments beyond predefined slots:
 
 ```ts
-const form = p.form({
+const form = a.form({
   name: 'application',
   annexes: {
     requiredDoc: { title: 'Required Document', required: true }

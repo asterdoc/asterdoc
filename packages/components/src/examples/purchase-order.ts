@@ -29,7 +29,7 @@
  * so it renders bare and lets the caller decide.
  */
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import type { Form } from "@asterdoc/types";
 
 /** The layer that names the composition, and the layer the seal targets. */
@@ -294,7 +294,7 @@ export const purchaseOrderSpec = {
 } as const;
 
 /** The parsed, validated purchase order form. */
-export const purchaseOrder = p.form(purchaseOrderSpec);
+export const purchaseOrder = a.form(purchaseOrderSpec);
 
 /**
  * The same validated artifact as a plain `Form`. Everything that renders or

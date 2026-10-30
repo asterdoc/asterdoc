@@ -9,7 +9,7 @@ async function writeFile(path: string, content: string | Buffer) {
 	await fs.promises.writeFile(path, content);
 }
 
-import { p, toYAML } from '@asterdoc/core';
+import { a, toYAML } from '@asterdoc/core';
 
 (async () => {
 	const c1 = `# Pet Addendum
@@ -22,7 +22,7 @@ import { p, toYAML } from '@asterdoc/core';
 **Has Vaccination:** {{fields.hasVaccination}}
 `;
 
-	const f1 = p.form({
+	const f1 = a.form({
 		kind: 'form',
 		version: '1.0.0',
 		name: 'pet-addendum',
@@ -64,7 +64,7 @@ import { p, toYAML } from '@asterdoc/core';
 		defaultLayer: 'default',
 	});
 
-	const d1 = p.document({
+	const d1 = a.document({
 		kind: 'document',
 		version: '1.0.0',
 		name: 'pet-care-guide',

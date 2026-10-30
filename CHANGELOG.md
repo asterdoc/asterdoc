@@ -4,6 +4,18 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 
 ## [Unreleased]
 
+### Breaking changes
+
+#### Core
+
+- The builder namespace is now `a`, for Asterdoc. Import `{ a }` from `@asterdoc/core` or `@asterdoc/sdk` and write `a.form()`, `a.field.text()` and `a.party()`. `p` is removed.
+- `asterdoc generate` and the code generator write `a.<kind>(schema)` modules.
+
+### Upgrading from 0.9
+
+1. Rename the `p` import to `a`, and each `p.` call to `a.`.
+2. Run `asterdoc generate` again for generated artifact modules.
+
 ## [0.9.0] - 2026-10-29
 
 Paradoc is now Asterdoc. 0.9 renames the packages, the CLI, the project files and the hosts, and starts a new schema history at `2026-10-28`. The artifact format is the same as in Paradoc 0.8.

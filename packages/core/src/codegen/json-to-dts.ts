@@ -18,7 +18,7 @@ export interface JsonToTsModuleOptions {
 
 	/**
 	 * The export name for the artifact instance
-	 * @example 'w9' will generate `export const w9 = p.form(...)`
+	 * @example 'w9' will generate `export const w9 = a.form(...)`
 	 */
 	exportName: string
 }
@@ -156,9 +156,9 @@ export function jsonToDts(value: unknown, moduleName?: string): string {
  * })
  * // Generates:
  * // const schema = { ... } as const;
- * // import { p } from '@asterdoc/sdk';
+ * // import { a } from '@asterdoc/sdk';
  * //
- * // export const w9 = p.form(schema);
+ * // export const w9 = a.form(schema);
  * // export type W9Form = typeof w9;
  * // export type W9Payload = Parameters<typeof w9.fill>[0];
  * ```
@@ -202,14 +202,14 @@ export function jsonToTsModule(value: unknown, options: JsonToTsModuleOptions): 
 		.join('\n')
 	lines.push(`const schema = ${indentedJson} as const;`)
 
-	lines.push(`import { p } from '@asterdoc/sdk';`)
+	lines.push(`import { a } from '@asterdoc/sdk';`)
 	lines.push('')
 
 	// Create the artifact instance
 	lines.push(`/**`)
 	lines.push(` * ${typeName} ${artifactKind} artifact - ready to use`)
 	lines.push(` */`)
-	lines.push(`export const ${exportName} = p.${artifactKind}(schema);`)
+	lines.push(`export const ${exportName} = a.${artifactKind}(schema);`)
 	lines.push('')
 
 	// Export useful types

@@ -37,7 +37,7 @@ const happyPathInputs = {
 } as const;
 
 describe("ach-direct-deposit", () => {
-  it("loads via p.form()", () => {
+  it("loads via a.form()", () => {
     expect(achDirectDeposit.isValid()).toBe(true);
   });
 

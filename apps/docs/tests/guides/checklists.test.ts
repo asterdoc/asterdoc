@@ -2,7 +2,7 @@
  * Tests for code snippets in guides/checklists.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@asterdoc/core'
+import { a } from '@asterdoc/core'
 import { createLayerRenderer } from '@asterdoc/render'
 
 describe('Checklists Guide', () => {
@@ -12,7 +12,7 @@ describe('Checklists Guide', () => {
 
   describe('boolean status checklist', () => {
     describe('object pattern', () => {
-      const onboarding = p.checklist({
+      const onboarding = a.checklist({
         name: 'employee-onboarding',
         version: '1.0.0',
         title: 'Employee Onboarding Checklist',
@@ -33,7 +33,7 @@ describe('Checklists Guide', () => {
     })
 
     describe('builder pattern', () => {
-      const onboarding = p
+      const onboarding = a
         .checklist()
         .name('employee-onboarding')
         .version('1.0.0')
@@ -58,7 +58,7 @@ describe('Checklists Guide', () => {
   // ============================================================================
 
   describe('enum status checklist', () => {
-    const approvals = p.checklist({
+    const approvals = a.checklist({
       name: 'approval-workflow',
       version: '1.0.0',
       title: 'Approval Workflow',
@@ -112,7 +112,7 @@ describe('Checklists Guide', () => {
   // ============================================================================
 
   describe('fill and update items', () => {
-    const onboarding = p.checklist({
+    const onboarding = a.checklist({
       name: 'employee-onboarding',
       version: '1.0.0',
       title: 'Employee Onboarding Checklist',
@@ -157,7 +157,7 @@ describe('Checklists Guide', () => {
   // ============================================================================
 
   describe('checklist with layer and rendering', () => {
-    const onboarding = p.checklist({
+    const onboarding = a.checklist({
       name: 'employee-onboarding',
       version: '1.0.0',
       title: 'Employee Onboarding Checklist',
@@ -201,7 +201,7 @@ describe('Checklists Guide', () => {
   // ============================================================================
 
   describe('serialization', () => {
-    const onboarding = p.checklist({
+    const onboarding = a.checklist({
       name: 'employee-onboarding',
       version: '1.0.0',
       title: 'Employee Onboarding Checklist',
@@ -226,14 +226,14 @@ describe('Checklists Guide', () => {
 
     test('round-trips through JSON', () => {
       const jsonStr = JSON.stringify(onboarding.toJSON())
-      const loaded = p.load(jsonStr)
+      const loaded = a.load(jsonStr)
       expect(loaded.kind).toBe('checklist')
       expect(loaded.name).toBe('employee-onboarding')
     })
 
     test('round-trips through YAML', () => {
       const yaml = onboarding.toYAML()
-      const loaded = p.load(yaml)
+      const loaded = a.load(yaml)
       expect(loaded.kind).toBe('checklist')
       expect(loaded.name).toBe('employee-onboarding')
     })

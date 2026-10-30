@@ -5,11 +5,11 @@
  * variants show ordinary party rendering without pulling in a full priced
  * document.
  *
- * Built and validated through `p.form`, the same path `proposal.ts` and every
+ * Built and validated through `a.form`, the same path `proposal.ts` and every
  * other sample artifact in this package takes, rather than a cast past the
  * real `Form` type.
  */
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import type { Form } from "@asterdoc/types";
 
 const partyDemoSpec = {
@@ -61,7 +61,7 @@ const partyDemoSpec = {
 } as const;
 
 /** The parsed, validated party-demo form. */
-export const partyDemo = p.form(partyDemoSpec);
+export const partyDemo = a.form(partyDemoSpec);
 
 /** The same validated artifact as a plain `Form`. */
 export const partyDemoForm: Form = partyDemo.toJSON() as Form;

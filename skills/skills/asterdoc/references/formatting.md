@@ -18,9 +18,9 @@ The caller chooses the presentation: pass the locale and options explicitly. The
 Pass the formatter to `render()`. Every value in the layer prints with it.
 
 ```typescript
-import { createFormatter, p } from "@asterdoc/sdk";
+import { createFormatter, a } from "@asterdoc/sdk";
 
-const invoice = p.form({
+const invoice = a.form({
   name: "invoice",
   fields: { total: { type: "money" }, due: { type: "date" } },
   layers: { text: { kind: "inline", mimeType: "text/plain", text: "Total: {{fields.total}}, due {{fields.due}}" } },

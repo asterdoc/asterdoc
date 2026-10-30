@@ -2,7 +2,7 @@
  * Tests for code snippets in concepts/logic.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p, validate } from '@asterdoc/sdk'
+import { a, validate } from '@asterdoc/sdk'
 
 /** Find an item's runtime state in a draft's fill state, across all buckets. */
 function fieldState(draft: { getFillState: () => ReturnType<DraftFillState> }, key: string) {
@@ -22,7 +22,7 @@ describe('Logic Concept', () => {
   // ============================================================================
 
   describe('where logic applies', () => {
-    const form = p
+    const form = a
       .form()
       .name('application')
       .fields({
@@ -60,7 +60,7 @@ describe('Logic Concept', () => {
   // ============================================================================
 
   describe('named expressions', () => {
-    const form = p
+    const form = a
       .form()
       .name('application')
       .fields({
@@ -110,7 +110,7 @@ describe('Logic Concept', () => {
   // ============================================================================
 
   describe('aggregating lists', () => {
-    const invoice = p
+    const invoice = a
       .form()
       .name('invoice')
       .fields({
@@ -164,7 +164,7 @@ describe('Logic Concept', () => {
     })
 
     test('rejects a list value read outside an aggregate at authoring time', () => {
-      const form = p
+      const form = a
         .form()
         .name('invoice')
         .fields({
@@ -184,14 +184,14 @@ describe('Logic Concept', () => {
   // ============================================================================
 
   describe('logic in annexes', () => {
-    const form = p
+    const form = a
       .form()
       .name('lease-application')
       .fields({
         hasPets: { type: 'boolean', label: 'Do you have pets?' },
       })
       .annexes({
-        petPhoto: p
+        petPhoto: a
           .annex()
           .title('Pet Photo')
           .visible('fields.hasPets')

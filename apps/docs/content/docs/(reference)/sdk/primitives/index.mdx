@@ -80,9 +80,9 @@ if (result.success) {
 Primitives are commonly used when filling form data:
 
 ```ts
-import { p, money, address } from '@asterdoc/core'
+import { a, money, address } from '@asterdoc/core'
 
-const form = p.form({
+const form = a.form({
   name: 'invoice',
   fields: {
     total: { type: 'money', label: 'Total Amount' },

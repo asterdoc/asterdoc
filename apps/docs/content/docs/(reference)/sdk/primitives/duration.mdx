@@ -11,18 +11,18 @@ Build and validate time durations in ISO 8601 format. The Duration primitive rep
 
 ```ts
 // Direct validation
-const period = p.duration('P1Y6M')  // 1 year, 6 months
-const hours = p.duration('PT2H30M') // 2 hours, 30 minutes
+const period = a.duration('P1Y6M')  // 1 year, 6 months
+const hours = a.duration('PT2H30M') // 2 hours, 30 minutes
 ```
 
 ### Parsing external data
 
 ```ts
 // Parse unknown input (throws on error)
-const period = p.duration.parse(jsonData)
+const period = a.duration.parse(jsonData)
 
 // Safe parsing (returns result object)
-const result = p.duration.safeParse(jsonData)
+const result = a.duration.safeParse(jsonData)
 if (result.success) {
   console.log(`Duration: ${result.data}`)
 } else {
@@ -33,7 +33,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = p.form({
+const form = a.form({
   name: 'subscription',
   fields: {
     term: { type: 'duration', label: 'Subscription Term' }
@@ -42,7 +42,7 @@ const form = p.form({
 
 const filled = form.fill({
   fields: {
-    term: p.duration('P1Y')  // 1 year
+    term: a.duration('P1Y')  // 1 year
   }
 })
 ```
@@ -52,13 +52,13 @@ const filled = form.fill({
 ### Direct Call
 
 ```ts
-p.duration(input: Duration): Duration
+a.duration(input: Duration): Duration
 ```
 
 Pass a duration string for validation. Returns the validated string or throws on error.
 
 ```ts
-const period = p.duration('P6M')  // 6 months
+const period = a.duration('P6M')  // 6 months
 ```
 
 ### Static Methods
@@ -111,21 +111,21 @@ The Duration primitive validates:
 
 ```ts
 // Valid
-p.duration('P1Y')
-p.duration('P1Y6M')
-p.duration('P1Y6M15D')
-p.duration('PT2H30M')
-p.duration('P1DT12H')
-p.duration('P0D')  // Zero duration
+a.duration('P1Y')
+a.duration('P1Y6M')
+a.duration('P1Y6M15D')
+a.duration('PT2H30M')
+a.duration('P1DT12H')
+a.duration('P0D')  // Zero duration
 
 // Invalid - throws Error
-p.duration('1Y')
+a.duration('1Y')
 
-p.duration('P')
+a.duration('P')
 
-p.duration('P2H')
+a.duration('P2H')
 
-p.duration('PT1Y')
+a.duration('PT1Y')
 ```
 
 ## Related

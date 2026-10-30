@@ -82,9 +82,9 @@ A fixed amount is Money: `{ "amount": 100, "currency": "USD" }`. A computed amou
 Resolve the amount with `resolvePartyPayment(form, payment, data)` from `@asterdoc/sdk`. It returns `{ required, amount: { amount, currency } }` and throws when an input is missing:
 
 ```typescript
-import { p, resolvePartyPayment } from "@asterdoc/sdk";
+import { a, resolvePartyPayment } from "@asterdoc/sdk";
 
-const form = p.form({
+const form = a.form({
   name: "app-fee",
   fields: { units: { type: "number", min: 1 } },
   parties: {
@@ -225,18 +225,18 @@ Expressions and templates read parties as `parties.<role>` and through the party
 
 ## SDK
 
-`p.form({ ... })` takes plain role objects. The builder chain takes `p.party()` builders or plain objects.
+`a.form({ ... })` takes plain role objects. The builder chain takes `a.party()` builders or plain objects.
 
 ```typescript
-import { p } from "@asterdoc/sdk";
+import { a } from "@asterdoc/sdk";
 
-const lease = p
+const lease = a
   .form()
   .name("lease")
   .parties({
-    landlord: p.party().label("Landlord").signature({ required: true }),
-    tenant: p.party().label("Tenant").partyType("person").min(1).max(4).signature({ required: true }),
-    guarantor: p.party().label("Guarantor").required("fields.creditScore < 650"),
+    landlord: a.party().label("Landlord").signature({ required: true }),
+    tenant: a.party().label("Tenant").partyType("person").min(1).max(4).signature({ required: true }),
+    guarantor: a.party().label("Guarantor").required("fields.creditScore < 650"),
   })
   .fields({ creditScore: { type: "number" } })
   .build();

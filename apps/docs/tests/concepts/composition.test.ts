@@ -2,7 +2,7 @@
  * Tests for code snippets in concepts/composition.mdx
  */
 import { describe, test, expect } from 'vitest'
-import { p } from '@asterdoc/sdk'
+import { a } from '@asterdoc/sdk'
 
 describe('Composition Concept', () => {
   // ============================================================================
@@ -18,7 +18,7 @@ describe('Composition Concept', () => {
     }
 
     // forms/application.ts
-    const application = p
+    const application = a
       .form()
       .name('application')
       .fields({
@@ -43,23 +43,23 @@ describe('Composition Concept', () => {
   // ============================================================================
 
   describe('bundles', () => {
-    const leaseAgreement = p.form({
+    const leaseAgreement = a.form({
       name: 'lease-agreement',
       title: 'Lease Agreement',
     })
 
-    const leadPaintDisclosure = p.document({
+    const leadPaintDisclosure = a.document({
       name: 'lead-paint-disclosure',
       title: 'Lead Paint Disclosure',
     })
 
-    const applicationChecklist = p.checklist({
+    const applicationChecklist = a.checklist({
       name: 'application-checklist',
       title: 'Application Checklist',
       items: [{ id: 'credit-check', title: 'Credit Check' }],
     })
 
-    const leasePackage = p
+    const leasePackage = a
       .bundle()
       .name('lease-package')
       .title('Complete Lease Package')

@@ -27,7 +27,7 @@
  * same shape the proposal's is.
  */
 
-import { p } from "@asterdoc/core";
+import { a } from "@asterdoc/core";
 import type { Form } from "@asterdoc/types";
 
 /** The layer that names the composition, and the layer the seal targets. */
@@ -233,7 +233,7 @@ export const engagementLetterSpec = {
 } as const;
 
 /** The parsed, validated engagement letter. */
-export const engagementLetter = p.form(engagementLetterSpec);
+export const engagementLetter = a.form(engagementLetterSpec);
 
 /**
  * The same validated artifact as a plain `Form`. Everything that renders or

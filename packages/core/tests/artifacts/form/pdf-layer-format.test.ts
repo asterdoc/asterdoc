@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, test } from 'vitest'
-import { layer, p } from '@/artifacts'
+import { layer, a } from '@/artifacts'
 import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 import { createLayerRenderer } from '@asterdoc/render'
 import { inspectAcroFormFields, pdfRenderer } from '@asterdoc/render/pdf'
@@ -40,7 +40,7 @@ const definition = {
 	defaultLayer: 'pdf',
 }
 
-const filled = () => p.form(definition, { resolver }).fill({ fields: { amount: { amount: 12000, currency: 'USD' } } })
+const filled = () => a.form(definition, { resolver }).fill({ fields: { amount: { amount: 12000, currency: 'USD' } } })
 
 const boxValue = async (bytes: unknown) => (await inspectAcroFormFields(bytes as Uint8Array))
 	.find((field) => field.name === 'name')?.value
@@ -60,7 +60,7 @@ describe('a PDF layer that declares its money format', () => {
 	})
 
 	test('seals the PDF without a symbol', async () => {
-		const sealed = await p.form({
+		const sealed = await a.form({
 			...definition,
 			parties: { signer: { label: 'Signer', partyType: 'person' as const, signature: { required: true } } },
 			layers: {
@@ -85,7 +85,7 @@ describe('a PDF layer that declares its money format', () => {
 
 describe('declaring a layer format', () => {
 	test('is refused on a layer other than a PDF, naming the rule', () => {
-		expect(() => p.form({
+		expect(() => a.form({
 			...definition,
 			layers: { markdown: { kind: 'file' as const, mimeType: 'text/markdown', path: 'a.md', format: { money: { currencyDisplay: 'none' as const } } } },
 			defaultLayer: 'markdown',

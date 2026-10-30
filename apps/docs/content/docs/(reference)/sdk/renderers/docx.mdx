@@ -12,14 +12,14 @@ condition means the same thing in a Word layer as in a field rule.
 ## Example
 
 ```ts
-import { p } from '@asterdoc/core'
+import { a } from '@asterdoc/core'
 import { docxRenderer } from '@asterdoc/render/docx'
 import { createFsResolver } from '@asterdoc/resolvers/fs'
 import { writeFileSync } from 'node:fs'
 
 const resolver = createFsResolver({ root: process.cwd() })
 
-const form = p.form({
+const form = a.form({
   name: 'contract',
   fields: {
     clientName: { type: 'text', label: 'Client Name' },
