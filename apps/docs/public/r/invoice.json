@@ -5,9 +5,9 @@
   "title": "Invoice",
   "description": "A whole document nothing signs: the invoice artifact with its React layer, the composition that brands it from its own tokens, and two samples — one that fits a page and one whose table runs past two breaks.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0",
-    "@asterdoc/core@^0.9.0",
-    "@asterdoc/types@^0.9.0"
+    "@asterdoc/react@^0.10.0",
+    "@asterdoc/core@^0.10.0",
+    "@asterdoc/types@^0.10.0"
   ],
   "registryDependencies": [
     "@asterdoc/document",

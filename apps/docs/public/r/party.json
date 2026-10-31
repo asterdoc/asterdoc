@@ -5,7 +5,7 @@
   "title": "Party",
   "description": "One party of a declared role — name, organization, address, and contact — as a block or inline, through the shared formatter.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0"
+    "@asterdoc/react@^0.10.0"
   ],
   "registryDependencies": [
     "@asterdoc/keep-together"

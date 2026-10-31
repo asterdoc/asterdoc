@@ -1,6 +1,6 @@
 {
   "name": "@asterdoc/sdk",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Umbrella package for the Asterdoc framework: re-exports @asterdoc/core, @asterdoc/format, and @asterdoc/sessions, plus the layer renderer, PDF placement helpers, and hosted sealing",
   "type": "module",
   "main": "./dist/index.js",

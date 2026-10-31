@@ -1,6 +1,6 @@
 {
   "name": "@asterdoc/sessions",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Deterministic form-completion session engine for Asterdoc artifacts. Event-sourced command/view core with storage-agnostic persistence: you persist and rehydrate the event log yourself.",
   "type": "module",
   "main": "./dist/index.js",

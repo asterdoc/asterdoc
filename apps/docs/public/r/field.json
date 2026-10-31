@@ -5,7 +5,7 @@
   "title": "Field",
   "description": "One labelled value at a path into the artifact, printed by the artifact's serializers. It never formats a value itself.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0"
+    "@asterdoc/react@^0.10.0"
   ],
   "registryDependencies": [
     "@asterdoc/keep-together"

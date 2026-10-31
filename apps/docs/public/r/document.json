@@ -5,8 +5,8 @@
   "title": "Document",
   "description": "Binds one form artifact and its data to the components beneath it. The only component that knows how the artifact is loaded.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0",
-    "@asterdoc/types@^0.9.0"
+    "@asterdoc/react@^0.10.0",
+    "@asterdoc/types@^0.10.0"
   ],
   "registryDependencies": [],
   "files": [

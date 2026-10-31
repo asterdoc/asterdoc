@@ -5,7 +5,7 @@
   "title": "Paper",
   "description": "One sheet at the document's page geometry, the scaled sheet the preview lays out, and the fit-to-width hook.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0"
+    "@asterdoc/react@^0.10.0"
   ],
   "registryDependencies": [],
   "files": [

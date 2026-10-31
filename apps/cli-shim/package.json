@@ -1,6 +1,6 @@
 {
   "name": "asterdoc",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "CLI for the Asterdoc framework — convenience alias for @asterdoc/cli",
   "type": "module",
   "bin": {

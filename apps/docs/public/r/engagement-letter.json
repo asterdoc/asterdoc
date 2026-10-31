@@ -5,9 +5,9 @@
   "title": "Engagement Letter",
   "description": "A prose document: the engagement letter artifact with its React layer and two signature slots, the composition that renders its scope as numbered clauses, and one sample that runs to two pages.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0",
-    "@asterdoc/core@^0.9.0",
-    "@asterdoc/types@^0.9.0"
+    "@asterdoc/react@^0.10.0",
+    "@asterdoc/core@^0.10.0",
+    "@asterdoc/types@^0.10.0"
   ],
   "registryDependencies": [
     "@asterdoc/document",

@@ -1,6 +1,6 @@
 {
   "name": "@asterdoc/mastra",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Mastra adapter for Asterdoc tools — wraps @asterdoc/ai-tools with Mastra createTool()",
   "type": "module",
   "main": "./dist/index.js",

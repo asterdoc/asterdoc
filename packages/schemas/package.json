@@ -1,6 +1,6 @@
 {
   "name": "@asterdoc/schemas",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "JSON Schema definitions for Asterdoc framework artifacts, blocks, and primitives",
   "type": "module",
   "main": "./dist/index.js",

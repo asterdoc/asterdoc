@@ -5,9 +5,9 @@
   "title": "Vendor Packet",
   "description": "A packet of three documents: the purchase order composed live, a filled W-9 painted from its PDF layer, and the vendor's certificate of insurance as an annex, whose bytes it ships.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0",
-    "@asterdoc/core@^0.9.0",
-    "@asterdoc/types@^0.9.0"
+    "@asterdoc/react@^0.10.0",
+    "@asterdoc/core@^0.10.0",
+    "@asterdoc/types@^0.10.0"
   ],
   "registryDependencies": [
     "@asterdoc/bundle",

@@ -5,7 +5,7 @@
   "title": "Image",
   "description": "A picture at a declared size, from its own bytes or from a source. The encoding is sniffed and one an engine cannot decode fails by name.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0"
+    "@asterdoc/react@^0.10.0"
   ],
   "registryDependencies": [
     "@asterdoc/keep-together"

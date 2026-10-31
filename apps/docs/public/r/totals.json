@@ -5,7 +5,7 @@
   "title": "Totals",
   "description": "The artifact's computed amounts, evaluated by @asterdoc/core and printed by the serializer each def's type names.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0"
+    "@asterdoc/react@^0.10.0"
   ],
   "registryDependencies": [
     "@asterdoc/keep-together"

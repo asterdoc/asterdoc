@@ -5,9 +5,9 @@
   "title": "Purchase Order",
   "description": "A whole document: the purchase order artifact with its React layer, the composition that binds it, and a sample order that runs to three pages.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0",
-    "@asterdoc/core@^0.9.0",
-    "@asterdoc/types@^0.9.0"
+    "@asterdoc/react@^0.10.0",
+    "@asterdoc/core@^0.10.0",
+    "@asterdoc/types@^0.10.0"
   ],
   "registryDependencies": [
     "@asterdoc/document",

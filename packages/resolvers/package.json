@@ -1,6 +1,6 @@
 {
 	"name": "@asterdoc/resolvers",
-	"version": "0.9.0",
+	"version": "0.10.0",
 	"description": "Read Asterdoc artifact content from the local filesystem, over HTTP, or from memory.",
 	"type": "module",
 	"exports": {

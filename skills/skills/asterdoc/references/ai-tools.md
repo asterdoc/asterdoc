@@ -18,7 +18,7 @@ The AI packages are npm libraries. The tools run in your own process, with no As
 | `@asterdoc/ai-tools` | The framework-neutral contract: Zod schemas, `execute*` functions, `toolDefinitions` | `npm install @asterdoc/ai-tools` |
 | `@asterdoc/ai-sdk` | Vercel AI SDK 7 (`generateText`, `streamText`, agents) | `npm install @asterdoc/ai-sdk ai zod` |
 | `@asterdoc/mastra` | Mastra agents | `npm install @asterdoc/mastra @mastra/core zod` |
-| `@asterdoc/tanstack-ai` | TanStack AI `chat()` | `npm install @asterdoc/tanstack-ai@0.9.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod` |
+| `@asterdoc/tanstack-ai` | TanStack AI `chat()` | `npm install @asterdoc/tanstack-ai@0.10.0 @tanstack/ai@0.53.0 @tanstack/ai-openai@0.22.5 zod` |
 
 Every adapter wraps `@asterdoc/ai-tools`, so the tool names, inputs and outputs are the same everywhere.
 

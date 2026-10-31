@@ -5,7 +5,7 @@
   "title": "Table",
   "description": "A list field as rows. Each row is its own pagination unit and the header repeats on every page the table continues onto.",
   "dependencies": [
-    "@asterdoc/react@^0.9.0"
+    "@asterdoc/react@^0.10.0"
   ],
   "registryDependencies": [
     "@asterdoc/keep-together"

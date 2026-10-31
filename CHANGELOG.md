@@ -4,6 +4,14 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-31
+
+0.10 renames the builder namespace from `p`, which stood for Paradoc, to `a`, for Asterdoc. Nothing else in the API or the artifact format changes.
+
+### Highlights
+
+- Build artifacts with `a`: `import { a } from "@asterdoc/sdk"`, then `a.form()`.
+
 ### Breaking changes
 
 #### Core
@@ -15,6 +23,8 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 
 1. Rename the `p` import to `a`, and each `p.` call to `a.`.
 2. Run `asterdoc generate` again for generated artifact modules.
+
+From Paradoc 0.8, first do the 0.9 `Upgrading from 0.8` steps with `0.10.0` in place of `0.9.0`, then these steps.
 
 ## [0.9.0] - 2026-10-29
 

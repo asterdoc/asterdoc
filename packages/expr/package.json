@@ -1,6 +1,6 @@
 {
   "name": "@asterdoc/expr",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Purpose-built expression language for Asterdoc artifacts: parser, evaluator, and artifact-aware checker",
   "type": "module",
   "main": "./dist/index.js",

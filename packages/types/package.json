@@ -1,6 +1,6 @@
 {
   "name": "@asterdoc/types",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Type-only contracts for the Asterdoc framework: artifact definitions, runtime data, and renderer, formatter and resolver interfaces",
   "type": "module",
   "main": "./dist/index.js",
