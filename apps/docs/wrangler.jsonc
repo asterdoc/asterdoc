@@ -9,7 +9,7 @@
   // registry and the favicon skip the Worker.
   "assets": {
     "binding": "ASSETS",
-    "run_worker_first": ["/*", "!/assets/*", "!/fonts/*", "!/r/*", "!/favicon.ico"]
+    "run_worker_first": ["/*", "!/assets/*", "!/fonts/*", "!/r/*", "!/favicon.ico", "!/favicon.svg"]
   },
   "routes": [
     { "pattern": "docs.asterdoc.com", "custom_domain": true }

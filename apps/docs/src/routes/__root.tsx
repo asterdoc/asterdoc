@@ -72,6 +72,12 @@ const meta = () => ({
     {
       rel: "icon",
       href: "/favicon.ico",
+      sizes: "64x64",
+    },
+    {
+      rel: "icon",
+      href: "/favicon.svg",
+      type: "image/svg+xml",
     },
   ],
 });
