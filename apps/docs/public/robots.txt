@@ -1,6 +1,28 @@
-# public/robots.txt
+# Search engines, AI answer engines, AI training crawlers and link previews
+# are all welcome. Content Signals: https://contentsignals.org
 User-agent: *
-Allow: /
-Content-Signal: search=yes, ai-input=yes
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+Allow: /api/og/
+Disallow: /api/
+
+# Scrapers and SEO crawlers that send nothing back
+User-agent: Bytespider
+User-agent: Reflectionbot
+User-agent: ElevenlabsCrawler
+User-agent: AionBot
+User-agent: TokenFoundryBot
+User-agent: QlyzeBot
+User-agent: SenderBot
+User-agent: TernCrawler
+User-agent: SQLSpider
+User-agent: SpiderLing
+User-agent: AwarioBot
+User-agent: Barkrowler
+User-agent: SERankingBacklinksBot
+User-agent: MJ12bot
+User-agent: DotBot
+User-agent: BLEXBot
+User-agent: DataForSeoBot
+Disallow: /
 
 Sitemap: https://docs.asterdoc.com/sitemap.xml
