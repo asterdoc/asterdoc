@@ -106,10 +106,13 @@ export function writePdf(objects: readonly PdfObject[], trailer: ReadonlyMap<str
   const header = encodeLatin1('%PDF-1.7\n%\xe2\xe3\xcf\xd3\n')
   const body = serializeObjects(objects, header.length)
   const size = objects.reduce((highest, record) => Math.max(highest, record.object), 0) + 1
+  const generations = new Map(objects.map((record) => [record.object, record.generation]))
   let table = `xref\n0 ${size}\n0000000000 65535 f \n`
   for (let number = 1; number < size; number++) {
     const at = body.offsets.get(number)
-    table += at === undefined ? '0000000000 65535 f \n' : `${String(at).padStart(10, '0')} 00000 n \n`
+    table += at === undefined
+      ? '0000000000 65535 f \n'
+      : `${String(at).padStart(10, '0')} ${String(generations.get(number) ?? 0).padStart(5, '0')} n \n`
   }
   const entries = new Map(trailer)
   entries.set('Size', size)

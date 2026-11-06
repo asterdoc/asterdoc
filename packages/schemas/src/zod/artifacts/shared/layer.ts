@@ -232,11 +232,24 @@ const LayerMoneyFormatSchema = z.object({
 });
 
 /**
+ * How a PDF layer prints calendar dates, for a template that asks for one
+ * numeric order such as mm/dd/yyyy.
+ */
+const LayerDateFormatSchema = z.object({
+	pattern: z.enum(['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD'])
+		.describe('Numeric order the template asks for: two-digit month and day, four-digit year'),
+}).strict().meta({
+	title: 'LayerDateFormat',
+	description: 'How a PDF layer presents date values',
+});
+
+/**
  * Presentation a PDF layer's template requires of filled values, applied over
  * the formatter the caller renders with.
  */
 const LayerFormatSchema = z.object({
 	money: LayerMoneyFormatSchema.optional(),
+	date: LayerDateFormatSchema.optional(),
 }).strict().meta({
 	title: 'LayerFormat',
 	description: 'Presentation a PDF layer\'s template requires of filled values, applied over the caller\'s formatter',

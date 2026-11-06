@@ -1,5 +1,5 @@
 import { byteString } from './text-string'
-import { appendPdfUpdate } from './writer'
+import { appendPdfUpdate, collectRefs, writePdf } from './writer'
 
 export interface PdfName { kind: 'name'; value: string }
 export interface PdfRef { kind: 'ref'; object: number; generation: number }
@@ -390,6 +390,29 @@ export class PdfModel {
     trailer.set('Root', { kind: 'ref', object: catalog.object, generation: catalog.generation })
     if (this.startxref !== undefined) trailer.set('Prev', this.startxref)
     return appendPdfUpdate(this.bytes, records, trailer)
+  }
+
+  /**
+   * The file written whole, holding only the objects the catalog and `/Info`
+   * reach. Earlier revisions and objects nothing points to, such as a removed
+   * XFA form, are left out.
+   */
+  rewrite(): Uint8Array {
+    const catalog = this.catalog()
+    if (!catalog) throw new Error('PDF catalog not found')
+    const root: PdfRef = { kind: 'ref', object: catalog.object, generation: catalog.generation }
+    const info = this.trailer.entries.get('Info')
+    const reached = new Set<number>()
+    collectRefs(this, root, reached)
+    collectRefs(this, info, reached)
+    const records = [...reached]
+      .map((object) => this.objects.get(object))
+      .filter((record): record is PdfObject => record !== undefined)
+    const trailer = new Map<string, PdfValue>([['Root', root]])
+    if (isRef(info) && reached.has(info.object)) trailer.set('Info', info)
+    const id = this.trailer.entries.get('ID')
+    if (id !== undefined) trailer.set('ID', id)
+    return writePdf(records, trailer)
   }
 
   private async expandObjectStreams(): Promise<void> {

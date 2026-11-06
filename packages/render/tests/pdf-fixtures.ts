@@ -212,7 +212,11 @@ export type AcroFormFixtureField =
 export interface AcroFormFixtureOptions {
   /** Declare the file encrypted in its trailer, as a password-protected PDF does. */
   encrypted?: boolean
+  /** Carry an XFA form beside the AcroForm, and ask viewers to render it, as many government forms do. */
+  xfa?: boolean
 }
+
+const XFA_PACKET = '<xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/"><template/><datasets/></xdp:xdp>'
 
 /**
  * Build a one-page AcroForm PDF with text, checkbox, radio, and dropdown
@@ -270,13 +274,15 @@ export function acroFormPdf(fields: AcroFormFixtureField[], options: AcroFormFix
 
   const acroFormId = next++
   const encryptId = next++
+  const xfaId = next++
   const refs = (ids: number[]) => ids.map((id) => `${id} 0 R`).join(' ')
   return assemblePdf([
-    { id: 1, body: `<< /Type /Catalog /Pages 2 0 R /AcroForm ${acroFormId} 0 R >>` },
+    { id: 1, body: `<< /Type /Catalog /Pages 2 0 R /AcroForm ${acroFormId} 0 R${options.xfa ? ' /NeedsRendering true' : ''} >>` },
     { id: 2, body: '<< /Type /Pages /Kids [3 0 R] /Count 1 >>' },
     { id: 3, body: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << >> /Annots [${refs(widgets)}] >>` },
     ...objects,
-    { id: acroFormId, body: `<< /Fields [${refs(roots)}] >>` },
+    { id: acroFormId, body: `<< /Fields [${refs(roots)}]${options.xfa ? ` /XFA ${xfaId} 0 R` : ''} >>` },
+    ...(options.xfa ? [{ id: xfaId, body: `<< /Length ${XFA_PACKET.length} >>\nstream\n`, stream: encoder.encode(XFA_PACKET) }] : []),
     ...(options.encrypted ? [{ id: encryptId, body: '<< /Filter /Standard /V 2 /R 3 /Length 128 /P -44 >>' }] : []),
   ].sort((left, right) => left.id - right.id), options.encrypted ? ` /Encrypt ${encryptId} 0 R` : '')
 }

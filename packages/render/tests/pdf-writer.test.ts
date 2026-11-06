@@ -65,3 +65,39 @@ describe('incremental saves', () => {
     expect(lastTrailer(model.save())).toMatch(/\/Size 10 /)
   })
 })
+
+describe('whole rewrites', () => {
+  it('keeps /Info and /ID, drops objects nothing reaches, and writes one revision', async () => {
+    const withOrphan = assemblePdf([
+      { id: 1, body: '<< /Type /Catalog /Pages 2 0 R >>' },
+      { id: 2, body: '<< /Type /Pages /Kids [3 0 R] /Count 1 >>' },
+      { id: 3, body: '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] >>' },
+      { id: 4, body: '<< /Orphan (left behind) >>' },
+      { id: 5, body: '<< /Title (Kept title) >>' },
+    ], ' /Info 5 0 R /ID [<0123456789abcdef> <fedcba9876543210>]')
+    const model = await PdfModel.load(withOrphan)
+    const output = model.rewrite()
+    const text = latin1(output)
+
+    expect(text).not.toContain('left behind')
+    expect(text).toContain('(Kept title)')
+    expect(lastTrailer(output)).toContain('/Info 5 0 R')
+    expect(lastTrailer(output)).toContain('/ID [<0123456789abcdef> <fedcba9876543210>]')
+    expect(text.match(/%%EOF/g)).toHaveLength(1)
+    expect(text).not.toContain('/Prev')
+    const reread = await PdfModel.load(output)
+    expect(reread.catalog()?.object).toBe(1)
+    expect(reread.objects.has(4)).toBe(false)
+  })
+
+  it('records each object at the generation it carries', async () => {
+    const pdf = new TextEncoder().encode(latin1(assemblePdf([
+      { id: 1, body: '<< /Type /Catalog /Pages 2 0 R >>' },
+      { id: 2, body: '<< /Type /Pages /Kids [] /Count 0 >>' },
+    ])).replace('2 0 obj', '2 3 obj').replace('/Pages 2 0 R', '/Pages 2 3 R'))
+    const output = (await PdfModel.load(pdf)).rewrite()
+    const xref = latin1(output).slice(latin1(output).indexOf('xref'))
+    expect(xref).toMatch(/\d{10} 00003 n /)
+    expect(latin1(output)).toContain('2 3 obj')
+  })
+})

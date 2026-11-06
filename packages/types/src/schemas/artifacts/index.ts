@@ -18,6 +18,8 @@ export type {
   FileLayer,
   LayerFont,
   LayerFormat,
+  LayerDateFormat,
+  LayerDatePattern,
   LayerMoneyFormat,
   ReactLayerMimeType,
   Bindings,

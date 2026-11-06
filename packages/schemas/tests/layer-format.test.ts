@@ -47,6 +47,27 @@ describe("a layer's format", () => {
     expect(LayerSchema.safeParse(pdfLayer({ money: {} })).success).toBe(false);
   });
 
+  it("lets a PDF layer print dates in the numeric order its template asks for", () => {
+    for (const pattern of ["MM/DD/YYYY", "DD/MM/YYYY", "YYYY-MM-DD"]) {
+      expect(LayerSchema.safeParse(pdfLayer({ date: { pattern } })).success).toBe(true);
+    }
+    expect(LayerSchema.safeParse(pdfLayer({ money: { currencyDisplay: "none" }, date: { pattern: "MM/DD/YYYY" } })).success).toBe(true);
+  });
+
+  it("rejects a date pattern it does not declare", () => {
+    for (const pattern of ["MM/DD/YY", "mm/dd/yyyy", "D MMMM YYYY"]) {
+      expect(LayerSchema.safeParse(pdfLayer({ date: { pattern } })).success).toBe(false);
+    }
+    expect(LayerSchema.safeParse(pdfLayer({ date: {} })).success).toBe(false);
+    const extra = LayerSchema.safeParse(pdfLayer({ date: { pattern: "MM/DD/YYYY", separator: "-" } }));
+    expect(messages(extra).join("\n")).toContain("separator");
+  });
+
+  it("rejects a date format on a layer other than a PDF", () => {
+    const result = LayerSchema.safeParse({ kind: "file", mimeType: "text/markdown", path: "g-28.md", format: { date: { pattern: "MM/DD/YYYY" } } });
+    expect(messages(result)).toContain(`format: ${LAYER_FORMAT_RULE}`);
+  });
+
   it("rejects keys it does not declare, by name", () => {
     const money = LayerSchema.safeParse(pdfLayer({ money: { currencyDisplay: "none", minimumFractionDigits: 2 } }));
     expect(money.success).toBe(false);

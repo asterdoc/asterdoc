@@ -1,6 +1,7 @@
 import { BoundedCache, DEFAULT_CACHE_SIZE, MAX_CACHE_SIZE, stableSerialize } from './cache'
 import {
 	BUILT_IN_CONTACT_MESSAGES,
+	UNSUPPORTED_COUNTRY_LAYOUT,
 	UnsupportedAddressLayoutError,
 	formatAddress as formatContactAddress,
 	formatOrganization as formatContactOrganization,
@@ -1061,7 +1062,7 @@ function failure(kind: FormatKind, error: unknown): FormatResult {
 	if (error instanceof SelectionFormatError) return failed(error.status, [issue(kind, error.code, error.message)])
 	if (error instanceof MissingMessageError) return failed('unsupported', [issue(kind, 'missing_message', error.message, undefined, error)])
 	if (error instanceof UnsupportedAddressLayoutError) {
-		return failed('unsupported', [issue(kind, 'unsupported_country_layout', error.message, 'country', error)])
+		return failed('unsupported', [issue(kind, UNSUPPORTED_COUNTRY_LAYOUT, error.message, 'country', error)])
 	}
 	if (error instanceof UnsupportedLocaleError) return failed('unsupported', [issue(kind, 'unsupported_locale', error.message, undefined, error)])
 	if (error instanceof FormatConfigurationError) return failed('invalid', [issue(kind, 'invalid_options', error.message, undefined, error)])

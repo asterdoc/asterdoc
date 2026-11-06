@@ -481,7 +481,19 @@ When the template pre-prints the currency symbol beside each money box, as IRS 1
 
 Every render of that layer then prints `12,000.00` instead of `$12,000.00`, with no formatter to configure. The layer's format applies over the formatter the render uses, so its locale and digits still apply; only the symbol goes. The amount keeps its currency's fraction digits. Other layers of the artifact, such as its Markdown, keep the symbol, and a layer that reuses these bindings through `bindingsFrom` declares its own `format`.
 
-Only PDF layers take `format`, and `currencyDisplay: 'none'` is the only value. Declare the money field's `currency` too: [extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) reads an amount printed without a symbol in that currency.
+Only PDF layers take `format`, and `currencyDisplay: 'none'` is the only money value. Declare the money field's `currency` too: [extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) reads an amount printed without a symbol in that currency.
+
+When the template asks for dates in one numeric order, such as mm/dd/yyyy on U.S. government forms, the layer declares the pattern:
+
+```json
+"format": { "date": { "pattern": "MM/DD/YYYY" } }
+```
+
+Every date field then prints `06/05/2021` in place of the formatter's `Jun 5, 2021`, whatever the locale. The patterns are `MM/DD/YYYY`, `DD/MM/YYYY`, and `YYYY-MM-DD`. Extraction reads the text back by the same pattern, so `05/06/2021` on a `DD/MM/YYYY` layer is June 5 under any locale.
+
+An address in a country with no address layout prints in the generic layout (`line1, line2, locality, region, postalCode, country`) on every layer, in place of failing the render. A layout the formatter supplies for that country through `countryLayouts` comes first. An invalid address is still refused.
+
+Filling a template that carries an XFA form beside its AcroForm, as many government forms do, removes the XFA form and the catalog's `NeedsRendering` entry from the output. A viewer that reads XFA would otherwise show the XFA form's own data in place of the filled fields. That output is written whole, not as an incremental update, so no XFA bytes and no earlier revision stay in the file. A template without XFA is still filled as an incremental update.
 
 Formatting applies to indexed fields, computed values, parties, and field overlays. Invalid values and unknown binding sources reject with field diagnostics. Checkboxes and selection controls retain their raw value identity.
 

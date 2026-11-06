@@ -23,6 +23,12 @@ export interface NormalizedAddress extends Address {
 	readonly countryCode: string | undefined
 }
 
+/**
+ * The `unsupported` outcome an address returns when its country has no layout.
+ * A caller that prints the generic layout instead keys its fallback off this code.
+ */
+export const UNSUPPORTED_COUNTRY_LAYOUT = 'unsupported_country_layout'
+
 export class UnsupportedAddressLayoutError extends Error {
 	readonly country: string
 

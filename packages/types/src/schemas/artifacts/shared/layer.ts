@@ -102,6 +102,18 @@ export interface LayerMoneyFormat {
   currencyDisplay: "none";
 }
 
+/** A numeric date order a PDF template asks for. */
+export type LayerDatePattern = "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD";
+
+/**
+ * How a PDF layer presents date values, for a template that asks for one
+ * numeric order such as mm/dd/yyyy.
+ */
+export interface LayerDateFormat {
+  /** The order the template asks for: two-digit month and day, four-digit year. */
+  pattern: LayerDatePattern;
+}
+
 /**
  * Presentation a PDF layer's template requires of filled values, applied over
  * the formatter the caller renders with.
@@ -109,6 +121,8 @@ export interface LayerMoneyFormat {
 export interface LayerFormat {
   /** How money values are presented in this layer. */
   money?: LayerMoneyFormat;
+  /** How date values are presented in this layer. */
+  date?: LayerDateFormat;
 }
 
 /**

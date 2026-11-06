@@ -221,6 +221,14 @@ A money value prints with its currency symbol (`$1,250.50`). When the PDF pre-pr
 
 The box then holds `1,250.50`, and extraction reads it back in the field's declared `currency`. Both forms round-trip. Without a field `currency`, bind `fee.amount` to a box that holds a bare number. Only PDF layers declare `format`. Formatter options are in [formatting.md](./formatting.md).
 
+## Dates
+
+A date prints as the formatter writes it (`Jun 5, 2021`). When the PDF asks for one numeric order, declare the pattern on the layer: `"format": { "date": { "pattern": "MM/DD/YYYY" } }`. The patterns are `MM/DD/YYYY`, `DD/MM/YYYY`, and `YYYY-MM-DD`. Every date field of the layer prints in it, and extraction reads it back by the same pattern. A layer can declare `money` and `date` together.
+
+## XFA and foreign addresses
+
+A filled PDF carries no XFA form: the fill removes it and writes the file whole, so no XFA bytes stay in it, and a template with XFA beside its AcroForm needs no preparation. An address in a country with no address layout prints in the generic layout, so a foreign address never stops a render.
+
 ## Read a filled PDF back
 
 Extraction runs the bindings in reverse.

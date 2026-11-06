@@ -60,6 +60,7 @@ export {
 export { FormatConfigurationError, FormatError, UnsupportedLocaleError, isFormatError } from './errors'
 
 export { MISSING_RATING_SCALE, UNSUPPORTED_LIST_JOIN } from './selection'
+export { UNSUPPORTED_COUNTRY_LAYOUT } from './contacts'
 
 export {
 	FORMAT_KINDS,

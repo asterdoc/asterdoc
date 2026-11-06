@@ -112,8 +112,8 @@ File-backed layer with external file reference. Used when content is stored in a
   },
   {
     name: 'format',
-    type: "{ money?: { currencyDisplay: 'none' } }",
-    description: 'PDF layers only. The presentation the template requires of filled values. `none` prints money amounts without a symbol, for a template that pre-prints it. Applies to this layer alone. See [Artifact formatting](/sdk/renderers/pdf#artifact-formatting)',
+    type: "{ money?: { currencyDisplay: 'none' }, date?: { pattern: 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD' } }",
+    description: 'PDF layers only. The presentation the template requires of filled values. `none` prints money amounts without a symbol, for a template that pre-prints it. `pattern` prints every date in the numeric order the template asks for. Applies to this layer alone. See [Artifact formatting](/sdk/renderers/pdf#artifact-formatting)',
     isOptional: true,
   },
   {

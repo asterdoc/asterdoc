@@ -107,7 +107,7 @@ export async function renderPdf({
   format,
 }: RenderPdfOptions): Promise<BinaryContent> {
   const preprocessed = form
-    ? formatFieldData(data, form, formatter, { choices: 'value', ...(format?.money && { money: format.money }) })
+    ? formatFieldData(data, form, formatter, { choices: 'value', ...(format?.money && { money: format.money }), ...(format?.date && { date: format.date }) })
     : data
   const parsed = parseBindings(bindings ?? {})
   if (form) {
@@ -118,6 +118,7 @@ export async function renderPdf({
   assertListBindingCapacity(form, data, parsed)
   const model = await PdfModel.load(template)
   const fonts = PdfFontSet.create(model, { font, layerFont })
+  let droppedXfa = false
   const shouldFill = parsed.length > 0 || Boolean(form?.fields && Object.keys(form.fields).length > 0)
 
   if (shouldFill) {
@@ -137,7 +138,9 @@ export async function renderPdf({
       // chosen for it. A viewer told to regenerate appearances would redraw
       // them in the form's default font instead.
       acroForm.entries.delete('NeedAppearances')
+      droppedXfa = acroForm.entries.delete('XFA')
       model.markUpdated(acroRef ?? catalogRef)
+      if (model.dict(catalogRef)?.entries.delete('NeedsRendering')) model.markUpdated(catalogRef)
       // Bindings given, even none, replace filling PDF fields by field id.
       if (bindings) {
         for (const [pdfName, parts] of parsed) {
@@ -175,5 +178,5 @@ export async function renderPdf({
 
   applyPdfOverlays(model, overlays, preprocessed, fonts)
   fonts.finish()
-  return model.save()
+  return droppedXfa ? model.rewrite() : model.save()
 }

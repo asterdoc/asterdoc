@@ -51,6 +51,20 @@ describe('a PDF layer that declares its money format', () => {
 		expect(await boxValue(await filled().render({ renderer: pdfRenderer(), layer: 'pdf' }))).toBe('12,000.00')
 	})
 
+	test('prints a date in the pattern the layer declares, and the formatter date elsewhere', async () => {
+		const dated = {
+			...definition,
+			fields: { signed: { type: 'date' as const, label: 'Signed' } },
+			layers: {
+				pdf: { ...definition.layers.pdf, bindings: { name: 'signed' }, format: { date: { pattern: 'MM/DD/YYYY' as const } } },
+				pdfPlain: { kind: 'file' as const, mimeType: 'application/pdf', path: 'form.pdf', bindingsFrom: 'pdf' },
+			},
+		}
+		const form = () => a.form(dated, { resolver }).fill({ fields: { signed: '2021-06-05' } })
+		expect(await boxValue(await form().render({ renderer: pdfRenderer(), layer: 'pdf' }))).toBe('06/05/2021')
+		expect(await boxValue(await form().render({ renderer: pdfRenderer(), layer: 'pdfPlain' }))).toBe('Jun 5, 2021')
+	})
+
 	test('keeps the symbol on a layer that reuses its bindings but declares no format', async () => {
 		expect(await boxValue(await filled().render({ renderer: pdfRenderer(), layer: 'pdfSymbol' }))).toBe('$12,000.00')
 	})

@@ -1,5 +1,5 @@
 import { defaultFormatter } from '@asterdoc/format'
-import type { BinaryContent, EnumOption, Form, FormField, Formatter, LayerFormat } from '@asterdoc/types'
+import type { BinaryContent, EnumOption, Form, FormField, Formatter, LayerDateFormat, LayerFormat } from '@asterdoc/types'
 import { validateFieldBindings } from '../text/field-formatter'
 import { parseBindings, resolveLayerBindings, splitPartIndex } from '../layer-bindings'
 import { pathSegments } from '../path'
@@ -278,6 +278,18 @@ function monthIndex(token: string, locale: string): number | undefined {
   return undefined
 }
 
+function parsePatternDate(raw: string, date: LayerDateFormat): string | undefined {
+  const text = raw.trim()
+  if (date.pattern === 'YYYY-MM-DD') {
+    const parts = text.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+    return parts ? isoDate(Number(parts[1]), Number(parts[2]), Number(parts[3])) : undefined
+  }
+  const parts = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (!parts) return undefined
+  const [first, second, year] = [Number(parts[1]), Number(parts[2]), Number(parts[3])]
+  return date.pattern === 'MM/DD/YYYY' ? isoDate(year, first, second) : isoDate(year, second, first)
+}
+
 function parseDate(raw: string, locale: string): string | undefined {
   const text = raw.trim()
   const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})$/)
@@ -382,7 +394,13 @@ function parseMoney(raw: string, field: FormField, formatter: Formatter): Parsed
 const composite = new Set(['address', 'person', 'organization', 'identification', 'coordinate', 'bbox', 'list', 'fieldset'])
 
 /** Parse text written into one PDF field back into the field's type. */
-function parseFieldValue(raw: string, field: FormField, formatter: Formatter): Parsed {
+interface Reader {
+  formatter: Formatter
+  date?: LayerDateFormat
+}
+
+function parseFieldValue(raw: string, field: FormField, reader: Reader): Parsed {
+  const { formatter } = reader
   if (composite.has(field.type)) {
     return fail(`A ${field.type} value written as one piece of text cannot be split back into its parts; bind its parts to recover it.`)
   }
@@ -428,6 +446,10 @@ function parseFieldValue(raw: string, field: FormField, formatter: Formatter): P
     case 'money':
       return parseMoney(raw, field, formatter)
     case 'date': {
+      if (reader.date) {
+        const value = parsePatternDate(raw, reader.date)
+        return value === undefined ? fail(`The text is not a date written ${reader.date.pattern}.`) : ok(value)
+      }
       const value = parseDate(raw, formatter.locale)
       return value === undefined ? fail('The text is not a date.') : ok(value)
     }
@@ -455,11 +477,11 @@ function parseFieldValue(raw: string, field: FormField, formatter: Formatter): P
   return fail(`Values of type ${field.type} cannot be read back.`)
 }
 
-function parseTarget(raw: string, target: Target, formatter: Formatter): Parsed {
+function parseTarget(raw: string, target: Target, reader: Reader): Parsed {
   if (target.kind === 'fixed') return fail(target.reason)
-  if (target.kind === 'field') return parseFieldValue(raw, target.field, formatter)
+  if (target.kind === 'field') return parseFieldValue(raw, target.field, reader)
   if (target.type === 'number') {
-    const value = parseNumber(raw, formatter.locale)
+    const value = parseNumber(raw, reader.formatter.locale)
     return value === undefined ? fail('The text is not a number.') : ok(value)
   }
   return ok(raw)
@@ -489,7 +511,7 @@ function source(state: FieldState | undefined, name: string): PdfExtractionSourc
   return state?.raw === undefined ? { field: name } : { field: name, value: state.raw }
 }
 
-function readDirect(state: FieldState, target: Target, formatter: Formatter): Reading {
+function readDirect(state: FieldState, target: Target, reader: Reader): Reading {
   const { field } = state
   if (field.type === 'checkbox') {
     const isBoolean = target.kind === 'field' ? target.field.type === 'boolean' : false
@@ -503,13 +525,13 @@ function readDirect(state: FieldState, target: Target, formatter: Formatter): Re
   }
   if (field.type === 'radio') {
     if (!state.on || state.raw === undefined) return { kind: 'empty' }
-    const parsed = parseTarget(state.raw, target, formatter)
+    const parsed = parseTarget(state.raw, target, reader)
     return parsed.ok ? { kind: 'value', value: parsed.value } : { kind: 'unparseable', reason: parsed.reason }
   }
   if (field.type === 'dropdown') {
     if (!state.selected || state.selected.length === 0) return { kind: 'empty' }
     const raw = state.selected.join(', ')
-    const parsed = parseTarget(raw, target, formatter)
+    const parsed = parseTarget(raw, target, reader)
     return parsed.ok ? { kind: 'value', value: parsed.value } : { kind: 'unparseable', reason: parsed.reason }
   }
   if (state.raw === undefined) return { kind: 'empty' }
@@ -517,7 +539,7 @@ function readDirect(state: FieldState, target: Target, formatter: Formatter): Re
   if (target.kind === 'field' && composite.has(target.field.type)) {
     return { kind: 'not_recoverable', reason: `A ${target.field.type} value written as one piece of text cannot be split back into its parts; bind its parts to recover it.` }
   }
-  const parsed = parseTarget(state.raw, target, formatter)
+  const parsed = parseTarget(state.raw, target, reader)
   return parsed.ok ? { kind: 'value', value: parsed.value } : { kind: 'unparseable', reason: parsed.reason }
 }
 
@@ -525,7 +547,7 @@ function sameValue(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
-function resolvePath(work: PathWork, target: Target, formatter: Formatter): { status: PdfExtractionStatus; value?: unknown; reason?: string } {
+function resolvePath(work: PathWork, target: Target, reader: Reader): { status: PdfExtractionStatus; value?: unknown; reason?: string } {
   const readings = [...work.readings]
 
   if (work.parts.size > 0) {
@@ -539,7 +561,7 @@ function resolvePath(work: PathWork, target: Target, formatter: Formatter): { st
     else if (values.slice(0, lastFilled).some((value) => value === undefined)) {
       readings.push({ kind: 'unparseable', reason: 'A part before the last filled part is empty, so the parts cannot be joined in order.' })
     } else {
-      const parsed = parseTarget(values.slice(0, lastFilled + 1).join('-'), target, formatter)
+      const parsed = parseTarget(values.slice(0, lastFilled + 1).join('-'), target, reader)
       readings.push(parsed.ok ? { kind: 'value', value: parsed.value } : { kind: 'unparseable', reason: parsed.reason })
     }
   }
@@ -605,6 +627,7 @@ function placeValue(data: PdfExtractedData, path: string, value: unknown): void 
  */
 export async function extractPdfData({ pdf, form, bindings, formatter: filledWith = defaultFormatter, format }: ExtractPdfDataOptions): Promise<PdfExtraction> {
   const formatter = format?.money ? filledWith.compose({ money: format.money }) : filledWith
+  const reader: Reader = { formatter, ...(format?.date && { date: format.date }) }
   const parsed = parseBindings(bindings)
   const sources = parsed.flatMap(([, parts]) => parts.map((part) => part.source))
   validateFieldBindings(form, Object.fromEntries(sources.map((source, index) => [String(index), source])))
@@ -668,12 +691,12 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
     }
 
     if (qualifier === undefined) {
-      entry.readings.push(readDirect(state, target, formatter))
+      entry.readings.push(readDirect(state, target, reader))
       continue
     }
 
     if (fieldType === 'boolean') {
-      entry.readings.push(readDirect(state, target, formatter))
+      entry.readings.push(readDirect(state, target, reader))
     } else if (fieldType === 'enum' || fieldType === 'multiselect') {
       entry.optionKind = fieldType
       entry.options.set(qualifier, state.field.type === 'checkbox' || state.field.type === 'radio'
@@ -691,7 +714,7 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
   const data: PdfExtractedData = { fields: {} }
   const entries: PdfExtractionEntry[] = []
   for (const [path, entry] of work) {
-    const resolved = resolvePath(entry, targetFor(form, path), formatter)
+    const resolved = resolvePath(entry, targetFor(form, path), reader)
     if (resolved.status === 'recovered') placeValue(data, path, resolved.value)
     entries.push({
       path,

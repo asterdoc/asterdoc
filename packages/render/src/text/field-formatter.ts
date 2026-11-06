@@ -10,9 +10,10 @@ import type {
 	FormAnnex,
 	DefsSection,
 	Bindings,
+	LayerDateFormat,
 	MoneyFormatOptions,
 } from '@asterdoc/types'
-import { MISSING_RATING_SCALE, UNSUPPORTED_LIST_JOIN } from '@asterdoc/format'
+import { MISSING_RATING_SCALE, UNSUPPORTED_COUNTRY_LAYOUT, UNSUPPORTED_LIST_JOIN } from '@asterdoc/format'
 import { bindingDataPath } from '../layer-bindings'
 import { pathSegments } from '../path'
 
@@ -32,6 +33,11 @@ export interface FieldFormattingOptions {
 	 * A PDF layer that declares `format.money` passes it here.
 	 */
 	money?: MoneyFormatOptions
+	/**
+	 * The numeric order every date value prints in. A PDF layer that declares
+	 * `format.date` passes it here.
+	 */
+	date?: LayerDateFormat
 }
 
 type RecordValue = Record<string, unknown>
@@ -224,6 +230,43 @@ function dateInput(value: unknown, path: string, fieldType: string): string | Da
 	throw formatIssue(path, fieldType, 'invalid_value', `Expected an ISO string or Date for ${fieldType}.`)
 }
 
+const CALENDAR_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
+
+function patternDate(
+	formatter: Formatter,
+	value: unknown,
+	path: string,
+	fieldType: string,
+	date: LayerDateFormat,
+	options?: FieldFormattingOptions,
+): unknown {
+	return guardFormatting(path, fieldType, () => {
+		const result = formatter.safeFormatDate(dateInput(value, path, fieldType))
+		if (!result.success) return presentResult(result, value, path, fieldType, options)
+		const parts = typeof value === 'string' ? CALENDAR_DATE.exec(value) : null
+		if (!parts) throw formatIssue(path, fieldType, 'invalid_value', `The layer prints dates as ${date.pattern}, which needs a calendar date written YYYY-MM-DD.`)
+		const [, year, month, day] = parts as unknown as [string, string, string, string]
+		const text = date.pattern === 'MM/DD/YYYY' ? `${month}/${day}/${year}`
+			: date.pattern === 'DD/MM/YYYY' ? `${day}/${month}/${year}`
+				: `${year}-${month}-${day}`
+		return new FormattedFieldValue(value, text)
+	})
+}
+
+function address(formatter: Formatter, value: unknown, path: string, fieldType: string, options?: FieldFormattingOptions): unknown {
+	return callFormatterWithFallback(
+		path,
+		fieldType,
+		value,
+		() => formatter.safeFormatAddress(recordInput(value, path, fieldType)),
+		{
+			code: UNSUPPORTED_COUNTRY_LAYOUT,
+			substitute: () => formatter.safeFormatAddress(recordInput(value, path, fieldType), { layout: 'generic' }),
+			options,
+		},
+	)
+}
+
 function stringInput(value: unknown, path: string, fieldType: string): string {
 	if (typeof value === 'string') return value
 	throw formatIssue(path, fieldType, 'invalid_value', `Expected a string for ${fieldType}.`)
@@ -280,7 +323,7 @@ function formatLeaf(
 	try {
 		switch (field.type) {
 			case 'money': return callFormatter(path, field.type, value, () => formatter.safeFormatMoney(recordInput(value, path, field.type), options?.money), options)
-			case 'address': return callFormatter(path, field.type, value, () => formatter.safeFormatAddress(recordInput(value, path, field.type)), options)
+			case 'address': return address(formatter, value, path, field.type, options)
 			case 'phone': return callFormatter(path, field.type, value, () => formatter.safeFormatPhone(typeof value === 'string' ? value : recordInput(value, path, field.type)), options)
 			case 'person': return callFormatter(path, field.type, value, () => formatter.safeFormatPerson(recordInput(value, path, field.type)), options)
 			case 'organization': return callFormatter(path, field.type, value, () => formatter.safeFormatOrganization(recordInput(value, path, field.type)), options)
@@ -288,7 +331,9 @@ function formatLeaf(
 			case 'bbox': return callFormatter(path, field.type, value, () => formatter.safeFormatBbox(recordInput(value, path, field.type)), options)
 			case 'duration': return callFormatter(path, field.type, value, () => formatter.safeFormatDuration(stringInput(value, path, field.type)), options)
 			case 'identification': return callFormatter(path, field.type, value, () => formatter.safeFormatIdentification(recordInput(value, path, field.type)), options)
-			case 'date': return callFormatter(path, field.type, value, () => formatter.safeFormatDate(dateInput(value, path, field.type)), options)
+			case 'date': return options?.date
+				? patternDate(formatter, value, path, field.type, options.date, options)
+				: callFormatter(path, field.type, value, () => formatter.safeFormatDate(dateInput(value, path, field.type)), options)
 			case 'datetime': return callFormatter(path, field.type, value, () => formatter.safeFormatDatetime(dateInput(value, path, field.type)), options)
 			case 'time': return callFormatter(path, field.type, value, () => formatter.safeFormatTime(stringInput(value, path, field.type)), options)
 			case 'number': return callFormatter(path, field.type, value, () => formatter.safeFormatNumber(numberInput(value, path, field.type)), options)
@@ -381,7 +426,7 @@ export function formatDefinitionValue(
 	try {
 		switch (type) {
 			case 'money': return callFormatter(path, type, value, () => formatter.safeFormatMoney(recordInput(value, path, type), options?.money), options)
-			case 'address': return callFormatter(path, type, value, () => formatter.safeFormatAddress(recordInput(value, path, type)), options)
+			case 'address': return address(formatter, value, path, type, options)
 			case 'phone': return callFormatter(path, type, value, () => formatter.safeFormatPhone(typeof value === 'string' ? value : recordInput(value, path, type)), options)
 			case 'person': return callFormatter(path, type, value, () => formatter.safeFormatPerson(recordInput(value, path, type)), options)
 			case 'organization': return callFormatter(path, type, value, () => formatter.safeFormatOrganization(recordInput(value, path, type)), options)
@@ -395,7 +440,9 @@ export function formatDefinitionValue(
 			case 'identification': return callFormatter(path, type, value, () => formatter.safeFormatIdentification(recordInput(value, path, type)), options)
 			case 'attachment': return callFormatter(path, type, value, () => formatter.safeFormatAttachment(recordInput(value, path, type)), options)
 			case 'signature': return callFormatter(path, type, value, () => formatter.safeFormatSignature(recordInput(value, path, type)), options)
-			case 'date': return callFormatter(path, type, value, () => formatter.safeFormatDate(dateInput(value, path, type)), options)
+			case 'date': return options?.date
+				? patternDate(formatter, value, path, type, options.date, options)
+				: callFormatter(path, type, value, () => formatter.safeFormatDate(dateInput(value, path, type)), options)
 			case 'datetime': return callFormatter(path, type, value, () => formatter.safeFormatDatetime(dateInput(value, path, type)), options)
 			case 'time': return callFormatter(path, type, value, () => formatter.safeFormatTime(stringInput(value, path, type)), options)
 			case 'number': return callFormatter(path, type, value, () => formatter.safeFormatNumber(numberInput(value, path, type)), options)
