@@ -117,7 +117,7 @@ Migrate an artifact whose `$schema` is not current before you load it. `migrateA
 import { migrateArtifact } from "@asterdoc/sdk";
 
 const unversioned = { kind: "form", name: "lease" };
-const result = migrateArtifact(unversioned, { from: "2026-10-28" }); // from names the version when $schema has none
+const result = migrateArtifact(unversioned, { from: "2026-11-06" }); // from names the version when $schema has none
 const current = result.artifact; // result.status is "current" or "migrated"
 ```
 

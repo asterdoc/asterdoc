@@ -16,7 +16,7 @@ const CLI = path.resolve(__dirname, '../../dist/index.js')
 const SCRATCH = '/tmp/asterdoc-cli-016'
 
 const ITEM = {
-  $schema: 'https://schema.asterdoc.com/2026-10-28.json',
+  $schema: 'https://schema.asterdoc.com/2026-11-06.json',
   name: 'lease',
   kind: 'document',
   version: '1.0.0',

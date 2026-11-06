@@ -6,7 +6,7 @@ import { runCli } from '../setup/spawn-cli.js'
 
 const root = mkdtempSync(path.join(tmpdir(), 'asterdoc-cli-101-'))
 const file = path.join(root, 'bad.json')
-writeFileSync(file, JSON.stringify({ $schema: 'https://schema.asterdoc.com/2026-10-28.json', kind: 'form', name: 'bad', title: 'Bad', version: '1.0.0', fields: { a: { type: 'nope', label: 'A' } } }))
+writeFileSync(file, JSON.stringify({ $schema: 'https://schema.asterdoc.com/2026-11-06.json', kind: 'form', name: 'bad', title: 'Bad', version: '1.0.0', fields: { a: { type: 'nope', label: 'A' } } }))
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
 describe('scope flags require a schema-valid artifact', () => {

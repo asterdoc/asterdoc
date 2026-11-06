@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { fileReferencesOf } from '../../src/utils/artifact-file.js'
 import { runCli } from '../setup/spawn-cli.js'
 
-const schema = 'https://schema.asterdoc.com/2026-10-28.json'
+const schema = 'https://schema.asterdoc.com/2026-11-06.json'
 const roots: string[] = []
 const scratch = () => {
   const root = mkdtempSync(path.join(tmpdir(), 'asterdoc-walker-'))

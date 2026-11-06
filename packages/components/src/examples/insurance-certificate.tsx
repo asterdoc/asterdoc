@@ -27,7 +27,7 @@ import { Table } from "../components/table";
 
 /** The certificate form, exactly as authored. */
 export const insuranceCertificateSpec = {
-  $schema: "https://schema.asterdoc.com/2026-10-28.json",
+  $schema: "https://schema.asterdoc.com/2026-11-06.json",
   kind: "form",
   name: "certificate-of-insurance",
   version: "1.0.0",

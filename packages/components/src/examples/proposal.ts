@@ -54,7 +54,7 @@ export const PROPOSAL_SIGNATURE_SLOTS = {
 
 /** The proposal form, exactly as authored. Kept beside the instance for evaluators that take a raw `Form`. */
 export const proposalSpec = {
-  $schema: "https://schema.asterdoc.com/2026-10-28.json",
+  $schema: "https://schema.asterdoc.com/2026-11-06.json",
   kind: "form",
   name: "services-proposal",
   version: "1.0.0",

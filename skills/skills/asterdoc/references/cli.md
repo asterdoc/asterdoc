@@ -148,7 +148,7 @@ asterdoc detach lease-agreement.yaml pdf -y                        # or: instruc
 ```bash
 asterdoc migrate forms/ --dry-run                 # print each diff, write nothing
 asterdoc migrate forms/                           # rewrite in place; JSON stays JSON, YAML keeps comments
-asterdoc migrate lease.json --from 2026-10-28     # $schema missing, undated, unpublished, or not Asterdoc's
+asterdoc migrate lease.json --from 2026-11-06     # $schema missing, undated, unpublished, or not Asterdoc's
 ```
 
 Each file reports `migrated`, `current` or `failed`. A failed file stays as it was, and the command exits 1. When a step names a value it cannot convert, fix that value by hand and run `migrate` again. Files that are not artifacts are skipped. To bump the artifact's own `version`, use `asterdoc version`.

@@ -22,7 +22,7 @@ const fields = {
 function runtime(options?: Parameters<typeof createAsterdocRuntime>[1]) {
 	return createAsterdocRuntime(
 		{
-			$schema: "https://schema.asterdoc.com/2026-10-28.json",
+			$schema: "https://schema.asterdoc.com/2026-11-06.json",
 			kind: "form",
 			name: "coerce",
 			version: "1.0.0",

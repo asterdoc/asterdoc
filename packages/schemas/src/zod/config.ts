@@ -2,20 +2,20 @@
  * Schema version identity.
  *
  * Each version of the artifact schema is identified by a date and published
- * at a dated address, such as `https://schema.asterdoc.com/2026-10-28.json`.
- * A new dated version is created only for a breaking change, and each one
- * ships with a migration step from the version before it. The current version
+ * at a dated address, such as `https://schema.asterdoc.com/2026-11-06.json`.
+ * Every change to the artifact schema creates a new dated version, and each
+ * one ships with a migration step from the version before it. The current version
  * is the latest entry in `SCHEMA_VERSIONS`.
  */
 
 /** Every published schema version, oldest first. The last entry is current. */
-export const SCHEMA_VERSIONS = ['2026-10-28'] as const;
+export const SCHEMA_VERSIONS = ['2026-10-28', '2026-11-06'] as const;
 
 /** A published, dated schema version. */
 export type SchemaVersion = (typeof SCHEMA_VERSIONS)[number];
 
 /** The current schema version: the latest dated version. */
-export const SCHEMA_VERSION = '2026-10-28' as const satisfies SchemaVersion;
+export const SCHEMA_VERSION = '2026-11-06' as const satisfies SchemaVersion;
 
 export const SCHEMA_BASE = 'https://schema.asterdoc.com';
 
@@ -64,8 +64,8 @@ const DATED_ADDRESS = /^([0-9]{4}-[0-9]{2}-[0-9]{2})(?:\.json|\/[a-z][a-z0-9-]*\
 /**
  * Read the schema version an artifact's `$schema` address names.
  *
- * Both the dated bundle (`<base>/2026-10-28.json`) and a dated individual
- * schema (`<base>/2026-10-28/form.json`) name that version.
+ * Both the dated bundle (`<base>/2026-11-06.json`) and a dated individual
+ * schema (`<base>/2026-11-06/form.json`) name that version.
  */
 export function readSchemaAddress(address: string): SchemaAddress {
 	const prefix = `${SCHEMA_BASE}/`;

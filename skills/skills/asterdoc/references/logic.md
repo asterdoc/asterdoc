@@ -316,7 +316,7 @@ Form `fill()` and `update()` reject `NaN` and `Infinity` before expressions run.
 import { a } from "@asterdoc/sdk";
 
 const form = a.form({
-  $schema: "https://schema.asterdoc.com/2026-10-28.json",
+  $schema: "https://schema.asterdoc.com/2026-11-06.json",
   name: "age-check",
   kind: "form",
   fields: { birthDate: { type: "date" } },

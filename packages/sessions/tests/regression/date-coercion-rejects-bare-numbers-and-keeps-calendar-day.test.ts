@@ -17,7 +17,7 @@ it("long-form date keeps its calendar day in any time zone", () => {
 
 export function artifact(extra: Record<string, unknown>) {
   return {
-    $schema: "https://schema.asterdoc.com/2026-10-28.json", kind: "form", name: "v", version: "1.0.0", title: "V",
+    $schema: "https://schema.asterdoc.com/2026-11-06.json", kind: "form", name: "v", version: "1.0.0", title: "V",
     parties: {}, fields: {},
     layers: { composition: { kind: "file", mimeType: "text/plain", path: "v.txt" } }, defaultLayer: "composition",
     ...extra,

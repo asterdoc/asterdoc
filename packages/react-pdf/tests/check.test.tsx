@@ -19,7 +19,7 @@ import type { DocumentData } from "@asterdoc/react";
 import type { ReactLayerComponent } from "../src/layer";
 
 const spec = {
-  $schema: "https://schema.asterdoc.com/2026-10-28.json",
+  $schema: "https://schema.asterdoc.com/2026-11-06.json",
   kind: "form",
   name: "check-fixture",
   version: "1.0.0",
@@ -55,7 +55,7 @@ const fixtureForm: Form = a.form(spec).toJSON() as Form;
 const fixtureData: DocumentData = { fields: { name: "Ada Lovelace" }, parties: {} };
 
 const totalsSpec = {
-  $schema: "https://schema.asterdoc.com/2026-10-28.json",
+  $schema: "https://schema.asterdoc.com/2026-11-06.json",
   kind: "form",
   name: "check-totals-fixture",
   version: "1.0.0",

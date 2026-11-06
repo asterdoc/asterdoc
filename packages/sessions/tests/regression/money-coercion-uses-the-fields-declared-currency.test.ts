@@ -17,7 +17,7 @@ it("plain amount on a field with no currency is not stored as USD", () => {
 
 export function artifact(extra: Record<string, unknown>) {
   return {
-    $schema: "https://schema.asterdoc.com/2026-10-28.json", kind: "form", name: "v", version: "1.0.0", title: "V",
+    $schema: "https://schema.asterdoc.com/2026-11-06.json", kind: "form", name: "v", version: "1.0.0", title: "V",
     parties: {}, fields: {},
     layers: { composition: { kind: "file", mimeType: "text/plain", path: "v.txt" } }, defaultLayer: "composition",
     ...extra,

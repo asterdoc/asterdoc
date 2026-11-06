@@ -16,3 +16,35 @@ describe('the published migration steps', () => {
 		}
 	})
 })
+
+describe('the 2026-10-28 to 2026-11-06 step', () => {
+	const form = {
+		$schema: schemaVersionUrl('2026-10-28'),
+		kind: 'form',
+		name: 'lease',
+		version: '1.0.0',
+		title: 'Lease',
+		fields: { signed: { type: 'date', label: 'Signed on' } },
+		defaultLayer: 'pdf',
+		layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: './lease.pdf' } },
+	}
+
+	test('changes only $schema on a form with fields and a PDF layer', () => {
+		const result = migrateArtifact(form)
+
+		expect(result.status).toBe('migrated')
+		if (result.status !== 'migrated') return
+		expect(result.from).toBe('2026-10-28')
+		expect(result.to).toBe('2026-11-06')
+		const { $schema, ...rest } = result.artifact
+		const { $schema: _old, ...before } = form
+		expect($schema).toBe(ASTERDOC_SCHEMA_URL)
+		expect(rest).toEqual(before)
+	})
+
+	test('leaves its input unchanged', () => {
+		const input = structuredClone(form)
+		migrateArtifact(input)
+		expect(input).toEqual(form)
+	})
+})

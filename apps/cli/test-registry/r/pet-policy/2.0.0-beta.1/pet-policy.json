@@ -1,5 +1,5 @@
 {
-  "$schema": "https://schema.asterdoc.com/2026-10-28.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
   "kind": "form",
   "name": "pet-policy",
   "version": "2.0.0-beta.1",

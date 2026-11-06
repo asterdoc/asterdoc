@@ -7,7 +7,7 @@ const here = path.dirname(fileURLToPath(import.meta.url))
 export const cliRoot = path.resolve(here, '..')
 export const scratch =
   '/private/tmp/claude-501/-Users-amuaddi-projects-asterdoc-workspace/3c3d0125-1acb-434a-8ef8-4b49600f0eae/scratchpad/val-p2b'
-export const SCHEMA = 'https://schema.asterdoc.com/2026-10-28.json'
+export const SCHEMA = 'https://schema.asterdoc.com/2026-11-06.json'
 
 export interface CliResult {
   stdout: string

@@ -6,7 +6,7 @@ import { runCli } from '../setup/spawn-cli.js'
 
 const root = mkdtempSync(path.join(tmpdir(), 'asterdoc-cli-102-'))
 const file = path.join(root, 'form.json')
-writeFileSync(file, JSON.stringify({ $schema: 'https://schema.asterdoc.com/2026-10-28.json', kind: 'form', name: 'form', title: 'Form', version: '1.0.0', fields: {}, instructions: { kind: 'file', mimeType: 'text/markdown', path: 'missing.md' } }))
+writeFileSync(file, JSON.stringify({ $schema: 'https://schema.asterdoc.com/2026-11-06.json', kind: 'form', name: 'form', title: 'Form', version: '1.0.0', fields: {}, instructions: { kind: 'file', mimeType: 'text/markdown', path: 'missing.md' } }))
 afterAll(() => rmSync(root, { recursive: true, force: true }))
 
 describe('checksum-only skips missing content files', () => {

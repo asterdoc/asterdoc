@@ -58,7 +58,7 @@ export const PURCHASE_ORDER_SIGNATURE_SLOTS = {
 
 /** The purchase order form, exactly as authored. Kept beside the instance for evaluators that take a raw `Form`. */
 export const purchaseOrderSpec = {
-  $schema: "https://schema.asterdoc.com/2026-10-28.json",
+  $schema: "https://schema.asterdoc.com/2026-11-06.json",
   kind: "form",
   name: "purchase-order",
   version: "1.0.0",

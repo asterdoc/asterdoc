@@ -10,7 +10,7 @@ import { reactRenderer, type ReactLayerComponentProps } from "../src/layer";
 import { renderPdf } from "../src/render";
 
 const artifact = {
-  $schema: "https://schema.asterdoc.com/2026-10-28.json",
+  $schema: "https://schema.asterdoc.com/2026-11-06.json",
   kind: "form",
   name: "clock-def",
   version: "1.0.0",

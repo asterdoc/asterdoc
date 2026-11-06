@@ -22,4 +22,11 @@ export interface MigrationStep {
  * Every migration step, in version order. Each step leads from one published
  * version to the next, so a chain exists from every version to the current one.
  */
-export const MIGRATION_STEPS: readonly MigrationStep[] = []
+export const MIGRATION_STEPS: readonly MigrationStep[] = [
+	{
+		from: '2026-10-28',
+		to: '2026-11-06',
+		summary: 'Adds the optional format.date setting to PDF layers; an artifact needs no change.',
+		apply: (artifact) => artifact,
+	},
+]

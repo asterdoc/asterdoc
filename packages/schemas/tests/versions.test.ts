@@ -24,9 +24,9 @@ describe('schema versions', () => {
 		expect(schemaVersionUrl(SCHEMA_VERSION)).toBe(ASTERDOC_SCHEMA_URL);
 	});
 
-	it('starts the history at 2026-10-28 on schema.asterdoc.com', () => {
-		expect([...SCHEMA_VERSIONS]).toEqual(['2026-10-28']);
-		expect(ASTERDOC_SCHEMA_URL).toBe('https://schema.asterdoc.com/2026-10-28.json');
+	it('lists 2026-10-28 then the current 2026-11-06 on schema.asterdoc.com', () => {
+		expect([...SCHEMA_VERSIONS]).toEqual(['2026-10-28', '2026-11-06']);
+		expect(ASTERDOC_SCHEMA_URL).toBe('https://schema.asterdoc.com/2026-11-06.json');
 	});
 
 	it('publishes the current dated bundle as an Asterdoc schema', () => {
@@ -48,21 +48,21 @@ describe('schema versions', () => {
 
 describe('readSchemaAddress', () => {
 	it.each([
-		['a dated bundle', 'https://schema.asterdoc.com/2026-10-28.json', { kind: 'known', version: '2026-10-28' }],
-		['a dated individual schema', 'https://schema.asterdoc.com/2026-10-28/form.json', { kind: 'known', version: '2026-10-28' }],
+		['a dated bundle', 'https://schema.asterdoc.com/2026-11-06.json', { kind: 'known', version: '2026-11-06' }],
+		['a dated individual schema', 'https://schema.asterdoc.com/2026-11-06/form.json', { kind: 'known', version: '2026-11-06' }],
 		['the current address', ASTERDOC_SCHEMA_URL, { kind: 'known', version: SCHEMA_VERSION }],
 		['the undated latest bundle', 'https://schema.asterdoc.com/schema.json', { kind: 'undated' }],
 		['an unpublished date', 'https://schema.asterdoc.com/2030-01-01.json', { kind: 'unknown-version', version: '2030-01-01' }],
 		['an unpublished individual schema', 'https://schema.asterdoc.com/2026-10-27/form.json', { kind: 'unknown-version', version: '2026-10-27' }],
-		['a dated address with another file shape', 'https://schema.asterdoc.com/2026-10-28/Form.json', { kind: 'undated' }],
-		['another host', 'https://example.com/2026-10-28.json', { kind: 'foreign' }],
-		['a look-alike host', 'https://schema.asterdoc.com.example.com/2026-10-28.json', { kind: 'foreign' }],
+		['a dated address with another file shape', 'https://schema.asterdoc.com/2026-11-06/Form.json', { kind: 'undated' }],
+		['another host', 'https://example.com/2026-11-06.json', { kind: 'foreign' }],
+		['a look-alike host', 'https://schema.asterdoc.com.example.com/2026-11-06.json', { kind: 'foreign' }],
 	])('reads %s', (_label, address, expected) => {
 		expect(readSchemaAddress(address)).toEqual(expected);
 	});
 
 	it('knows only published versions', () => {
-		expect(isSchemaVersion('2026-10-28')).toBe(true);
+		expect(isSchemaVersion('2026-11-06')).toBe(true);
 		expect(isSchemaVersion('2026-10-27')).toBe(false);
 	});
 });

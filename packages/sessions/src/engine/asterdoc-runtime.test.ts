@@ -4,7 +4,7 @@ import { createAsterdocRuntime } from "./asterdoc-runtime";
 describe("createAsterdocRuntime", () => {
 	it("keeps a core expression failure unresolved instead of offering fallback state", () => {
 		const runtime = createAsterdocRuntime({
-			$schema: "https://schema.asterdoc.com/2026-10-28.json",
+			$schema: "https://schema.asterdoc.com/2026-11-06.json",
 			kind: "form",
 			name: "runtime-failure",
 			version: "1.0.0",
@@ -37,7 +37,7 @@ describe("createAsterdocRuntime", () => {
 	});
 
 	const pricedArtifact = () => ({
-		$schema: "https://schema.asterdoc.com/2026-10-28.json",
+		$schema: "https://schema.asterdoc.com/2026-11-06.json",
 		kind: "form",
 		name: "priced",
 		version: "1.0.0",

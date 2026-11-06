@@ -17,7 +17,7 @@ Every file starts with `$schema`, `kind` and `name`:
 
 ```json schema=artifact
 {
-  "$schema": "https://schema.asterdoc.com/2026-10-28.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
   "kind": "form",
   "name": "pet-registration",
   "version": "1.0.0",
@@ -32,8 +32,8 @@ Every file starts with `$schema`, `kind` and `name`:
 The same file in YAML. `.yaml` and `.yml` both load. The comment line gives editors completion against the schema:
 
 ```yaml
-# yaml-language-server: $schema=https://schema.asterdoc.com/2026-10-28.json
-$schema: https://schema.asterdoc.com/2026-10-28.json
+# yaml-language-server: $schema=https://schema.asterdoc.com/2026-11-06.json
+$schema: https://schema.asterdoc.com/2026-11-06.json
 kind: form
 name: pet-registration
 version: 1.0.0
@@ -50,13 +50,13 @@ Every object in the schema is strict, so an unknown key is an error. Name the fi
 
 ## Schema version
 
-The current schema version is `2026-10-28`. Write `$schema` as its dated address, the same for every kind:
+The current schema version is `2026-11-06`. Write `$schema` as its dated address, the same for every kind:
 
 ```text
-https://schema.asterdoc.com/2026-10-28.json
+https://schema.asterdoc.com/2026-11-06.json
 ```
 
-A dated per-kind address such as `https://schema.asterdoc.com/2026-10-28/form.json` names the same version. The SDK writes the dated address on `toJSON()` and `toYAML()`. Each new dated version ships with a migration step.
+A dated per-kind address such as `https://schema.asterdoc.com/2026-11-06/form.json` names the same version. The SDK writes the dated address on `toJSON()` and `toYAML()`. Each new dated version ships with a migration step.
 
 ### Loading rules
 

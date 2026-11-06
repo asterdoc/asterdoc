@@ -30,7 +30,7 @@ const LAYER = "composition";
 const SLOTS = { signature: "tenant-signature", initials: "tenant-initials" } as const;
 
 const spec = {
-  $schema: "https://schema.asterdoc.com/2026-10-28.json",
+  $schema: "https://schema.asterdoc.com/2026-11-06.json",
   kind: "form",
   name: "lease-rider",
   version: "1.0.0",
