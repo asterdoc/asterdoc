@@ -21,7 +21,7 @@ The documented install of the Asterdoc CLI. It runs [`@asterdoc/cli`](https://ww
 
 ## Install
 
-Requires Node.js 22 or newer.
+Requires Node.js 24.14 or newer.
 
 ```bash
 npm install -g asterdoc

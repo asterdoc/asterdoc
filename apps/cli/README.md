@@ -17,7 +17,7 @@ Asterdoc treats documents as structured, machine-readable artifacts. The CLI ini
 
 ## Installation
 
-Requires Node.js 22 or newer.
+Requires Node.js 24.14 or newer.
 
 ```bash
 npm install -g asterdoc

@@ -36,7 +36,7 @@ export default defineConfig({
   // Don't externalize workspace packages that need to be bundled
   noExternal: ['@asterdoc/schemas', '@asterdoc/core', '@asterdoc/render', 'zod'],
   // Deps that must remain external (CJS or Node-provided).
-  external: ['fast-glob', 'safe-regex', 'undici'],
+  external: ['fast-glob', 'safe-regex'],
   // Resolve @/* path alias used internally by @asterdoc/core
   esbuildOptions(options) {
     options.alias = {

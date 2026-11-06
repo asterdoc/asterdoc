@@ -21,7 +21,7 @@
   "license": "MIT",
   "author": "Asterdoc",
   "engines": {
-    "node": ">=22"
+    "node": ">=24.14"
   },
   "repository": {
     "type": "git",
@@ -66,7 +66,6 @@
     "safe-regex": "^2.1.1",
     "semver": "^7.7.3",
     "slugify": "^1.6.6",
-    "undici": "^7.30.1",
     "yaml": "catalog:"
   },
   "devDependencies": {
@@ -79,7 +78,7 @@
     "@asterdoc/types": "workspace:*",
     "@asterdoc/typescript-config": "workspace:*",
     "@tailwindcss/vite": "^4.1.5",
-    "@types/node": "catalog:",
+    "@types/node": "^24.19.2",
     "@types/prompts": "^2.4.9",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

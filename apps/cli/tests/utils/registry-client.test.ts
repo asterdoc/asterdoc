@@ -3,13 +3,6 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-vi.mock('undici', async (importOriginal) => {
-  const undici = await importOriginal<typeof import('undici')>()
-  return {
-    ...undici,
-    fetch: (input: string | URL | Request, init?: RequestInit) => globalThis.fetch(input, init),
-  }
-})
 import {
   RegistryClient,
   RegistryFetchError,

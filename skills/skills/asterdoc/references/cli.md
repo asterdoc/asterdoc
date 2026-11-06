@@ -313,7 +313,7 @@ A registry entry is a URL string or an object:
 }
 ```
 
-`${VAR}` expands in `url` and in header values. Keep a token in the environment variable and rotate it there. `HTTPS_PROXY` and `HTTP_PROXY` are honored. ### Publish
+`${VAR}` expands in `url` and in header values. Keep a token in the environment variable and rotate it there. `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY` are honored. ### Publish
 
 ```bash
 asterdoc registry make ./my-registry --name acme -y           # writes registry.config.json

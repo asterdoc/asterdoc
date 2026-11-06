@@ -21,7 +21,7 @@
   "license": "MIT",
   "author": "Asterdoc",
   "engines": {
-    "node": ">=22"
+    "node": ">=24.14"
   },
   "repository": {
     "type": "git",

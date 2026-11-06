@@ -9,7 +9,6 @@ import type {
   RegistryItemSummary,
   ResolvedRegistry,
 } from '../types.js'
-import { fetch } from 'undici'
 import type { RegistryRelease } from '../types.js'
 import {
   buildRegistryIndexUrl,
@@ -190,7 +189,7 @@ function assertValidUrl(url: string): string[] {
 /**
  * Check Content-Length header and throw if exceeds limit
  */
-type RegistryResponse = Awaited<ReturnType<typeof fetch>>
+type RegistryResponse = Response
 
 function checkContentLength(response: RegistryResponse, url: string, maxSize: number): void {
   const contentLength = response.headers.get('content-length')
