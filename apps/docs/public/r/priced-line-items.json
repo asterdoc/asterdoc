@@ -5,7 +5,7 @@
   "title": "Line-item arithmetic",
   "description": "Sample-owned row multiplication and subtotal arithmetic used by the priced document blocks.",
   "dependencies": [
-    "@asterdoc/types@^0.10.0"
+    "@asterdoc/types@^0.11.0"
   ],
   "registryDependencies": [],
   "files": [

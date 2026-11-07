@@ -4,6 +4,44 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-07
+
+0.11 makes filled PDFs more faithful to the form: dates print in the box's own pattern, foreign addresses print, and XFA forms show their filled fields. It adds schema version 2026-11-06, and the CLI now needs Node 24.14 or later.
+
+### Highlights
+
+- A PDF layer can declare `format.date.pattern` (`MM/DD/YYYY`, `DD/MM/YYYY` or `YYYY-MM-DD`). Fill prints every date in it, and extraction reads it back by the same pattern.
+- An address in a country with no address layout prints in the generic layout, in place of stopping the render.
+- Filling a PDF removes its XFA form, so every viewer shows the filled fields.
+- The CLI uses Node's built-in fetch and proxy support. It honors `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY`, and no longer depends on undici.
+
+### Breaking changes
+
+#### Schemas
+
+- The current schema version is `2026-11-06`. The SDK loads only artifacts on it: run `asterdoc migrate` on artifacts on `2026-10-28`.
+
+#### CLI
+
+- `@asterdoc/cli` and `asterdoc` need Node 24.14 or later.
+
+### Upgrading from 0.10
+
+1. Use Node 24.14 or later for the CLI.
+2. Run `asterdoc migrate <path>` on your artifact files. The step from `2026-10-28` changes only `$schema`.
+3. Install registry artifacts again to get their versions on `2026-11-06`. The public registry lists only those.
+
+### Other changes
+
+#### Format
+
+- Exports `UNSUPPORTED_COUNTRY_LAYOUT`, the code a formatter gives for a country with no address layout.
+
+#### Render
+
+- A fill that drops an XFA form writes the PDF whole, so no XFA bytes and no earlier revision stay. A template without XFA is still filled as an incremental update.
+- `writePdf` records each object's own generation number in the cross-reference table.
+
 ## [0.10.0] - 2026-10-31
 
 0.10 renames the builder namespace from `p`, which stood for Paradoc, to `a`, for Asterdoc. Nothing else in the API or the artifact format changes.
