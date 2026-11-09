@@ -10,6 +10,7 @@ import type {
   ResolvedRegistry,
 } from '../types.js'
 import type { RegistryRelease } from '../types.js'
+import type { Bindings, LayerFormat } from '@asterdoc/types'
 import {
   buildRegistryIndexUrl,
   buildReleaseUrl,
@@ -74,6 +75,8 @@ interface RegistryLayerBase {
 export interface RegistryInlineLayer extends RegistryLayerBase {
   kind: 'inline'
   text: string
+  /** How the layer prints values, over the caller's formatter. */
+  format?: LayerFormat
 }
 
 /**
@@ -86,8 +89,10 @@ export interface RegistryFileLayer extends RegistryLayerBase {
   url?: string
   /** Font a PDF layer draws with; downloaded beside the layer file. */
   font?: { path: string; checksum?: string }
-  /** PDF layers only: AcroForm field name to Asterdoc path. */
-  bindings?: Record<string, string>
+  /** How the layer prints values, over the caller's formatter. */
+  format?: LayerFormat
+  /** PDF layers only: AcroForm field name to Asterdoc path, as a string or a binding object with its own format. */
+  bindings?: Bindings
   /** PDF layers only: key of a sibling PDF layer whose bindings this layer reuses. */
   bindingsFrom?: string
 }

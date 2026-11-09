@@ -125,6 +125,7 @@ async function renderDocx(options: RenderDocxOptions): Promise<Uint8Array>
   { name: 'options', type: 'DocxRenderOptions', description: 'DOCX-specific rendering options', isOptional: true },
   { name: 'expressions', type: 'TemplateExpressionOptions', description: 'The expression context (`context`), or configured `functions` and their `signatures`. Artifact renders supply the artifact context.', isOptional: true },
   { name: 'layer', type: 'string', description: 'Layer key, named in template errors', isOptional: true },
+  { name: 'format', type: 'LayerFormat', description: "How the layer prints values, applied over `formatter`. `docxRenderer()` takes it from the layer. See [Format](/schemas/artifacts/shared/layer#format)", isOptional: true },
 ]} />
 
 #### DocxRenderOptions

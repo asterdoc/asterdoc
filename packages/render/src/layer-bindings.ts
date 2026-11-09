@@ -1,7 +1,10 @@
+import type { BindingValue, Bindings, Form, FormField, LayerFormat } from '@asterdoc/types'
+import { pathSegments } from './path'
+
 /** The part of a layer that decides which bindings it fills with. */
 export interface LayerBindingsSpec {
   mimeType?: string
-  bindings?: Record<string, string>
+  bindings?: Bindings
   bindingsFrom?: string
 }
 
@@ -13,8 +16,8 @@ function isPdfLayer(layer: LayerBindingsSpec): boolean {
 /**
  * The bindings a layer fills with: its own, or else those of the sibling layer
  * its `bindingsFrom` names. The reference is one hop: the sibling's own
- * `bindings`, never its `bindingsFrom`. Only bindings carry over; a layer's
- * `format` is always its own.
+ * `bindings`, never its `bindingsFrom`. Each binding carries over with its own
+ * format; the layer's `format` is always its own.
  *
  * Only PDF layers have bindings, which map AcroForm field names to Asterdoc
  * paths; any other layer, or a source that is not a PDF layer, gives none.
@@ -24,7 +27,7 @@ function isPdfLayer(layer: LayerBindingsSpec): boolean {
 export function resolveLayerBindings(
   layers: Record<string, LayerBindingsSpec>,
   layer: LayerBindingsSpec,
-): Record<string, string> | undefined {
+): Bindings | undefined {
   if (!isPdfLayer(layer)) return undefined
   if (layer.bindings || !layer.bindingsFrom) return layer.bindings
   const source = layers[layer.bindingsFrom]
@@ -55,20 +58,54 @@ export class PdfBindingSyntaxError extends Error {
   }
 }
 
+/** One PDF binding, read from either of the shapes a binding value takes. */
+export interface ParsedPdfBinding {
+  /** The binding's path text: the string binding, or a binding object's `path`. */
+  path: string
+  /** The paths the binding reads. */
+  parts: PdfBindingPart[]
+  /** The format a binding object declares, merged over its layer's format. */
+  format?: LayerFormat
+}
+
+/** One binding of a layer, with the PDF field it fills. */
+export interface ParsedLayerBinding extends ParsedPdfBinding {
+  /** Fully qualified name of the AcroForm field the binding fills. */
+  field: string
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 /**
- * Parse a PDF binding value into the paths it reads. Fill, extraction, the fit
- * check, and validation all read bindings through this one parser.
+ * Parse a PDF binding value, a path string or a binding object, into the
+ * paths it reads and the format it declares. Fill, extraction, the fit check,
+ * and validation all read bindings through this one parser.
  *
  * - `name` or `fields.name` reads one path.
  * - `status:married` tests an option; `ssn:2` fills the second hyphen-separated
  *   part. Space around the `:` is ignored.
  * - `city, state, zip` joins several whole values with `, `. A part of a joined
  *   binding takes no qualifier.
+ * - `{ path, format }` reads `path` as a string binding does and prints with
+ *   `format`.
  *
- * @throws {PdfBindingSyntaxError} for an empty part or qualifier, or a
- * qualifier inside a joined binding.
+ * @throws {PdfBindingSyntaxError} for a value of neither shape, an empty part
+ * or qualifier, or a qualifier inside a joined binding.
  */
-export function parseBinding(binding: string): PdfBindingPart[] {
+export function parseBinding(value: BindingValue): ParsedPdfBinding {
+  if (typeof value === 'string') return { path: value, parts: parsePath(value) }
+  if (!isRecord(value) || typeof value.path !== 'string') {
+    throw new PdfBindingSyntaxError(JSON.stringify(value) ?? String(value), 'is neither a path string nor a binding object with a string path')
+  }
+  if (value.format !== undefined && !isRecord(value.format)) {
+    throw new PdfBindingSyntaxError(value.path, 'has a format that is not an object')
+  }
+  return { path: value.path, parts: parsePath(value.path), ...(value.format !== undefined && { format: value.format }) }
+}
+
+function parsePath(binding: string): PdfBindingPart[] {
   const parts = binding.split(',').map((text): PdfBindingPart => {
     const separator = text.indexOf(':')
     const source = (separator === -1 ? text : text.slice(0, separator)).trim()
@@ -84,12 +121,57 @@ export function parseBinding(binding: string): PdfBindingPart[] {
   return parts
 }
 
-/** Each binding of a layer, keyed by the PDF field it fills, with the paths it reads. */
-export type ParsedPdfBindings = [pdfName: string, parts: PdfBindingPart[]][]
-
 /** Parse every binding of a layer. @throws {PdfBindingSyntaxError} as {@link parseBinding} does. */
-export function parseBindings(bindings: Record<string, string>): ParsedPdfBindings {
-  return Object.entries(bindings).map(([pdfName, binding]) => [pdfName, parseBinding(binding)])
+export function parseBindings(bindings: Bindings): ParsedLayerBinding[] {
+  return Object.entries(bindings).map(([field, binding]) => ({ field, ...parseBinding(binding) }))
+}
+
+/** The field definition a data path names, through fieldsets and list items. */
+export function fieldDefinition(form: Form | undefined, path: string): FormField | undefined {
+  const [root, ...segments] = pathSegments(path)
+  let field = root ? form?.fields?.[root] : undefined
+  for (const segment of segments) {
+    if (field?.type === 'list' && /^\d+$/.test(segment)) field = field.item
+    else if (field?.type === 'fieldset') field = field.fields[segment]
+    else return undefined
+  }
+  return field
+}
+
+/**
+ * Whether a binding part tests an option and so fills a checkbox: a qualifier
+ * on a boolean or choice field, or one that names no split part.
+ */
+export function isOptionTest(form: Form | undefined, part: PdfBindingPart): boolean {
+  if (part.qualifier === undefined) return false
+  const type = fieldDefinition(form, part.path)?.type
+  return type === 'boolean' || type === 'enum' || type === 'multiselect' || splitPartIndex(part.qualifier) === undefined
+}
+
+/**
+ * Why a binding's format cannot apply, or undefined when it can. An option test
+ * writes a checkbox state, never a printed value, and a split part prints a
+ * piece of the raw value, so neither takes a format.
+ */
+export function bindingFormatProblem(form: Form | undefined, binding: ParsedPdfBinding): string | undefined {
+  if (binding.format === undefined) return undefined
+  const qualified = binding.parts.find((part) => part.qualifier !== undefined)
+  if (!qualified) return undefined
+  const source = `${qualified.source}:${qualified.qualifier}`
+  return isOptionTest(form, qualified)
+    ? `sets a format on the option test "${source}", which fills a checkbox and prints no value`
+    : `sets a format on the split part "${source}", which prints a piece of the raw value`
+}
+
+/**
+ * Refuse any binding whose format cannot apply.
+ * @throws {PdfBindingSyntaxError} naming the first such binding.
+ */
+export function assertBindingFormats(form: Form | undefined, bindings: readonly ParsedPdfBinding[]): void {
+  for (const binding of bindings) {
+    const problem = bindingFormatProblem(form, binding)
+    if (problem) throw new PdfBindingSyntaxError(binding.path, problem)
+  }
 }
 
 /**

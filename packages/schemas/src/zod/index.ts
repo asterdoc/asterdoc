@@ -53,11 +53,18 @@ export type { PatternProblem } from './artifacts/form/pattern';
 export { ArtifactSchema } from './artifacts/shared/base';
 export { ArtifactEditionSchema, EDITION_DATE_PATTERN } from './artifacts/shared/edition';
 export { ContentRefSchema } from './artifacts/shared/content-ref';
-export { LayerSchema, SignatureSlotSchema, SignatureSlotTypeSchema } from './artifacts/shared/layer';
+export { FormatSchema, LayerSchema, PdfBindingObjectSchema, PdfBindingsSchema, SignatureSlotSchema, SignatureSlotTypeSchema } from './artifacts/shared/layer';
 export {
+	caseInsensitiveAlternative,
 	DOCX_MIME_TYPE,
+	FORMAT_LAYER_MIME_TYPES,
 	isDocxMimeType,
+	isFormatLayerMimeType,
 	isPdfMimeType,
+	LAYER_FORMAT_RULE,
+	LAYER_KEY_MIME_TYPES,
+	mimeTypesPattern,
+	PDF_LAYER_MIME_TYPES,
 	isReactLayerMimeType,
 	isTextTemplateMimeType,
 	TEXT_TEMPLATE_MIME_TYPES,

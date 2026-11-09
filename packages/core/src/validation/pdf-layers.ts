@@ -9,7 +9,7 @@
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { FileLayer, Form, Resolver } from '@asterdoc/types'
+import type { Bindings, FileLayer, Form, Resolver } from '@asterdoc/types'
 import { isPdfMimeType } from '@asterdoc/schemas'
 import { resolveLayerBindings } from '@asterdoc/render'
 import { checkPdfBindingFit, inspectAcroFormFields, type PdfBindingFitIssue } from '@asterdoc/render/pdf'
@@ -39,7 +39,7 @@ function readFailure(key: string, what: string, path: string, error: unknown): L
  * Each binding key that names no AcroForm field of the layer's template. A key
  * the layer reuses through `bindingsFrom` is reported at its `bindingsFrom`.
  */
-async function unknownBindingKeys(layerKey: string, layer: FileLayer, template: Uint8Array, bindings: Record<string, string>): Promise<LayerValidationIssue[]> {
+async function unknownBindingKeys(layerKey: string, layer: FileLayer, template: Uint8Array, bindings: Bindings): Promise<LayerValidationIssue[]> {
   const names = (await inspectAcroFormFields(template, { includeButton: true, includeSignature: true })).map((field) => field.name)
   const known = new Set(names)
   const available = names.length > 0 ? `Its fields are: ${names.join(', ')}.` : 'It has no AcroForm fields.'

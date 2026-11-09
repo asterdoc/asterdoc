@@ -6,6 +6,7 @@
  */
 
 import type {
+	Bindings,
 	ChecklistRenderRequest,
 	DocumentRenderRequest,
 	FormRenderRequest,
@@ -16,7 +17,7 @@ import type {
 	RendererLayer,
 	Resolver,
 } from '@asterdoc/types'
-import { isPdfMimeType } from '@asterdoc/schemas'
+import { isPdfMimeType, PdfBindingObjectSchema } from '@asterdoc/schemas'
 import { createLayerRenderer, resolveLayerBindings } from '@asterdoc/render'
 import {
 	findRegisteredRenderer,
@@ -336,16 +337,19 @@ export function selectLayerRenderer<Output>(
  *
  * Bindings map AcroForm field names to Asterdoc paths, so the option applies to
  * PDF layers only. Any other layer's template names values as `{{fields.x}}`,
- * and passing the option for one is refused rather than ignored.
+ * and passing the option for one is refused rather than ignored. Each override
+ * is a path string, parsed when the layer renders, or a binding object,
+ * checked here as a layer's binding objects are.
  *
- * @throws {Error} when `override` is given for a layer that is not a PDF.
+ * @throws {Error} when `override` is given for a layer that is not a PDF, or
+ * holds a binding object the schema refuses.
  */
 export function renderBindings(
 	layers: Record<string, Layer>,
 	layerKey: string,
 	layerSpec: Layer,
-	override: Record<string, string> | undefined,
-): Record<string, string> | undefined {
+	override: Bindings | undefined,
+): Bindings | undefined {
 	const bindings = resolveLayerBindings(layers, layerSpec)
 	if (!override) return bindings
 	if (!isPdfMimeType(layerSpec.mimeType)) {
@@ -353,6 +357,13 @@ export function renderBindings(
 			`Layer "${layerKey}" is not a PDF layer, so the bindings render option does not apply: bindings map ` +
 				'AcroForm field names to Asterdoc paths. A text, HTML or DOCX template names a value as {{fields.x}}.',
 		)
+	}
+	for (const [field, binding] of Object.entries(override)) {
+		if (typeof binding !== 'object' || binding === null) continue
+		const checked = PdfBindingObjectSchema.safeParse(binding)
+		if (checked.success) continue
+		const problems = checked.error.issues.map((issue) => `${issue.path.map(String).join('.') || '(root)'}: ${issue.message}`)
+		throw new Error(`The bindings render option for layer "${layerKey}", binding "${field}", is not a valid binding object: ${problems.join('; ')}`)
 	}
 	return { ...bindings, ...override }
 }
@@ -377,7 +388,7 @@ export function renderBindings(
 export async function buildRendererLayer(
 	layerKey: string,
 	layerSpec: Layer,
-	bindings: Record<string, string> | undefined,
+	bindings: Bindings | undefined,
 	resolver: Resolver | undefined,
 	site: ResolverBindingSite,
 ): Promise<RendererLayer> {
@@ -389,6 +400,7 @@ export async function buildRendererLayer(
 			key: layerKey,
 			path: layerSpec.path,
 			...(bindings && { bindings }),
+			...(layerSpec.format && { format: layerSpec.format }),
 		}
 	}
 
@@ -406,6 +418,6 @@ export async function buildRendererLayer(
 		...(layerSpec.kind === 'file' && { path: layerSpec.path }),
 		...(bindings && { bindings }),
 		...(font && { font }),
-		...(layerSpec.kind === 'file' && layerSpec.format && { format: layerSpec.format }),
+		...(layerSpec.format && { format: layerSpec.format }),
 	}
 }

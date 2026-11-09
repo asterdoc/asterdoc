@@ -56,18 +56,18 @@ describe('resolveLayerBindings', () => {
 
 describe('parseBinding', () => {
   it('reads one path, with or without the fields. prefix', () => {
-    expect(parseBinding('name')).toEqual([{ source: 'name', path: 'name' }])
-    expect(parseBinding(' fields.name ')).toEqual([{ source: 'fields.name', path: 'name' }])
-    expect(parseBinding('parties.buyer.name')).toEqual([{ source: 'parties.buyer.name', path: 'parties.buyer.name' }])
+    expect(parseBinding('name').parts).toEqual([{ source: 'name', path: 'name' }])
+    expect(parseBinding(' fields.name ').parts).toEqual([{ source: 'fields.name', path: 'name' }])
+    expect(parseBinding('parties.buyer.name').parts).toEqual([{ source: 'parties.buyer.name', path: 'parties.buyer.name' }])
   })
 
   it('trims a qualifier and the path before it', () => {
-    expect(parseBinding('fields.status : married')).toEqual([{ source: 'fields.status', path: 'status', qualifier: 'married' }])
-    expect(parseBinding('ssn:2')).toEqual([{ source: 'ssn', path: 'ssn', qualifier: '2' }])
+    expect(parseBinding('fields.status : married').parts).toEqual([{ source: 'fields.status', path: 'status', qualifier: 'married' }])
+    expect(parseBinding('ssn:2').parts).toEqual([{ source: 'ssn', path: 'ssn', qualifier: '2' }])
   })
 
   it('reads each part of a joined binding', () => {
-    expect(parseBinding('fields.city, state ,zip')).toEqual([
+    expect(parseBinding('fields.city, state ,zip').parts).toEqual([
       { source: 'fields.city', path: 'city' },
       { source: 'state', path: 'state' },
       { source: 'zip', path: 'zip' },

@@ -143,6 +143,7 @@ function renderText(options: {
   { name: 'expressions', type: 'TemplateExpressionOptions', description: 'The expression context (`context`), or configured `functions` and their `signatures`. Artifact renders supply the artifact context.', isOptional: true },
   { name: 'layer', type: 'string', description: 'Layer key, named in template errors', isOptional: true },
   { name: 'mimeType', type: 'string', description: 'Layer media type. `text/html` enables HTML escaping and selects HTML signature output.', isOptional: true },
+  { name: 'format', type: 'LayerFormat', description: "How the layer prints values, applied over `formatter`. `textRenderer()` takes it from the layer. See [Format](/schemas/artifacts/shared/layer#format)", isOptional: true },
 ]} />
 
 #### Returns

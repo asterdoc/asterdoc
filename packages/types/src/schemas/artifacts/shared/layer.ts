@@ -70,6 +70,11 @@ export interface InlineLayer {
   title?: string;
   /** Optional description of what this layer represents. */
   description?: string;
+  /**
+   * How the layer prints values, over the formatter the caller renders with.
+   * Only layers that print values declare one.
+   */
+  format?: LayerFormat;
   /** Signature slots keyed by slot id. */
   signatures?: Record<string, SignatureSlot>;
 }
@@ -89,25 +94,25 @@ export interface LayerFont {
 }
 
 /**
- * How a PDF layer presents money values its template already frames.
+ * How a layer or binding presents money values.
  *
- * Only the currency display is declared here. Locale, digits, and every other
- * choice stay with the formatter the caller renders with.
+ * Every choice left out stays with the level below: the layer's format under a
+ * binding, the caller's formatter under a layer.
  */
 export interface LayerMoneyFormat {
   /**
    * `none` prints the amount without a currency symbol or code, for a template
    * that pre-prints the symbol beside each money box.
    */
-  currencyDisplay: "none";
+  currencyDisplay?: "none";
 }
 
-/** A numeric date order a PDF template asks for. */
+/** A numeric date order a template asks for. */
 export type LayerDatePattern = "MM/DD/YYYY" | "DD/MM/YYYY" | "YYYY-MM-DD";
 
 /**
- * How a PDF layer presents date values, for a template that asks for one
- * numeric order such as mm/dd/yyyy.
+ * How a layer or binding presents date values, for a template that asks for
+ * one numeric order such as mm/dd/yyyy.
  */
 export interface LayerDateFormat {
   /** The order the template asks for: two-digit month and day, four-digit year. */
@@ -115,13 +120,17 @@ export interface LayerDateFormat {
 }
 
 /**
- * Presentation a PDF layer's template requires of filled values, applied over
- * the formatter the caller renders with.
+ * How values print. On a layer it applies over the formatter the caller
+ * renders with; on a PDF binding, over the layer's format. Levels merge per
+ * kind and per property: a binding's `money` keeps the layer's other money
+ * choices, and `locale` replaces the level below.
  */
 export interface LayerFormat {
-  /** How money values are presented in this layer. */
+  /** BCP 47 locale for names and words, such as `en-US`. */
+  locale?: string;
+  /** How money values are presented. */
   money?: LayerMoneyFormat;
-  /** How date values are presented in this layer. */
+  /** How date values are presented. */
   date?: LayerDateFormat;
 }
 
@@ -159,9 +168,10 @@ export interface FileLayer {
    */
   font?: LayerFont;
   /**
-   * Presentation the layer's template requires of filled values. PDF layers
-   * only. It applies to this layer alone; a layer that reuses these bindings
-   * through `bindingsFrom` declares its own.
+   * How the layer prints values, over the formatter the caller renders with.
+   * Only layers that print values declare one. It applies to this layer
+   * alone; a layer that reuses these bindings through `bindingsFrom` declares
+   * its own.
    */
   format?: LayerFormat;
   /**
@@ -182,7 +192,26 @@ export interface FileLayer {
 export type Layer = InlineLayer | FileLayer;
 
 /**
- * A PDF layer's bindings: each key is a fully qualified AcroForm field name in
- * the template, and each value is the Asterdoc path that fills it.
+ * One PDF binding written as an object: the binding text a string binding
+ * would be, and the format its value prints with.
  */
-export type Bindings = Record<string, string>;
+export interface BindingObject {
+  /** The Asterdoc path, in the binding language a string binding uses: `fields.dob`, `ssn:2`, `city, state`. */
+  path: string;
+  /**
+   * How the value prints, merged over the layer's format. A joined path
+   * applies it to each value before the join. An option test such as
+   * `status:married` takes none.
+   */
+  format?: LayerFormat;
+}
+
+/** One PDF binding: a path string, or a binding object that also carries a format. */
+export type BindingValue = string | BindingObject;
+
+/**
+ * A PDF layer's bindings: each key is a fully qualified AcroForm field name in
+ * the template, and each value is the Asterdoc path that fills it, as a string
+ * or a {@link BindingObject}.
+ */
+export type Bindings = Record<string, BindingValue>;

@@ -9,13 +9,12 @@ import type {
 	FormField,
 	FormAnnex,
 	DefsSection,
-	Bindings,
 	LayerDateFormat,
 	MoneyFormatOptions,
 } from '@asterdoc/types'
 import { MISSING_RATING_SCALE, UNSUPPORTED_COUNTRY_LAYOUT, UNSUPPORTED_LIST_JOIN } from '@asterdoc/format'
-import { bindingDataPath } from '../layer-bindings'
-import { pathSegments } from '../path'
+import { bindingDataPath, renderDataPath } from '../layer-bindings'
+import { getPath, pathSegments } from '../path'
 
 /** Explicit policy for rendering a value that is missing or incomplete. */
 export type ProgressiveFormattingOptions = FormatterProgressivePolicy
@@ -586,6 +585,121 @@ export function formatFieldData(
 	return result
 }
 
+/**
+ * The value at one render-data path, formatted as {@link formatFieldData}
+ * would format it, reading and formatting only what the path reaches. A
+ * binding that is formatted on its own uses this, so a value no binding
+ * reads is never formatted and cannot fail the render.
+ *
+ * A path to a declared field, party, computed value or annex gives its
+ * formatted value; a member of a structured value gives its raw member, as
+ * the preprocessed record does; anything else gives the raw value.
+ */
+export function formatValueAt(
+	data: RecordValue,
+	form: Form,
+	formatter: Formatter,
+	source: string,
+	options?: FieldFormattingOptions,
+): unknown {
+	const path = renderDataPath(data, source)
+	const segments = pathSegments(path)
+	const [root, ...rest] = segments
+	if (root === undefined) return undefined
+	if (root === 'parties') return partyAt(formatter, form, data.parties, rest, options)
+	if (root === 'defs') return definitionAt(formatter, form, data.defs, rest, options)
+	if (root === 'annexes') return annexAt(formatter, form, data.annexes, rest, options)
+	const nested = isRecord(data.fields)
+	if (nested && root !== 'fields') return getPath(data, path)
+	const fieldValues: RecordValue = nested ? data.fields as RecordValue : data
+	const [key, ...members] = nested ? rest : segments
+	const field = key === undefined ? undefined : form.fields?.[key]
+	if (key === undefined || !field) return key === undefined ? undefined : getPath(fieldValues, [key, ...members].join('.'))
+	if (!Object.prototype.hasOwnProperty.call(fieldValues, key) && !options?.progressive) return undefined
+	return fieldAt(formatter, field, fieldValues[key], `fields.${key}`, members, options)
+}
+
+function rawAt(value: unknown, segments: readonly string[]): unknown {
+	return segments.length === 0 ? value : getPath(value, segments.join('.'))
+}
+
+function fieldAt(
+	formatter: Formatter,
+	field: FormField,
+	value: unknown,
+	path: string,
+	segments: readonly string[],
+	options?: FieldFormattingOptions,
+): unknown {
+	if (segments.length === 0) return formatFieldValue(formatter, field, value, path, options)
+	const [segment, ...rest] = segments as [string, ...string[]]
+	if (field.type === 'list') {
+		if (isMissing(value)) return undefined
+		if (!Array.isArray(value)) throw formatIssue(path, field.type, 'invalid_value', 'Expected an array for a list field.')
+		if (!isIndex(segment)) return rawAt(value, segments)
+		const index = Number(segment)
+		if (index >= value.length) return undefined
+		return fieldAt(formatter, field.item, value[index], childPath(path, index), rest, options)
+	}
+	if (field.type === 'fieldset') {
+		if (isMissing(value)) return undefined
+		if (!isRecord(value)) throw formatIssue(path, field.type, 'invalid_value', 'Expected an object for a fieldset.')
+		const child = Object.prototype.hasOwnProperty.call(field.fields, segment) ? field.fields[segment] : undefined
+		if (!child) return rawAt(value, segments)
+		if (!Object.prototype.hasOwnProperty.call(value, segment) && !options?.progressive) return undefined
+		return fieldAt(formatter, child, value[segment], childPath(path, segment), rest, options)
+	}
+	return rawAt(value, segments)
+}
+
+function partyAt(formatter: Formatter, form: Form, parties: unknown, segments: readonly string[], options?: FieldFormattingOptions): unknown {
+	if (isMissing(parties)) return undefined
+	if (!isRecord(parties)) throw formatIssue('parties', 'party', 'invalid_value', 'Expected parties to be an object.')
+	const [role, ...rest] = segments
+	if (role === undefined) return undefined
+	const value = parties[role]
+	if (!form.parties?.[role]) return rawAt(value, rest)
+	const path = `parties.${role}`
+	if (rest.length === 0) {
+		if (!Object.prototype.hasOwnProperty.call(parties, role) && !options?.progressive) return undefined
+		return formatParties(formatter, form, value, path, options, role)
+	}
+	const [first, ...members] = rest as [string, ...string[]]
+	if (Array.isArray(value) && isIndex(first)) {
+		const index = Number(first)
+		if (index >= value.length) return undefined
+		return members.length === 0
+			? formatParties(formatter, form, value[index], childPath(path, index), options, role)
+			: rawAt(value[index], members)
+	}
+	return rawAt(value, rest)
+}
+
+function definitionAt(formatter: Formatter, form: Form, values: unknown, segments: readonly string[], options?: FieldFormattingOptions): unknown {
+	if (isMissing(values)) return undefined
+	if (!isRecord(values)) throw formatIssue('defs', 'computed', 'invalid_value', 'Expected computed values to be an object.')
+	const [key, ...rest] = segments
+	if (key === undefined) return undefined
+	const definition = form.defs?.[key]
+	if (!definition || rest.length > 0) return rawAt(values[key], rest)
+	if (!Object.prototype.hasOwnProperty.call(values, key) && !options?.progressive) return undefined
+	return formatDefinitionValue(formatter, definition.type, values[key], `defs.${key}`, options)
+}
+
+function annexAt(formatter: Formatter, form: Form, values: unknown, segments: readonly string[], options?: FieldFormattingOptions): unknown {
+	if (isMissing(values)) return undefined
+	if (!isRecord(values)) throw formatIssue('annexes', 'attachment', 'invalid_value', 'Expected annexes to be an object.')
+	const [key, ...rest] = segments
+	if (key === undefined) return undefined
+	const value = values[key]
+	if (rest.length > 0) return rawAt(value, rest)
+	if (!Object.prototype.hasOwnProperty.call(values, key) && !(options?.progressive && form.annexes?.[key])) return undefined
+	const path = `annexes.${key}`
+	if (!form.annexes?.[key] && !form.allowAdditionalAnnexes) throw formatIssue(path, 'attachment', 'unknown_path', `Unknown annex ${JSON.stringify(key)}.`)
+	if (isMissing(value)) return missingValue(value, path, 'attachment', options)
+	return callFormatter(path, 'attachment', value, () => formatter.safeFormatAttachment(recordInput(value, path, 'attachment')), options)
+}
+
 /** Roots fill data carries beside field values when the request has them: see `flattenRenderData`. */
 const signingRoots = new Set(['_signers', '_captures'])
 
@@ -818,9 +932,13 @@ function validateBindingPath(form: Form, sourcePath: string, bindingKey: string)
 	throw formatIssue(sourcePath, 'path', 'unknown_path', `Unknown field path ${JSON.stringify(sourcePath)}.`)
 }
 
-/** Validate renderer binding sources against the declared artifact shape. */
-export function validateFieldBindings(form: Form, bindings: Bindings): void {
-	for (const [bindingKey, sourcePath] of Object.entries(bindings)) {
+/**
+ * Validate the paths renderer bindings read against the declared artifact
+ * shape. Each value is one path a binding reads, such as `fields.name`, keyed
+ * by a label errors name it by.
+ */
+export function validateFieldBindings(form: Form, sources: Readonly<Record<string, string>>): void {
+	for (const [bindingKey, sourcePath] of Object.entries(sources)) {
 		validateBindingPath(form, sourcePath, bindingKey)
 	}
 }

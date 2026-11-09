@@ -6,6 +6,7 @@ import { layer, a } from '@/artifacts'
 import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 import { createLayerRenderer } from '@asterdoc/render'
 import { inspectAcroFormFields, pdfRenderer } from '@asterdoc/render/pdf'
+import { LAYER_FORMAT_RULE } from '@asterdoc/schemas'
 
 /**
  * A PDF layer whose template pre-prints the currency symbol declares
@@ -98,18 +99,19 @@ describe('a PDF layer that declares its money format', () => {
 })
 
 describe('declaring a layer format', () => {
-	test('is refused on a layer other than a PDF, naming the rule', () => {
+	test('is refused on a layer that prints no values, naming the rule', () => {
 		expect(() => a.form({
 			...definition,
-			layers: { markdown: { kind: 'file' as const, mimeType: 'text/markdown', path: 'a.md', format: { money: { currencyDisplay: 'none' as const } } } },
-			defaultLayer: 'markdown',
-		})).toThrow('layers.markdown.format: Only PDF layers (application/pdf) can declare a format')
+			layers: { data: { kind: 'file' as const, mimeType: 'application/json', path: 'a.json', format: { money: { currencyDisplay: 'none' as const } } } },
+			defaultLayer: 'data',
+		})).toThrow(`layers.data.format: ${LAYER_FORMAT_RULE}`)
 	})
 
-	test('the layer builder declares it on a PDF layer and refuses it elsewhere', () => {
+	test('the layer builders declare it on every layer that prints values', () => {
 		const format = { money: { currencyDisplay: 'none' as const } }
 		expect(layer().file().path('1099.pdf').mimeType('application/pdf').format(format).build().format).toEqual(format)
-		expect(() => layer().file().path('1099.md').mimeType('text/markdown').format(format).build())
-			.toThrow('Only PDF layers (application/pdf) can declare a format')
+		expect(layer().file().path('1099.md').mimeType('text/markdown').format(format).build().format).toEqual(format)
+		expect(layer().inline().text('{{fields.amount}}').mimeType('text/plain').format(format).build().format).toEqual(format)
+		expect(a.form({ ...definition, layers: { markdown: layer().file().path('a.md').mimeType('text/markdown').format(format).build() }, defaultLayer: 'markdown' }).layers?.markdown?.format).toEqual(format)
 	})
 })

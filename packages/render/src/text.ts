@@ -6,6 +6,7 @@ export {
   ArtifactFieldFormatError,
   FormattedFieldValue,
   formatFieldData,
+  formatValueAt,
   validateFieldBindings,
   unwrapFormattedValue,
 } from './text/field-formatter'

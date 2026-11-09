@@ -54,8 +54,9 @@ export interface RendererLayer {
   path?: string;
 
   /**
-   * A PDF layer's bindings: AcroForm field name -> Asterdoc path. Other layers
-   * carry none; their templates name values as `{{fields.x}}`.
+   * A PDF layer's bindings: AcroForm field name -> Asterdoc path, as a string
+   * or a binding object with its own format. Other layers carry none; their
+   * templates name values as `{{fields.x}}`.
    */
   bindings?: Bindings;
 
@@ -66,8 +67,8 @@ export interface RendererLayer {
   font?: RendererLayerFont;
 
   /**
-   * The presentation the layer declares for filled values. A PDF renderer
-   * applies it over the formatter it renders with.
+   * How the layer declares its values print. A renderer applies it over the
+   * formatter it renders with, and a PDF binding's own format over it.
    */
   format?: LayerFormat;
 }

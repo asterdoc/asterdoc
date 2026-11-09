@@ -1,4 +1,7 @@
+import { readFileSync } from "node:fs";
 import { defineConfig } from "tsup";
+
+const packageJson = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
 
 export default defineConfig({
   entry: ["src/index.ts"],
@@ -12,6 +15,9 @@ export default defineConfig({
   sourcemap: false,
   clean: true,
   preserveImportMeta: true, // Preserve JSON import attributes
+  define: {
+    __ASTERDOC_CORE_VERSION__: JSON.stringify(packageJson.version),
+  },
   external: [
     // Mark workspace dependencies as external (they'll be installed separately)
     "@asterdoc/expr",

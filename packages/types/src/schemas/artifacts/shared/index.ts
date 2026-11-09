@@ -4,7 +4,7 @@
 
 export type { ArtifactBase, ArtifactEdition } from "./base";
 export type { InlineContentRef, FileContentRef, ContentRef } from "./content-ref";
-export type { SignatureSlot, SignatureSlotPlacement, SignatureSlotType, InlineLayer, FileLayer, LayerFont, LayerFormat, LayerDateFormat, LayerDatePattern, LayerMoneyFormat, Layer, ReactLayerMimeType, Bindings } from "./layer";
+export type { SignatureSlot, SignatureSlotPlacement, SignatureSlotType, InlineLayer, FileLayer, LayerFont, LayerFormat, LayerDateFormat, LayerDatePattern, LayerMoneyFormat, Layer, ReactLayerMimeType, Bindings, BindingObject, BindingValue } from "./layer";
 export type {
   CondExpr,
   // Expression types

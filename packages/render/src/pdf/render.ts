@@ -1,8 +1,17 @@
 import { defaultFormatter } from '@asterdoc/format'
-import type { BinaryContent, Form, FormField, Formatter, LayerFormat } from '@asterdoc/types'
-import { formatFieldData, validateFieldBindings, unwrapFormattedValue } from '../text/field-formatter'
+import type { BinaryContent, Bindings, Form, FormField, Formatter, LayerFormat } from '@asterdoc/types'
+import { formatFieldData, formatValueAt, validateFieldBindings, unwrapFormattedValue } from '../text/field-formatter'
 import { getPath, pathSegments } from '../path'
-import { parseBindings, PdfBindingKeyError, renderDataPath, splitPartIndex, type ParsedPdfBindings } from '../layer-bindings'
+import {
+  assertBindingFormats,
+  fieldDefinition,
+  parseBindings,
+  PdfBindingKeyError,
+  renderDataPath,
+  splitPartIndex,
+  type ParsedLayerBinding,
+} from '../layer-bindings'
+import { formatFieldOptions, formatterFor, hasNewFormatOptions, mergeFormats } from '../presentation'
 import { acroFields, setAcroFieldValue, type AcroField } from './acroform'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
 import { applyPdfOverlays, type PdfOverlay } from './overlay'
@@ -12,7 +21,8 @@ export interface RenderPdfOptions {
   template: BinaryContent
   form?: Form
   data: Record<string, unknown>
-  bindings?: Record<string, string>
+  /** AcroForm field name to Asterdoc path, as a string or a binding object with its own format. */
+  bindings?: Bindings
   formatter?: Formatter
   overlays?: PdfOverlay[]
   /**
@@ -23,9 +33,10 @@ export interface RenderPdfOptions {
   /** The font the artifact's PDF layer declares, tried after `font`. */
   layerFont?: PdfFont
   /**
-   * The presentation the artifact's PDF layer declares, applied over
-   * `formatter`. `{ money: { currencyDisplay: 'none' } }` prints amounts
-   * without a symbol beside a template's pre-printed one.
+   * How the artifact's PDF layer prints values, applied over `formatter`, with
+   * each binding's own format merged over it. `{ money: { currencyDisplay:
+   * 'none' } }` prints amounts without a symbol beside a template's
+   * pre-printed one.
    */
   format?: LayerFormat
 }
@@ -37,20 +48,12 @@ function assign(field: AcroField | undefined, value: unknown, model: PdfModel, f
     : value)
 }
 
-function sourcePaths(bindings: ParsedPdfBindings): string[][] {
-  return bindings.flatMap(([, parts]) => parts.map((part) => pathSegments(part.path)))
+function declaresFormat(binding: Bindings[string]): boolean {
+  return typeof binding === 'object' && binding !== null && binding.format !== undefined
 }
 
-/** The field definition a data path names, through fieldsets and list items. */
-export function fieldDefinition(form: Form | undefined, path: string): FormField | undefined {
-  const [root, ...segments] = pathSegments(path)
-  let field = root ? form?.fields?.[root] : undefined
-  for (const segment of segments) {
-    if (field?.type === 'list' && /^\d+$/.test(segment)) field = field.item
-    else if (field?.type === 'fieldset') field = field.fields[segment]
-    else return undefined
-  }
-  return field
+function sourcePaths(bindings: readonly ParsedLayerBinding[]): string[][] {
+  return bindings.flatMap(({ parts }) => parts.map((part) => pathSegments(part.path)))
 }
 
 function displayPath(segments: string[]): string {
@@ -62,7 +65,7 @@ function displayPath(segments: string[]): string {
 function assertListBindingCapacity(
   form: Form | undefined,
   data: Record<string, unknown>,
-  bindings: ParsedPdfBindings,
+  bindings: readonly ParsedLayerBinding[],
 ): void {
   if (!form?.fields || bindings.length === 0) return
   const paths = sourcePaths(bindings)
@@ -106,14 +109,21 @@ export async function renderPdf({
   layerFont,
   format,
 }: RenderPdfOptions): Promise<BinaryContent> {
-  const preprocessed = form
-    ? formatFieldData(data, form, formatter, { choices: 'value', ...(format?.money && { money: format.money }), ...(format?.date && { date: format.date }) })
+  const perValue = form !== undefined && (hasNewFormatOptions(format) || Object.values(bindings ?? {}).some(declaresFormat))
+  const preprocessed = form && !perValue
+    ? formatFieldData(data, form, formatter, formatFieldOptions(format, { choices: 'value' }))
     : data
   const parsed = parseBindings(bindings ?? {})
   if (form) {
-    const sources = parsed.flatMap(([, parts]) => parts.map((part) => part.source))
+    const sources = parsed.flatMap(({ parts }) => parts.map((part) => part.source))
     sources.push(...overlays.flatMap((overlay) => 'field' in overlay && overlay.field ? [overlay.field] : []))
     validateFieldBindings(form, Object.fromEntries(sources.map((source, index) => [String(index), source])))
+  }
+  assertBindingFormats(form, parsed)
+  const read = (source: string, bindingFormat?: LayerFormat): unknown => {
+    if (!form || !perValue) return getPath(preprocessed, renderDataPath(preprocessed, source))
+    const effective = mergeFormats(format, bindingFormat)
+    return formatValueAt(data, form, formatterFor(formatter, effective), source, formatFieldOptions(effective, { choices: 'value' }))
   }
   assertListBindingCapacity(form, data, parsed)
   const model = await PdfModel.load(template)
@@ -126,7 +136,7 @@ export async function renderPdf({
     const acroFormData = acroFields(model)
 
     const byName = new Map((acroFormData?.fields ?? []).map((field) => [field.name, field]))
-    const unmatched = parsed.map(([pdfName]) => pdfName).filter((pdfName) => !byName.has(pdfName))
+    const unmatched = parsed.map(({ field }) => field).filter((pdfName) => !byName.has(pdfName))
     if (unmatched.length > 0) {
       throw new PdfBindingKeyError(unmatched, [...byName.keys()])
     }
@@ -143,10 +153,10 @@ export async function renderPdf({
       if (model.dict(catalogRef)?.entries.delete('NeedsRendering')) model.markUpdated(catalogRef)
       // Bindings given, even none, replace filling PDF fields by field id.
       if (bindings) {
-        for (const [pdfName, parts] of parsed) {
+        for (const { field: pdfName, parts, format: bindingFormat } of parsed) {
           const field = byName.get(pdfName)
           if (parts.length > 1) {
-            const combined = parts.map((part) => getPath(preprocessed, renderDataPath(preprocessed, part.source))).filter((value) => value !== null && value !== undefined && String(value) !== '').join(', ')
+            const combined = parts.map((part) => read(part.source, bindingFormat)).filter((value) => value !== null && value !== undefined && String(value) !== '').join(', ')
             if (combined) assign(field, combined, model, fonts)
             continue
           }
@@ -165,18 +175,22 @@ export async function renderPdf({
             }
             continue
           }
-          assign(field, getPath(preprocessed, renderDataPath(preprocessed, parts[0]!.source)), model, fonts)
+          assign(field, read(parts[0]!.source, bindingFormat), model, fonts)
         }
       } else if (form) {
         for (const [name, definition] of Object.entries(form.fields ?? {}) as [string, FormField][]) {
           if (definition.type === 'fieldset') continue
-          assign(byName.get(name), (preprocessed.fields as Record<string, unknown> | undefined)?.[name] ?? preprocessed[name], model, fonts)
+          if (perValue && !byName.has(name)) continue
+          const value = perValue
+            ? read(name) ?? data[name]
+            : (preprocessed.fields as Record<string, unknown> | undefined)?.[name] ?? preprocessed[name]
+          assign(byName.get(name), value, model, fonts)
         }
       }
     }
   }
 
-  applyPdfOverlays(model, overlays, preprocessed, fonts)
+  applyPdfOverlays(model, overlays, (path) => read(path), fonts)
   fonts.finish()
   return droppedXfa ? model.rewrite() : model.save()
 }

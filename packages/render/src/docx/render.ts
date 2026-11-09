@@ -1,7 +1,8 @@
 import { defaultFormatter } from '@asterdoc/format'
-import type { Form, Formatter } from '@asterdoc/types'
+import type { Form, Formatter, LayerFormat } from '@asterdoc/types'
 import { unzipSync, zipSync } from 'fflate'
 import { formatFieldData } from '../text/field-formatter'
+import { formatFieldOptions, formatterFor } from '../presentation'
 import { loopFrames, loopRows, renderTemplateNodes, type SigningDirective, type TemplateRenderOptions } from '../text/template'
 import { templateData, type TemplateExpressionOptions } from '../template/context'
 import { TemplateError } from '../template/errors'
@@ -27,6 +28,8 @@ export interface RenderDocxOptions {
   expressions?: TemplateExpressionOptions
   /** The layer key, named in template errors. */
   layer?: string
+  /** How the layer prints values, applied over `formatter`. */
+  format?: LayerFormat
 }
 
 const textDecoder = new TextDecoder()
@@ -309,14 +312,16 @@ export async function renderDocx({
   template,
   data,
   form,
-  formatter = defaultFormatter,
+  formatter: callerFormatter = defaultFormatter,
   signatureOptions,
   options = {},
   expressions,
   layer,
+  format,
 }: RenderDocxOptions): Promise<Uint8Array> {
+  const formatter = formatterFor(callerFormatter, format)
   const prepared = form
-    ? formatFieldData(data, form, formatter)
+    ? formatFieldData(data, form, formatter, format && formatFieldOptions(format))
     : data
   const { context, resolveData } = templateData(data, prepared, form, expressions)
   const directives: Record<string, SigningDirective> = createDocxSignatureDirectives(signatureOptions)

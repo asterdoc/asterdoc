@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { executeExtract, executeRender, bytesToBase64 } from '../src'
+import { ExtractOutputSchema } from '../src/contracts'
 import { MAX_LAYER_FILE_SIZE } from '../src/registry-client'
 
 const fixturesDir = join(fileURLToPath(new URL('.', import.meta.url)), 'fixtures')
@@ -41,6 +42,16 @@ describe('extract tool', () => {
 		const { form } = await import('@asterdoc/core')
 		const sdk = await form.from(artifact).extract(pdf)
 		expect(result).toEqual({ success: true, artifact_kind: 'form', layer: sdk.layer, data: sdk.data, report: sdk.report })
+	})
+
+	it('flags each recovered entry lossy or not, as the contract declares', async () => {
+		const result = await executeExtract({ source: 'artifact', artifact, pdf: bytesToBase64(await filled()) })
+		const entries = result.report?.entries ?? []
+		expect(entries.some((entry) => entry.status === 'recovered')).toBe(true)
+		for (const entry of entries) expect(entry.lossy).toBe(entry.status === 'recovered' ? false : undefined)
+		const parsed = ExtractOutputSchema.strict().safeParse(result)
+		expect(parsed.success).toBe(true)
+		expect(ExtractOutputSchema.shape.report.unwrap().shape.entries.element.shape.lossy).toBeDefined()
 	})
 
 	it('reads the PDF from a URL through the configured fetch policy', async () => {

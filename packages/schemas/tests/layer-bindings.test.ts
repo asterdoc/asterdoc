@@ -36,6 +36,7 @@ type JsonSchema = {
   properties?: Record<string, JsonSchema>;
   propertyNames?: JsonSchema;
   additionalProperties?: JsonSchema;
+  type?: string;
   maxLength?: number;
   allOf?: Array<{ if?: { required?: string[] }; then?: { properties?: { mimeType?: { pattern?: string } } } }>;
   oneOf?: JsonSchema[];
@@ -133,7 +134,11 @@ function expectPublishedDirection(inline: JsonSchema, file: JsonSchema, allOf: J
   const bindings = file.properties?.bindings;
   expect(bindings?.description).toMatch(/AcroForm field name.*Asterdoc path/);
   expect(bindings?.propertyNames?.description).toMatch(/AcroForm field name/);
-  expect(bindings?.additionalProperties?.description).toMatch(/Asterdoc path/);
+  const [text, object] = bindings?.additionalProperties?.anyOf ?? [];
+  expect(text?.type).toBe("string");
+  expect(text?.description).toMatch(/Asterdoc path/);
+  expect(object?.type).toBe("object");
+  expect(object?.properties?.path?.description).toMatch(/Asterdoc path/);
   expect(file.properties?.bindingsFrom?.description).toMatch(/PDF/);
 
   for (const key of ["bindings", "bindingsFrom"]) {

@@ -59,6 +59,12 @@ Inline layer with embedded text content. Used when content is stored directly in
     isOptional: true,
   },
   {
+    name: 'format',
+    type: 'LayerFormat',
+    description: 'How the layer prints values, over the caller\'s formatter. See [Format](#format)',
+    isOptional: true,
+  },
+  {
     name: 'signatures',
     type: 'Record<string, SignatureSlot>',
     description: 'Signature slots keyed by slot id, each binding a party to a placement',
@@ -112,14 +118,14 @@ File-backed layer with external file reference. Used when content is stored in a
   },
   {
     name: 'format',
-    type: "{ money?: { currencyDisplay: 'none' }, date?: { pattern: 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD' } }",
-    description: 'PDF layers only. The presentation the template requires of filled values. `none` prints money amounts without a symbol, for a template that pre-prints it. `pattern` prints every date in the numeric order the template asks for. Applies to this layer alone. See [Artifact formatting](/sdk/renderers/pdf#artifact-formatting)',
+    type: 'LayerFormat',
+    description: 'How the layer prints values, over the caller\'s formatter. Applies to this layer alone. See [Format](#format)',
     isOptional: true,
   },
   {
     name: 'bindings',
-    type: 'Record<string, string>',
-    description: 'PDF layers only. Maps each AcroForm field name in the template (key) to the Asterdoc path that fills it (value). See [Bindings](#bindings)',
+    type: 'Record<string, string | { path: string, format?: LayerFormat }>',
+    description: 'PDF layers only. Maps each AcroForm field name in the template (key) to the Asterdoc path that fills it (value), as a string or a binding object. See [Bindings](#bindings)',
     isOptional: true,
   },
   {
@@ -151,6 +157,43 @@ Only a PDF file layer takes `bindings` and `bindingsFrom`. Each key of `bindings
   }
 }
 ```
+
+A binding value can also be an object: `path` is the string the binding would be, and `format` sets how that one value prints, merged over the layer's `format`. A joined path applies the format to each value before the join. An option test such as `fields.status:married` fills a checkbox and prints nothing, and a split part such as `fields.ssn:2` prints a piece of the raw value, so validation rejects a `format` on either.
+
+```json
+"bindings": {
+  "topmostSubform[0].Page1[0].f1_03[0]": { "path": "fields.signedOn", "format": { "date": { "pattern": "YYYY-MM-DD" } } }
+}
+```
+
+A layer that reuses bindings through `bindingsFrom` takes each binding with its own `format`. Its layer `format` stays its own.
+
+## Format
+
+`format` sets how a layer prints values. Any layer that prints values can declare one: PDF, text (`text/plain`, `text/markdown`, `text/html`), DOCX, and React (`text/tsx`, `text/jsx`), file or inline. The MIME check ignores case. Any other layer fails validation.
+
+<PropertiesTable properties={[
+  {
+    name: 'locale',
+    type: 'string',
+    description: 'BCP 47 locale for names and words, such as `en-US`. Replaces the caller\'s formatter locale',
+    isOptional: true,
+  },
+  {
+    name: 'money',
+    type: "{ currencyDisplay?: 'none' }",
+    description: '`none` prints amounts without a currency symbol, for a template that pre-prints it',
+    isOptional: true,
+  },
+  {
+    name: 'date',
+    type: "{ pattern: 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD' }",
+    description: 'Prints every date in the numeric order the template asks for',
+    isOptional: true,
+  },
+]} />
+
+Levels apply from lowest to highest: the caller's formatter, then the layer's `format`, then a binding's `format`. Each kind merges per property, so a binding's `money` keeps the layer's other money choices, and a higher `locale` replaces a lower one. React layers accept a `format` but do not apply it yet. See [Artifact formatting](/sdk/renderers/pdf#artifact-formatting).
 
 ## SignatureSlot
 

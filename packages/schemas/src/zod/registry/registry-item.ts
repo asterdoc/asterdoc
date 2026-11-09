@@ -14,10 +14,10 @@ import { ARTIFACT_NAME_PATTERN } from '../primitives/name';
 import { ARTIFACT_VERSION_PATTERN } from '../primitives/version';
 import {
 	FileLayerObjectSchema,
+	FormatSchema,
 	LAYER_BINDINGS_RULE,
-	PDF_ONLY_FILE_LAYER_KEYS,
-	pdfOnlyLayerKeysJsonSchema,
-	withPdfOnlyFileLayerRules,
+	layerKeyRulesJsonSchema,
+	withLayerKeyRules,
 } from '../artifacts/shared/layer';
 
 /**
@@ -44,12 +44,15 @@ const RegistryLayerBaseSchema = z.object({
 /**
  * Inline layer for registry items
  */
-export const RegistryInlineLayerSchema = RegistryLayerBaseSchema.extend({
+export const RegistryInlineLayerSchema = withLayerKeyRules(RegistryLayerBaseSchema.extend({
 	kind: z.literal('inline'),
 	text: z.string()
 		.min(1)
 		.max(1000000)
 		.describe('Layer content with interpolation placeholders (e.g., {{fields.fieldName}})'),
+	format: FormatSchema
+		.describe('How the layer prints values, over the caller\'s formatter; layers that print values only')
+		.optional(),
 	// Registry layers strip undeclared keys, so the PDF-only keys are refused
 	// by name rather than dropped without an error.
 	bindings: z.never({ error: LAYER_BINDINGS_RULE }).optional(),
@@ -57,13 +60,13 @@ export const RegistryInlineLayerSchema = RegistryLayerBaseSchema.extend({
 }).meta({
 	title: 'RegistryInlineLayer',
 	description: 'Inline layer with embedded content',
-});
+}));
 
 /**
  * File layer for registry items: the artifact file layer, plus the URL to
  * download the layer file from.
  */
-export const RegistryFileLayerSchema = withPdfOnlyFileLayerRules(FileLayerObjectSchema.extend({
+export const RegistryFileLayerSchema = withLayerKeyRules(FileLayerObjectSchema.extend({
 	url: z.url().describe('Optional URL to download the layer file from; clients otherwise resolve path relative to the registry item').optional(),
 }).meta({
 	title: 'RegistryFileLayer',
@@ -79,8 +82,7 @@ export const RegistryLayerSchema = z.discriminatedUnion('kind', [
 ]).meta({
 	title: 'RegistryLayer',
 	description: 'Layer in a registry item - inline or file with URL',
-	// The file layer's PDF-only refinements, stated to JSON Schema as well.
-	allOf: pdfOnlyLayerKeysJsonSchema(PDF_ONLY_FILE_LAYER_KEYS),
+	allOf: layerKeyRulesJsonSchema(),
 });
 
 /**

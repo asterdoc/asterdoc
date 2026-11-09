@@ -2,8 +2,6 @@ import { unzlibSync, zlibSync } from 'fflate'
 import type { PdfFont, PdfFontSet } from './drawing-fonts'
 import { MIN_FONT_SIZE, PdfFieldFillError, type DrawingFont } from './field-appearance'
 import { type PdfRef, PdfModel, type PdfValue } from './syntax'
-import { getPath } from '../path'
-import { renderDataPath } from '../layer-bindings'
 import { addPageResource, appendPageContent, documentPages } from './page-tree'
 
 interface PdfOverlayBase {
@@ -53,10 +51,9 @@ interface EmbeddedImage {
   height: number
 }
 
-function textValue(overlay: PdfTextOverlay, data: Record<string, unknown>): unknown {
+function textValue(overlay: PdfTextOverlay, read: (path: string) => unknown): unknown {
   if ('text' in overlay) return overlay.text
-  // An overlay field is an Asterdoc path, read as a binding reads it: `fields.x` is `x`.
-  return getPath(data, renderDataPath(data, overlay.field))
+  return read(overlay.field)
 }
 
 /** The overlay as errors name it: its bound field, or its position. */
@@ -239,7 +236,7 @@ const component = (value: number) => Math.max(0, Math.min(1, value))
 export function applyPdfOverlays(
   model: PdfModel,
   overlays: PdfOverlay[],
-  data: Record<string, unknown>,
+  read: (path: string) => unknown,
   fonts: PdfFontSet,
 ): void {
   if (overlays.length === 0) return
@@ -271,7 +268,7 @@ export function applyPdfOverlays(
         commands.push(`q\n${width} 0 0 ${height} ${overlay.x} ${overlay.y} cm\n/${name} Do\nQ`)
         continue
       }
-      const text = String(textValue(overlay, data) ?? '').replace(/\r\n|\r|\n/g, ' ')
+      const text = String(textValue(overlay, read) ?? '').replace(/\r\n|\r|\n/g, ' ')
       const subject = overlaySubject(overlay, overlays.indexOf(overlay))
       const font = fonts.select(subject, text, undefined, overlay.font)
       let fontName = pageFonts.get(font.resourceName)

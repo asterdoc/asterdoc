@@ -23,6 +23,8 @@ export type {
   LayerMoneyFormat,
   ReactLayerMimeType,
   Bindings,
+  BindingObject,
+  BindingValue,
   CondExpr,
   // Expression types
   BaseExpression,

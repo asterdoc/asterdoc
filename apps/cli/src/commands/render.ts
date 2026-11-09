@@ -16,6 +16,7 @@ import { readTextInput, resolveArtifactTarget } from '../utils/io.js'
 import { parseDataInput, toFormPayload } from '../utils/data-input.js'
 import { loadValidatedArtifact } from '../utils/artifact-file.js'
 import { createLayerRenderer } from '@asterdoc/render'
+import type { Bindings } from '@asterdoc/types'
 import { formatPayloadErrors, validateFormPayload } from '../utils/validate-data.js'
 
 type OutputFormat = 'json' | 'pretty'
@@ -36,7 +37,7 @@ export function createRenderCommand(): Command {
     .argument('<artifact>', 'Artifact file (JSON/YAML) or "-" for stdin')
     .description('Render an artifact layer')
     .option('--data <pathOrJson>', 'Data payload: file path, "-" for stdin, or inline JSON (for field substitution)')
-    .option('--bindings <pathOrJson>', 'PDF layers only: AcroForm field bindings merged over the layer\'s own (path to JSON/YAML or inline JSON)')
+    .option('--bindings <pathOrJson>', 'PDF layers only: AcroForm field bindings merged over the layer\'s own, each a path string or { path, format } (path to JSON/YAML or inline JSON)')
     .option('--out <file>', 'Write output to file (defaults to stdout)')
     .option('--format <style>', 'Summary format: pretty|json', 'pretty')
     .option('--layer <key>', 'Layer key to use (defaults to defaultLayer, else the first declared layer)')
@@ -78,7 +79,7 @@ export function createRenderCommand(): Command {
 
         // Parse bindings if provided
         const parsedBindings = options.bindings
-          ? (await parseDataInput(options.bindings)).data as Record<string, string>
+          ? (await parseDataInput(options.bindings)).data as Bindings
           : undefined
 
         if (parsedBindings) {

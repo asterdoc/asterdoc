@@ -28,8 +28,8 @@ The PDF can be at most 20 MB.
 | `success` | `boolean` | Whether the PDF was read |
 | `artifact_kind` | `string` | `form` |
 | `layer` | `string` | The PDF layer the PDF was read against |
-| `data` | `object` | The recovered values as a form payload: `{ fields, parties? }`. Only values read back exactly are here. |
-| `report.entries` | `object[]` | One entry for each binding target: `{ path, status, sources, reason? }` |
+| `data` | `object` | The recovered values as a form payload: `{ fields, parties? }`. Only recovered values are here, never guesses. |
+| `report.entries` | `object[]` | One entry for each binding target: `{ path, status, sources, reason?, lossy? }` |
 | `report.unbound` | `object[]` | PDF fields that hold a value no binding covers: `{ field, type, value }` |
 | `validation_issues` | `{ message, path? }[]` | Schema issues when the artifact is invalid |
 | `error` | [`ToolError`](/ai-tools#errors) | Why the call failed |
@@ -38,7 +38,7 @@ Each entry's `sources` lists the PDF fields that carry the path, as `{ field, va
 
 | Status | Meaning |
 |--------|---------|
-| `recovered` | The value was read back exactly and is in `data` |
+| `recovered` | The value was read back and is in `data`. `lossy` is `true` when the format the PDF printed it with drops detail, so the value may differ from the one filled |
 | `empty` | The PDF fields are empty. An unchecked box counts as empty, because it cannot be told apart from an unanswered one. |
 | `not_recoverable` | The PDF holds a value that cannot be mapped back, such as a box that joins several values. `reason` says why. |
 | `unparseable` | The PDF text does not parse into the field's type, or the fields that carry the path disagree. `reason` says why. |
@@ -89,7 +89,8 @@ const draft = await executeFill({ ...source, data: extracted.data ?? {} })
       {
         "path": "parties.taxpayer.name",
         "status": "recovered",
-        "sources": [{ "field": "topmostSubform[0].Page1[0].f1_01[0]", "value": "Jane Q. Public" }]
+        "sources": [{ "field": "topmostSubform[0].Page1[0].f1_01[0]", "value": "Jane Q. Public" }],
+        "lossy": false
       },
       {
         "path": "mailingAddress.locality",

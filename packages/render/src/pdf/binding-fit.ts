@@ -31,13 +31,13 @@
  * render time is not known here.
  */
 
-import type { Form, FormField } from '@asterdoc/types'
+import type { BindingValue, Bindings, Form, FormField } from '@asterdoc/types'
 import { acroFields, textFieldDrawing, widgetLayout, type AcroField } from './acroform'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
 import { layoutFieldText, MIN_FONT_SIZE, PdfFieldFillError, type FieldLayout } from './field-appearance'
 import { analyzePattern, REFERENCE_REPERTOIRE, type CharSet } from './pattern-bounds'
 import { parseBinding, splitPartIndex, type PdfBindingPart } from '../layer-bindings'
-import { fieldDefinition } from './render'
+import { fieldDefinition } from '../layer-bindings'
 import { PdfModel } from './syntax'
 
 /**
@@ -55,7 +55,7 @@ export type PdfBindingFitReason = 'overflow' | 'comb-length' | 'unbounded'
 export interface PdfBindingFitIssue {
   /** Fully qualified name of the PDF form field. */
   field: string
-  /** The binding as the layer declares it. */
+  /** The binding's path text as the layer declares it: the string binding, or a binding object's `path`. */
   binding: string
   /** The artifact paths the binding reads, such as `fields.amountSource`. */
   paths: string[]
@@ -80,8 +80,8 @@ export interface CheckPdfBindingFitOptions {
   /** The PDF layer's bytes. */
   template: Uint8Array
   form: Form
-  /** The layer's bindings; without them, fields fill the PDF fields of the same name. */
-  bindings?: Record<string, string>
+  /** The layer's bindings, strings or binding objects; without them, fields fill the PDF fields of the same name. */
+  bindings?: Bindings
   /** The font the layer declares. */
   layerFont?: PdfFont
 }
@@ -227,12 +227,13 @@ function analyzeSource(form: Form, { path, qualifier }: PdfBindingPart): SourceA
   return choiceSource(path, field)
 }
 
-/** The sources a binding reads, or why it is not checked. */
-function analyzeBinding(form: Form, binding: string): SourceAnalysis[] | undefined {
-  const sources = parseBinding(binding).map((part) => analyzeSource(form, part))
+/** The binding's path text and the sources it reads, or undefined when it is not checked. */
+function analyzeBinding(form: Form, value: BindingValue): { binding: string; sources: SourceAnalysis[] } | undefined {
+  const parsed = parseBinding(value)
+  const sources = parsed.parts.map((part) => analyzeSource(form, part))
   // A joined value is checked only when every part is known.
   if (sources.some((source) => source.kind === 'other')) return undefined
-  return sources
+  return { binding: parsed.path, sources }
 }
 
 function describe(layout: FieldLayout): string {
@@ -283,16 +284,17 @@ export async function checkPdfBindingFit({ template, form, bindings, layerFont }
   const fonts = PdfFontSet.create(model, { layerFont })
   await fonts.readFormFonts(model.dict(acro.acroForm.entries.get('DR')))
   const byName = new Map(acro.fields.map((field) => [field.name, field]))
-  const entries = bindings
+  const entries: [string, BindingValue][] = bindings
     ? Object.entries(bindings)
-    : Object.entries(form.fields ?? {}).filter(([, field]) => field.type !== 'fieldset').map(([name]) => [name, name] as const)
+    : Object.entries(form.fields ?? {}).filter(([, field]) => field.type !== 'fieldset').map(([name]) => [name, name])
 
   const issues: PdfBindingFitIssue[] = []
-  for (const [name, binding] of entries) {
+  for (const [name, value] of entries) {
     const field = byName.get(name)
     if (!field || field.type !== 'text') continue
-    const analyzed = analyzeBinding(form, binding)
-    if (!analyzed) continue
+    const analysis = analyzeBinding(form, value)
+    if (!analysis) continue
+    const { binding, sources: analyzed } = analysis
     const drawing = textFieldDrawing(field)
     const layouts = field.widgets
       .map((widget) => widgetLayout(model, field, widget, drawing))

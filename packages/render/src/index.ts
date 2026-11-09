@@ -13,13 +13,20 @@ import type { TemplateExpressionOptions } from './template/context'
 export type { PdfFont } from './pdf/drawing-fonts'
 export { getPath, pathSegments } from './path'
 export {
+  assertBindingFormats,
+  bindingFormatProblem,
+  isOptionTest,
   parseBinding,
+  parseBindings,
   PdfBindingKeyError,
   PdfBindingSyntaxError,
   resolveLayerBindings,
   type LayerBindingsSpec,
+  type ParsedLayerBinding,
+  type ParsedPdfBinding,
   type PdfBindingPart,
 } from './layer-bindings'
+export { formatterFor, hasNewFormatOptions, mergeFormats } from './presentation'
 
 /** Options shared by the MIME-selected rendering engines. */
 export interface CreateLayerRendererOptions {

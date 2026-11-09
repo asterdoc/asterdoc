@@ -33,6 +33,7 @@ export function docxRenderer(options: DocxRendererOptions = {}): AsterdocRendere
         signatureOptions: options.signatureOptions,
         expressions: requestExpressions(options.expressions, request.ctx?.expressions),
         layer: request.template.key,
+        ...(request.template.format && { format: request.template.format }),
       })
     },
   }

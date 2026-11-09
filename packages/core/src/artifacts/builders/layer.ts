@@ -6,7 +6,7 @@
  */
 
 import { isPdfMimeType, LAYER_BINDINGS_RULE } from '@asterdoc/schemas';
-import type { InlineLayer, FileLayer, Layer, LayerFont, LayerFormat, SignatureSlot } from '@asterdoc/types';
+import type { Bindings, InlineLayer, FileLayer, Layer, LayerFont, LayerFormat, SignatureSlot } from '@asterdoc/types';
 
 // ============================================================================
 // Layer Builder Marker
@@ -37,10 +37,10 @@ export interface FileLayerBuilderType {
 	checksum(value: string): FileLayerBuilderType;
 	/** Declare the font a PDF layer draws filled values and overlay text with. */
 	font(value: LayerFont): FileLayerBuilderType;
-	/** Declare the presentation a PDF layer's template requires, such as money without a symbol. */
+	/** Declare how the layer prints values, such as money without a symbol. Layers that print values only. */
 	format(value: LayerFormat): FileLayerBuilderType;
-	/** Map each AcroForm field name in a PDF template to the Asterdoc path that fills it. PDF layers only. */
-	bindings(value: Record<string, string>): FileLayerBuilderType;
+	/** Map each AcroForm field name in a PDF template to the Asterdoc path that fills it, as a string or a binding object. PDF layers only. */
+	bindings(value: Bindings): FileLayerBuilderType;
 	/** Reuse the bindings of a sibling PDF layer. PDF layers only. */
 	bindingsFrom(value: string): FileLayerBuilderType;
 	/** Declare the signature slots on this layer, keyed by slot id. */
@@ -54,6 +54,8 @@ export interface InlineLayerBuilderType {
 	mimeType(value: string): InlineLayerBuilderType;
 	title(value: string): InlineLayerBuilderType;
 	description(value: string): InlineLayerBuilderType;
+	/** Declare how the layer prints values, such as dates in one numeric order. Layers that print values only. */
+	format(value: LayerFormat): InlineLayerBuilderType;
 	/** Declare the signature slots on this layer, keyed by slot id. */
 	signatures(value: Record<string, SignatureSlot>): InlineLayerBuilderType;
 	build(): InlineLayer;
@@ -113,7 +115,7 @@ export function fileLayer(): FileLayerBuilderType {
 			_def.format = value;
 			return self;
 		},
-		bindings(value: Record<string, string>) {
+		bindings(value: Bindings) {
 			_def.bindings = value;
 			return self;
 		},
@@ -134,9 +136,6 @@ export function fileLayer(): FileLayerBuilderType {
 			}
 			if (_def.font && !isPdfMimeType(_def.mimeType)) {
 				throw new Error('Only PDF layers (application/pdf) can declare a font.');
-			}
-			if (_def.format && !isPdfMimeType(_def.mimeType)) {
-				throw new Error('Only PDF layers (application/pdf) can declare a format.');
 			}
 			if ((_def.bindings || _def.bindingsFrom) && !isPdfMimeType(_def.mimeType)) {
 				throw new Error(`${LAYER_BINDINGS_RULE}.`);
@@ -179,6 +178,10 @@ export function inlineLayer(): InlineLayerBuilderType {
 		},
 		description(value: string) {
 			_def.description = value;
+			return self;
+		},
+		format(value: LayerFormat) {
+			_def.format = value;
 			return self;
 		},
 		signatures(value: Record<string, SignatureSlot>) {

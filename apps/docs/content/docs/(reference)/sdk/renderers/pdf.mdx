@@ -121,12 +121,12 @@ async function renderPdf(options: RenderPdfOptions): Promise<Uint8Array>
   { name: 'template', type: 'Uint8Array', description: 'PDF template file as binary data' },
   { name: 'form', type: 'Form', description: 'Form schema for field type detection', isOptional: true },
   { name: 'data', type: 'Record<string, unknown>', description: 'Data object to populate form fields' },
-  { name: 'bindings', type: 'Record<string, string>', description: 'Mapping from PDF field names to form field expressions', isOptional: true },
+  { name: 'bindings', type: 'Bindings', description: 'Mapping from PDF field names to form field expressions, each a string or `{ path, format }`', isOptional: true },
   { name: 'formatter', type: 'Formatter', description: 'Artifact value formatter. Defaults to en-US.', isOptional: true },
   { name: 'overlays', type: 'PdfOverlay[]', description: 'Text or image overlays drawn at page coordinates', isOptional: true },
   { name: 'font', type: 'PdfFont', description: 'A font supplied at render time, tried first', isOptional: true },
   { name: 'layerFont', type: 'PdfFont', description: "The font the artifact's PDF layer declares, tried after `font`", isOptional: true },
-  { name: 'format', type: 'LayerFormat', description: "The presentation the artifact's PDF layer declares, applied over `formatter`. See [Artifact formatting](#artifact-formatting)", isOptional: true },
+  { name: 'format', type: 'LayerFormat', description: "How the artifact's PDF layer prints values, applied over `formatter`, with each binding's own format over it. See [Artifact formatting](#artifact-formatting)", isOptional: true },
 ]} />
 
 A `PdfOverlay` is either text or an image placed at `page` (one-based), `x`,
@@ -191,12 +191,12 @@ async function extractPdfData(options: ExtractPdfDataOptions): Promise<PdfExtrac
 <PropertiesTable properties={[
   { name: 'pdf', type: 'Uint8Array', description: 'The filled PDF. It is read, never changed.' },
   { name: 'form', type: 'Form', description: 'The artifact whose layer produced the PDF' },
-  { name: 'bindings', type: 'Record<string, string>', description: 'The PDF layer bindings' },
+  { name: 'bindings', type: 'Bindings', description: 'The PDF layer bindings, strings or binding objects. Each value is read back by its own format' },
   { name: 'formatter', type: 'Formatter', description: 'The formatter the PDF was filled with. Defaults to en-US.', isOptional: true },
   { name: 'format', type: 'LayerFormat', description: "The PDF layer's declared format, applied over `formatter` as when filling. `selectPdfExtractionLayer` returns it with the bindings", isOptional: true },
 ]} />
 
-Returns `{ data, report }`. Failures throw `PdfExtractionError` with a `code`. An encrypted PDF throws `PdfEncryptedError`.
+Returns `{ data, report }`. Each `recovered` report entry carries `lossy`: `true` when the format the value was printed with drops detail, so the value is the person's answer but may differ from the one filled. Failures throw `PdfExtractionError` with a `code`. An encrypted PDF throws `PdfEncryptedError`.
 
 ## Inspecting PDF Fields
 
@@ -481,7 +481,7 @@ When the template pre-prints the currency symbol beside each money box, as IRS 1
 
 Every render of that layer then prints `12,000.00` instead of `$12,000.00`, with no formatter to configure. The layer's format applies over the formatter the render uses, so its locale and digits still apply; only the symbol goes. The amount keeps its currency's fraction digits. Other layers of the artifact, such as its Markdown, keep the symbol, and a layer that reuses these bindings through `bindingsFrom` declares its own `format`.
 
-Only PDF layers take `format`, and `currencyDisplay: 'none'` is the only money value. Declare the money field's `currency` too: [extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) reads an amount printed without a symbol in that currency.
+`currencyDisplay: 'none'` is the only money value. Declare the money field's `currency` too: [extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) reads an amount printed without a symbol in that currency. Text and DOCX layers take the same `format`; see [Format](/schemas/artifacts/shared/layer#format).
 
 When the template asks for dates in one numeric order, such as mm/dd/yyyy on U.S. government forms, the layer declares the pattern:
 
@@ -490,6 +490,26 @@ When the template asks for dates in one numeric order, such as mm/dd/yyyy on U.S
 ```
 
 Every date field then prints `06/05/2021` in place of the formatter's `Jun 5, 2021`, whatever the locale. The patterns are `MM/DD/YYYY`, `DD/MM/YYYY`, and `YYYY-MM-DD`. Extraction reads the text back by the same pattern, so `05/06/2021` on a `DD/MM/YYYY` layer is June 5 under any locale.
+
+A `locale` prints names and words in that locale in place of the formatter's:
+
+```json
+"format": { "locale": "en-US" }
+```
+
+One binding can print differently from its layer. A binding value can be an object whose `format` merges over the layer's, per property:
+
+```json
+"format": { "date": { "pattern": "MM/DD/YYYY" } },
+"bindings": {
+  "signedOn": "fields.signedOn",
+  "filedOn": { "path": "fields.filedOn", "format": { "date": { "pattern": "YYYY-MM-DD" } } }
+}
+```
+
+For two dates of June 5, 2021, `signedOn` prints `06/05/2021` and `filedOn` prints `2021-06-05`. A binding on an option test, such as `fields.status:married`, or on a split part, such as `fields.ssn:2`, takes no `format`.
+
+A layer that sets only `money.currencyDisplay` and `date.pattern`, with no binding formats, formats all data once before filling, so an invalid value anywhere fails the render. Once the layer sets a `locale` or a binding sets a `format`, each value is formatted when a binding, an overlay, or a field-id fill reads it, and only a value that is read can fail the render.
 
 An address in a country with no address layout prints in the generic layout (`line1, line2, locality, region, postalCode, country`) on every layer, in place of failing the render. A layout the formatter supplies for that country through `countryLayouts` comes first. An invalid address is still refused.
 

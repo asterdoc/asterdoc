@@ -1,7 +1,8 @@
 import { defaultFormatter } from '@asterdoc/format'
-import type { BinaryContent, EnumOption, Form, FormField, Formatter, LayerDateFormat, LayerFormat } from '@asterdoc/types'
+import type { BinaryContent, Bindings, EnumOption, Form, FormField, Formatter, LayerDateFormat, LayerFormat } from '@asterdoc/types'
 import { validateFieldBindings } from '../text/field-formatter'
-import { parseBindings, resolveLayerBindings, splitPartIndex } from '../layer-bindings'
+import { assertBindingFormats, parseBindings, resolveLayerBindings, splitPartIndex } from '../layer-bindings'
+import { formatterFor, mergeFormats } from '../presentation'
 import { pathSegments } from '../path'
 import { acroFields, type AcroField } from './acroform'
 import { isName, PdfEncryptedError, PdfModel, type PdfValue } from './syntax'
@@ -49,6 +50,12 @@ export interface PdfExtractionEntry {
   sources: PdfExtractionSource[]
   /** Why the value is not recoverable or could not be parsed. */
   reason?: string
+  /**
+   * Set on every `recovered` entry: true when the format the value was
+   * printed with drops detail, so the recovered value is the person's answer
+   * but may not be exactly the one filled.
+   */
+  lossy?: boolean
 }
 
 /** A PDF field that holds a value no binding covers. */
@@ -63,7 +70,7 @@ export interface PdfExtractionReport {
   unbound: PdfUnboundField[]
 }
 
-/** Partial artifact data in the fill payload shape. It holds only values recovered exactly. */
+/** Partial artifact data in the fill payload shape. It holds only recovered values, never guesses; a lossy one is flagged in the report. */
 export interface PdfExtractedData {
   fields: Record<string, unknown>
   parties?: Record<string, unknown>
@@ -80,14 +87,15 @@ export interface ExtractPdfDataOptions {
   pdf: BinaryContent
   /** The artifact whose layer produced the PDF. */
   form: Form
-  /** The PDF layer's bindings: AcroForm field name to artifact path. */
-  bindings: Record<string, string>
+  /** The PDF layer's bindings: AcroForm field name to artifact path, as strings or binding objects. */
+  bindings: Bindings
   /** The formatter the PDF was filled with. Defaults to the default formatter. */
   formatter?: Formatter
   /**
-   * The presentation the PDF layer declares, applied over `formatter` as it
-   * was when filling. With `money.currencyDisplay: 'none'`, an amount is read
-   * in the currency its field declares.
+   * The format the PDF layer declares, applied over `formatter` as it was
+   * when filling, with each binding's own format merged over it. With
+   * `money.currencyDisplay: 'none'`, an amount is read in the currency its
+   * field declares.
    */
   format?: LayerFormat
 }
@@ -220,9 +228,9 @@ function targetFor(form: Form, path: string): Target {
 // Parsing values
 // ---------------------------------------------------------------------------
 
-type Parsed = { ok: true; value: unknown } | { ok: false; reason: string }
+type Parsed = { ok: true; value: unknown; lossy: boolean } | { ok: false; reason: string }
 
-const ok = (value: unknown): Parsed => ({ ok: true, value })
+const ok = (value: unknown, lossy = false): Parsed => ({ ok: true, value, lossy })
 const fail = (reason: string): Parsed => ({ ok: false, reason })
 
 function numberSymbols(locale: string): { group: string; decimal: string } {
@@ -492,7 +500,7 @@ function parseTarget(raw: string, target: Target, reader: Reader): Parsed {
 // ---------------------------------------------------------------------------
 
 type Reading =
-  | { kind: 'value'; value: unknown }
+  | { kind: 'value'; value: unknown; lossy: boolean }
   | { kind: 'empty' }
   | { kind: 'unparseable'; reason: string }
   | { kind: 'not_recoverable'; reason: string }
@@ -505,6 +513,8 @@ interface PathWork {
   /** Checkbox-map options by qualifier: true when checked. */
   options: Map<string, boolean>
   optionKind?: 'enum' | 'multiselect'
+  /** The reader of the first split part's binding, which reads the joined parts. */
+  partsReader?: Reader
 }
 
 function source(state: FieldState | undefined, name: string): PdfExtractionSource {
@@ -521,18 +531,18 @@ function readDirect(state: FieldState, target: Target, reader: Reader): Reading 
         : { kind: 'empty' }
     }
     // An unchecked box cannot be told apart from an unanswered one.
-    return state.on ? { kind: 'value', value: true } : { kind: 'empty' }
+    return state.on ? { kind: 'value', value: true, lossy: false } : { kind: 'empty' }
   }
   if (field.type === 'radio') {
     if (!state.on || state.raw === undefined) return { kind: 'empty' }
     const parsed = parseTarget(state.raw, target, reader)
-    return parsed.ok ? { kind: 'value', value: parsed.value } : { kind: 'unparseable', reason: parsed.reason }
+    return parsed.ok ? { kind: 'value', value: parsed.value, lossy: parsed.lossy } : { kind: 'unparseable', reason: parsed.reason }
   }
   if (field.type === 'dropdown') {
     if (!state.selected || state.selected.length === 0) return { kind: 'empty' }
     const raw = state.selected.join(', ')
     const parsed = parseTarget(raw, target, reader)
-    return parsed.ok ? { kind: 'value', value: parsed.value } : { kind: 'unparseable', reason: parsed.reason }
+    return parsed.ok ? { kind: 'value', value: parsed.value, lossy: parsed.lossy } : { kind: 'unparseable', reason: parsed.reason }
   }
   if (state.raw === undefined) return { kind: 'empty' }
   if (target.kind === 'fixed') return { kind: 'not_recoverable', reason: target.reason }
@@ -540,14 +550,14 @@ function readDirect(state: FieldState, target: Target, reader: Reader): Reading 
     return { kind: 'not_recoverable', reason: `A ${target.field.type} value written as one piece of text cannot be split back into its parts; bind its parts to recover it.` }
   }
   const parsed = parseTarget(state.raw, target, reader)
-  return parsed.ok ? { kind: 'value', value: parsed.value } : { kind: 'unparseable', reason: parsed.reason }
+  return parsed.ok ? { kind: 'value', value: parsed.value, lossy: parsed.lossy } : { kind: 'unparseable', reason: parsed.reason }
 }
 
 function sameValue(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
-function resolvePath(work: PathWork, target: Target, reader: Reader): { status: PdfExtractionStatus; value?: unknown; reason?: string } {
+function resolvePath(work: PathWork, target: Target, reader: Reader): { status: PdfExtractionStatus; value?: unknown; reason?: string; lossy?: boolean } {
   const readings = [...work.readings]
 
   if (work.parts.size > 0) {
@@ -561,8 +571,8 @@ function resolvePath(work: PathWork, target: Target, reader: Reader): { status: 
     else if (values.slice(0, lastFilled).some((value) => value === undefined)) {
       readings.push({ kind: 'unparseable', reason: 'A part before the last filled part is empty, so the parts cannot be joined in order.' })
     } else {
-      const parsed = parseTarget(values.slice(0, lastFilled + 1).join('-'), target, reader)
-      readings.push(parsed.ok ? { kind: 'value', value: parsed.value } : { kind: 'unparseable', reason: parsed.reason })
+      const parsed = parseTarget(values.slice(0, lastFilled + 1).join('-'), target, work.partsReader ?? reader)
+      readings.push(parsed.ok ? { kind: 'value', value: parsed.value, lossy: parsed.lossy } : { kind: 'unparseable', reason: parsed.reason })
     }
   }
 
@@ -571,8 +581,8 @@ function resolvePath(work: PathWork, target: Target, reader: Reader): { status: 
     const declared = target.kind === 'field' && (target.field.type === 'enum' || target.field.type === 'multiselect') ? target.field.enum : []
     const valueOf = (qualifier: string) => declared.find((option) => String(option.value) === qualifier)?.value ?? qualifier
     if (checked.length === 0) readings.push({ kind: 'empty' })
-    else if (work.optionKind === 'multiselect') readings.push({ kind: 'value', value: checked.map(valueOf) })
-    else if (checked.length === 1) readings.push({ kind: 'value', value: valueOf(checked[0]!) })
+    else if (work.optionKind === 'multiselect') readings.push({ kind: 'value', value: checked.map(valueOf), lossy: false })
+    else if (checked.length === 1) readings.push({ kind: 'value', value: valueOf(checked[0]!), lossy: false })
     else readings.push({ kind: 'unparseable', reason: 'More than one option is checked for a field that takes one.' })
   }
 
@@ -581,7 +591,9 @@ function resolvePath(work: PathWork, target: Target, reader: Reader): { status: 
   const values = readings.filter((reading): reading is Extract<Reading, { kind: 'value' }> => reading.kind === 'value')
   if (values.length > 0) {
     const [first] = values
-    if (values.every((reading) => sameValue(reading.value, first!.value))) return { status: 'recovered', value: first!.value }
+    if (values.every((reading) => sameValue(reading.value, first!.value))) {
+      return { status: 'recovered', value: first!.value, lossy: values.some((reading) => reading.lossy) }
+    }
     return { status: 'unparseable', reason: 'The PDF fields that carry this path hold different values.' }
   }
   const lost = readings.find((reading): reading is Extract<Reading, { kind: 'not_recoverable' }> => reading.kind === 'not_recoverable')
@@ -626,11 +638,26 @@ function placeValue(data: PdfExtractedData, path: string, value: unknown): void 
  * @throws {PdfExtractionError} when the PDF or the layer choice cannot be read.
  */
 export async function extractPdfData({ pdf, form, bindings, formatter: filledWith = defaultFormatter, format }: ExtractPdfDataOptions): Promise<PdfExtraction> {
-  const formatter = format?.money ? filledWith.compose({ money: format.money }) : filledWith
-  const reader: Reader = { formatter, ...(format?.date && { date: format.date }) }
+  const readers = new Map<string, Reader>()
+  const readerFor = (bindingFormat?: LayerFormat): Reader => {
+    const effective = mergeFormats(format, bindingFormat)
+    const key = JSON.stringify(effective ?? {})
+    let found = readers.get(key)
+    if (!found) {
+      const localized = formatterFor(filledWith, effective)
+      found = {
+        formatter: effective?.money ? localized.compose({ money: effective.money }) : localized,
+        ...(effective?.date && { date: effective.date }),
+      }
+      readers.set(key, found)
+    }
+    return found
+  }
+  const reader = readerFor()
   const parsed = parseBindings(bindings)
-  const sources = parsed.flatMap(([, parts]) => parts.map((part) => part.source))
+  const sources = parsed.flatMap(({ parts }) => parts.map((part) => part.source))
   validateFieldBindings(form, Object.fromEntries(sources.map((source, index) => [String(index), source])))
+  assertBindingFormats(form, parsed)
 
   const { model, fields, names } = await loadFormFields(pdf)
   const states = new Map(fields.map((field) => [field.name, readField(model, field)]))
@@ -662,8 +689,9 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
     return entry
   }
 
-  for (const [pdfName, parts] of parsed) {
+  for (const { field: pdfName, parts, format: bindingFormat } of parsed) {
     const state = states.get(pdfName)
+    const bindingReader = readerFor(bindingFormat)
 
     if (parts.length > 1) {
       for (const part of parts) {
@@ -691,18 +719,19 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
     }
 
     if (qualifier === undefined) {
-      entry.readings.push(readDirect(state, target, reader))
+      entry.readings.push(readDirect(state, target, bindingReader))
       continue
     }
 
     if (fieldType === 'boolean') {
-      entry.readings.push(readDirect(state, target, reader))
+      entry.readings.push(readDirect(state, target, bindingReader))
     } else if (fieldType === 'enum' || fieldType === 'multiselect') {
       entry.optionKind = fieldType
       entry.options.set(qualifier, state.field.type === 'checkbox' || state.field.type === 'radio'
         ? Boolean(state.on)
         : state.raw !== undefined)
     } else if (isPart) {
+      entry.partsReader ??= bindingReader
       entry.parts.set(Number(qualifier), state.raw)
     } else {
       entry.readings.push(state.raw === undefined
@@ -721,6 +750,7 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
       status: resolved.status,
       sources: entry.sources,
       ...(resolved.reason ? { reason: resolved.reason } : {}),
+      ...(resolved.status === 'recovered' && { lossy: resolved.lossy ?? false }),
     })
   }
 
@@ -740,7 +770,7 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
 /** A PDF layer as the artifact declares it. */
 interface PdfLayerSpec {
   mimeType?: string
-  bindings?: Record<string, string>
+  bindings?: Bindings
   bindingsFrom?: string
   format?: LayerFormat
 }
@@ -752,7 +782,7 @@ interface PdfLayerSpec {
 export function selectPdfExtractionLayer(
   layers: Record<string, PdfLayerSpec> | undefined,
   requested?: string,
-): { key: string; bindings: Record<string, string>; format?: LayerFormat } {
+): { key: string; bindings: Bindings; format?: LayerFormat } {
   const all = layers ?? {}
   const pdfKeys = Object.keys(all).filter((key) => all[key]?.mimeType?.toLowerCase() === 'application/pdf')
   let key = requested

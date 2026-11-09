@@ -169,9 +169,9 @@ The resolved template content:
   { name: 'mimeType', type: 'string', description: 'Media type (e.g., "text/html", "application/pdf")', isOptional: true },
   { name: 'key', type: 'string', description: 'The layer key in the artifact', isOptional: true },
   { name: 'path', type: 'string', description: 'The path a file layer declares', isOptional: true },
-  { name: 'bindings', type: 'Bindings', description: 'PDF layers only: AcroForm field name to Asterdoc path. Other layers carry none', isOptional: true },
+  { name: 'bindings', type: 'Bindings', description: 'PDF layers only: AcroForm field name to Asterdoc path, as a string or `{ path, format }`. Other layers carry none', isOptional: true },
   { name: 'font', type: 'RendererLayerFont', description: 'Resolved font declared by a PDF layer', isOptional: true },
-  { name: 'format', type: 'LayerFormat', description: 'Presentation overrides declared by a PDF layer', isOptional: true },
+  { name: 'format', type: 'LayerFormat', description: 'How the layer declares its values print, applied over the formatter', isOptional: true },
 ]} />
 
 ### AsterdocRendererContext

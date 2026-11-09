@@ -4,24 +4,25 @@
  * A PDF layer's `bindings` map AcroForm field names (keys) to Asterdoc paths
  * (values). Rendering refuses a value it cannot parse or that names no path
  * the form declares, so `validate()` reports each one first. An inverted binding, with a field
- * name in the value position, is the common case.
+ * name in the value position, is the common case. A binding object's format on
+ * an option test, which fills a checkbox and prints nothing, is reported too.
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { isPdfMimeType } from '@asterdoc/schemas'
-import type { Form } from '@asterdoc/types'
-import { parseBinding, PdfBindingSyntaxError, type PdfBindingPart } from '@asterdoc/render'
+import type { BindingValue, Form } from '@asterdoc/types'
+import { bindingFormatProblem, parseBinding, PdfBindingSyntaxError, type ParsedPdfBinding } from '@asterdoc/render'
 import { ArtifactFieldFormatError, validateFieldBindings } from '@asterdoc/render/text'
 
-function bindingProblem(form: Form, bindingKey: string, value: string): string | undefined {
-  let parts: PdfBindingPart[]
+function bindingProblem(form: Form, bindingKey: string, value: BindingValue): string | undefined {
+  let parsed: ParsedPdfBinding
   try {
-    parts = parseBinding(value)
+    parsed = parseBinding(value)
   } catch (error) {
     if (!(error instanceof PdfBindingSyntaxError)) throw error
     return error.message.replace(/\.$/, '')
   }
-  for (const { source } of parts) {
+  for (const { source } of parsed.parts) {
     try {
       validateFieldBindings(form, { [bindingKey]: source })
     } catch (error) {
@@ -30,13 +31,15 @@ function bindingProblem(form: Form, bindingKey: string, value: string): string |
       return `"${source}" is not a known Asterdoc path (${detail})`
     }
   }
-  return undefined
+  const formatProblem = bindingFormatProblem(form, parsed)
+  return formatProblem && `Binding ${JSON.stringify(parsed.path)} ${formatProblem}`
 }
 
 /**
- * Check that every value of every PDF layer's own `bindings` parses and names
- * only Asterdoc paths the form declares. A layer reusing bindings through
- * `bindingsFrom` is checked where the bindings are declared.
+ * Check that every value of every PDF layer's own `bindings` parses, names
+ * only Asterdoc paths the form declares, and sets no format on an option test.
+ * A layer reusing bindings through `bindingsFrom` is checked where the
+ * bindings are declared.
  */
 export function validatePdfBindingPaths(form: Form): StandardSchemaV1.Issue[] {
   const issues: StandardSchemaV1.Issue[] = []

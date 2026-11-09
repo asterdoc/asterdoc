@@ -9,6 +9,7 @@
  */
 
 import type {
+  Bindings,
   Form,
   Document,
   Bundle,
@@ -176,10 +177,11 @@ export interface RenderOptions<Output = string | Uint8Array> {
   layer?: string
 
   /**
-   * PDF layers only: AcroForm field name -> Asterdoc path, laid over the
-   * layer's own bindings. Refused for any other layer.
+   * PDF layers only: AcroForm field name -> Asterdoc path, as a string or a
+   * binding object with its own format, laid over the layer's own bindings.
+   * Refused for any other layer.
    */
-  bindings?: Record<string, string>
+  bindings?: Bindings
 }
 
 /**
@@ -220,10 +222,11 @@ export interface RuntimeFormRenderOptions<Output = string | Uint8Array> {
   layer?: string
 
   /**
-   * PDF layers only: AcroForm field name -> Asterdoc path, laid over the
-   * layer's own bindings. Refused for any other layer.
+   * PDF layers only: AcroForm field name -> Asterdoc path, as a string or a
+   * binding object with its own format, laid over the layer's own bindings.
+   * Refused for any other layer.
    */
-  bindings?: Record<string, string>
+  bindings?: Bindings
 }
 
 /**

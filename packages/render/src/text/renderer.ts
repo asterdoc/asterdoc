@@ -37,6 +37,7 @@ export function textRenderer(options: TextRendererOptions = {}): AsterdocRendere
         expressions: requestExpressions(options.expressions, request.ctx?.expressions),
         layer: request.template.key,
         mimeType: request.template.mimeType,
+        ...(request.template.format && { format: request.template.format }),
       })
     },
   }

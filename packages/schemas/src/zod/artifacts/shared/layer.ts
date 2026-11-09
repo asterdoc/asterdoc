@@ -77,8 +77,11 @@ export const REACT_LAYER_RULE =
 	`React layers must be file layers: ${REACT_LAYER_MIME_TYPES.join(' and ')} name a composition module by path, ` +
 	'so an inline layer cannot declare one';
 
-/** One MIME type as a case-insensitive regular-expression alternative. */
-function caseInsensitiveAlternative(value: string): string {
+/**
+ * One MIME type as a case-insensitive regular-expression alternative: each
+ * letter becomes a two-letter class and every other character is escaped.
+ */
+export function caseInsensitiveAlternative(value: string): string {
 	return [...value]
 		.map((character) =>
 			/[a-z]/i.test(character)
@@ -96,7 +99,18 @@ function caseInsensitiveAlternative(value: string): string {
  * because an enum would compare case-sensitively and let `TEXT/TSX` through the
  * published schema while the framework rejected it.
  */
-export const REACT_LAYER_MIME_PATTERN = `^(?:${REACT_LAYER_MIME_TYPES.map(caseInsensitiveAlternative).join('|')})$`;
+export const REACT_LAYER_MIME_PATTERN = mimeTypesPattern(REACT_LAYER_MIME_TYPES);
+
+/**
+ * A lower-case MIME list as one case-insensitive JSON Schema `pattern`:
+ * `^A$` for one type and `^(?:A|B|C)$` for several, where each alternative is
+ * {@link caseInsensitiveAlternative}. The release guard parses this exact
+ * production back into a MIME set, so every MIME rule is stated through it.
+ */
+export function mimeTypesPattern(mimeTypes: readonly string[]): string {
+	const alternatives = mimeTypes.map(caseInsensitiveAlternative);
+	return alternatives.length === 1 ? `^${alternatives[0]}$` : `^(?:${alternatives.join('|')})$`;
+}
 
 /**
  * Common fields shared by all layer types.
@@ -123,36 +137,11 @@ const LayerBaseSchema = z.object({
 		.optional(),
 });
 
-/**
- * Inline layer — content embedded directly in the artifact definition.
- */
-const InlineLayerSchema = LayerBaseSchema.extend({
-	kind: z.literal('inline'),
-	// The exclusion is stated to JSON Schema as well as to Zod: a refinement
-	// alone would validate at runtime and vanish from the published schema.
-	mimeType: z.string()
-		.min(1)
-		.max(100)
-		.refine((value) => !isReactLayerMimeType(value), { error: REACT_LAYER_RULE })
-		.describe('MIME type of the layer content (e.g., text/markdown). Never a React composition type')
-		.meta({ not: { pattern: REACT_LAYER_MIME_PATTERN } }),
-	text: z.string()
-		.min(1)
-		.max(1000000)
-		.describe('Layer content with interpolation placeholders (e.g., {{fields.fieldName}})'),
-}).strict().meta({
-	title: 'InlineLayer',
-	description: 'Inline layer with embedded content',
-});
-
 /** The rule a font on a layer other than a PDF breaks, stated once so every error reads the same. */
 export const LAYER_FONT_RULE = 'Only PDF layers (application/pdf) can declare a font';
 
 /** The rule bindings on a layer other than a PDF break, stated once so every error reads the same. */
 export const LAYER_BINDINGS_RULE = 'Only PDF layers (application/pdf) can declare bindings; other templates name values as {{fields.fieldName}}';
-
-/** The PDF MIME type as a case-insensitive JSON Schema pattern. */
-const PDF_MIME_PATTERN = `^${caseInsensitiveAlternative('application/pdf')}$`;
 
 /** Whether a layer's MIME type names a PDF, the only layer type that takes bindings. */
 export function isPdfMimeType(mimeType: string): boolean {
@@ -175,13 +164,106 @@ export function isTextTemplateMimeType(mimeType: string): boolean {
 	return (TEXT_TEMPLATE_MIME_TYPES as readonly string[]).includes(mimeType.toLowerCase());
 }
 
+/** The MIME types of PDF layers, the only layers that take a font or bindings. */
+export const PDF_LAYER_MIME_TYPES = ['application/pdf'] as const;
+
+/**
+ * The MIME types of every layer kind that prints values, the layers that can
+ * declare a `format`: PDF, the text templates, DOCX, and React compositions.
+ * The list is explicit, so a future layer kind that prints no values refuses
+ * a format until it is added here.
+ */
+export const FORMAT_LAYER_MIME_TYPES = [
+	'application/pdf',
+	...TEXT_TEMPLATE_MIME_TYPES,
+	DOCX_MIME_TYPE,
+	...REACT_LAYER_MIME_TYPES,
+] as const;
+
+/** Whether a layer's MIME type names a layer kind that prints values. Case-insensitive, as every MIME check here is. */
+export function isFormatLayerMimeType(mimeType: string): boolean {
+	return (FORMAT_LAYER_MIME_TYPES as readonly string[]).includes(mimeType.toLowerCase());
+}
+
+/** The rule a format on a layer that prints no values breaks, stated once so every error reads the same. */
+export const LAYER_FORMAT_RULE = `Only layers that print values can declare a format: ${FORMAT_LAYER_MIME_TYPES.join(', ')}`;
+
+/**
+ * How a layer presents money values. `currencyDisplay` keeps its meaning;
+ * every choice the format leaves out stays with the formatter.
+ */
+const LayerMoneyFormatSchema = z.object({
+	currencyDisplay: z.literal('none')
+		.describe('`none` prints the amount without a currency symbol or code, for a template that pre-prints the symbol beside each money box')
+		.optional(),
+}).strict().meta({
+	title: 'LayerMoneyFormat',
+	description: 'How a layer or binding presents money values',
+});
+
+/**
+ * How a layer prints calendar dates, for a template that asks for one
+ * numeric order such as mm/dd/yyyy.
+ */
+const LayerDateFormatSchema = z.object({
+	pattern: z.enum(['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD'])
+		.describe('Numeric order the template asks for: two-digit month and day, four-digit year'),
+}).strict().meta({
+	title: 'LayerDateFormat',
+	description: 'How a layer or binding presents date values',
+});
+
+/** A BCP 47 language tag: a language subtag, then hyphen-separated subtags. */
+const LOCALE_PATTERN = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/;
+
+/**
+ * How values print: on a layer, over the formatter the caller renders with,
+ * and on a PDF binding, over its layer's format. Every key is optional and
+ * merges per kind and per property, so a binding's `money` keeps the layer's
+ * other money choices.
+ */
+export const FormatSchema = z.object({
+	locale: z.string()
+		.min(2)
+		.max(35)
+		.regex(LOCALE_PATTERN)
+		.describe('BCP 47 locale for names and words, such as en-US. It replaces the locale of the level below')
+		.optional(),
+	money: LayerMoneyFormatSchema.optional(),
+	date: LayerDateFormatSchema.optional(),
+}).strict().meta({
+	title: 'LayerFormat',
+	description: 'How values print, applied over the caller\'s formatter on a layer and over the layer\'s format on a PDF binding',
+});
+
+/**
+ * One PDF binding written as an object: the binding text it would be as a
+ * string, and the format its value prints with.
+ */
+export const PdfBindingObjectSchema = z.object({
+	path: z.string()
+		.min(1)
+		.max(500)
+		.describe('Asterdoc path whose value fills the field, written as a string binding is (e.g., fields.dob, ssn:2, city, state)'),
+	format: FormatSchema
+		.describe('How this binding\'s value prints, merged over the layer\'s format. A joined path applies it to each value before the join. Not on an option test such as status:married')
+		.optional(),
+}).strict().meta({
+	title: 'PdfBinding',
+	description: 'A PDF binding with its own format',
+});
+
 /**
  * A PDF layer's bindings: each key is a fully qualified AcroForm field name in
- * the template, and each value is the Asterdoc path that fills it.
+ * the template, and each value is the Asterdoc path that fills it, as a string
+ * or as a binding object that also carries a format.
  */
 export const PdfBindingsSchema = z.record(
 	z.string().min(1).max(500).describe('AcroForm field name in the PDF template, fully qualified (e.g., topmostSubform[0].Page1[0].f1_01[0])'),
-	z.string().min(1).max(500).describe('Asterdoc path whose value fills the field (e.g., fields.name, parties.buyer.name)'),
+	z.union([
+		z.string().min(1).max(500).describe('Asterdoc path whose value fills the field (e.g., fields.name, parties.buyer.name)'),
+		PdfBindingObjectSchema,
+	]),
 ).describe('PDF layers only. Maps each AcroForm field name (key) to the Asterdoc path (value) that fills it');
 
 /** A PDF layer that reuses a sibling PDF layer's bindings. */
@@ -191,13 +273,30 @@ export const PdfBindingsFromSchema = z.string()
 	.describe('PDF layers only. Key of a sibling PDF layer whose bindings this layer reuses');
 
 /**
- * The PDF-only rules for the given layer keys, stated to JSON Schema as well
- * as at runtime: a refinement alone would vanish from the published schema.
+ * The layer keys only some layer kinds can declare, each with the lower-case
+ * MIME types that can declare it.
  */
-export function pdfOnlyLayerKeysJsonSchema(keys: readonly string[]) {
+export const LAYER_KEY_MIME_TYPES = {
+	font: PDF_LAYER_MIME_TYPES,
+	format: FORMAT_LAYER_MIME_TYPES,
+	bindings: PDF_LAYER_MIME_TYPES,
+	bindingsFrom: PDF_LAYER_MIME_TYPES,
+} as const satisfies Record<string, readonly string[]>;
+
+/** A layer key that only some layer kinds can declare. */
+export type MimeRestrictedLayerKey = keyof typeof LAYER_KEY_MIME_TYPES;
+
+/** The layer keys only some layer kinds can declare, in the order their rules are stated. */
+export const MIME_RESTRICTED_LAYER_KEYS = Object.keys(LAYER_KEY_MIME_TYPES) as MimeRestrictedLayerKey[];
+
+/**
+ * The MIME rule of each layer key, stated to JSON Schema as well as at
+ * runtime: a refinement alone would vanish from the published schema.
+ */
+export function layerKeyRulesJsonSchema(keys: readonly MimeRestrictedLayerKey[] = MIME_RESTRICTED_LAYER_KEYS) {
 	return keys.map((key) => ({
 		if: { required: [key] },
-		then: { properties: { mimeType: { pattern: PDF_MIME_PATTERN } } },
+		then: { properties: { mimeType: { pattern: mimeTypesPattern(LAYER_KEY_MIME_TYPES[key]) } } },
 	}));
 }
 
@@ -216,47 +315,8 @@ const LayerFontSchema = z.object({
 	description: 'Font a PDF layer draws filled values and overlay text with',
 });
 
-/** The rule a format on a layer other than a PDF breaks, stated once so every error reads the same. */
-export const LAYER_FORMAT_RULE = 'Only PDF layers (application/pdf) can declare a format';
-
 /**
- * How a PDF layer presents money values its template already frames. Only the
- * currency display is declared; every other choice stays with the formatter.
- */
-const LayerMoneyFormatSchema = z.object({
-	currencyDisplay: z.literal('none')
-		.describe('`none` prints the amount without a currency symbol or code, for a template that pre-prints the symbol beside each money box'),
-}).strict().meta({
-	title: 'LayerMoneyFormat',
-	description: 'How a PDF layer presents money values',
-});
-
-/**
- * How a PDF layer prints calendar dates, for a template that asks for one
- * numeric order such as mm/dd/yyyy.
- */
-const LayerDateFormatSchema = z.object({
-	pattern: z.enum(['MM/DD/YYYY', 'DD/MM/YYYY', 'YYYY-MM-DD'])
-		.describe('Numeric order the template asks for: two-digit month and day, four-digit year'),
-}).strict().meta({
-	title: 'LayerDateFormat',
-	description: 'How a PDF layer presents date values',
-});
-
-/**
- * Presentation a PDF layer's template requires of filled values, applied over
- * the formatter the caller renders with.
- */
-const LayerFormatSchema = z.object({
-	money: LayerMoneyFormatSchema.optional(),
-	date: LayerDateFormatSchema.optional(),
-}).strict().meta({
-	title: 'LayerFormat',
-	description: 'Presentation a PDF layer\'s template requires of filled values, applied over the caller\'s formatter',
-});
-
-/**
- * The file layer's keys, before its PDF-only rules. The registry file layer
+ * The file layer's keys, before its layer key rules. The registry file layer
  * extends it, so the two describe one layer.
  */
 export const FileLayerObjectSchema = LayerBaseSchema.extend({
@@ -269,27 +329,25 @@ export const FileLayerObjectSchema = LayerBaseSchema.extend({
 	font: LayerFontSchema
 		.describe('Font for filled values and overlay text; PDF layers only. It is tried after a font supplied at render time and before the form\'s own fonts')
 		.optional(),
-	format: LayerFormatSchema
-		.describe('Presentation the template requires of filled values; PDF layers only. It applies to this layer alone, not to a layer that reuses its bindings')
+	format: FormatSchema
+		.describe('How the layer prints values, over the caller\'s formatter; layers that print values only. It applies to this layer alone, not to a layer that reuses its bindings')
 		.optional(),
 	bindings: PdfBindingsSchema.optional(),
 	bindingsFrom: PdfBindingsFromSchema.optional(),
 }).strict();
 
-/** The file layer keys that only a PDF layer can declare. */
-export const PDF_ONLY_FILE_LAYER_KEYS = ['font', 'format', 'bindings', 'bindingsFrom'] as const;
-
-type PdfOnlyFileLayerKeys = { mimeType: string } & Partial<Record<(typeof PDF_ONLY_FILE_LAYER_KEYS)[number], unknown>>;
+type MimeRestrictedLayer = { mimeType: string } & Partial<Record<MimeRestrictedLayerKey, unknown>>;
 
 /**
- * Apply the file layer's PDF-only rules to a file layer object schema.
+ * Apply each layer key's MIME rule to a layer object schema: a key a layer's
+ * MIME type cannot declare is refused, naming the rule.
  */
-export function withPdfOnlyFileLayerRules<T extends z.ZodType<PdfOnlyFileLayerKeys>>(schema: T) {
+export function withLayerKeyRules<T extends z.ZodType<MimeRestrictedLayer>>(schema: T) {
 	return schema.refine(
 		(layer) => layer.font === undefined || isPdfMimeType(layer.mimeType),
 		{ error: LAYER_FONT_RULE, path: ['font'] },
 	).refine(
-		(layer) => layer.format === undefined || isPdfMimeType(layer.mimeType),
+		(layer) => layer.format === undefined || isFormatLayerMimeType(layer.mimeType),
 		{ error: LAYER_FORMAT_RULE, path: ['format'] },
 	).refine(
 		(layer) => layer.bindings === undefined || isPdfMimeType(layer.mimeType),
@@ -301,9 +359,34 @@ export function withPdfOnlyFileLayerRules<T extends z.ZodType<PdfOnlyFileLayerKe
 }
 
 /**
+ * Inline layer — content embedded directly in the artifact definition.
+ */
+const InlineLayerSchema = withLayerKeyRules(LayerBaseSchema.extend({
+	kind: z.literal('inline'),
+	// The exclusion is stated to JSON Schema as well as to Zod: a refinement
+	// alone would validate at runtime and vanish from the published schema.
+	mimeType: z.string()
+		.min(1)
+		.max(100)
+		.refine((value) => !isReactLayerMimeType(value), { error: REACT_LAYER_RULE })
+		.describe('MIME type of the layer content (e.g., text/markdown). Never a React composition type')
+		.meta({ not: { pattern: REACT_LAYER_MIME_PATTERN } }),
+	text: z.string()
+		.min(1)
+		.max(1000000)
+		.describe('Layer content with interpolation placeholders (e.g., {{fields.fieldName}})'),
+	format: FormatSchema
+		.describe('How the layer prints values, over the caller\'s formatter; layers that print values only')
+		.optional(),
+}).strict().meta({
+	title: 'InlineLayer',
+	description: 'Inline layer with embedded content',
+}));
+
+/**
  * File layer — references external content through a resolver-defined path.
  */
-const FileLayerSchema = withPdfOnlyFileLayerRules(FileLayerObjectSchema.meta({
+const FileLayerSchema = withLayerKeyRules(FileLayerObjectSchema.meta({
 	title: 'FileLayer',
 	description: 'File-backed layer with path reference',
 }));
@@ -317,8 +400,7 @@ export const LayerSchema = z.discriminatedUnion('kind', [
 ]).meta({
 	title: 'Layer',
 	description: 'Layer specification — inline content or file reference',
-	// The file layer's font, format and bindings refinements.
-	allOf: pdfOnlyLayerKeysJsonSchema(PDF_ONLY_FILE_LAYER_KEYS),
+	allOf: layerKeyRulesJsonSchema(),
 });
 
 /** The rule a React layer on a document or checklist breaks, stated once so every error reads the same. */

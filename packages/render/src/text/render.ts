@@ -1,9 +1,10 @@
 import { defaultFormatter } from '@asterdoc/format'
-import type { Form, Formatter } from '@asterdoc/types'
+import type { Form, Formatter, LayerFormat } from '@asterdoc/types'
 import { formatFieldData, type FieldFormattingOptions } from './field-formatter'
 import { createTextSignatureDirectives, type TextSignatureOptions } from './signatures'
 import { escapeHtml, renderTemplate } from './template'
 import { templateData, type TemplateExpressionOptions } from '../template/context'
+import { formatFieldOptions, formatterFor } from '../presentation'
 
 export interface RenderTextOptions {
   template: string
@@ -21,6 +22,8 @@ export interface RenderTextOptions {
    * and Markdown print them unchanged.
    */
   mimeType?: string
+  /** How the layer prints values, applied over `formatter`. */
+  format?: LayerFormat
 }
 
 /** The escaper for a text layer's output format: only HTML output escapes values. */
@@ -29,10 +32,11 @@ function escapeFor(mimeType: string | undefined): (value: string) => string {
 }
 
 export function renderText(options: RenderTextOptions): string {
-  const formatter = options.formatter ?? defaultFormatter
-  const formattingOptions: FieldFormattingOptions | undefined = options.progressive === undefined
+  const formatter = formatterFor(options.formatter ?? defaultFormatter, options.format)
+  const progressive: FieldFormattingOptions | undefined = options.progressive === undefined
     ? undefined
     : { progressive: options.progressive }
+  const formattingOptions = options.format ? formatFieldOptions(options.format, progressive) : progressive
   const data = options.form
     ? formatFieldData(options.data, options.form, formatter, formattingOptions)
     : options.data

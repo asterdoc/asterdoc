@@ -5,7 +5,7 @@
  * file using closures and composition.
  */
 
-import type { ArtifactEdition, Checklist, ChecklistData, ChecklistItem, ChecklistPhase, Layer, Metadata, ContentRef, Resolver, RuntimeChecklistJSON } from '@asterdoc/types'
+import type { ArtifactEdition, Bindings, Checklist, ChecklistData, ChecklistItem, ChecklistPhase, Layer, LayerFormat, Metadata, ContentRef, Resolver, RuntimeChecklistJSON } from '@asterdoc/types'
 import { createContext } from '@asterdoc/expr'
 import { resolveLayerBindings } from '@asterdoc/render'
 import { buildRendererLayer, resolveLayerKey, selectLayerRenderer } from '../shared/render-layer'
@@ -965,6 +965,7 @@ export interface ChecklistBuilderInterface<TItems extends ChecklistItem[] = []> 
 			text: string
 			title?: string
 			description?: string
+			format?: LayerFormat
 		},
 	): ChecklistBuilderInterface<TItems>
 	fileLayer(
@@ -975,7 +976,8 @@ export interface ChecklistBuilderInterface<TItems extends ChecklistItem[] = []> 
 			title?: string
 			description?: string
 			checksum?: string
-			bindings?: Record<string, string>
+			format?: LayerFormat
+			bindings?: Bindings
 		},
 	): ChecklistBuilderInterface<TItems>
 	defaultLayer(key: string): ChecklistBuilderInterface<TItems>
@@ -1158,6 +1160,7 @@ function createChecklistBuilder<TItems extends ChecklistItem[] = []>(): Checklis
 				text: string
 				title?: string
 				description?: string
+				format?: LayerFormat
 			},
 		) {
 			return builder.layer(key, { kind: 'inline', ...layer })
@@ -1171,7 +1174,8 @@ function createChecklistBuilder<TItems extends ChecklistItem[] = []>(): Checklis
 				title?: string
 				description?: string
 				checksum?: string
-				bindings?: Record<string, string>
+				format?: LayerFormat
+				bindings?: Bindings
 			},
 		) {
 			return builder.layer(key, { kind: 'file', ...layer })

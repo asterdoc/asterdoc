@@ -391,6 +391,7 @@ export const ExtractionEntrySchema = z.object({
 		value: z.string().optional().describe('Raw PDF value, when the field has one'),
 	})),
 	reason: z.string().optional(),
+	lossy: z.boolean().optional().describe('Set on every recovered entry: true when the format the PDF printed the value with drops detail, so the value is the person\'s answer but may differ from the one filled'),
 })
 
 export const ExtractOutputSchema = z.object({

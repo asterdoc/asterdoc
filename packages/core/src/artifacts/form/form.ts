@@ -7,6 +7,7 @@
 
 import type {
 	Attachment,
+	Bindings,
 	Form,
 	FormField,
 	FieldsetField,
@@ -14,6 +15,7 @@ import type {
 	FormAnnex,
 	FormParty,
 	Layer,
+	LayerFormat,
 	Metadata,
 	Party,
 	RuntimeParty,
@@ -3132,6 +3134,7 @@ export interface FormBuilderInterface<
 			text: string
 			title?: string
 			description?: string
+			format?: LayerFormat
 			signatures?: Record<string, SignatureSlot>
 		},
 	): FormBuilderInterface<TFields, TParties, TAnnexes, TAllowAdditionalAnnexes>
@@ -3143,7 +3146,8 @@ export interface FormBuilderInterface<
 			title?: string
 			description?: string
 			checksum?: string
-			bindings?: Record<string, string>
+			format?: LayerFormat
+			bindings?: Bindings
 			signatures?: Record<string, SignatureSlot>
 		},
 	): FormBuilderInterface<TFields, TParties, TAnnexes, TAllowAdditionalAnnexes>
@@ -3378,6 +3382,7 @@ function createFormBuilder<
 				text: string
 				title?: string
 				description?: string
+				format?: LayerFormat
 			},
 		) {
 			return builder.layer(key, { kind: 'inline', ...layer })
@@ -3391,7 +3396,8 @@ function createFormBuilder<
 				title?: string
 				description?: string
 				checksum?: string
-				bindings?: Record<string, string>
+				format?: LayerFormat
+				bindings?: Bindings
 			},
 		) {
 			return builder.layer(key, { kind: 'file', ...layer })

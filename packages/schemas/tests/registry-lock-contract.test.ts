@@ -155,11 +155,11 @@ describe('schemas-014: the registry file layer extends the artifact file layer',
 	});
 
 	it.each([
-		['font', { font: { path: 'font.ttf' } }, LAYER_FONT_RULE],
-		['format', { format: { money: { currencyDisplay: 'none' } } }, LAYER_FORMAT_RULE],
-		['bindings', { bindings: { f1_01: 'fields.name' } }, LAYER_BINDINGS_RULE],
-	] as const)('refuses %s on a layer other than a PDF', (key, extra, rule) => {
-		const layer = { ...pdfLayer, mimeType: 'text/markdown', path: 'notice.md', ...extra };
+		['font', 'text/markdown', { font: { path: 'font.ttf' } }, LAYER_FONT_RULE],
+		['format', 'application/json', { format: { money: { currencyDisplay: 'none' } } }, LAYER_FORMAT_RULE],
+		['bindings', 'text/markdown', { bindings: { f1_01: 'fields.name' } }, LAYER_BINDINGS_RULE],
+	] as const)('refuses %s on a layer that cannot declare it', (key, mimeType, extra, rule) => {
+		const layer = { ...pdfLayer, mimeType, path: 'notice', ...extra };
 		expect(messages(RegistryFileLayerSchema.safeParse(layer))).toEqual([`${key}: ${rule}`]);
 		expect(messages(RegistryLayerSchema.safeParse(layer))).toEqual([`${key}: ${rule}`]);
 	});

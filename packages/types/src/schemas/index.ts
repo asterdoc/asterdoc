@@ -83,6 +83,8 @@ export type {
   LayerMoneyFormat,
   ReactLayerMimeType,
   Bindings,
+  BindingObject,
+  BindingValue,
   // Document
   Document,
   // Checklist

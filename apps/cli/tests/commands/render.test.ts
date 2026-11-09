@@ -149,6 +149,32 @@ describe('CLI render command', () => {
       expect(content.subarray(0, signature.length).toString()).toBe(signature)
     })
 
+    it('should fill a PDF through --bindings binding objects, each with its own format', async () => {
+      const outPath = path.join(tempDir, 'bound.pdf')
+      const data = JSON.stringify({ fields: { name: 'Milo', species: 'cat', weight: 5.5, hasVaccination: true } })
+      const bindings = JSON.stringify({ pet_name: 'fields.name', petWeight: { path: 'fields.weight', format: { locale: 'de-DE' } } })
+
+      const result = await executeCliCommand([
+        'render', path.join(fixturesDir, 'pet-addendum-pdf-bindings.yaml'), '--data', data, '--bindings', bindings, '--out', outPath,
+      ])
+
+      expect(result.stderr).toBe('')
+      expect(result.exitCode).toBe(0)
+      const { inspectAcroFormFields } = await import('@asterdoc/render/pdf')
+      const fields = await inspectAcroFormFields(new Uint8Array(await fs.readFile(outPath)))
+      expect(Object.fromEntries(fields.map((field) => [field.name, field.value]))).toMatchObject({ pet_name: 'Milo', petWeight: '5,5' })
+    })
+
+    it('should refuse a --bindings binding object the schema refuses', async () => {
+      const data = JSON.stringify({ fields: { name: 'Milo', species: 'cat', weight: 5, hasVaccination: true } })
+      const bindings = JSON.stringify({ petWeight: { path: 'fields.weight', format: { locale: 'not a locale' } } })
+
+      const result = await executeCliCommand(['render', path.join(fixturesDir, 'pet-addendum-pdf-bindings.yaml'), '--data', data, '--bindings', bindings, '--out', path.join(tempDir, 'refused.pdf')])
+
+      expect(result.exitCode).toBe(1)
+      expect(result.stderr).toContain('binding "petWeight", is not a valid binding object')
+    })
+
     it('should refuse --bindings for a layer that is not a PDF', async () => {
       const data = JSON.stringify({ fields: { name: 'Milo', species: 'cat', weight: 5, hasVaccination: true } })
 
