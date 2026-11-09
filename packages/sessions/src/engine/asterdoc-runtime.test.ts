@@ -72,4 +72,30 @@ describe("createAsterdocRuntime", () => {
 		expect(state.openRequired.map((field) => field.fieldPath)).toEqual(["note"]);
 		expect(state.done.map((field) => field.fieldPath)).toEqual(["quantity", "divisor"]);
 	});
+
+	describe("a masked text field", () => {
+		const masked = () => createAsterdocRuntime({
+			$schema: "https://schema.asterdoc.com/2026-11-06.json",
+			kind: "form",
+			name: "masked",
+			version: "1.0.0",
+			title: "Masked",
+			parties: {},
+			fields: { ssn: { type: "text", mask: "###-##-####", required: true } },
+			layers: { composition: { kind: "file", mimeType: "text/plain", path: "masked.txt" } },
+			defaultLayer: "composition",
+		});
+
+		it("stores a value given with or without separators without them", () => {
+			expect(masked().validateField("ssn", "123-45-6789")).toEqual({ ok: true, value: "123456789" });
+			expect(masked().validateField("ssn", "123456789")).toEqual({ ok: true, value: "123456789" });
+		});
+
+		it("keeps the mask_mismatch code and the expected shape on a refusal", () => {
+			expect(masked().validateField("ssn", "123-456-789")).toEqual({
+				ok: false,
+				issues: [{ fieldPath: "fields.ssn", code: "mask_mismatch", candidates: [], message: expect.stringContaining("Expected ###-##-####") }],
+			});
+		});
+	});
 });

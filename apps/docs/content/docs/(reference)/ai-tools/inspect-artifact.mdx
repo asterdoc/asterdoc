@@ -34,7 +34,7 @@ The sections contain:
 | Section | Content |
 |---------|---------|
 | `metadata` | `name`, `version`, `title`, `description`, `code`, `language` |
-| `fields` | Object keyed by field ID. Each entry keeps `type`, `label`, `description`, `required`, `default`, `min`, `max`, `minLength`, `maxLength`, `enum`, `format`, `items`, and nested `fields`. |
+| `fields` | Object keyed by field ID. Each entry keeps `type`, `label`, `description`, `required`, `default`, `min`, `max`, `minLength`, `maxLength`, `mask`, `enum`, `format`, `items`, and nested `fields`. A field whose input the engine converts also has `input`, a note on what it accepts: a masked field takes its value with or without separators, and a country, region or `codes: true` address field takes a name or a code. |
 | `parties`, `annexes`, `items` | Arrays of `{ id, ...definition }` |
 | `layers` | Arrays of `{ id, kind, mime_type, path, title, description }` |
 

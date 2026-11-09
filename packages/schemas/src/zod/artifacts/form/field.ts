@@ -12,6 +12,7 @@ import { PersonSchema } from '../../primitives/person';
 import { OrganizationSchema } from '../../primitives/organization';
 import { IdentificationSchema } from '../../primitives/identification';
 import { FieldPatternSchema } from './pattern';
+import { MaskSchema } from './mask';
 import {
 	compareClockTimeBounds,
 	compareTemporalBounds,
@@ -53,6 +54,9 @@ const TextFieldSchema = BaseFieldSchema.extend({
 	minLength: CountSchema.describe('Minimum length').optional(),
 	maxLength: CountSchema.describe('Maximum length').optional(),
 	pattern: FieldPatternSchema.optional(),
+	mask: MaskSchema
+		.describe('Input mask: # a digit, @ a letter, * a digit or letter, \\ makes the next character a literal, every other character is a literal (e.g., ###-##-####). The stored value holds only the token characters, and input is accepted with or without the literals; pattern and maxLength apply to the stored value')
+		.optional(),
 	default: z.string().describe('Default value').optional(),
 }).superRefine((field, ctx) => {
 	const issue = getOrderedBoundsIssue(

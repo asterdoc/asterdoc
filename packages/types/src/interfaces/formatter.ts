@@ -57,6 +57,12 @@ export interface MoneyFormatOptions extends NumberOptionsBase {
 	/** Use `none` when a template already prints its own currency symbol. */
 	currencyDisplay?: Intl.NumberFormatOptions['currencyDisplay'] | 'none'
 	currencySign?: Intl.NumberFormatOptions['currencySign']
+	/**
+	 * Shorthand that sets both `minimumFractionDigits` and
+	 * `maximumFractionDigits` to this value and clears any significant-digit
+	 * options. Amounts round half away from zero: with `0`, 1.999 prints 2.
+	 */
+	fractionDigits?: number
 }
 
 /** Options for formatting a percentage-point value. */
@@ -183,8 +189,18 @@ export interface FormatProviders {
 	readonly regions?: RegionsProvider
 }
 
+/** The order a person's name parts print in. */
+export type PersonNameOrder = 'given-first' | 'family-first'
+
 /** Options for person presentation. */
-export type PersonFormatOptions = Record<string, never>
+export interface PersonFormatOptions {
+	/**
+	 * `given-first` (the default) prints `name`. `family-first` prints the
+	 * structured parts as "Last, First Middle Suffix", without the title; a
+	 * person with no first, middle or last name still prints `name`.
+	 */
+	order?: PersonNameOrder
+}
 
 /** Options for organization presentation. */
 export type OrganizationFormatOptions = Record<string, never>
@@ -193,6 +209,8 @@ export type OrganizationFormatOptions = Record<string, never>
 export interface PartyFormatOptions {
 	/** Explicitly identify a party whose fields do not carry a distinguishing identity member. */
 	partyType?: 'person' | 'organization'
+	/** How a party that is a person prints. */
+	person?: PersonFormatOptions
 }
 
 /** Shared temporal policy options. */

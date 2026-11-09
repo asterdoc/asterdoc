@@ -44,8 +44,8 @@
  * render time is not known here.
  */
 
-import { COUNTRY_CODES, countryName, displayRegion, subdivisionsOf } from '@asterdoc/format'
-import type { BindingValue, Bindings, EnumOption, Form, FormField, Formatter, LayerFormat, ValuePart } from '@asterdoc/types'
+import { COUNTRY_CODES, countryName, displayRegion, parseMask, subdivisionsOf, type MaskSlot } from '@asterdoc/format'
+import type { BindingValue, Bindings, EnumOption, Form, FormField, Formatter, LayerFormat, ValueFormat, ValuePart } from '@asterdoc/types'
 import { acroFields, textFieldDrawing, widgetLayout, type AcroField } from './acroform'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
 import { layoutFieldText, MIN_FONT_SIZE, PdfFieldFillError, type FieldLayout } from './field-appearance'
@@ -58,6 +58,7 @@ import { formatterFor, mergeFormats } from '../presentation'
 import { pathSegments } from '../path'
 import { bindingDeclaration } from '../parts/rules'
 import { splitAmount } from '../parts/print'
+import { effectiveMask } from '../text/field-formatter'
 
 /**
  * The text a typical value is made of: an English pangram with its word spaces,
@@ -168,10 +169,24 @@ function typicalCharacter(font: MeasuringFont, set: CharSet, position: number): 
     Math.abs(measure(font, character) - mean) < Math.abs(measure(font, best) - mean) ? character : best, pool[0]!)
 }
 
-function picker(font: MeasuringFont, kind: ValueKind): (set: CharSet, position: number) => string {
+/** How a source's text prints after case: unchanged, or upper-cased in the effective locale. */
+type Shown = (text: string) => string
+
+const unchanged: Shown = (text) => text
+
+/** A character set as printed: each character it allows, as case prints it. */
+function shownSet(set: CharSet, shown: Shown): CharSet {
+  return set.any ? set : { any: false, chars: [...new Set(set.chars.map(shown))] }
+}
+
+/**
+ * The character a position takes, picked among the characters as they print
+ * after case, so a character case lengthens (ß as SS) is measured as printed.
+ */
+function picker(font: MeasuringFont, kind: ValueKind, shown: Shown = unchanged): (set: CharSet, position: number) => string {
   return kind === 'widest'
-    ? (set) => widestCharacter(font, [set])
-    : (set, position) => typicalCharacter(font, set, position)
+    ? (set) => shown(widestCharacter(font, [shownSet(set, shown)]))
+    : (set, position) => shown(typicalCharacter(font, shownSet(set, shown), position))
 }
 
 /** One set holding every character any of `sets` allows. */
@@ -188,12 +203,12 @@ function probeOf(sets: CharSet[]): string {
   return [...chars].join('')
 }
 
-function textSource(path: string, field: FormField & { maxLength?: number; pattern?: string }, part?: number): SourceAnalysis {
+function textSource(path: string, field: FormField & { maxLength?: number; pattern?: string }, shown: Shown, part?: number): SourceAnalysis {
   const declared = field.pattern ?? (field.type === 'uuid' ? UUID_PATTERN : undefined)
   const analysis = declared === undefined ? undefined : analyzePattern(declared)
   const shapeFor = (font: MeasuringFont, kind: ValueKind) => {
     const width = (text: string) => measure(font, text)
-    const pick = picker(font, kind)
+    const pick = picker(font, kind, shown)
     return part === undefined ? analysis?.shape(width, pick) : analysis?.part(part, width, pick)
   }
   const lengthOnly: MeasuringFont = { width: (text) => text.length, covers: () => true }
@@ -208,13 +223,13 @@ function textSource(path: string, field: FormField & { maxLength?: number; patte
     kind: 'bounded',
     source: {
       path,
-      probe: probeOf(sets),
+      probe: shown(probeOf(sets)),
       basis,
       exact: false,
       value(font, kind) {
         const measured = shapeFor(font, kind)
         if (byPattern && measured?.value !== undefined) return measured.value
-        const pick = picker(font, kind)
+        const pick = picker(font, kind, shown)
         const set = unionSet(sets)
         return Array.from({ length: maxLength }, (_, position) => pick(set, position)).join('')
       },
@@ -237,17 +252,18 @@ function longestOf(candidates: readonly string[]): string {
  * Every printed value is known: the widest of `printedFor(font)` by glyph
  * width, and the longest by characters, are each checked.
  */
-function listedSource(path: string, probe: readonly string[], basis: string, printedFor: (font: MeasuringFont) => readonly string[]): SourceAnalysis {
+function listedSource(path: string, probe: readonly string[], basis: string, printedFor: (font: MeasuringFont) => readonly string[], shown: Shown): SourceAnalysis {
   if (probe.length === 0) return { kind: 'other' }
+  const candidates = (font: MeasuringFont) => printedFor(font).map(shown)
   return {
     kind: 'bounded',
     source: {
       path,
-      probe: probe.join(''),
+      probe: shown(probe.join('')),
       basis,
       exact: true,
-      value: (font) => widest(font, printedFor(font)),
-      longest: (font) => longestOf(printedFor(font)),
+      value: (font) => widest(font, candidates(font)),
+      longest: (font) => longestOf(candidates(font)),
     },
   }
 }
@@ -269,26 +285,26 @@ function printed(result: ReturnType<Formatter['safeFormatEnum']>): string | unde
   return result.success ? result.value : undefined
 }
 
-function labelSource(path: string, field: FormField & { enum: readonly EnumOption[] }, formatter: Formatter): SourceAnalysis {
+function labelSource(path: string, field: FormField & { enum: readonly EnumOption[] }, formatter: Formatter, shown: Shown): SourceAnalysis {
   const options = field.enum
   const labels = options.map((option) => printed(formatter.safeFormatEnum(option.value, { options })))
   if (labels.some((label) => label === undefined)) return { kind: 'other' }
   const byValue = new Map(options.map((option, index) => [option.value, labels[index]!]))
-  if (field.type === 'enum') return listedSource(path, labels as string[], 'its option labels', () => labels as string[])
+  if (field.type === 'enum') return listedSource(path, labels as string[], 'its option labels', () => labels as string[], shown)
   const count = Math.min(field.type === 'multiselect' ? field.max ?? options.length : 1, options.length)
   const join = (chosen: EnumOption[]) => {
     const values = chosen.map((option) => option.value)
     return printed(formatter.safeFormatMultiselect(values, { options })) ?? values.map((value) => byValue.get(value)!).join(', ')
   }
   return listedSource(path, labels as string[], count === options.length ? 'all its option labels' : `up to ${count} of its option labels`, (font) =>
-    selections(options, count, (option) => byValue.get(option.value)!, font, join))
+    selections(options, count, (option) => shown(byValue.get(option.value)!), font, (chosen) => shown(join(chosen))), shown)
 }
 
-function booleanSource(path: string, format: LayerFormat | undefined, formatter: Formatter): SourceAnalysis {
+function booleanSource(path: string, format: ValueFormat | undefined, formatter: Formatter, shown: Shown): SourceAnalysis {
   if (format?.boolean?.trueLabel === undefined && format?.boolean?.falseLabel === undefined) return { kind: 'other' }
   const labels = [true, false].map((value) => printed(formatter.safeFormatBoolean(value, format.boolean)))
   if (labels.some((label) => label === undefined)) return { kind: 'other' }
-  return listedSource(path, labels as string[], 'its boolean labels', () => labels as string[])
+  return listedSource(path, labels as string[], 'its boolean labels', () => labels as string[], shown)
 }
 
 const EXTENSION_MAX_LENGTH = 20
@@ -306,7 +322,7 @@ function extensionShape(formatter: Formatter): string | undefined {
  * any plan under `international` and `e164`, which print one. A whole phone
  * adds its extension; a `number` member does not.
  */
-function phoneSource(path: string, format: LayerFormat | undefined, formatter: Formatter, withExtension: boolean): SourceAnalysis {
+function phoneSource(path: string, format: ValueFormat | undefined, formatter: Formatter, withExtension: boolean, shown: Shown): SourceAnalysis {
   const style = format?.phone?.style
   if (style === undefined) return { kind: 'other' }
   const region = style === 'national' || style === 'digits' ? format?.phone?.region : undefined
@@ -319,23 +335,78 @@ function phoneSource(path: string, format: LayerFormat | undefined, formatter: F
     kind: 'bounded',
     source: {
       path,
-      probe: `${shape.replace(/0/g, '')}0123456789`,
+      probe: shown(`${shape.replace(/0/g, '')}0123456789`),
       basis: `phone style ${style} for ${plan}${withExtension ? `, with an extension of ${EXTENSION_MAX_LENGTH} digits` : ''}`,
       exact: true,
-      value: (font) => shape.replace(/0/g, widestCharacter(font, [DIGITS])),
+      value: (font) => shown(shape).replace(/0/g, widestCharacter(font, [DIGITS])),
     },
   }
 }
 
-function choiceSource(path: string, field: FormField, format?: LayerFormat, formatter: Formatter = defaultFormatter): SourceAnalysis {
-  if (field.type === 'boolean') return booleanSource(path, format, formatter)
-  if (field.type === 'phone') return phoneSource(path, format, formatter, true)
+function choiceSource(path: string, field: FormField, format: ValueFormat | undefined, formatter: Formatter, shown: Shown): SourceAnalysis {
+  if (field.type === 'boolean') return booleanSource(path, format, formatter, shown)
+  if (field.type === 'phone') return phoneSource(path, format, formatter, true, shown)
   if (field.type !== 'enum' && field.type !== 'multiselect') return { kind: 'other' }
-  if (format?.choice?.display === 'label') return labelSource(path, field, formatter)
+  if (format?.choice?.display === 'label') return labelSource(path, field, formatter, shown)
   const values = field.enum.map((option) => String(option.value))
   const count = field.type === 'multiselect' ? Math.min(field.max ?? values.length, values.length) : 1
   const basis = field.type === 'enum' ? 'its widest option value' : count === values.length ? 'all its option values' : `its ${count} widest option values`
-  return listedSource(path, values, basis, (font) => selections(values, count, (value) => value, font, (chosen) => chosen.join(', ')))
+  return listedSource(path, values, basis, (font) => selections(values, count, shown, font, (chosen) => chosen.map(shown).join(', ')), shown)
+}
+
+const LETTERS = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz']
+
+/** The characters a mask position may print: its literal, or what its token allows, as case prints them. */
+function slotSet(slot: MaskSlot, shown: Shown): CharSet {
+  if (slot.kind === 'literal') return { any: false, chars: [shown(slot.char)] }
+  const digits = DIGITS.any ? [] : DIGITS.chars
+  return shownSet({ any: false, chars: slot.token === '#' ? digits : slot.token === '@' ? LETTERS : [...digits, ...LETTERS] }, shown)
+}
+
+function maskSource(path: string, mask: string, printed: boolean, shown: Shown, part?: number): SourceAnalysis {
+  const parsed = parseMask(mask)
+  const tokenSlots = parsed.slots.filter((slot) => slot.kind === 'token')
+  let slots = printed ? parsed.slots : tokenSlots
+  if (part !== undefined) {
+    if (part >= parsed.groups.length) return { kind: 'other' }
+    const start = parsed.groups.slice(0, part).reduce((total, count) => total + count, 0)
+    slots = tokenSlots.slice(start, start + parsed.groups[part]!)
+  }
+  const sets = slots.map((slot) => slotSet(slot, shown))
+  const partLabel = part === undefined ? '' : ` (group ${part + 1})`
+  return {
+    kind: 'bounded',
+    source: {
+      path,
+      probe: probeOf(sets),
+      basis: `mask ${mask}${printed || part !== undefined ? '' : ' without its literals'}${partLabel}`,
+      exact: false,
+      value(font, kind) {
+        const pick = picker(font, kind)
+        return sets.map((set, position) => pick(set, position)).join('')
+      },
+    },
+  }
+}
+
+/** How a binding's printed text is cased: by the layer, per source, or by the binding, over the whole text. */
+interface BindingCase {
+  locale: string
+  layer: boolean
+  binding: boolean
+}
+
+const CASE_KEEPING_TYPES = new Set(['email', 'uri', 'uuid'])
+
+/** How case prints a source of `type`: the binding's case applies to every source, the layer's to all but email, uri and uuid. */
+function shownFor(casing: BindingCase, type: string): Shown {
+  const upper = casing.binding || (casing.layer && !CASE_KEEPING_TYPES.has(type))
+  return upper ? (text) => text.toLocaleUpperCase(casing.locale) : unchanged
+}
+
+/** The text a binding prints from its sources' values, each already as case prints it. */
+function printedText(sources: readonly BoundSource[], value: (source: BoundSource) => string): string {
+  return sources.map(value).join(', ')
 }
 
 /** The most digits money `units` print: those of the field's `max`, rounded as parts round it; undefined when nothing bounds it. */
@@ -350,7 +421,7 @@ function unitDigits(field: FormField | undefined): number | undefined {
  * `phone.region`'s plan, or of any plan, for `nationalNumber`; the field's
  * `max` for money `units`.
  */
-function partDigits(form: Form, path: string, part: ValuePart, format: LayerFormat | undefined, formatter: Formatter): { digits: number; basis: string } | 'unbounded' | undefined {
+function partDigits(form: Form, path: string, part: ValuePart, format: ValueFormat | undefined, formatter: Formatter): { digits: number; basis: string } | 'unbounded' | undefined {
   switch (part) {
     case 'year': return { digits: 4, basis: 'its four-digit year' }
     case 'month':
@@ -380,7 +451,7 @@ function partDigits(form: Form, path: string, part: ValuePart, format: LayerForm
 }
 
 /** A part prints plain digits: as many as the part holds at most, each the widest digit. */
-function partSource(form: Form, path: string, part: ValuePart, format: LayerFormat | undefined, formatter: Formatter): SourceAnalysis {
+function partSource(form: Form, path: string, part: ValuePart, format: ValueFormat | undefined, formatter: Formatter): SourceAnalysis {
   const bound = partDigits(form, path, part, format, formatter)
   if (bound === undefined) return { kind: 'other' }
   if (bound === 'unbounded') return { kind: 'unbounded', path, bound: 'max' }
@@ -403,48 +474,54 @@ function phoneNumberMember(form: Form, path: string): FormField | undefined {
   return parent?.type === 'phone' ? parent : undefined
 }
 
-function countrySource(path: string, display: 'code' | 'name', formatter: Formatter): SourceAnalysis {
+function countrySource(path: string, display: 'code' | 'name', formatter: Formatter, shown: Shown): SourceAnalysis {
   const codes = Object.keys(COUNTRY_CODES)
   const printed = display === 'name' ? codes.map((code) => countryName(code, formatter.locale)) : codes
-  return listedSource(path, printed, display === 'name' ? `every country name in ${formatter.locale}` : 'every country code', () => printed)
+  return listedSource(path, printed, display === 'name' ? `every country name in ${formatter.locale}` : 'every country code', () => printed, shown)
 }
 
-function regionSource(path: string, country: string | undefined, display: 'code' | 'name' | 'full', formatter: Formatter): SourceAnalysis {
+function regionSource(path: string, country: string | undefined, display: 'code' | 'name' | 'full', formatter: Formatter, shown: Shown): SourceAnalysis {
   const regions = formatter.providers.regions
   if (!regions) return { kind: 'other' }
   const pool = country === undefined ? regions.subdivisions : subdivisionsOf(country, regions)
   const printed = pool.map((subdivision) => displayRegion(subdivision.code, display, regions))
   const noun = { code: 'code', name: 'name', full: 'full code' }[display]
-  return listedSource(path, printed, `every subdivision ${noun}${country === undefined ? '' : ` of ${country}`}`, () => printed)
+  return listedSource(path, printed, `every subdivision ${noun}${country === undefined ? '' : ` of ${country}`}`, () => printed, shown)
 }
 
-function addressMemberSource(form: Form, path: string, format: LayerFormat | undefined, formatter: Formatter): SourceAnalysis {
+function addressMemberSource(form: Form, path: string, format: ValueFormat | undefined, formatter: Formatter, shown: Shown): SourceAnalysis {
   const segments = pathSegments(path)
   const member = segments.at(-1)
   if (fieldDefinition(form, segments.slice(0, -1).join('.'))?.type !== 'address') return { kind: 'other' }
-  if (member === 'country' && format?.country) return countrySource(path, format.country.display, formatter)
-  if (member === 'region' && format?.region) return regionSource(path, undefined, format.region.display, formatter)
+  if (member === 'country' && format?.country) return countrySource(path, format.country.display, formatter, shown)
+  if (member === 'region' && format?.region) return regionSource(path, undefined, format.region.display, formatter, shown)
   return { kind: 'other' }
 }
 
 /** What one binding path fills a text field with. */
-function analyzeSource(form: Form, { path, qualifier }: PdfBindingPart, format: LayerFormat | undefined, formatter: Formatter): SourceAnalysis {
+function analyzeSource(form: Form, { path, qualifier }: PdfBindingPart, format: ValueFormat | undefined, formatter: Formatter, casing: BindingCase): SourceAnalysis {
   const field = fieldDefinition(form, path)
   if (!field) {
     if (qualifier !== undefined) return { kind: 'other' }
     const phone = phoneNumberMember(form, path)
-    return phone ? phoneSource(path, format, formatter, false) : addressMemberSource(form, path, format, formatter)
+    return phone ? phoneSource(path, format, formatter, false, shownFor(casing, 'phone')) : addressMemberSource(form, path, format, formatter, shownFor(casing, 'address'))
   }
-  if (qualifier === undefined && field.type === 'country') return countrySource(path, format?.country?.display ?? 'code', formatter)
-  if (qualifier === undefined && field.type === 'region') return regionSource(path, field.country, format?.region?.display ?? 'full', formatter)
+  const shown = shownFor(casing, field.type)
+  if (qualifier === undefined && field.type === 'country') return countrySource(path, format?.country?.display ?? 'code', formatter, shown)
+  if (qualifier === undefined && field.type === 'region') return regionSource(path, field.country, format?.region?.display ?? 'full', formatter, shown)
   if (qualifier !== undefined) {
     // A qualifier on a boolean, choice, or list field tests a value, which fills a checkbox.
     if (!TEXT_TYPES.has(field.type)) return { kind: 'other' }
     const part = splitPartIndex(qualifier)
-    return part === undefined ? { kind: 'other' } : textSource(path, field as FormField & { maxLength?: number }, part)
+    if (part === undefined) return { kind: 'other' }
+    if (field.type === 'text' && field.mask !== undefined) return maskSource(path, field.mask, false, shown, part)
+    return textSource(path, field as FormField & { maxLength?: number }, shown, part)
   }
-  if (TEXT_TYPES.has(field.type)) return textSource(path, field as FormField & { maxLength?: number })
-  return choiceSource(path, field, format, formatter)
+  const mask = effectiveMask(field, format?.text)
+  if (mask !== undefined) return maskSource(path, mask, true, shown)
+  if (field.type === 'text' && field.mask !== undefined) return maskSource(path, field.mask, false, shown)
+  if (TEXT_TYPES.has(field.type)) return textSource(path, field as FormField & { maxLength?: number }, shown)
+  return choiceSource(path, field, format, formatter, shown)
 }
 
 /** The binding's path text and the sources it reads, or undefined when it is not checked. */
@@ -452,9 +529,15 @@ function analyzeBinding(form: Form, value: BindingValue, format: LayerFormat | u
   const parsed = parseBinding(value)
   const effective = mergeFormats(format, parsed.format)
   const localized = formatterFor(formatter, effective)
+  const bindingSets = parsed.format?.case !== undefined
+  const casing: BindingCase = {
+    locale: localized.locale,
+    layer: !bindingSets && format?.case === 'upper',
+    binding: bindingSets && parsed.format?.case === 'upper',
+  }
   const { part } = parsed
   const sources = part === undefined
-    ? parsed.parts.map((source) => analyzeSource(form, source, effective, localized))
+    ? parsed.parts.map((source) => analyzeSource(form, source, effective, localized, casing))
     : parsed.parts.map((source) => bindingDeclaration(form, source.source) ? partSource(form, source.path, part, effective, localized) : { kind: 'other' as const })
   // A joined value is checked only when every part is known.
   if (sources.some((source) => source.kind === 'other')) return undefined
@@ -555,7 +638,8 @@ export async function checkPdfBindingFit({ template, form, bindings, layerFont, 
 function checkLayout(fonts: PdfFontSet, field: AcroField, binding: string, sources: BoundSource[], layout: FieldLayout & { appearance: { fontName?: string } }): PdfBindingFitIssue | undefined {
   let chosen: MeasuringFont
   try {
-    chosen = fonts.select(field.name, sources.map((source) => source.probe).join(''), layout.appearance.fontName)
+    const probe = sources.map((source) => source.probe).join('')
+    chosen = fonts.select(field.name, probe, layout.appearance.fontName)
   } catch (error) {
     // Characters no font can draw are a font question, not a fit question.
     if (error instanceof PdfFieldFillError) return undefined
@@ -563,11 +647,11 @@ function checkLayout(fonts: PdfFontSet, field: AcroField, binding: string, sourc
   }
   const exact = sources.every((source) => source.exact)
   const checks: { kind: ValueKind; text: string }[] = [
-    { kind: 'typical', text: sources.map((source) => source.value(chosen, 'typical')).join(', ') },
-    ...(exact ? [] : [{ kind: 'widest' as const, text: sources.map((source) => source.value(chosen, 'widest')).join(', ') }]),
+    { kind: 'typical', text: printedText(sources, (source) => source.value(chosen, 'typical')) },
+    ...(exact ? [] : [{ kind: 'widest' as const, text: printedText(sources, (source) => source.value(chosen, 'widest')) }]),
   ]
   if (sources.some((source) => source.longest)) {
-    checks.push({ kind: exact ? 'typical' : 'widest', text: sources.map((source) => source.longest?.(chosen) ?? source.value(chosen, 'widest')).join(', ') })
+    checks.push({ kind: exact ? 'typical' : 'widest', text: printedText(sources, (source) => source.longest?.(chosen) ?? source.value(chosen, 'widest')) })
   }
   for (const { kind, text } of checks) {
     try {

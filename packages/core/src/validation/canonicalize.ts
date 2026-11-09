@@ -1,4 +1,6 @@
 import {
+	MASK_MISMATCH,
+	canonicalizeMasked,
 	countryName,
 	findSubdivision,
 	isCountryCode,
@@ -8,10 +10,11 @@ import {
 	resolveRegion,
 	type PlaceCandidate,
 	type PlaceFailure,
+	type MaskInputForm,
 	type PlaceIssueCode,
 } from '@asterdoc/format'
 import { regionsProvider as regions } from '@asterdoc/format/regions'
-import type { FormField } from '@asterdoc/types'
+import type { Form, FormField } from '@asterdoc/types'
 import type { ValidationError } from '@/types'
 
 /** Whether input is a complete value or a value still being filled in. */
@@ -20,7 +23,17 @@ export type CanonicalizationMode = 'progressive' | 'complete'
 export interface CanonicalizeOptions {
 	/** The input locale: country names in it are accepted besides English names. */
 	locale?: string
+	/**
+	 * `progressive` accepts a masked prefix, as a draft in progress holds it;
+	 * `complete` refuses a masked value that does not fill its mask.
+	 */
 	mode: CanonicalizationMode
+	/**
+	 * How a partial masked value is written: `canonical` (the default) for
+	 * agents, API calls and stored data, `formatted` for an editor that shows
+	 * the mask's literals. A complete value is read in either form.
+	 */
+	input?: MaskInputForm
 	/** The path issues are reported at, such as `fields.homeAddress`. */
 	path?: string
 	/**
@@ -34,7 +47,7 @@ export interface CanonicalizeOptions {
 
 /** Why an input could not be stored as a canonical value, with what to choose from instead. */
 export interface CanonicalizationIssue {
-	code: PlaceIssueCode
+	code: PlaceIssueCode | typeof MASK_MISMATCH
 	path: string
 	message: string
 	candidates: PlaceCandidate[]
@@ -56,9 +69,11 @@ function placeIssue(path: string, outcome: PlaceFailure): CanonicalizationIssue 
 	return { code: outcome.code, path, message: outcome.message, candidates: [...outcome.candidates] }
 }
 
-/** Whether a field, or a field nested in it, stores canonical codes. */
+/** Whether a field, or a field nested in it, stores a canonical form: place codes, or a masked value without its literals. */
 export function hasCanonicalValues(field: FormField): boolean {
 	switch (field.type) {
+		case 'text':
+			return field.mask !== undefined
 		case 'country':
 		case 'region':
 			return true
@@ -104,6 +119,13 @@ function mergedOver(current: unknown, value: Record<string, unknown>): Record<st
 function canonicalize(field: FormField, value: unknown, options: CanonicalizeOptions, path: string, issues: CanonicalizationIssue[], current?: unknown): unknown {
 	if (value === null || value === undefined || !hasCanonicalValues(field)) return value
 	switch (field.type) {
+		case 'text': {
+			if (typeof value !== 'string' || field.mask === undefined) return value
+			const read = canonicalizeMasked(field.mask, value, { mode: options.mode, input: options.input ?? 'canonical' })
+			if (read.success) return read.value
+			issues.push({ code: MASK_MISMATCH, path, message: read.message, candidates: [] })
+			return value
+		}
 		case 'country': {
 			if (typeof value !== 'string') return value
 			const outcome = resolveCountry(value, { locale: options.locale, regions })
@@ -140,10 +162,14 @@ function canonicalize(field: FormField, value: unknown, options: CanonicalizeOpt
 
 /**
  * The canonical form of a field value: a `country` field's ISO 3166-1
- * alpha-2 code, a `region` field's full ISO 3166-2 code, and a `codes: true`
- * address's country and region codes, through `list` items and `fieldset`
- * members. Every other value passes through untouched. An input that does not
- * name exactly one place fails with the outcome and its candidates.
+ * alpha-2 code, a `region` field's full ISO 3166-2 code, a `codes: true`
+ * address's country and region codes, and a masked `text` field's token
+ * characters without the mask's literals, through `list` items and
+ * `fieldset` members. Every other value passes through untouched. An input
+ * that does not name exactly one place fails with the outcome and its
+ * candidates; a masked value that does not fit fails with `mask_mismatch`
+ * and a message that names the expected shape. Canonicalizing a canonical
+ * value returns it unchanged.
  */
 export function canonicalizeFieldValue(field: FormField, value: unknown, options: CanonicalizeOptions): CanonicalizeResult {
 	const issues: CanonicalizationIssue[] = []
@@ -262,4 +288,32 @@ export function placeDisplayNames(
 	if (!fields || !isRecord(values)) return names
 	for (const [key, field] of Object.entries(fields)) collectNames(field, values[key], join('fields', key), options.locale, names)
 	return names
+}
+
+function hasMask(field: FormField): boolean {
+	if (field.type === 'text') return field.mask !== undefined
+	if (field.type === 'list') return hasMask(field.item)
+	if (field.type === 'fieldset') return Object.values(field.fields).some(hasMask)
+	return false
+}
+
+function relaxed(field: FormField): FormField {
+	if (field.type === 'text' && field.mask !== undefined) {
+		const { minLength: _minLength, maxLength: _maxLength, pattern: _pattern, ...rest } = field
+		return rest
+	}
+	if (field.type === 'list') return { ...field, item: relaxed(field.item) as typeof field.item }
+	if (field.type === 'fieldset') return { ...field, fields: Object.fromEntries(Object.entries(field.fields).map(([key, child]) => [key, relaxed(child)])) }
+	return field
+}
+
+/**
+ * The form a progressive write validates against: a masked text field keeps
+ * its mask but not its `pattern`, `minLength` and `maxLength`, which apply to
+ * the complete value only.
+ */
+export function progressiveForm<F extends Form>(form: F): F {
+	const fields = form.fields ?? {}
+	if (!Object.values(fields).some(hasMask)) return form
+	return { ...form, fields: Object.fromEntries(Object.entries(fields).map(([key, field]) => [key, relaxed(field)])) }
 }

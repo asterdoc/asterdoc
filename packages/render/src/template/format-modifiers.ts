@@ -1,5 +1,6 @@
+import { isValidMask } from '@asterdoc/format'
 import { phoneProvider } from '@asterdoc/format/phone'
-import type { LayerFormat } from '@asterdoc/types'
+import type { ValueFormat } from '@asterdoc/types'
 import { isValuePart, partProblem } from '../parts/rules'
 import type { DeclaredValue } from './values'
 
@@ -153,6 +154,35 @@ export const FORMAT_MODIFIER_RULES = new Map<string, FormatModifierRule>([
     value: (value) => isValuePart(value) ? undefined : partProblem('', value, ''),
     applies: (target, value) => partProblem(target.kind, value, describeTarget(target)),
   }],
+  ['money.fractionDigits', {
+    value: (value) => value === 0 || value === 2 ? undefined : `money.fractionDigits takes 0 or 2, not ${literalText(value)}.`,
+    applies: onlyFor('money.fractionDigits', ['money'], 'money values'),
+  }],
+  ['money.useGrouping', {
+    value: (value) => typeof value === 'boolean' ? undefined : `money.useGrouping takes true or false, not ${literalText(value)}.`,
+    applies: onlyFor('money.useGrouping', ['money'], 'money values'),
+  }],
+  ['case', {
+    value: oneOf('case', ['upper', 'none']),
+    applies: () => undefined,
+  }],
+  ['person.order', {
+    value: oneOf('person.order', ['given-first', 'family-first']),
+    applies: onlyFor('person.order', ['person', 'party'], 'people and parties'),
+  }],
+  ['text.mask', {
+    value: (value) => typeof value === 'boolean' || (typeof value === 'string' && isValidMask(value))
+      ? undefined
+      : `text.mask takes true, false or a mask such as "###-##-####", not ${literalText(value)}.`,
+    applies: (target, value) => {
+      const declared = target.declared
+      if (target.kind !== 'text' || declared?.source !== 'field' || declared.field.type !== 'text') {
+        return `text.mask applies to a declared text field, not to ${describeTarget(target)}.`
+      }
+      if (value === true && declared.field.mask === undefined) return `text.mask=true prints with the field's mask, and ${declared.path} has none.`
+      return undefined
+    },
+  }],
 ])
 
 const COLLECTIONS = new Set(['list', 'fieldset', 'parties'])
@@ -236,7 +266,7 @@ export function chosenModifiers(
  * path into it. `part` chooses what prints rather than how, so it is not in
  * the format.
  */
-export function modifierFormat(entries: readonly FormatModifier[]): LayerFormat {
+export function modifierFormat(entries: readonly FormatModifier[]): ValueFormat {
   const format: Record<string, unknown> = {}
   for (const { key, value } of entries) {
     if (key === PART_MODIFIER) continue
@@ -248,7 +278,7 @@ export function modifierFormat(entries: readonly FormatModifier[]): LayerFormat 
     }
     at[segments.at(-1)!] = value
   }
-  return format as LayerFormat
+  return format as ValueFormat
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -256,7 +286,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** The modifiers a format sets: one per leaf, keyed by its dotted path, such as `date.pattern`. */
-export function formatModifiers(format: LayerFormat): FormatModifier[] {
+export function formatModifiers(format: ValueFormat): FormatModifier[] {
   const entries: FormatModifier[] = []
   const visit = (value: unknown, key: string) => {
     if (value === undefined) return
@@ -277,7 +307,7 @@ export function formatModifiers(format: LayerFormat): FormatModifier[] {
  * passes them all; each key must apply to at least one. With no targets,
  * only the keys and values are checked. Undefined when nothing is wrong.
  */
-export function formatProblem(format: LayerFormat, targets: readonly ModifierTarget[]): string | undefined {
+export function formatProblem(format: ValueFormat, targets: readonly ModifierTarget[]): string | undefined {
   const entries = formatModifiers(format)
   return (modifierListProblem(entries) ?? inapplicableModifier(entries, targets))?.message
 }

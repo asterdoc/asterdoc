@@ -10,6 +10,7 @@ import { parse } from '@/serialization/serialization'
 import { validatePdfLayers, type LayerValidationIssue } from './pdf-layers'
 import { validatePdfBindingPaths } from './pdf-bindings'
 import { validatePlaceDefinitions, validatePlaceFormats } from './place-definitions'
+import { validateMaskDefaults, validateValueFormats } from './value-formats'
 import { validateFileReferences } from './file-references'
 import { validateLayerReferences } from './layer-references'
 import {
@@ -209,6 +210,14 @@ export function validateDefinition<T = unknown>(
     }
   }
 
+  if (logic && allIssues.length === 0 && hasTemplateLayers(artifact) && artifact.kind === 'form') {
+    const maskIssues = validateMaskDefaults(artifact as unknown as Form)
+    if (maskIssues.length > 0) {
+      if (!collectAllErrors) return { issues: maskIssues.slice(0, 1) }
+      allIssues.push(...maskIssues)
+    }
+  }
+
   // Step 4: PDF binding values name paths the form declares (with logic validation)
   if (logic && allIssues.length === 0 && hasTemplateLayers(artifact) && artifact.kind === 'form') {
     const bindingIssues = validatePdfBindingPaths(artifact as unknown as Form)
@@ -282,6 +291,8 @@ function readOnce(resolver: Resolver): Resolver {
  *   bounding its length is a warning;
  * - for a form, that a stored value a layer prints with a country or region
  *   format normalizes; a default that does not is a warning.
+ * - for a form, a warning for each layer or PDF binding that prints person
+ *   names family-first, since a person given only a name cannot be reordered.
  *
  * @example
  * ```typescript
@@ -302,7 +313,8 @@ export async function validateLayers<T = unknown>(
   const pdf = hasTemplateLayers(artifact) && artifact.kind === 'form' ? await validatePdfLayers(artifact as unknown as Form, reader) : []
   const errors = [...fileIssues, ...templateIssues, ...pdf.filter((issue) => issue.severity === 'error')]
   const places = hasTemplateLayers(artifact) && artifact.kind === 'form' ? validatePlaceFormats(artifact as unknown as Form) : []
-  const warnings = [...pdf.filter((issue) => issue.severity === 'warning'), ...places]
+  const formats = hasTemplateLayers(artifact) && artifact.kind === 'form' ? validateValueFormats(artifact as unknown as Form) : []
+  const warnings = [...pdf.filter((issue) => issue.severity === 'warning'), ...places, ...formats]
   const outcome: StandardSchemaV1.Result<T> = errors.length > 0 ? { issues: errors } : result
   return warnings.length > 0 ? { ...outcome, warnings } : outcome
 }

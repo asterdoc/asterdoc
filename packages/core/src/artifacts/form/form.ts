@@ -73,7 +73,7 @@ import {
 	type NormalizedPartyInput,
 } from '@/validation'
 import { evaluatePartyRequiredness } from '@/validation/party'
-import { canonicalizationError, canonicalizeFieldValues } from '@/validation/canonicalize'
+import { canonicalizationError, canonicalizeFieldValue, canonicalizeFieldValues } from '@/validation/canonicalize'
 import { toYAML } from '@/serialization/serialization'
 import { deepClone, deepReadonlyClone } from '@/utils/clone'
 import {
@@ -479,7 +479,8 @@ function resetFieldValue(field: FormField, current: unknown): unknown {
 	}
 
 	if ('default' in field && field.default !== undefined) {
-		return deepClone(field.default)
+		const canonical = canonicalizeFieldValue(field, deepClone(field.default), { mode: 'progressive' })
+		return canonical.success ? canonical.value : deepClone(field.default)
 	}
 	return undefined
 }

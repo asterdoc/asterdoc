@@ -124,6 +124,7 @@ export interface TextFieldBuilder<R extends CondExpr | undefined = undefined> {
 	minLength(value: number): TextFieldBuilder<R>;
 	maxLength(value: number): TextFieldBuilder<R>;
 	pattern(value: string): TextFieldBuilder<R>;
+	mask(value: string): TextFieldBuilder<R>;
 	default(value: string): TextFieldBuilder<R>;
 	build(): BuiltField<TextField, R>;
 }
@@ -471,6 +472,7 @@ export function textField(): TextFieldBuilder {
 		minLength(value: number) { _def.minLength = value; return self; },
 		maxLength(value: number) { _def.maxLength = value; return self; },
 		pattern(value: string) { _def.pattern = value; return self; },
+		mask(value: string) { _def.mask = value; return self; },
 		default(value: string) { _def.default = value; return self; },
 		build() { return parseField(_def) as TextField; },
 	};

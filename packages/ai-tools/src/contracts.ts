@@ -159,7 +159,7 @@ export const ValidateInputValueSchema = withSourceFields(ValidateInputSelectorsS
 export type ValidateInputValue = z.infer<typeof ValidateInputValueSchema>
 
 export const FillDataSchema = JsonObjectSchema.describe(
-	'Form payload { fields, parties, annexes } or checklist item values. parties is keyed by role ID: a role with max 1 takes one party object, a role with max above 1 takes an array of party objects.',
+	'Form payload { fields, parties, annexes } or checklist item values. parties is keyed by role ID: a role with max 1 takes one party object, a role with max above 1 takes an array of party objects. A text field with a mask, such as ###-##-####, takes its value with or without the mask\'s separators and stores it without them.',
 )
 
 export const FillInputSchema = withSourceFields({

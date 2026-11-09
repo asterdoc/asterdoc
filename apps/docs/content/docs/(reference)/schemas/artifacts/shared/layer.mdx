@@ -124,7 +124,7 @@ File-backed layer with external file reference. Used when content is stored in a
   },
   {
     name: 'bindings',
-    type: 'Record<string, string | { path: string, format?: LayerFormat }>',
+    type: 'Record<string, string | { path: string, format?: ValueFormat }>',
     description: 'PDF layers only. Maps each AcroForm field name in the template (key) to the Asterdoc path that fills it (value), as a string or a binding object. See [Bindings](#bindings)',
     isOptional: true,
   },
@@ -158,7 +158,7 @@ Only a PDF file layer takes `bindings` and `bindingsFrom`. Each key of `bindings
 }
 ```
 
-A binding value can also be an object: `path` is the string the binding would be, and `format` sets how that one value prints, merged over the layer's `format`. A joined path applies the format to each value before the join. An option test such as `fields.status:married` fills a checkbox and prints nothing, and a split part such as `fields.ssn:2` prints a piece of the raw value, so validation rejects a `format` on either.
+A binding value can also be an object: `path` is the string the binding would be, and `format` sets how that one value prints, merged over the layer's `format`. This `format` (a `ValueFormat`) takes every [Format](#format) key, and its `text.mask` may also be a mask string. A joined path applies the format to each value before the join. An option test such as `fields.status:married` fills a checkbox and prints nothing, and a split part such as `fields.ssn:2` prints a piece of the raw value, so validation rejects a `format` on either.
 
 ```json
 "bindings": {
@@ -198,9 +198,15 @@ A layer that reuses bindings through `bindingsFrom` takes each binding with its 
     isOptional: true,
   },
   {
+    name: 'case',
+    type: "'upper' | 'none'",
+    description: '`upper` prints values in upper case with the locale\'s rules, last, after a join. On a layer it skips email, uri and uuid fields; on a binding it applies to the whole box. `none` turns off a lower `upper`. Checkbox, radio and dropdown export values never change',
+    isOptional: true,
+  },
+  {
     name: 'money',
-    type: "{ currencyDisplay?: 'none' }",
-    description: '`none` prints amounts without a currency symbol, for a template that pre-prints it',
+    type: "{ currencyDisplay?: 'none', fractionDigits?: 0 | 2, useGrouping?: boolean }",
+    description: '`currencyDisplay: none` prints amounts without a currency symbol, for a template that pre-prints it. `fractionDigits` prints exactly that many digits, rounding half away from zero (`1.999` prints `2`). `useGrouping: false` drops grouping separators',
     isOptional: true,
   },
   {
@@ -239,7 +245,21 @@ A layer that reuses bindings through `bindingsFrom` takes each binding with its 
     description: 'Prints a `region` field and an address `region` member as the code after the dash (`ON`), the whole ISO 3166-2 code (`CA-ON`) or its English name. Without it, the value prints as stored. It needs the regions provider, `@asterdoc/format/regions`, which the default formatter includes',
     isOptional: true,
   },
+  {
+    name: 'person',
+    type: "{ order?: 'given-first' | 'family-first' }",
+    description: '`family-first` prints "Last, First Middle Suffix", without the title. A person with only `name` prints `name`, and `validateLayers()` warns',
+    isOptional: true,
+  },
+  {
+    name: 'text',
+    type: '{ mask?: boolean }',
+    description: 'Whether text values print through their field\'s mask: `true` (the default) or `false`, without literals. A binding\'s or placeholder\'s `text.mask` may also be a mask string, which prints that value with that mask',
+    isOptional: true,
+  },
 ]} />
+
+A split binding such as `fields.ssn:2` on a masked field prints the second group of token characters between literals (`45` for `###-##-####`). For a comb field that has a box per digit, bind with `format: { text: { mask: false } }`.
 
 Levels apply from lowest to highest: the caller's formatter, then the layer's `format`, then a binding's `format`. Each kind merges per property, so a binding's `money` keeps the layer's other money choices, and a higher `locale` replaces a lower one. React layers accept a `format` but do not apply it yet. See [Artifact formatting](/sdk/renderers/pdf#artifact-formatting).
 

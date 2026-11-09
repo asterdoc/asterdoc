@@ -1,4 +1,4 @@
-import type { Formatter, LayerFormat } from '@asterdoc/types'
+import type { Formatter, ValueFormat } from '@asterdoc/types'
 import type { FieldFormattingOptions } from './text/field-formatter'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -15,7 +15,7 @@ function definedEntries(value: Record<string, unknown>): Record<string, unknown>
  * `money: { currencyDisplay: 'none' }` keeps the layer's other money choices;
  * a scalar such as `locale` replaces the level below.
  */
-export function mergeFormats(...levels: readonly (LayerFormat | undefined)[]): LayerFormat | undefined {
+export function mergeFormats<F extends ValueFormat>(...levels: readonly (F | undefined)[]): F | undefined {
   let merged: Record<string, unknown> | undefined
   for (const level of levels) {
     if (!level) continue
@@ -26,7 +26,7 @@ export function mergeFormats(...levels: readonly (LayerFormat | undefined)[]): L
       merged[kind] = isRecord(value) ? { ...(isRecord(lower) ? lower : {}), ...definedEntries(value) } : value
     }
   }
-  return merged as LayerFormat | undefined
+  return merged as F | undefined
 }
 
 /** The options of 0.11, which every renderer applied by preprocessing all values once. */
@@ -39,7 +39,7 @@ const LEGACY_OPTIONS: Readonly<Record<string, readonly string[]>> = {
  * Whether a format sets anything beyond `money.currencyDisplay` and
  * `date.pattern`. Only such a format needs values formatted one by one.
  */
-export function hasNewFormatOptions(format: LayerFormat | undefined): boolean {
+export function hasNewFormatOptions(format: ValueFormat | undefined): boolean {
   if (!format) return false
   return Object.entries(format).some(([kind, value]) => {
     if (value === undefined) return false
@@ -49,7 +49,7 @@ export function hasNewFormatOptions(format: LayerFormat | undefined): boolean {
 }
 
 /** The field formatting options a format sets, over `base`. */
-export function formatFieldOptions(format: LayerFormat | undefined, base: FieldFormattingOptions = {}): FieldFormattingOptions {
+export function formatFieldOptions(format: ValueFormat | undefined, base: FieldFormattingOptions = {}): FieldFormattingOptions {
   return {
     ...base,
     ...(format?.money && { money: format.money }),
@@ -59,6 +59,9 @@ export function formatFieldOptions(format: LayerFormat | undefined, base: FieldF
     ...(format?.choice?.display && { choices: format.choice.display }),
     ...(format?.country && { country: format.country }),
     ...(format?.region && { region: format.region }),
+    ...(format?.case && { case: format.case }),
+    ...(format?.person && { person: format.person }),
+    ...(format?.text && { text: format.text }),
   }
 }
 
@@ -69,7 +72,7 @@ const composed = new WeakMap<Formatter, Map<string, Formatter>>()
  * the format's `locale`. Composed formatters are kept per base formatter and
  * locale, so values formatted one by one share them.
  */
-export function formatterFor(formatter: Formatter, format: LayerFormat | undefined): Formatter {
+export function formatterFor(formatter: Formatter, format: ValueFormat | undefined): Formatter {
   const locale = format?.locale
   if (locale === undefined || locale === formatter.locale) return formatter
   let byLocale = composed.get(formatter)

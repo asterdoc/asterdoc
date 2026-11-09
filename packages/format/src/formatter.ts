@@ -87,6 +87,8 @@ import {
 	type FormatProviders,
 	type Identification,
 	type MoneyFormatOptions,
+	type PartyFormatOptions,
+	type PersonFormatOptions,
 	type NumericFormatKind,
 	type SelectionFormatKind,
 	type SelectionListStyle,
@@ -474,9 +476,19 @@ function currencyFractionDigits(currency: string): { minimumFractionDigits: numb
 	return digits
 }
 
+function withFractionDigits(options: Record<string, unknown>): Record<string, unknown> {
+	const { fractionDigits, ...rest } = options
+	if (fractionDigits === undefined) return rest
+	if (typeof fractionDigits !== 'number' || !Number.isInteger(fractionDigits) || fractionDigits < 0 || fractionDigits > 100) {
+		throw new FormatConfigurationError('Money fractionDigits must be a whole number from 0 to 100.')
+	}
+	const { minimumSignificantDigits: _minimum, maximumSignificantDigits: _maximum, ...digits } = rest
+	return { ...digits, minimumFractionDigits: fractionDigits, maximumFractionDigits: fractionDigits }
+}
+
 function buildMoneyIntlOptions(options: Record<string, unknown>, currency: string): Record<string, unknown> {
 	const currencyDisplay = (options.currencyDisplay as MoneyFormatOptions['currencyDisplay'] | undefined) ?? 'symbol'
-	const { currencyDisplay: _currencyDisplay, currencySign, ...numberOptions } = options
+	const { currencyDisplay: _currencyDisplay, currencySign, ...numberOptions } = withFractionDigits(options)
 	if (currencyDisplay === 'none') {
 		// Dropping the symbol does not change the amount: it keeps the
 		// currency's own fraction digits unless the caller sets digits.
@@ -811,12 +823,13 @@ class FormatterImpl implements Formatter {
 			case 'phone':
 				return formatContactPhone(parsed as NormalizedPhone, options, this.messageContext(policy.locale), this.providers.phone)
 			case 'person':
-				return formatContactPerson(parsed as Record<string, unknown>)
+				return formatContactPerson(parsed as Record<string, unknown>, options as PersonFormatOptions)
 			case 'organization':
 				return formatContactOrganization(parsed as Record<string, unknown>, this.messageContext(policy.locale))
 			case 'party': {
 				const party = parsed as ValidatedParty
-				return this.nested(party.identity, party.value, { locale: policy.locale })
+				const person = party.identity === 'person' ? (options as PartyFormatOptions).person : undefined
+				return this.nested(party.identity, party.value, { ...person, locale: policy.locale })
 			}
 			case 'coordinate':
 				return formatCoordinateValue(parsed as Coordinate, options, this.captureContext(policy))

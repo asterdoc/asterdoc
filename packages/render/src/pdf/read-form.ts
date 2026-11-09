@@ -1,8 +1,8 @@
 import { defaultFormatter } from '../default-formatter'
+import { canonicalizeMasked, parseMask, resolveAddressRegion, resolveCountry, resolveRegion, type MaskSlot, type ParsedMask, type PlaceOutcome } from '@asterdoc/format'
 import { phoneProvider } from '@asterdoc/format/phone'
-import { resolveAddressRegion, resolveCountry, resolveRegion, type PlaceOutcome } from '@asterdoc/format'
-import type { BinaryContent, Bindings, EnumOption, EnumOptionValue, Form, FormField, Formatter, LayerBooleanFormat, LayerCountryFormat, LayerDateFormat, LayerFormat, LayerPhoneFormat, LayerRegionFormat, ValuePart } from '@asterdoc/types'
-import { validateFieldBindings } from '../text/field-formatter'
+import type { BinaryContent, Bindings, EnumOption, EnumOptionValue, Form, FormField, Formatter, LayerBooleanFormat, LayerCountryFormat, LayerDateFormat, LayerFormat, LayerPhoneFormat, LayerRegionFormat, ValueFormat, ValuePart, ValueTextFormat } from '@asterdoc/types'
+import { effectiveMask, validateFieldBindings } from '../text/field-formatter'
 import { assertBindingFormats, fieldDefinition, parseBindings, resolveLayerBindings, splitPartIndex } from '../layer-bindings'
 import { formatterFor, mergeFormats } from '../presentation'
 import { bindingDeclaration } from '../parts/rules'
@@ -442,6 +442,13 @@ interface Reader {
   date?: LayerDateFormat
   country?: LayerCountryFormat
   region?: LayerRegionFormat
+  text?: ValueTextFormat
+  /** Money printed with fewer fraction digits than its currency has. */
+  fractionDigits?: number
+  /** A family-first name order, which a single box cannot be split back from. */
+  familyFirst: boolean
+  /** Whether values of a type were printed in upper case, so their letter case is lost. */
+  upper: (type: string) => boolean
   phone?: LayerPhoneFormat
   choice?: 'label' | 'value'
   boolean?: LayerBooleanFormat
@@ -474,9 +481,23 @@ function matchLabelOf<T>(raw: string, candidates: readonly { value: T; label: st
   return undefined
 }
 
+/** How text a layer printed in upper case reads, or undefined when its case is kept. */
+type Shown = (text: string) => string
+
+function shownAfterCase(reader: Reader, type: string): Shown | undefined {
+  return reader.upper(type) ? (text) => text.toLocaleUpperCase(reader.formatter.locale) : undefined
+}
+
+/** Match text printed as an option value in upper case. Two values equal in upper case cannot be told apart. */
+function matchCasedValue(text: string, options: readonly EnumOption[], shown: Shown): Parsed | undefined {
+  const matches = options.filter((option) => shown(String(option.value)) === text)
+  if (matches.length > 1) return lost(`More than one option prints "${text}" in upper case, so the value cannot be told apart.`)
+  return matches.length === 1 ? ok(matches[0]!.value) : undefined
+}
+
 /** Match text printed as an option label to its option. Two options with that label cannot be told apart. */
-function matchLabel(raw: string, options: readonly EnumOption[], formatter: Formatter): Parsed | undefined {
-  const match = matchLabelOf(raw, options.map((option) => ({ value: option.value, label: optionLabel(option, options, formatter) })))
+function matchLabel(raw: string, options: readonly EnumOption[], formatter: Formatter, shown: Shown = (text) => text): Parsed | undefined {
+  const match = matchLabelOf(raw, options.map((option) => ({ value: option.value, label: shown(optionLabel(option, options, formatter)) })))
   if (!match) return undefined
   return 'ambiguous' in match ? lost(sharedLabelReason(match.ambiguous)) : ok(match.value)
 }
@@ -505,10 +526,10 @@ function listSeparators(formatter: Formatter): string[] {
  * into labels and the list's separators is tried, and only one that the
  * formatter prints back exactly counts; more than one is ambiguous.
  */
-function matchLabelList(raw: string, options: readonly EnumOption[], formatter: Formatter): Parsed | undefined {
+function matchLabelList(raw: string, options: readonly EnumOption[], formatter: Formatter, shown: Shown = (text) => text): Parsed | undefined {
   const text = raw.trim()
-  const labels = options.map((option) => optionLabel(option, options, formatter))
-  const separators = listSeparators(formatter)
+  const labels = options.map((option) => shown(optionLabel(option, options, formatter)))
+  const separators = listSeparators(formatter).map(shown)
   const readings = new Map<string, EnumOptionValue[]>()
   const visit = (position: number, chosen: number[]): void => {
     if (readings.size > 1) return
@@ -519,7 +540,7 @@ function matchLabelList(raw: string, options: readonly EnumOption[], formatter: 
       if (end === text.length) {
         const values = next.map((choice) => options[choice]!.value)
         const printed = formatter.safeFormatMultiselect(values, { options })
-        if (printed.success && printed.value === text) readings.set(JSON.stringify(values), values)
+        if (printed.success && shown(printed.value) === text) readings.set(JSON.stringify(values), values)
         return
       }
       for (const separator of separators) {
@@ -533,14 +554,16 @@ function matchLabelList(raw: string, options: readonly EnumOption[], formatter: 
   return values ? ok(values) : undefined
 }
 
-function parseBooleanLabels(raw: string, labels: LayerBooleanFormat, formatter: Formatter): Parsed {
-  const yes = formatter.safeFormatBoolean(true, labels)
-  const no = formatter.safeFormatBoolean(false, labels)
-  if (!yes.success || !no.success) return fail('The boolean labels cannot be printed.')
-  if (yes.value === no.value) return lost(`True and false both print "${yes.value}", so the value cannot be told apart.`)
-  const match = matchLabelOf(raw, [{ value: true, label: yes.value }, { value: false, label: no.value }])
-  if (!match) return fail(`The text is neither "${yes.value}" nor "${no.value}".`)
-  return 'ambiguous' in match ? lost(`The text reads as both "${yes.value}" and "${no.value}", so the value cannot be told apart.`) : ok(match.value)
+function parseBooleanLabels(raw: string, labels: LayerBooleanFormat, formatter: Formatter, shown: Shown = (text) => text): Parsed {
+  const printedYes = formatter.safeFormatBoolean(true, labels)
+  const printedNo = formatter.safeFormatBoolean(false, labels)
+  if (!printedYes.success || !printedNo.success) return fail('The boolean labels cannot be printed.')
+  const yes = shown(printedYes.value)
+  const no = shown(printedNo.value)
+  if (yes === no) return lost(`True and false both print "${yes}", so the value cannot be told apart.`)
+  const match = matchLabelOf(raw, [{ value: true, label: yes }, { value: false, label: no }])
+  if (!match) return fail(`The text is neither "${yes}" nor "${no}".`)
+  return 'ambiguous' in match ? lost(`The text reads as both "${yes}" and "${no}", so the value cannot be told apart.`) : ok(match.value)
 }
 
 function escapeRegExp(text: string): string {
@@ -580,6 +603,45 @@ function parsePhone(raw: string, reader: Reader): Parsed {
   return ok({ number: number.value, ...(extension && { extension: extension[2] }) })
 }
 
+const CASE_KEEPING_TYPES = new Set(['email', 'uri', 'uuid'])
+
+function caseLost(reader: Reader, type: string, text: string): boolean {
+  return reader.upper(type) && text.toLocaleLowerCase(reader.formatter.locale) !== text
+}
+
+/** A mask as a box printed it: its literals in the case the layer or binding printed them, its tokens as they are. */
+function printedMask(mask: string, shown: Shown | undefined): ParsedMask {
+  const parsed = parseMask(mask)
+  if (!shown) return parsed
+  const slots = parsed.slots.flatMap((slot): MaskSlot[] => slot.kind === 'token' ? [slot] : [...shown(slot.char)].map((char) => ({ kind: 'literal', char })))
+  return { ...parsed, slots }
+}
+
+function parseText(raw: string, field: FormField, reader: Reader): Parsed {
+  const printedWith = effectiveMask(field, reader.text)
+  const own = field.type === 'text' ? field.mask : undefined
+  let value = raw
+  if (printedWith !== undefined) {
+    const read = canonicalizeMasked(printedMask(printedWith, shownAfterCase(reader, field.type)), value)
+    if (!read.success) return fail(read.message)
+    value = read.value
+  }
+  if (own !== undefined) {
+    const read = canonicalizeMasked(own, value)
+    if (!read.success) return fail(read.message)
+    value = read.value
+  }
+  return ok(value, caseLost(reader, field.type, value))
+}
+
+function fractionDigitsOf(currency: string): number {
+  try {
+    return new Intl.NumberFormat('en', { style: 'currency', currency }).resolvedOptions().maximumFractionDigits ?? 2
+  } catch {
+    return 2
+  }
+}
+
 function parseFieldValue(raw: string, field: FormField, reader: Reader): Parsed {
   const { formatter } = reader
   if (composite.has(field.type)) {
@@ -590,19 +652,30 @@ function parseFieldValue(raw: string, field: FormField, reader: Reader): Parsed 
     case 'email':
     case 'uuid':
     case 'uri':
-      return ok(raw)
+      return parseText(raw, field, reader)
     case 'enum': {
-      const labelled = reader.choice === 'label' ? matchLabel(raw, field.enum, formatter) : undefined
+      const shown = shownAfterCase(reader, field.type)
+      const labelled = reader.choice === 'label' ? matchLabel(raw, field.enum, formatter, shown) : undefined
       if (labelled) return labelled
+      const cased = shown && reader.choice !== 'label' ? matchCasedValue(raw.trim(), field.enum, shown) : undefined
+      if (cased) return cased
       const option = matchOption(raw, field.enum, formatter)
       return option ? ok(option.value) : fail('The text matches none of the field\'s options.')
     }
     case 'multiselect': {
-      const labelled = reader.choice === 'label' ? matchLabelList(raw, field.enum, formatter) : undefined
+      const shown = shownAfterCase(reader, field.type)
+      const labelled = reader.choice === 'label' ? matchLabelList(raw, field.enum, formatter, shown) : undefined
       if (labelled) return labelled
       // Fill joins the option values with ", "; a value may itself hold a comma.
       for (const parts of [raw.split(', '), raw.split(',')]) {
         const values = parts.map((part) => part.trim()).filter(Boolean)
+        if (shown && reader.choice !== 'label') {
+          const matched = values.map((value) => matchCasedValue(value, field.enum, shown))
+          const ambiguous = matched.find((match) => match !== undefined && !match.ok)
+          if (ambiguous) return ambiguous
+          if (matched.every((match) => match?.ok)) return ok(matched.map((match) => (match as { value: unknown }).value))
+          continue
+        }
         const options = values.map((value) => matchOption(value, field.enum, formatter))
         if (options.every((option) => option !== undefined)) return ok(options.map((option) => option!.value))
       }
@@ -610,7 +683,7 @@ function parseFieldValue(raw: string, field: FormField, reader: Reader): Parsed 
     }
     case 'boolean': {
       if (reader.boolean && (reader.boolean.trueLabel !== undefined || reader.boolean.falseLabel !== undefined)) {
-        return parseBooleanLabels(raw, reader.boolean, formatter)
+        return parseBooleanLabels(raw, reader.boolean, formatter, shownAfterCase(reader, field.type))
       }
       const text = raw.trim()
       const yes = formatter.safeFormatBoolean(true)
@@ -631,8 +704,12 @@ function parseFieldValue(raw: string, field: FormField, reader: Reader): Parsed 
       const value = parseNumber(raw.trim().replace(/\s*%$/, ''), formatter.locale)
       return value === undefined ? fail('The text is not a percentage.') : ok(value)
     }
-    case 'money':
-      return parseMoney(raw, field, formatter)
+    case 'money': {
+      const parsed = parseMoney(raw, field, formatter)
+      if (!parsed.ok || reader.fractionDigits === undefined) return parsed
+      const { currency } = parsed.value as { currency: string }
+      return ok(parsed.value, reader.fractionDigits < fractionDigitsOf(currency))
+    }
     case 'date': {
       if (reader.date) {
         const value = parsePatternDate(raw, reader.date)
@@ -679,7 +756,7 @@ function parseTarget(raw: string, target: Target, reader: Reader): Parsed {
   }
   if (target.type === 'phoneNumber' && reader.phone?.style !== undefined) return parsePhoneNumber(raw.trim(), reader.phone)
   if (target.place?.member === 'country' && reader.country) return readCountry(raw, reader.formatter)
-  return ok(raw)
+  return ok(raw, caseLost(reader, 'member', raw))
 }
 
 // ---------------------------------------------------------------------------
@@ -753,6 +830,9 @@ function readDirect(state: FieldState, target: Target, reader: Reader): Reading 
   }
   if (state.raw === undefined) return { kind: 'empty' }
   if (target.kind === 'fixed') return { kind: 'not_recoverable', reason: target.reason }
+  if (target.kind === 'field' && target.field.type === 'person' && reader.familyFirst) {
+    return { kind: 'not_recoverable', reason: 'The name is printed family-first in one box, which cannot be split back into its parts; bind the name parts by sub-path to read them back.' }
+  }
   if (target.kind === 'field' && composite.has(target.field.type)) {
     return { kind: 'not_recoverable', reason: `A ${target.field.type} value written as one piece of text cannot be split back into its parts; bind its parts to recover it.` }
   }
@@ -860,6 +940,8 @@ function resolvePath(work: PathWork, target: Target, reader: Reader): { status: 
     }
     else if (values.slice(0, lastFilled).some((value) => value === undefined)) {
       readings.push({ kind: 'unparseable', reason: 'A part before the last filled part is empty, so the parts cannot be joined in order.' })
+    } else if (target.kind === 'field' && target.field.type === 'text' && target.field.mask !== undefined) {
+      readings.push(maskGroupsReading(target.field.mask, positions.length, values.slice(0, lastFilled + 1) as string[], work.partsReader ?? reader))
     } else {
       const parsed = parseTarget(values.slice(0, lastFilled + 1).join('-'), target, work.partsReader ?? reader)
       readings.push(readingOf(parsed))
@@ -889,6 +971,14 @@ function resolvePath(work: PathWork, target: Target, reader: Reader): { status: 
   const lost = readings.find((reading): reading is Extract<Reading, { kind: 'not_recoverable' }> => reading.kind === 'not_recoverable')
   if (lost) return { status: 'not_recoverable', reason: lost.reason }
   return { status: 'empty' }
+}
+
+function maskGroupsReading(mask: string, bound: number, values: readonly string[], reader: Reader): Reading {
+  if (bound < parseMask(mask).groups.length) {
+    return { kind: 'not_recoverable', reason: `Not every group of the mask ${mask} is bound, so the value cannot be joined back.` }
+  }
+  const read = canonicalizeMasked(mask, values.join(''))
+  return read.success ? { kind: 'value', value: read.value, lossy: caseLost(reader, 'text', read.value) } : { kind: 'unparseable', reason: read.message }
 }
 
 function setValue(root: Record<string, unknown>, segments: string[], value: unknown): void {
@@ -929,12 +1019,14 @@ function placeValue(data: PdfExtractedData, path: string, value: unknown): void 
  */
 export async function extractPdfData({ pdf, form, bindings, formatter: filledWith = defaultFormatter, format }: ExtractPdfDataOptions): Promise<PdfExtraction> {
   const readers = new Map<string, Reader>()
-  const readerFor = (bindingFormat?: LayerFormat): Reader => {
+  const readerFor = (bindingFormat?: ValueFormat): Reader => {
     const effective = mergeFormats(format, bindingFormat)
-    const key = JSON.stringify(effective ?? {})
+    const key = JSON.stringify([effective ?? {}, bindingFormat?.case !== undefined])
     let found = readers.get(key)
     if (!found) {
       const localized = formatterFor(filledWith, effective)
+      const upper = effective?.case === 'upper'
+      const wholeBox = bindingFormat?.case !== undefined
       found = {
         formatter: effective?.money ? localized.compose({ money: effective.money }) : localized,
         ...(effective?.date && { date: effective.date }),
@@ -943,6 +1035,10 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
         ...(effective?.phone && { phone: effective.phone }),
         ...(effective?.choice?.display && { choice: effective.choice.display }),
         ...(effective?.boolean && { boolean: effective.boolean }),
+        ...(effective?.text && { text: effective.text }),
+        ...(effective?.money?.fractionDigits !== undefined && { fractionDigits: effective.money.fractionDigits }),
+        familyFirst: effective?.person?.order === 'family-first',
+        upper: (type) => upper && (wholeBox || !CASE_KEEPING_TYPES.has(type)),
       }
       readers.set(key, found)
     }
@@ -1158,14 +1254,23 @@ export interface FindPdfLabelCollisionsOptions {
   formatter?: Formatter
 }
 
-function labelCollisions(field: FormField, path: string, format: LayerFormat | undefined, formatter: Formatter): string[] {
+function labelCollisions(field: FormField, path: string, format: ValueFormat | undefined, formatter: Formatter): string[] {
+  const upper = format?.case === 'upper' ? (text: string) => text.toLocaleUpperCase(formatter.locale) : undefined
+  if ((field.type === 'enum' || field.type === 'multiselect') && format?.choice?.display !== 'label' && upper) {
+    const byValue = new Map<string, EnumOptionValue[]>()
+    for (const option of field.enum) byValue.set(upper(String(option.value)), [...byValue.get(upper(String(option.value))) ?? [], option.value])
+    return [...byValue.entries()]
+      .filter(([, values]) => values.length > 1)
+      .map(([printed, values]) => `options ${values.map((value) => JSON.stringify(value)).join(', ')} of ${path} all print "${printed}" in upper case, so reading the PDF back cannot tell them apart`)
+  }
   if ((field.type === 'enum' || field.type === 'multiselect') && format?.choice?.display === 'label') {
     const byLabel = new Map<string, { label: string; values: EnumOptionValue[] }>()
     for (const option of field.enum) {
       const label = optionLabel(option, field.enum, formatter)
-      const group = byLabel.get(normalizedLabel(label)) ?? { label, values: [] }
+      const key = normalizedLabel(upper ? upper(label) : label)
+      const group = byLabel.get(key) ?? { label, values: [] }
       group.values.push(option.value)
-      byLabel.set(normalizedLabel(label), group)
+      byLabel.set(key, group)
     }
     return [...byLabel.values()]
       .filter(({ values }) => values.length > 1)
@@ -1174,7 +1279,8 @@ function labelCollisions(field: FormField, path: string, format: LayerFormat | u
   if (field.type === 'boolean' && format?.boolean && (format.boolean.trueLabel !== undefined || format.boolean.falseLabel !== undefined)) {
     const yes = formatter.safeFormatBoolean(true, format.boolean)
     const no = formatter.safeFormatBoolean(false, format.boolean)
-    if (yes.success && no.success && normalizedLabel(yes.value) === normalizedLabel(no.value)) {
+    const key = (label: string) => normalizedLabel(upper ? upper(label) : label)
+    if (yes.success && no.success && key(yes.value) === key(no.value)) {
       return [`true and false of ${path} print "${yes.value}" and "${no.value}", equal apart from space and case, so reading the PDF back cannot tell them apart`]
     }
   }

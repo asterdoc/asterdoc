@@ -1,6 +1,6 @@
 import { evaluateFormDefs } from "@asterdoc/core";
 import { mergeFormats, type ModifierTarget } from "@asterdoc/render";
-import type { Attachment, Form, FormAnnex, FormField, Formatter, LayerFormat, Party } from "@asterdoc/types";
+import type { Attachment, Form, FormAnnex, FormField, Formatter, ValueFormat, Party } from "@asterdoc/types";
 import {
   createContext,
   useContext,
@@ -292,9 +292,9 @@ function sameField(a: FieldBinding, b: FieldBinding): boolean {
 function admitFormat(
   snapshot: ArtifactSnapshot,
   path: string,
-  format: LayerFormat | undefined,
+  format: ValueFormat | undefined,
   targets: readonly ModifierTarget[]
-): LayerFormat | undefined {
+): ValueFormat | undefined {
   if (format === undefined) return undefined;
   const problems = elementFormatProblems(format, targets);
   if (problems.length === 0) return format;
@@ -304,7 +304,7 @@ function admitFormat(
 }
 
 /** The format a value prints with: the document's presentation, then each element level in order. */
-function effectiveFormat(snapshot: ArtifactSnapshot, ...levels: readonly (LayerFormat | undefined)[]): LayerFormat | undefined {
+function effectiveFormat(snapshot: ArtifactSnapshot, ...levels: readonly (ValueFormat | undefined)[]): ValueFormat | undefined {
   return levels.some((level) => level !== undefined)
     ? mergeFormats(snapshot.formatting.presentation, ...levels)
     : snapshot.formatting.presentation;
@@ -325,7 +325,7 @@ function resolveOrReport(snapshot: ArtifactSnapshot, path: string): ResolvedFiel
   }
 }
 
-function bindField(snapshot: ArtifactSnapshot, path: string, field: FormField, format: LayerFormat | undefined): FieldBinding {
+function bindField(snapshot: ArtifactSnapshot, path: string, field: FormField, format: ValueFormat | undefined): FieldBinding {
   const value = readValue(snapshot.data.fields, path);
   const text = formatOrReport(snapshot, path, () => snapshot.formatting.format(field, value, path, format));
   return { field, value, text, blank: text === snapshot.formatting.blank };
@@ -335,7 +335,7 @@ function bindField(snapshot: ArtifactSnapshot, path: string, field: FormField, f
  * Reads and formats one declared field path. `format` is the element's own,
  * merged over the document's presentation; it must apply to the field's type.
  */
-export function useField(path: string, format?: LayerFormat): FieldBinding {
+export function useField(path: string, format?: ValueFormat): FieldBinding {
   const element = useKeyed(format);
   return useSelection(keyed(`field:${path}`, element), (snapshot) => {
     const { field, declared } = resolveOrReport(snapshot, path);
@@ -357,7 +357,7 @@ interface FieldGroupScope {
 function selectFields(
   snapshot: ArtifactSnapshot,
   paths: readonly string[],
-  format: LayerFormat | undefined,
+  format: ValueFormat | undefined,
   scope?: FieldGroupScope
 ): readonly FieldBinding[] {
   const resolved = paths.map((path) => resolveOrReport(snapshot, path));
@@ -376,12 +376,12 @@ function selectFields(
  * (a party's organization, address, and contact lines). `format` applies to
  * all of them, and each of its keys must apply to at least one.
  */
-export function useFields(paths: readonly string[], format?: LayerFormat): readonly FieldBinding[] {
+export function useFields(paths: readonly string[], format?: ValueFormat): readonly FieldBinding[] {
   return useFieldGroup(paths, format);
 }
 
 /** `useFields` for an element that prints more than the fields, whose `format` is checked against all it prints. */
-export function useFieldGroup(paths: readonly string[], format?: LayerFormat, scope?: FieldGroupScope): readonly FieldBinding[] {
+export function useFieldGroup(paths: readonly string[], format?: ValueFormat, scope?: FieldGroupScope): readonly FieldBinding[] {
   const element = useKeyed(format);
   const scopeKey = scope === undefined ? "" : `${scope.path}\u0000${scope.targets.map((target) => target.kind).join(",")}`;
   return useSelection(
@@ -429,7 +429,7 @@ function isAttachment(value: unknown): value is Attachment {
  * prints an attachment's name prints what every other output prints.
  * `format` is the element's own, merged over the document's presentation.
  */
-export function useAnnex(path: string, format?: LayerFormat): AnnexBinding {
+export function useAnnex(path: string, format?: ValueFormat): AnnexBinding {
   const element = useKeyed(format);
   return useSelection(keyed(`annex:${path}`, element), (snapshot) => {
     let annex: FormAnnex;
@@ -474,7 +474,7 @@ function isPicture(attachment: Attachment | undefined): boolean {
  * its own has no reason to call a spreadsheet wrong, and a composition that
  * owns its own markup cannot lose a check result the package promises.
  */
-export function useAnnexPicture(path: string, format?: LayerFormat): AnnexPictureBinding {
+export function useAnnexPicture(path: string, format?: ValueFormat): AnnexPictureBinding {
   const binding = useAnnex(path, format);
   const collector = useUnresolvedPathCollector();
   const picture = isPicture(binding.attachment) ? binding.attachment : undefined;
@@ -493,7 +493,7 @@ export interface ListBinding {
    * One row's text, or one field's within it. `format` is merged over the
    * list's, and must apply to that value's type.
    */
-  text(index: number, path?: string, format?: LayerFormat): string;
+  text(index: number, path?: string, format?: ValueFormat): string;
   /** One row's text in one declared column, the `column`-th of `ListFormats.columns`, in that column's format. */
   cell(index: number, column: number): string;
 }
@@ -503,13 +503,13 @@ export interface ListColumn {
   /** The field within an item, such as `amount`. */
   path: string;
   /** Merged over the list's format; it must apply to the field's type. */
-  format?: LayerFormat;
+  format?: ValueFormat;
 }
 
 /** The element formats of a list: one for every value it prints, and one per column. */
 export interface ListFormats {
   /** Merged under every column's format; each key must apply to at least one of the item's fields. */
-  format?: LayerFormat;
+  format?: ValueFormat;
   /**
    * The columns the list prints, in order. A field may appear in several
    * columns, each with its own format. Each format is checked against the
@@ -568,7 +568,7 @@ export function useList(path: string, formats?: ListFormats): ListBinding {
       snapshot.collector.report(path);
     }
     const rows = Array.isArray(value) ? value : EMPTY_ROWS;
-    const print = (index: number, childPath: string | undefined, own: LayerFormat | undefined, rowField?: FormField) => {
+    const print = (index: number, childPath: string | undefined, own: ValueFormat | undefined, rowField?: FormField) => {
       const rowPath = childPath ? `${path}.${index}.${childPath}` : `${path}.${index}`;
       const effective = effectiveFormat(snapshot, listFormat, own);
       return formatOrReport(snapshot, rowPath, () => {
@@ -576,7 +576,7 @@ export function useList(path: string, formats?: ListFormats): ListBinding {
         return snapshot.formatting.format(resolved, readValue(snapshot.data.fields, rowPath), rowPath, effective);
       });
     };
-    const text = (index: number, childPath?: string, format?: LayerFormat) => {
+    const text = (index: number, childPath?: string, format?: ValueFormat) => {
       if (format === undefined) return print(index, childPath, undefined);
       const rowPath = childPath ? `${path}.${index}.${childPath}` : `${path}.${index}`;
       let rowField: FormField | undefined;
@@ -615,12 +615,12 @@ function sameTotals(a: readonly TotalBinding[], b: readonly TotalBinding[]): boo
 /** The element formats of a totals block: one for every row, and one per definition. */
 export interface TotalsFormats {
   /** Merged under every row's format; each key must apply to at least one row's type. */
-  format?: LayerFormat;
+  format?: ValueFormat;
   /**
    * One format per name, in the order of `names`, each checked against that
    * definition's declared type. A definition named twice takes each its own.
    */
-  rows?: readonly (LayerFormat | undefined)[];
+  rows?: readonly (ValueFormat | undefined)[];
 }
 
 /**
@@ -640,8 +640,8 @@ export function useTotals(names: readonly string[], formats?: TotalsFormats): re
 function selectTotal(
   snapshot: ArtifactSnapshot,
   name: string,
-  blockFormat: LayerFormat | undefined,
-  rowFormat: LayerFormat | undefined
+  blockFormat: ValueFormat | undefined,
+  rowFormat: ValueFormat | undefined
 ): TotalBinding {
   const issuePath = `defs.${name}`;
   const definition = snapshot.artifact.defs?.[name];

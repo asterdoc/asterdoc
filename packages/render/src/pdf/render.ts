@@ -1,9 +1,19 @@
 import { defaultFormatter } from '../default-formatter'
-import type { BinaryContent, Bindings, Form, FormField, Formatter, LayerFormat, ValuePart } from '@asterdoc/types'
-import { formatFieldData, formatValueAt, validateFieldBindings, unwrapFormattedValue } from '../text/field-formatter'
+import { MASK_MISMATCH, formatMasked, maskGroup } from '@asterdoc/format'
+import type { BinaryContent, Bindings, Form, FormField, Formatter, LayerFormat, ValueFormat, ValuePart } from '@asterdoc/types'
+import {
+  ArtifactFieldFormatError,
+  FormattedFieldValue,
+  formatFieldData,
+  formatValueAt,
+  validateFieldBindings,
+  unwrapFormattedValue,
+} from '../text/field-formatter'
 import { getPath, pathSegments } from '../path'
 import {
   assertBindingFormats,
+  bindingDataPath,
+  containsMask,
   fieldDefinition,
   parseBindings,
   PdfBindingKeyError,
@@ -52,6 +62,37 @@ function assign(field: AcroField | undefined, value: unknown, model: PdfModel, f
 
 function declaresFormat(binding: Bindings[string]): boolean {
   return typeof binding === 'object' && binding !== null && (binding.format !== undefined || binding.part !== undefined)
+}
+
+function readsMaskedField(
+  form: Form,
+  parsed: readonly ParsedLayerBinding[],
+  bindings: Bindings | undefined,
+  overlays: readonly PdfOverlay[],
+): boolean {
+  const paths = bindings
+    ? parsed.flatMap(({ parts }) => parts.map((part) => part.path))
+    : Object.entries(form.fields ?? {}).filter(([, field]) => field.type !== 'fieldset').map(([name]) => name)
+  paths.push(...overlays.flatMap((overlay) => 'field' in overlay && overlay.field ? [bindingDataPath(overlay.field)] : []))
+  return paths.some((path) => containsMask(fieldDefinition(form, path)))
+}
+
+/** The text a `:N` split binding prints: the Nth group of a masked value, or else the Nth hyphen-separated part. */
+function splitPart(field: FormField | undefined, value: unknown, index: number, path: string): string | undefined {
+  if (field?.type !== 'text' || field.mask === undefined) return String(value).split('-')[index]
+  const fits = formatMasked(field.mask, String(value))
+  if (!fits.success) throw new ArtifactFieldFormatError(path, 'text', 'invalid', [{ code: MASK_MISMATCH, message: fits.message, path, kind: 'text' }])
+  const group = maskGroup(field.mask, String(value), index)
+  return group.success ? group.value : undefined
+}
+
+const CASE_KEEPING_TYPES = new Set(['email', 'uri', 'uuid'])
+
+function bindingCased(value: unknown, format: ValueFormat | undefined, locale: string): unknown {
+  if (format?.case !== 'upper' || value === null || value === undefined) return value
+  const text = String(value)
+  if (text === '') return value
+  return new FormattedFieldValue(unwrapFormattedValue(value), text.toLocaleUpperCase(locale))
 }
 
 function sourcePaths(bindings: readonly ParsedLayerBinding[]): string[][] {
@@ -111,26 +152,37 @@ export async function renderPdf({
   layerFont,
   format,
 }: RenderPdfOptions): Promise<BinaryContent> {
-  const perValue = form !== undefined && (hasNewFormatOptions(format) || Object.values(bindings ?? {}).some(declaresFormat))
+  const parsed = parseBindings(bindings ?? {})
+  const perValue = form !== undefined && (
+    hasNewFormatOptions(format) ||
+    Object.values(bindings ?? {}).some(declaresFormat) ||
+    readsMaskedField(form, parsed, bindings, overlays)
+  )
   const preprocessed = form && !perValue
     ? formatFieldData(data, form, formatter, formatFieldOptions(format, { choices: 'value' }))
     : data
-  const parsed = parseBindings(bindings ?? {})
   if (form) {
     const sources = parsed.flatMap(({ parts }) => parts.map((part) => part.source))
     sources.push(...overlays.flatMap((overlay) => 'field' in overlay && overlay.field ? [overlay.field] : []))
     validateFieldBindings(form, Object.fromEntries(sources.map((source, index) => [String(index), source])))
   }
   assertBindingFormats(form, parsed)
-  const read = (source: string, bindingFormat?: LayerFormat, part?: ValuePart): unknown => {
+  const read = (source: string, bindingFormat?: ValueFormat, part?: ValuePart): unknown => {
     if (!form || !perValue) return getPath(preprocessed, renderDataPath(preprocessed, source))
     const effective = mergeFormats(format, bindingFormat)
     if (part !== undefined) {
       const declared = bindingDeclaration(form, source)!
       return printValuePart(formatterFor(formatter, effective), declared.kind, getPath(data, renderDataPath(data, source)), part, declared.path, { ...(effective?.phone && { phone: effective.phone }) })
     }
-    return formatValueAt(data, form, formatterFor(formatter, effective), source, formatFieldOptions(effective, { choices: 'value' }))
+    const options = formatFieldOptions(effective, { choices: 'value' })
+    if (bindingFormat?.case !== undefined) delete options.case
+    return formatValueAt(data, form, formatterFor(formatter, effective), source, options)
   }
+  const layerCasedPart = (part: string, definition: FormField | undefined): string =>
+    format?.case === 'upper' && !CASE_KEEPING_TYPES.has(definition?.type ?? '') ? part.toLocaleUpperCase(caseLocale(undefined)) : part
+  const caseLocale = (bindingFormat: ValueFormat | undefined) => formatterFor(formatter, mergeFormats(format, bindingFormat)).locale
+  const bindingCase = (value: unknown, bindingFormat: ValueFormat | undefined): unknown =>
+    bindingFormat?.case === undefined ? value : bindingCased(value, bindingFormat, caseLocale(bindingFormat))
   assertListBindingCapacity(form, data, parsed)
   const model = await PdfModel.load(template)
   const fonts = PdfFontSet.create(model, { font, layerFont })
@@ -163,7 +215,7 @@ export async function renderPdf({
           const field = byName.get(pdfName)
           if (parts.length > 1) {
             const combined = parts.map((part) => read(part.source, bindingFormat)).filter((value) => value !== null && value !== undefined && String(value) !== '').join(', ')
-            if (combined) assign(field, combined, model, fonts)
+            if (combined) assign(field, bindingCase(combined, bindingFormat), model, fonts)
             continue
           }
           const { path, qualifier } = parts[0]!
@@ -175,13 +227,14 @@ export async function renderPdf({
             else {
               const index = splitPartIndex(qualifier)
               if (index !== undefined && value !== null && value !== undefined) {
-                const part = String(value).split('-')[index]
-                if (part) assign(field, part, model, fonts)
+                const definition = fieldDefinition(form, path)
+                const part = splitPart(definition, value, index, renderDataPath(data, parts[0]!.source))
+                if (part) assign(field, layerCasedPart(part, definition), model, fonts)
               }
             }
             continue
           }
-          assign(field, read(parts[0]!.source, bindingFormat, valuePart), model, fonts)
+          assign(field, bindingCase(read(parts[0]!.source, bindingFormat, valuePart), bindingFormat), model, fonts)
         }
       } else if (form) {
         for (const [name, definition] of Object.entries(form.fields ?? {}) as [string, FormField][]) {

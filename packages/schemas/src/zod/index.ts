@@ -48,12 +48,13 @@ export {
 	findPatternProblem,
 } from './artifacts/form/pattern';
 export type { PatternProblem } from './artifacts/form/pattern';
+export { MASK_PATTERN, MaskSchema } from './artifacts/form/mask';
 
 // Shared
 export { ArtifactSchema } from './artifacts/shared/base';
 export { ArtifactEditionSchema, EDITION_DATE_PATTERN } from './artifacts/shared/edition';
 export { ContentRefSchema } from './artifacts/shared/content-ref';
-export { FormatSchema, LayerSchema, PdfBindingObjectSchema, PdfBindingsSchema, SignatureSlotSchema, SignatureSlotTypeSchema } from './artifacts/shared/layer';
+export { FormatSchema, LayerSchema, ValueFormatSchema, PdfBindingObjectSchema, PdfBindingsSchema, SignatureSlotSchema, SignatureSlotTypeSchema } from './artifacts/shared/layer';
 export {
 	caseInsensitiveAlternative,
 	DOCX_MIME_TYPE,

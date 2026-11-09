@@ -94,6 +94,24 @@ export {
 } from './places'
 
 export {
+	MASK_MISMATCH,
+	canonicalizeMasked,
+	describeMask,
+	fitsMaskToken,
+	formatMasked,
+	isValidMask,
+	maskGroup,
+	parseMask,
+	type MaskCanonicalizeOptions,
+	type MaskInputForm,
+	type MaskMode,
+	type MaskResult,
+	type MaskSlot,
+	type MaskToken,
+	type ParsedMask,
+} from './mask'
+
+export {
 	FORMAT_KINDS,
 	type AttachmentFormatOptions,
 	type BboxFormatOptions,
@@ -153,6 +171,7 @@ export {
 	type NumericValueByKind,
 	type PartyFormatOptions,
 	type PersonFormatOptions,
+	type PersonNameOrder,
 	type PhoneFormatOptions,
 	type PhoneNumberDetails,
 	type PhoneProvider,

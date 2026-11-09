@@ -11,6 +11,7 @@ import type {
 	FormatOptionsByKind,
 	FormatterMessages,
 	PartyFormatOptions,
+	PersonFormatOptions,
 	PhoneFormatOptions,
 	PhoneProvider,
 	PhoneStyle,
@@ -401,13 +402,25 @@ export function formatPhone(phone: NormalizedPhone, options: PhoneFormatOptions,
 	return `${number} ${label} ${phone.extension}`
 }
 
-export function formatPerson(person: PersonValue): string {
+function nameParts(value: Record<string, unknown>, keys: readonly string[]): string[] {
+	return keys.map((key) => value[key]).filter((part): part is string => typeof part === 'string' && part.length > 0)
+}
+
+function familyFirst(value: Record<string, unknown>): string | undefined {
+	if (nameParts(value, ['firstName', 'middleName', 'lastName']).length === 0) return undefined
+	const [last] = nameParts(value, ['lastName'])
+	const rest = nameParts(value, ['firstName', 'middleName', 'suffix']).join(' ')
+	return last === undefined ? rest : rest ? `${last}, ${rest}` : last
+}
+
+export function formatPerson(person: PersonValue, options: PersonFormatOptions = {}): string {
 	const value = person as Record<string, unknown>
+	if (options.order === 'family-first') {
+		const ordered = familyFirst(value)
+		if (ordered !== undefined) return ordered
+	}
 	if (typeof value.name === 'string' && value.name.length > 0) return value.name
-	return ['title', 'firstName', 'middleName', 'lastName', 'suffix']
-		.map((key) => value[key])
-		.filter((part): part is string => typeof part === 'string' && part.length > 0)
-		.join(' ')
+	return nameParts(value, ['title', 'firstName', 'middleName', 'lastName', 'suffix']).join(' ')
 }
 
 export function formatOrganization(organization: OrganizationValue, context: MessageContext): string {
@@ -450,15 +463,26 @@ export function validatePhoneOptions(options: PhoneFormatOptions): void {
 	}
 }
 
+export function validatePersonOptions(options: PersonFormatOptions): void {
+	if (options.order !== undefined && options.order !== 'given-first' && options.order !== 'family-first') {
+		throw new Error('Person order must be "given-first" or "family-first".')
+	}
+}
+
 export function validatePartyOptions(options: PartyFormatOptions): void {
 	if (options.partyType !== undefined && options.partyType !== 'person' && options.partyType !== 'organization') {
 		throw new Error('Party partyType must be "person" or "organization".')
 	}
+	if (options.person !== undefined) {
+		if (!isRecord(options.person)) throw new Error('Party person options must be an object.')
+		validatePersonOptions(options.person)
+	}
 }
 
-/** Rejects contact options a formatter cannot act on. Person and organization take none. */
+/** Rejects contact options a formatter cannot act on. Organization takes none. */
 export function validateContactOptions<K extends ContactFormatKind>(kind: K, options: FormatOptionsByKind[K]): void {
 	if (kind === 'address') validateAddressOptions(options as AddressFormatOptions)
 	if (kind === 'phone') validatePhoneOptions(options as PhoneFormatOptions)
+	if (kind === 'person') validatePersonOptions(options as PersonFormatOptions)
 	if (kind === 'party') validatePartyOptions(options as PartyFormatOptions)
 }

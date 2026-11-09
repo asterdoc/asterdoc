@@ -1,6 +1,6 @@
 import { formatFieldOptions, formatterFor, mergeFormats } from "@asterdoc/render";
 import { formatParties } from "@asterdoc/render/text/field-formatter";
-import type { LayerFormat } from "@asterdoc/types";
+import type { ValueFormat } from "@asterdoc/types";
 
 import { useUnresolvedPathCollector } from "../components/check-context";
 import { elementFormatProblems } from "../lib/format";
@@ -84,7 +84,7 @@ export function usePartyContact(
   role: string,
   index = 0,
   paths: PartyContactPaths = EMPTY_PATHS,
-  format?: LayerFormat
+  format?: ValueFormat
 ): PartyContactBinding {
   const artifact = useArtifact();
   const parties = useParty(role);

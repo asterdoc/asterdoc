@@ -119,6 +119,14 @@ export interface TextField extends BaseField {
   maxLength?: number;
   /** Regular expression pattern for validation. */
   pattern?: string;
+  /**
+   * Input mask: `#` a digit, `@` a letter, `*` a digit or letter; `\` makes
+   * the next character a literal; every other character is a literal, such as
+   * `###-##-####`. The stored value holds only the token characters; input is
+   * accepted with or without the literals. `pattern` and `maxLength` apply to
+   * the stored value.
+   */
+  mask?: string;
   /** Default value for the field. */
   default?: string;
 }

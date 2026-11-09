@@ -161,7 +161,7 @@ describe("the emitted files", () => {
     // drawing, and all of them reach an installed file through the package
     // rather than through a copy of theirs.
     expect(byName.get("field")?.files[0]?.content).toContain(
-      `import {\n  flowGapClasses,\n  imageSource,\n  MissingImageSizeError,\n  scaleTextClasses,\n  useAnnexPicture,\n  useDocumentTokens,\n  useField,\n  usePage,\n  type LayerFormat,\n} from "${SUBSTRATE_PACKAGE}";`
+      `import {\n  flowGapClasses,\n  imageSource,\n  MissingImageSizeError,\n  scaleTextClasses,\n  useAnnexPicture,\n  useDocumentTokens,\n  useField,\n  usePage,\n  type ValueFormat,\n} from "${SUBSTRATE_PACKAGE}";`
     );
     // `Image` resolves its one source through the package too, so the sniffing
     // and the failure it names are the same on both sides of the seam.

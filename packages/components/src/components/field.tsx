@@ -46,7 +46,7 @@ import {
   useDocumentTokens,
   useField,
   usePage,
-  type LayerFormat,
+  type ValueFormat,
 } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
@@ -121,7 +121,7 @@ export interface FieldProps {
    * property, such as `{ date: { pattern: "MM/DD/YYYY" } }`. Each key must
    * apply to the value's type.
    */
-  format?: LayerFormat;
+  format?: ValueFormat;
   /** Classes for the field's wrapping element: the keep itself, or the element holding the paragraphs. */
   className?: string;
 }

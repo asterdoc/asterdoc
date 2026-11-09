@@ -105,6 +105,14 @@ export interface LayerMoneyFormat {
    * that pre-prints the symbol beside each money box.
    */
   currencyDisplay?: "none";
+  /**
+   * Prints exactly this many fraction digits, rounding half away from zero:
+   * with `0`, 1.999 prints 2 and 1234.5 prints 1,235. It replaces any
+   * fraction or significant digits the level below sets.
+   */
+  fractionDigits?: 0 | 2;
+  /** Whether amounts print with grouping separators, such as the comma in 1,235. */
+  useGrouping?: boolean;
 }
 
 /** A numeric date order a template asks for. */
@@ -168,6 +176,40 @@ export interface LayerRegionFormat {
 }
 
 /**
+ * Letter case applied to a printed value, last, after every other option and
+ * after a join. `none` turns off an `upper` set at a lower level.
+ */
+export type LayerCase = "upper" | "none";
+
+/** How a layer or binding presents person names. */
+export interface LayerPersonFormat {
+  /**
+   * `family-first` prints the structured parts as "Last, First Middle
+   * Suffix", without the title. A person with only `name` prints `name`.
+   */
+  order?: "given-first" | "family-first";
+}
+
+/** How a layer presents text values. */
+export interface LayerTextFormat {
+  /**
+   * `true` (the default) prints each text value with its field's mask;
+   * `false` prints the canonical value. A mask string is set per value, in a
+   * {@link ValueTextFormat}.
+   */
+  mask?: boolean;
+}
+
+/** How one value presents its text, on a PDF binding or a template placeholder. */
+export interface ValueTextFormat {
+  /**
+   * `true` prints with the field's mask, `false` prints the canonical value,
+   * and a mask string prints with that mask. Default: the field's mask.
+   */
+  mask?: boolean | string;
+}
+
+/**
  * How values print. On a layer it applies over the formatter the caller
  * renders with; on a PDF binding, over the layer's format. Levels merge per
  * kind and per property: a binding's `money` keeps the layer's other money
@@ -190,6 +232,26 @@ export interface LayerFormat {
   country?: LayerCountryFormat;
   /** How subdivisions are presented. */
   region?: LayerRegionFormat;
+  /**
+   * `upper` prints values in upper case with the locale's rules. On a layer it
+   * skips email, uri and uuid fields; on a binding it applies to the whole
+   * text box. Checkbox, radio and dropdown export values never change.
+   */
+  case?: LayerCase;
+  /** How person names are presented. */
+  person?: LayerPersonFormat;
+  /** How text values are presented. */
+  text?: LayerTextFormat;
+}
+
+/**
+ * How one value prints, on a PDF binding or a template placeholder, merged
+ * over its layer's format. It takes every layer option, and its `text.mask`
+ * may also name a mask of its own.
+ */
+export interface ValueFormat extends Omit<LayerFormat, "text"> {
+  /** How the text value is presented. */
+  text?: ValueTextFormat;
 }
 
 /**
@@ -261,7 +323,7 @@ export interface BindingObject {
    * applies it to each value before the join. An option test such as
    * `status:married` takes none.
    */
-  format?: LayerFormat;
+  format?: ValueFormat;
   /**
    * The piece of the value the field prints, as plain digits: a date's
    * `year`, `month` or `day`; a phone's `countryCode`, `nationalNumber` or

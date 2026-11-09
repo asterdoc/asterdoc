@@ -188,7 +188,7 @@ export {
   type FormatOptions,
   type ValueFormatter,
 } from "./lib/format";
-export type { LayerFormat } from "@asterdoc/types";
+export type { LayerFormat, ValueFormat } from "@asterdoc/types";
 export {
   isTextDirection,
   scriptOf,

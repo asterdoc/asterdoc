@@ -1,3 +1,4 @@
+import { describeMask, isValidMask } from '@asterdoc/format'
 import type { AsterdocToolsConfig } from '../config'
 import { InspectArtifactInputSchema, type InspectArtifactInput, type InspectArtifactOutput } from '../contracts'
 import { artifactKind, isRecord } from '../artifact'
@@ -35,13 +36,16 @@ function inputHint(definition: Record<string, unknown>): string | undefined {
 	if (definition.type === 'country') return COUNTRY_INPUT
 	if (definition.type === 'region') return REGION_INPUT
 	if (definition.type === 'address' && definition.codes === true) return ADDRESS_CODES_INPUT
+	if (definition.type === 'text' && typeof definition.mask === 'string' && isValidMask(definition.mask)) {
+		return `Accepts the value with or without its separators (${describeMask(definition.mask)}); it is stored without them`
+	}
 	return undefined
 }
 
 function fieldSummary(definition: unknown, max: number, depth = 0): unknown {
 	if (!isRecord(definition)) return definition
 	const summary: Record<string, unknown> = {}
-	for (const key of ['type', 'label', 'description', 'required', 'default', 'min', 'max', 'minLength', 'maxLength', 'enum', 'format', 'items', 'country', 'codes']) {
+	for (const key of ['type', 'label', 'description', 'required', 'default', 'min', 'max', 'minLength', 'maxLength', 'mask', 'enum', 'format', 'items', 'country', 'codes']) {
 		if (definition[key] !== undefined) summary[key] = boundedValue(definition[key], max, depth)
 	}
 	const hint = inputHint(definition)

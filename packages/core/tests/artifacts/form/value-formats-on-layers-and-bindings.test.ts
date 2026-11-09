@@ -162,13 +162,13 @@ describe('an unknown key in a current artifact', () => {
 	test('says the key may come from a newer release than this core', () => {
 		expect(NEWER_RELEASE_HINT).toBe(`This key may come from a newer Asterdoc release than @asterdoc/core ${CORE_VERSION}. Update the SDK.`)
 		expect(CORE_VERSION).toMatch(/^\d+\.\d+\.\d+/)
-		expect(() => load(artifact({ format: { money: { fractionDigits: 0 } } }))).toThrow(NEWER_RELEASE_HINT)
+		expect(() => load(artifact({ format: { money: { futureOption: 0 } } }))).toThrow(NEWER_RELEASE_HINT)
 	})
 
 	test('carries no hint for another fault, or for an artifact without $schema', () => {
 		expect(() => load(artifact({ format: { date: { pattern: 'D/M/YY' } } }))).toThrow(/Invalid/)
 		expect(() => load(artifact({ format: { date: { pattern: 'D/M/YY' } } }))).not.toThrow(NEWER_RELEASE_HINT)
-		const unversioned = JSON.parse(artifact({ format: { money: { fractionDigits: 0 } } })) as Record<string, unknown>
+		const unversioned = JSON.parse(artifact({ format: { money: { futureOption: 0 } } })) as Record<string, unknown>
 		delete unversioned.$schema
 		expect(() => a.form(unversioned as never)).toThrow(/Unrecognized key/)
 		expect(() => a.form(unversioned as never)).not.toThrow(NEWER_RELEASE_HINT)

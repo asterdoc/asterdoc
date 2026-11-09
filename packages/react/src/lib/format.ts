@@ -1,7 +1,7 @@
 import { defaultFormatter } from "@asterdoc/format";
 import { formatFieldOptions, formatProblem, formatterFor, type ModifierTarget } from "@asterdoc/render";
-import { FormatSchema } from "@asterdoc/schemas";
-import type { FormField, Formatter, FormatterProgressivePolicy, LayerFormat } from "@asterdoc/types";
+import { ValueFormatSchema } from "@asterdoc/schemas";
+import type { FormField, Formatter, FormatterProgressivePolicy, LayerFormat, ValueFormat } from "@asterdoc/types";
 import { formatFieldValue, formatDefinitionValue } from "@asterdoc/render/text/field-formatter";
 import { CompositeFieldPathError } from "./fields";
 export { ArtifactFieldFormatError } from "@asterdoc/render/text/field-formatter";
@@ -26,7 +26,7 @@ export interface FormatOptions {
  * Formats one field value. `format` is the effective format, merged from every
  * level; it defaults to the document's presentation.
  */
-export type ValueFormatter = (field: FormField | undefined, value: unknown, location?: string, format?: LayerFormat) => string;
+export type ValueFormatter = (field: FormField | undefined, value: unknown, location?: string, format?: ValueFormat) => string;
 
 export interface DocumentFormatter {
   format: ValueFormatter;
@@ -49,7 +49,7 @@ export function formatByType(
   blank: string = BLANK,
   location?: string,
   progressive?: FormatterProgressivePolicy,
-  format?: LayerFormat,
+  format?: ValueFormat,
 ): string {
   const formatted = formatDefinitionValue(
     formatterFor(formatter, format),
@@ -103,7 +103,7 @@ export class ElementFormatError extends Error {
  * checked.
  */
 export function elementFormatProblems(format: unknown, targets: readonly ModifierTarget[]): string[] {
-  const parsed = FormatSchema.safeParse(format);
+  const parsed = ValueFormatSchema.safeParse(format);
   if (!parsed.success) {
     return parsed.error.issues.map((issue) =>
       issue.path.length > 0 ? `${issue.path.map(String).join(".")}: ${issue.message}` : issue.message

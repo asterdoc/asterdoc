@@ -481,7 +481,7 @@ When the template pre-prints the currency symbol beside each money box, as IRS 1
 
 Every render of that layer then prints `12,000.00` instead of `$12,000.00`, with no formatter to configure. The layer's format applies over the formatter the render uses, so its locale and digits still apply; only the symbol goes. The amount keeps its currency's fraction digits. Other layers of the artifact, such as its Markdown, keep the symbol, and a layer that reuses these bindings through `bindingsFrom` declares its own `format`.
 
-`currencyDisplay: 'none'` is the only money value. Declare the money field's `currency` too: [extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) reads an amount printed without a symbol in that currency. Text and DOCX layers take the same `format`; see [Format](/schemas/artifacts/shared/layer#format).
+`money` also takes `fractionDigits` (`0` or `2`) and `useGrouping`; see [Format](/schemas/artifacts/shared/layer#format). Declare the money field's `currency` too: [extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) reads an amount printed without a symbol in that currency. Text and DOCX layers take the same `format`; see [Format](/schemas/artifacts/shared/layer#format).
 
 When the template asks for dates in one numeric order, such as mm/dd/yyyy on U.S. government forms, the layer declares the pattern:
 
@@ -509,7 +509,7 @@ One binding can print differently from its layer. A binding value can be an obje
 
 For two dates of June 5, 2021, `signedOn` prints `06/05/2021` and `filedOn` prints `2021-06-05`. A binding on an option test, such as `fields.status:married`, or on a split part, such as `fields.ssn:2`, takes no `format`.
 
-A layer that sets only `money.currencyDisplay` and `date.pattern`, with no binding formats, formats all data once before filling, so an invalid value anywhere fails the render. Once the layer sets a `locale` or a binding sets a `format`, each value is formatted when a binding, an overlay, or a field-id fill reads it, and only a value that is read can fail the render.
+A layer that sets only `money.currencyDisplay` and `date.pattern`, with no binding formats, formats all data once before filling, so an invalid value anywhere fails the render. Once the layer sets any other option, a binding sets a `format`, or the layer reads a field that has a `mask`, each value is formatted when a binding, an overlay, or a field-id fill reads it, and only a value that is read can fail the render.
 
 An address in a country with no address layout prints in the generic layout (`line1, line2, locality, region, postalCode, country`) on every layer, in place of failing the render. A layout the formatter supplies for that country through `countryLayouts` comes first. An invalid address is still refused.
 

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ChecksumSchema } from '../../primitives/checksum';
+import { MaskSchema } from '../form/mask';
 
 /**
  * Field type for a signature slot (mirrors SigningFieldType).
@@ -196,6 +197,12 @@ const LayerMoneyFormatSchema = z.object({
 	currencyDisplay: z.literal('none')
 		.describe('`none` prints the amount without a currency symbol or code, for a template that pre-prints the symbol beside each money box')
 		.optional(),
+	fractionDigits: z.literal([0, 2])
+		.describe('Prints exactly this many fraction digits, rounding half away from zero (with 0, 1.999 prints 2 and 1234.5 prints 1,235). It replaces any fraction or significant digits set below')
+		.optional(),
+	useGrouping: z.boolean()
+		.describe('Whether amounts print with grouping separators, such as the comma in 1,235')
+		.optional(),
 }).strict().meta({
 	title: 'LayerMoneyFormat',
 	description: 'How a layer or binding presents money values',
@@ -268,6 +275,41 @@ const LayerRegionFormatSchema = z.object({
 	description: 'How a layer or binding presents subdivisions (states, provinces)',
 });
 
+/** How a layer or binding prints person names. */
+const LayerPersonFormatSchema = z.object({
+	order: z.enum(['given-first', 'family-first'])
+		.describe('`family-first` prints the structured name parts as "Last, First Middle Suffix", without the title; a person with only a name prints the name')
+		.optional(),
+}).strict().meta({
+	title: 'LayerPersonFormat',
+	description: 'How a layer or binding presents person names',
+});
+
+const MaskChoiceSchema = z.boolean().describe('`true` prints with the field\'s mask; `false` prints the stored value without literals');
+
+/** How a layer prints text values: with each field's mask or without masks. */
+const LayerTextFormatSchema = z.object({
+	mask: z.boolean({ error: 'A layer\'s text.mask takes only true or false; set a mask string on a binding or a template placeholder' })
+		.describe('Whether text values print through their field\'s mask. Default: true. A mask string is set per binding or placeholder, not on a layer')
+		.optional(),
+}).strict().meta({
+	title: 'LayerTextFormat',
+	description: 'How a layer presents text values',
+});
+
+/** How one value prints its text: with its field's mask, without it, or with another mask. */
+const ValueTextFormatSchema = z.object({
+	mask: z.union([
+		MaskChoiceSchema,
+		MaskSchema.describe('Prints with this mask instead of the field\'s'),
+	])
+		.describe('How the text value prints through a mask. Default: the field\'s mask when it has one')
+		.optional(),
+}).strict().meta({
+	title: 'ValueTextFormat',
+	description: 'How a binding or placeholder presents a text value',
+});
+
 /** A BCP 47 language tag: a language subtag, then hyphen-separated subtags. */
 const LOCALE_PATTERN = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/;
 
@@ -284,6 +326,9 @@ export const FormatSchema = z.object({
 		.regex(LOCALE_PATTERN)
 		.describe('BCP 47 locale for names and words, such as en-US. It replaces the locale of the level below')
 		.optional(),
+	case: z.enum(['upper', 'none'])
+		.describe('`upper` prints values in upper case with the locale\'s rules, after every other option and after a join; `none` turns off an upper set below. On a layer it skips email, uri and uuid fields; on a binding it applies to the whole text box. Checkbox, radio and dropdown export values never change')
+		.optional(),
 	money: LayerMoneyFormatSchema.optional(),
 	date: LayerDateFormatSchema.optional(),
 	phone: LayerPhoneFormatSchema.optional(),
@@ -291,6 +336,8 @@ export const FormatSchema = z.object({
 	boolean: LayerBooleanFormatSchema.optional(),
 	country: LayerCountryFormatSchema.optional(),
 	region: LayerRegionFormatSchema.optional(),
+	person: LayerPersonFormatSchema.optional(),
+	text: LayerTextFormatSchema.optional(),
 }).strict().meta({
 	title: 'LayerFormat',
 	description: 'How values print, applied over the caller\'s formatter on a layer and over the layer\'s format on a PDF binding',
@@ -304,6 +351,17 @@ const ValuePartSchema = z.enum([
 ]);
 
 /**
+ * How one value prints, on a PDF binding or a template placeholder: a layer
+ * format whose `text.mask` may also name a mask of its own.
+ */
+export const ValueFormatSchema = FormatSchema.extend({
+	text: ValueTextFormatSchema.optional(),
+}).strict().meta({
+	title: 'ValueFormat',
+	description: 'How one bound value prints, merged over its layer\'s format',
+});
+
+/**
  * One PDF binding written as an object: the binding text it would be as a
  * string, the format its value prints with, and the part of it it prints.
  */
@@ -312,7 +370,7 @@ export const PdfBindingObjectSchema = z.object({
 		.min(1)
 		.max(500)
 		.describe('Asterdoc path whose value fills the field, written as a string binding is (e.g., fields.dob, ssn:2, city, state)'),
-	format: FormatSchema
+	format: ValueFormatSchema
 		.describe('How this binding\'s value prints, merged over the layer\'s format. A joined path applies it to each value before the join. Not on an option test such as status:married')
 		.optional(),
 	part: ValuePartSchema

@@ -99,6 +99,12 @@ Text input field for string values.
     isOptional: true,
   },
   {
+    name: 'mask',
+    type: 'string',
+    description: 'Input mask, such as `###-##-####`: `#` a digit, `@` a letter, `*` either, `\\` makes the next character a literal, every other character is a literal. The stored value holds only the token characters; input is accepted with or without the literals, and `pattern` and `maxLength` apply to the stored value',
+    isOptional: true,
+  },
+  {
     name: 'default',
     type: 'string',
     description: 'Default value for the field',

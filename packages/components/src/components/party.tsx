@@ -12,7 +12,7 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { scaleTextClasses, useDocumentTokens, usePartyContact, type LayerFormat, type PartyContactPaths } from "@asterdoc/react";
+import { scaleTextClasses, useDocumentTokens, usePartyContact, type ValueFormat, type PartyContactPaths } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface PartyProps {
@@ -46,7 +46,7 @@ export interface PartyProps {
    * How the name and every bound line print, merged over the document's
    * presentation per property. Each key must apply to one of them.
    */
-  format?: LayerFormat;
+  format?: ValueFormat;
   /** Classes for the party's wrapping element. */
   className?: string;
 }

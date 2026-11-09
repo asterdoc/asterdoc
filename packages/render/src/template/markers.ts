@@ -8,7 +8,7 @@
  */
 
 import { parse, type Expr } from '@asterdoc/expr'
-import type { LayerFormat } from '@asterdoc/types'
+import type { ValueFormat } from '@asterdoc/types'
 import { removedSyntaxHint, TemplateError, type TemplateDiagnostic, type TemplatePosition } from './errors'
 import { modifierFormat, modifierListProblem, type FormatModifier, type ModifierLiteral } from './format-modifiers'
 
@@ -34,7 +34,7 @@ export interface FormatModifiers {
   text: string
   entries: FormatModifier[]
   /** The format the modifiers set, merged over the layer's format. */
-  format: LayerFormat
+  format: ValueFormat
   /** Why the modifiers do not parse, or name an unknown key or a value the key does not take. */
   problem?: TemplateDiagnostic
 }

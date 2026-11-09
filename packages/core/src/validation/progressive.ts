@@ -1,7 +1,8 @@
 import type { Attachment, Checklist, ChecklistItem, Form, FormField, FormParty, RuntimeParty } from '@asterdoc/types'
 import type { ValidationError } from '@/types'
 import { compile } from '@/inference'
-import { canonicalizationError, canonicalizeAddressMember, canonicalizeFieldValue, canonicalizeFieldValues, type CanonicalizeResult } from './canonicalize'
+import { canonicalizationError, canonicalizeAddressMember, canonicalizeFieldValue, canonicalizeFieldValues, progressiveForm, type CanonicalizeResult } from './canonicalize'
+import type { MaskInputForm } from '@asterdoc/format'
 import { jsonSchemaToZod, mapZodIssueToValidationError } from './data'
 import { validatePartyForRole, validatePartyId } from './party'
 
@@ -21,6 +22,11 @@ export interface FieldInputValidationInput {
 	 * is written into, whose country a region is read in.
 	 */
 	owner?: unknown
+	/**
+	 * How a partial masked value is written: `canonical` (the default) or
+	 * `formatted`, as an editor that shows the mask's literals writes it.
+	 */
+	input?: MaskInputForm
 }
 
 /** Options for validating a fields patch. */
@@ -130,7 +136,7 @@ function getFieldAtPath(fields: Record<string, FormField> | undefined, path: str
 
 function canonicalTarget(target: FieldTarget | undefined, input: FieldInputValidationInput, path: string): CanonicalizeResult {
 	if (!target) return { success: true, value: input.value }
-	if (target.member === undefined) return canonicalizeFieldValue(target.field, input.value, { locale: input.locale, mode: 'progressive', path })
+	if (target.member === undefined) return canonicalizeFieldValue(target.field, input.value, { locale: input.locale, mode: 'progressive', input: input.input, path })
 	if (target.field.codes !== true) return { success: true, value: input.value }
 	return canonicalizeAddressMember(target.member, input.value, { locale: input.locale, mode: 'progressive', path, owner: input.owner })
 }
@@ -364,7 +370,7 @@ export function validateFieldInput(
 		return failure([createValidationError('fields', 'fieldPath is required.')])
 	}
 
-	const fieldsSchema = getFormFieldsSchema(form)
+	const fieldsSchema = getFormFieldsSchema(progressiveForm(form))
 	if (!fieldsSchema) {
 		return failure([createValidationError('fields', 'Form has no fields schema to validate against.')])
 	}
@@ -402,7 +408,7 @@ export function validateFieldsPatch(
 	fields: unknown,
 	options: FieldsPatchValidationOptions = {},
 ): ProgressiveValidationResult<Record<string, unknown>> {
-	const fieldsSchema = getFormFieldsSchema(form)
+	const fieldsSchema = getFormFieldsSchema(progressiveForm(form))
 	if (!fieldsSchema) {
 		return failure([createValidationError('fields', 'Form has no fields schema to validate against.')])
 	}

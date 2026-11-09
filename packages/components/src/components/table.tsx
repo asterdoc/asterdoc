@@ -1,7 +1,7 @@
 /** @jsxRuntime classic */
 import React from "react";
 import type { ReactNode } from "react";
-import { RENDER_ATTRIBUTES, scaleTextClasses, useDocumentTokens, useList, usePage, useTotals, type LayerFormat } from "@asterdoc/react";
+import { RENDER_ATTRIBUTES, scaleTextClasses, useDocumentTokens, useList, usePage, useTotals, type ValueFormat } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface TableColumn {
@@ -15,7 +15,7 @@ export interface TableColumn {
    * How this column's cells print, merged over the table's `format`. Each key
    * must apply to the item field's type, checked even when there are no rows.
    */
-  format?: LayerFormat;
+  format?: ValueFormat;
 }
 
 /** One footer row, evaluated from one of the artifact's definitions. */
@@ -27,7 +27,7 @@ export interface TableFooterRow {
   /** Draws the row larger, above a rule, the way a grand total reads. */
   emphasis?: boolean;
   /** How this row's amount prints, merged over the document's presentation. Each key must apply to the def's type. */
-  format?: LayerFormat;
+  format?: ValueFormat;
 }
 
 /**
@@ -60,7 +60,7 @@ export interface TableProps {
    * each column's `format`. Each key must apply to at least one item field.
    * Footer rows take their own `format`.
    */
-  format?: LayerFormat;
+  format?: ValueFormat;
 }
 
 function columnKeys(columns: readonly TableColumn[]): string[] {

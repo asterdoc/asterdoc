@@ -1,4 +1,4 @@
-import type { BindingValue, Bindings, Form, FormField, LayerFormat, ValuePart } from '@asterdoc/types'
+import type { BindingValue, Bindings, Form, FormField, ValueFormat, ValuePart } from '@asterdoc/types'
 import { pathSegments } from './path'
 import { ALL_VALUE_PARTS, bindingDeclaration, isValuePart, partsOf } from './parts/rules'
 
@@ -66,7 +66,7 @@ export interface ParsedPdfBinding {
   /** The paths the binding reads. */
   parts: PdfBindingPart[]
   /** The format a binding object declares, merged over its layer's format. */
-  format?: LayerFormat
+  format?: ValueFormat
   /** The part of the value a binding object prints, such as a date's `year`. */
   part?: ValuePart
 }
@@ -148,6 +148,15 @@ export function fieldDefinition(form: Form | undefined, path: string): FormField
     else return undefined
   }
   return field
+}
+
+/** Whether a field, or any field inside it, prints through a mask. */
+export function containsMask(field: FormField | undefined): boolean {
+  if (!field) return false
+  if (field.type === 'text') return field.mask !== undefined
+  if (field.type === 'list') return containsMask(field.item)
+  if (field.type === 'fieldset') return Object.values(field.fields).some(containsMask)
+  return false
 }
 
 /**

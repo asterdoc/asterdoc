@@ -11,7 +11,8 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { isPdfMimeType } from '@asterdoc/schemas'
 import type { BindingValue, Form } from '@asterdoc/types'
-import { bindingFormatProblem, bindingPartProblem, parseBinding, PdfBindingSyntaxError, type ParsedPdfBinding } from '@asterdoc/render'
+import { parseMask } from '@asterdoc/format'
+import { bindingFormatProblem, bindingPartProblem, fieldDefinition, parseBinding, PdfBindingSyntaxError, splitPartIndex, type ParsedPdfBinding } from '@asterdoc/render'
 import { ArtifactFieldFormatError, validateFieldBindings } from '@asterdoc/render/text'
 
 function bindingProblem(form: Form, bindingKey: string, value: BindingValue): string | undefined {
@@ -32,7 +33,18 @@ function bindingProblem(form: Form, bindingKey: string, value: BindingValue): st
     }
   }
   const problem = bindingFormatProblem(form, parsed) ?? bindingPartProblem(form, parsed)
-  return problem && `Binding ${JSON.stringify(parsed.path)} ${problem}`
+  return problem ? `Binding ${JSON.stringify(parsed.path)} ${problem}` : maskGroupProblem(form, parsed)
+}
+
+function maskGroupProblem(form: Form, parsed: ParsedPdfBinding): string | undefined {
+  for (const part of parsed.parts) {
+    const index = part.qualifier === undefined ? undefined : splitPartIndex(part.qualifier)
+    const field = index === undefined ? undefined : fieldDefinition(form, part.path)
+    if (index === undefined || field?.type !== 'text' || field.mask === undefined) continue
+    const groups = parseMask(field.mask).groups.length
+    if (index >= groups) return `"${part.source}:${part.qualifier}" names group ${index + 1}, but the mask ${field.mask} has ${groups} group${groups === 1 ? '' : 's'}`
+  }
+  return undefined
 }
 
 /**

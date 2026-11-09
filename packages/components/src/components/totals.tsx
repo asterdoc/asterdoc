@@ -1,6 +1,6 @@
 /** @jsxRuntime classic */
 import React from "react";
-import { scaleTextClasses, useDocumentTokens, useField, useTotals, type LayerFormat } from "@asterdoc/react";
+import { scaleTextClasses, useDocumentTokens, useField, useTotals, type ValueFormat } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface TotalRow {
@@ -13,7 +13,7 @@ export interface TotalRow {
   /** Renders the row as the emphasized grand total: a top rule and bold text. */
   emphasis?: boolean;
   /** How this amount prints, merged over the block's `format`. Each key must apply to the def's type. */
-  format?: LayerFormat;
+  format?: ValueFormat;
 }
 
 export interface TotalsProps {
@@ -28,7 +28,7 @@ export interface TotalsProps {
    * How every amount prints, merged over the document's presentation and
    * under each row's `format`. Each key must apply to at least one row.
    */
-  format?: LayerFormat;
+  format?: ValueFormat;
   /** Application-owned classes replacing the block's default column layout. */
   className?: string;
 }

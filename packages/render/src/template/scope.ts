@@ -142,6 +142,8 @@ function stringReturnKind(node: Expr, registry: Registry | undefined): 'date' | 
   return returns === 'date' || returns === 'datetime' ? returns : undefined
 }
 
+const CASE_KEEPING_KINDS = new Set(['email', 'uri', 'uuid'])
+
 const VALUE_KINDS = new Set(['number', 'date', 'datetime', 'money', 'boolean'])
 
 function formatDeclared(formatter: Formatter, declared: DeclaredValue, raw: unknown, options: FieldFormattingOptions, owner?: unknown): unknown {
@@ -154,7 +156,9 @@ function formatDeclared(formatter: Formatter, declared: DeclaredValue, raw: unkn
     case 'definition': return formatDefinitionValue(formatter, declared.kind, raw, declared.path, options)
     case 'party': return formatPartyValue(formatter, declared.party.partyType, raw, declared.path, options)
     case 'annex': return formatAttachmentValue(formatter, raw, declared.path, options)
-    case 'member': return VALUE_KINDS.has(declared.kind) ? formatDefinitionValue(formatter, declared.kind, raw, declared.path, options) : raw
+    case 'member':
+      if (VALUE_KINDS.has(declared.kind)) return formatDefinitionValue(formatter, declared.kind, raw, declared.path, options)
+      return typeof raw === 'string' && options.case === 'upper' ? raw.toLocaleUpperCase(formatter.locale) : raw
   }
 }
 
@@ -319,12 +323,24 @@ export class TemplateScope {
     }
     if (referenceSegments(node)) {
       const data = this.dataAt(node)
-      if (data !== undefined && !isPlainRecord(data) && !Array.isArray(data)) {
-        return data === null ? '' : String(data)
-      }
       if (data instanceof FormattedFieldValue) return String(data)
+      if (data !== undefined && !isPlainRecord(data) && !Array.isArray(data)) {
+        return data === null ? '' : this.layerCased(String(data), node)
+      }
     }
-    return this.formatValue(this.evaluate(node, source, position), node)
+    return this.layerCased(this.formatValue(this.evaluate(node, source, position), node), node)
+  }
+
+  /**
+   * Text the layer's `case: upper` reaches but formatting did not: a member of
+   * a structured value, or a computed value. A value declared email, uri or
+   * uuid keeps its case.
+   */
+  private layerCased(text: string, node: Expr): string {
+    if (this.environment.format?.case !== 'upper') return text
+    const context = pathContexts(node, this.frames, true)?.[0]
+    const declared = context && 'path' in context ? this.environment.values?.describe(context.path) : undefined
+    return declared && CASE_KEEPING_KINDS.has(declared.kind) ? text : text.toLocaleUpperCase(this.environment.formatter.locale)
   }
 
   private presentModified(node: Expr, source: string, position: TemplatePosition, modifiers: FormatModifiers): string {
@@ -345,18 +361,26 @@ export class TemplateScope {
     const effective = mergeFormats(this.environment.format, modifierFormat(applied.entries))
     const formatter = formatterFor(callerFormatter, effective)
     const options = formatFieldOptions(effective, progressive === undefined ? {} : { progressive })
-    const modified = { path: source, options }
+    const placeholderCase = applied.entries.some((entry) => entry.key === 'case')
+    if (placeholderCase) delete options.case
     const part = applied.entries.find((entry) => entry.key === PART_MODIFIER)?.value as ValuePart | undefined
-    if (part !== undefined) return this.presentPart(formatter, chosen, part, source, options)
+    const printed = part !== undefined
+      ? this.presentPart(formatter, chosen, part, source, options)
+      : this.printModified(chosenNode, chosen, source, position, formatter, options)
+    return placeholderCase && effective?.case === 'upper' ? printed.toLocaleUpperCase(formatter.locale) : printed
+  }
+
+  private printModified(chosenNode: Expr, chosen: ChosenValue, source: string, position: TemplatePosition, formatter: Formatter, options: FieldFormattingOptions): string {
+    const modified = { path: source, options }
     if (chosen.declared) {
-      const formatted = formatDeclared(formatter, chosen.declared, this.environment.resolveRaw(chosen.path!), options, chosen.target.owner?.value)
+      const formatted = formatDeclared(formatter, chosen.declared, this.environment.resolveRaw(chosen.path!), options, chosen.target?.owner?.value)
       if (formatted === null || formatted === undefined) return ''
       if (!isPlainRecord(formatted) && !Array.isArray(formatted)) return String(formatted)
       return this.formatValue(this.evaluate(chosenNode, source, position), chosenNode, formatter, modified)
     }
     const value = chosen.value!
-    if (value.kind !== 'null' && VALUE_KINDS.has(chosen.target.kind) && chosen.target.kind !== runtimeTarget(value, chosenNode, this.root.registry).kind) {
-      return String(formatDefinitionValue(formatter, chosen.target.kind, fromValue(value), source, options))
+    if (value.kind !== 'null' && VALUE_KINDS.has(chosen.target!.kind) && chosen.target!.kind !== runtimeTarget(value, chosenNode, this.root.registry).kind) {
+      return String(formatDefinitionValue(formatter, chosen.target!.kind, fromValue(value), source, options))
     }
     return this.formatValue(value, chosenNode, formatter, modified)
   }

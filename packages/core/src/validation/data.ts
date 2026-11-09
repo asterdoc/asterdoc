@@ -11,7 +11,7 @@ export type { ValidationError, ValidationSuccess, ValidationFailure, ValidationR
 
 // Import types for internal use
 import type { ValidationError, ValidationResult } from '@/types'
-import { canonicalizationError, canonicalizeFieldValues, type CanonicalizationMode } from './canonicalize'
+import { canonicalizationError, canonicalizeFieldValues, progressiveForm, type CanonicalizationMode } from './canonicalize'
 
 /**
  * Build a Zod schema from a compiled JSON Schema
@@ -344,7 +344,7 @@ export function validateFormData<F extends Form>(
 	options: { applyDefaults?: boolean; locale?: string; mode?: CanonicalizationMode } = {},
 ): ValidationResult<InferFormPayload<F>> {
 	// Compile the form to a JSON Schema
-	const jsonSchema = compile(form)
+	const jsonSchema = compile(options.mode === 'progressive' ? progressiveForm(form) : form)
 
 	// Deep clone data to avoid mutating the original
 	// Handle null/undefined gracefully by defaulting to empty object

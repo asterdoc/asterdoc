@@ -10,13 +10,17 @@ import type {
 	FormAnnex,
 	DefsSection,
 	LayerBooleanFormat,
+	LayerCase,
 	LayerCountryFormat,
 	LayerDateFormat,
 	LayerPhoneFormat,
 	LayerRegionFormat,
+	ValueTextFormat,
 	MoneyFormatOptions,
+	PersonFormatOptions,
 } from '@asterdoc/types'
 import {
+	MASK_MISMATCH,
 	MISSING_RATING_SCALE,
 	UNSUPPORTED_COUNTRY_LAYOUT,
 	UNSUPPORTED_LIST_JOIN,
@@ -29,6 +33,8 @@ import {
 	resolveRegion,
 	type PlaceOutcome,
 	type RegionsProvider,
+	canonicalizeMasked,
+	formatMasked,
 } from '@asterdoc/format'
 import { bindingDataPath, renderDataPath } from '../layer-bindings'
 import { getPath, pathSegments } from '../path'
@@ -63,6 +69,19 @@ export interface FieldFormattingOptions {
 	country?: LayerCountryFormat
 	/** How subdivisions print: an address's `region` member and `region` fields. */
 	region?: LayerRegionFormat
+	/**
+	 * `upper` prints every value in upper case with the formatter locale's
+	 * rules, after all other formatting. Email, uri and uuid values keep their
+	 * case. A layer that declares `format.case` passes it here.
+	 */
+	case?: LayerCase
+	/** How every person value prints. A layer that declares `format.person` passes it here. */
+	person?: PersonFormatOptions
+	/**
+	 * How text values print through a mask: the field's own mask by default,
+	 * the canonical value with `mask: false`, or another mask.
+	 */
+	text?: ValueTextFormat
 }
 
 type RecordValue = Record<string, unknown>
@@ -76,6 +95,7 @@ function inferredPartyType(value: RecordValue): 'person' | 'organization' {
 
 const rawValues = new WeakMap<FormattedFieldValue, unknown>()
 const renderedValues = new WeakMap<FormattedFieldValue, string>()
+const placeholders = new WeakSet<FormattedFieldValue>()
 
 /**
  * A template value that keeps its source value for logic/property access while
@@ -153,9 +173,30 @@ function progressiveText(options: FieldFormattingOptions | undefined, status: 'm
 		: options.progressive.incomplete ?? '…'
 }
 
+function placeholder(value: unknown, text: string): FormattedFieldValue {
+	const result = new FormattedFieldValue(value, text)
+	placeholders.add(result)
+	return result
+}
+
 function missingValue(value: unknown, path: string, fieldType: string, options?: FieldFormattingOptions): unknown {
 	const text = progressiveText(options, 'missing')
-	return text === undefined ? value : new FormattedFieldValue(value, text)
+	return text === undefined ? value : placeholder(value, text)
+}
+
+const CASE_KEEPING_TYPES = new Set(['email', 'uri', 'uuid'])
+
+/**
+ * A formatted value in the case `options.case` asks for. Progressive
+ * placeholders and email, uri and uuid values keep their case.
+ */
+function cased(formatter: Formatter, result: unknown, value: unknown, fieldType: string, options?: FieldFormattingOptions): unknown {
+	if (options?.case !== 'upper' || CASE_KEEPING_TYPES.has(fieldType)) return result
+	if (result instanceof FormattedFieldValue) {
+		if (placeholders.has(result)) return result
+		return new FormattedFieldValue(result.raw, String(result).toLocaleUpperCase(formatter.locale))
+	}
+	return typeof result === 'string' ? new FormattedFieldValue(value, result.toLocaleUpperCase(formatter.locale)) : result
 }
 
 function presentIssuePath(path: string, issuePath: string | undefined): string {
@@ -183,7 +224,7 @@ function presentResult(
 	if (result.status === 'missing') return missingValue(value, path, fieldType, options)
 	if (result.status === 'incomplete') {
 		const text = progressiveText(options, 'incomplete')
-		if (text !== undefined) return new FormattedFieldValue(value, text)
+		if (text !== undefined) return placeholder(value, text)
 	}
 	throw new ArtifactFieldFormatError(path, fieldType, result.status, presentIssues(result.issues, path, fieldType))
 }
@@ -383,6 +424,26 @@ function stringInput(value: unknown, path: string, fieldType: string): string {
 	throw formatIssue(path, fieldType, 'invalid_value', `Expected a string for ${fieldType}.`)
 }
 
+/** The mask a text value prints with: the field's, none with `mask: false`, or the one the format names. */
+export function effectiveMask(field: FormField, text: ValueTextFormat | undefined): string | undefined {
+	if (field.type !== 'text') return undefined
+	const choice = text?.mask
+	if (choice === false) return undefined
+	return typeof choice === 'string' ? choice : field.mask
+}
+
+function maskedText(field: FormField, value: unknown, path: string, options?: FieldFormattingOptions): unknown {
+	const text = stringInput(value, path, field.type)
+	const mask = effectiveMask(field, options?.text)
+	if (mask === undefined) return text
+	const printed = formatMasked(mask, text)
+	if (printed.success) return new FormattedFieldValue(value, printed.value)
+	if (options?.progressive && canonicalizeMasked(mask, text, { mode: 'progressive' }).success) {
+		return placeholder(value, progressiveText(options, 'incomplete')!)
+	}
+	throw formatIssue(path, field.type, MASK_MISMATCH, printed.message)
+}
+
 function numberInput(value: unknown, path: string, fieldType: string): number {
 	if (typeof value === 'number' && Number.isFinite(value)) return value
 	throw formatIssue(path, fieldType, 'invalid_value', `Expected a finite number for ${fieldType}.`)
@@ -430,7 +491,16 @@ function formatLeaf(
 	options?: FieldFormattingOptions,
 ): unknown {
 	if (isMissing(value)) return missingValue(value, path, field.type, options)
+	return cased(formatter, formatPresentLeaf(formatter, field, value, path, options), value, field.type, options)
+}
 
+function formatPresentLeaf(
+	formatter: Formatter,
+	field: FormField,
+	value: unknown,
+	path: string,
+	options?: FieldFormattingOptions,
+): unknown {
 	try {
 		switch (field.type) {
 			case 'money': return callFormatter(path, field.type, value, () => formatter.safeFormatMoney(recordInput(value, path, field.type), options?.money), options)
@@ -438,7 +508,7 @@ function formatLeaf(
 			case 'country': return country(formatter, value, path, options)
 			case 'region': return region(formatter, field, value, path, options)
 			case 'phone': return callFormatter(path, field.type, value, () => formatter.safeFormatPhone(typeof value === 'string' ? value : recordInput(value, path, field.type), options?.phone), options)
-			case 'person': return callFormatter(path, field.type, value, () => formatter.safeFormatPerson(recordInput(value, path, field.type)), options)
+			case 'person': return callFormatter(path, field.type, value, () => formatter.safeFormatPerson(recordInput(value, path, field.type), options?.person), options)
 			case 'organization': return callFormatter(path, field.type, value, () => formatter.safeFormatOrganization(recordInput(value, path, field.type)), options)
 			case 'coordinate': return callFormatter(path, field.type, value, () => formatter.safeFormatCoordinate(recordInput(value, path, field.type)), options)
 			case 'bbox': return callFormatter(path, field.type, value, () => formatter.safeFormatBbox(recordInput(value, path, field.type)), options)
@@ -471,7 +541,7 @@ function formatLeaf(
 					options,
 				},
 			)
-			case 'text':
+			case 'text': return maskedText(field, value, path, options)
 			case 'email':
 			case 'uuid':
 			case 'uri': return stringInput(value, path, field.type)
@@ -536,16 +606,30 @@ export function formatDefinitionValue(
 	options?: FieldFormattingOptions,
 ): unknown {
 	if (isMissing(value)) return missingValue(value, path, type, options)
+	return cased(formatter, formatPresentDefinition(formatter, type, value, path, options), value, type, options)
+}
+
+function partyOptions(partyType: 'person' | 'organization', options?: FieldFormattingOptions) {
+	return { partyType, ...(options?.person && { person: options.person }) }
+}
+
+function formatPresentDefinition(
+	formatter: Formatter,
+	type: string,
+	value: unknown,
+	path: string,
+	options?: FieldFormattingOptions,
+): unknown {
 	try {
 		switch (type) {
 			case 'money': return callFormatter(path, type, value, () => formatter.safeFormatMoney(recordInput(value, path, type), options?.money), options)
 			case 'address': return address(formatter, value, path, type, options)
 			case 'phone': return callFormatter(path, type, value, () => formatter.safeFormatPhone(typeof value === 'string' ? value : recordInput(value, path, type), options?.phone), options)
-			case 'person': return callFormatter(path, type, value, () => formatter.safeFormatPerson(recordInput(value, path, type)), options)
+			case 'person': return callFormatter(path, type, value, () => formatter.safeFormatPerson(recordInput(value, path, type), options?.person), options)
 			case 'organization': return callFormatter(path, type, value, () => formatter.safeFormatOrganization(recordInput(value, path, type)), options)
 			case 'party': {
 				const party = recordInput(value, path, type)
-				return callFormatter(path, type, value, () => formatter.safeFormatParty(party, { partyType: inferredPartyType(party) }), options)
+				return callFormatter(path, type, value, () => formatter.safeFormatParty(party, partyOptions(inferredPartyType(party), options)), options)
 			}
 			case 'coordinate': return callFormatter(path, type, value, () => formatter.safeFormatCoordinate(recordInput(value, path, type)), options)
 			case 'bbox': return callFormatter(path, type, value, () => formatter.safeFormatBbox(recordInput(value, path, type)), options)
@@ -611,13 +695,13 @@ export function formatPartyValue(
 	if (isMissing(value)) return missingValue(value, path, 'party', options)
 	const party = recordInput(value, path, 'party')
 	const resolvedPartyType = partyType === 'person' || partyType === 'organization' ? partyType : inferredPartyType(party)
-	return callFormatter(path, 'party', value, () => formatter.safeFormatParty(party, { partyType: resolvedPartyType }), options)
+	return cased(formatter, callFormatter(path, 'party', value, () => formatter.safeFormatParty(party, partyOptions(resolvedPartyType, options)), options), value, 'party', options)
 }
 
 /** One attachment, such as an annex. */
 export function formatAttachmentValue(formatter: Formatter, value: unknown, path: string, options?: FieldFormattingOptions): unknown {
 	if (isMissing(value)) return missingValue(value, path, 'attachment', options)
-	return callFormatter(path, 'attachment', value, () => formatter.safeFormatAttachment(recordInput(value, path, 'attachment')), options)
+	return cased(formatter, callFormatter(path, 'attachment', value, () => formatter.safeFormatAttachment(recordInput(value, path, 'attachment')), options), value, 'attachment', options)
 }
 
 function formatAnnexes(
@@ -636,7 +720,7 @@ function formatAnnexes(
 		const definition: FormAnnex | undefined = form.annexes?.[key]
 		if (!definition && !form.allowAdditionalAnnexes) throw formatIssue(path, 'attachment', 'unknown_path', `Unknown annex ${JSON.stringify(key)}.`)
 		if (isMissing(annexValue)) result[key] = missingValue(annexValue, path, 'attachment', options)
-		else result[key] = callFormatter(path, 'attachment', annexValue, () => formatter.safeFormatAttachment(recordInput(annexValue, path, 'attachment')), options)
+		else result[key] = cased(formatter, callFormatter(path, 'attachment', annexValue, () => formatter.safeFormatAttachment(recordInput(annexValue, path, 'attachment')), options), annexValue, 'attachment', options)
 	}
 	for (const key of Object.keys(form.annexes ?? {})) {
 		if (!Object.prototype.hasOwnProperty.call(result, key) && options?.progressive) {
@@ -783,9 +867,13 @@ function fieldAt(
 	if (field.type === 'phone' && segments.length === 1 && segment === 'number') return phoneNumberAt(formatter, value, path, options)
 	if (field.type === 'address' && rest.length === 0) {
 		const text = guardFormatting(path, field.type, () => addressMemberText(formatter, value, path, segment, options))
-		if (text !== undefined) return text
+		if (text !== undefined) return cased(formatter, text, text, 'member', options)
 	}
-	return rawAt(value, segments)
+	return casedMember(formatter, rawAt(value, segments), options)
+}
+
+function casedMember(formatter: Formatter, member: unknown, options?: FieldFormattingOptions): unknown {
+	return typeof member === 'string' ? cased(formatter, member, member, 'member', options) : member
 }
 
 function phoneNumberAt(formatter: Formatter, value: unknown, path: string, options?: FieldFormattingOptions): unknown {
@@ -814,9 +902,9 @@ function partyAt(formatter: Formatter, form: Form, parties: unknown, segments: r
 		if (index >= value.length) return undefined
 		return members.length === 0
 			? formatParties(formatter, form, value[index], childPath(path, index), options, role)
-			: rawAt(value[index], members)
+			: casedMember(formatter, rawAt(value[index], members), options)
 	}
-	return rawAt(value, rest)
+	return casedMember(formatter, rawAt(value, rest), options)
 }
 
 function definitionAt(formatter: Formatter, form: Form, values: unknown, segments: readonly string[], options?: FieldFormattingOptions): unknown {
