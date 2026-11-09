@@ -65,10 +65,13 @@
 
 import { createElement, type ReactElement, type ReactNode } from "react";
 import { fromJsx } from "@takumi-rs/helpers/jsx";
-import type { Form } from "@asterdoc/types";
+import { defaultFormatter } from "./formatter";
+import type { Form, LayerFormat } from "@asterdoc/types";
 
 import {
   CheckModeProvider,
+  ElementFormatError,
+  FormatterProvider,
   type UnresolvedPathCollector,
   PartialValuesProvider,
   type DocumentData,
@@ -101,11 +104,15 @@ export interface CheckCompositionOptions {
    * is always empty for it. Defaults to `takumi`.
    */
   adapter?: PdfAdapterName;
+  /** The layer's `format`, which the composition's documents inherit as their presentation. */
+  presentation?: LayerFormat;
 }
 
 export interface CheckElementOptions {
   /** Which adapter's rules to check the tree's classes against. Defaults to `takumi`. */
   adapter?: PdfAdapterName;
+  /** The layer's `format`, which the element's documents inherit as their presentation. */
+  presentation?: LayerFormat;
 }
 
 /**
@@ -129,7 +136,9 @@ export interface CompositionCheckResult {
    * `defs.<name>`) — in the order the tree first names each one, each named
    * once. A value with no data anywhere in it (a def computed from fields
    * the sample never set, say) is not reported here: that is what running
-   * with no sample data looks like, not a fault.
+   * with no sample data looks like, not a fault. An element `format` that is
+   * malformed, or sets a key that changes none of the values the element
+   * prints, is reported as `format:<path>`, with the path the element binds.
    */
   unresolvedPaths: string[];
   /** Image `src` values that are neither `data:` URIs nor inline SVG markup, in document order. */
@@ -154,9 +163,9 @@ function collectInto(paths: string[]): UnresolvedPathCollector {
 export async function checkComposition(
   options: CheckCompositionOptions
 ): Promise<CompositionCheckResult> {
-  const { artifact, composition, data = EMPTY_DATA, adapter } = options;
+  const { artifact, composition, data = EMPTY_DATA, adapter, presentation } = options;
   const element = createElement(composition, { artifact, data });
-  return checkElement(element, { adapter });
+  return checkElement(element, { adapter, presentation });
 }
 
 /**
@@ -173,7 +182,7 @@ export async function checkElement(
   element: ReactElement,
   options: CheckElementOptions = {}
 ): Promise<CompositionCheckResult> {
-  const { adapter = "takumi" } = options;
+  const { adapter = "takumi", presentation } = options;
   const unresolvedPaths: string[] = [];
   const collector = collectInto(unresolvedPaths);
 
@@ -185,7 +194,11 @@ export async function checkElement(
   const wrapped: ReactNode = createElement(
     PartialValuesProvider,
     { partial: true },
-    createElement(CheckModeProvider, { collector }, element)
+    createElement(
+      CheckModeProvider,
+      { collector },
+      createElement(FormatterProvider, { formatter: defaultFormatter, presentation }, element)
+    )
   );
 
   // Check mode means every `Field`/`Table`/`Signature` fault the tree carries,
@@ -206,6 +219,10 @@ export async function checkElement(
     }
     if (error instanceof ArtifactFieldFormatError) {
       collector.report(error.path);
+      return { unsupportedClasses: [], unresolvedPaths, missingImages: [] };
+    }
+    if (error instanceof ElementFormatError) {
+      collector.report(`format:${error.path}`);
       return { unsupportedClasses: [], unresolvedPaths, missingImages: [] };
     }
     throw error;

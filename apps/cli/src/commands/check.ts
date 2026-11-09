@@ -3,6 +3,7 @@ import kleur from 'kleur'
 import { dirname, extname, relative, resolve } from 'node:path'
 
 import { assertCurrentSchemaVersion, isForm, reactLayersOf, validate, type Form } from '@asterdoc/core'
+import type { LayerFormat } from '@asterdoc/types'
 import type { DocumentData } from '@asterdoc/react'
 import type * as Discovery from '@asterdoc/react/discovery'
 import type { bindComponent } from '@asterdoc/react-pdf'
@@ -119,6 +120,7 @@ export function createCheckCommand(): Command {
           composition,
           data,
           adapter,
+          presentation: layerFormat(resolved.artifact, resolved.layer.key),
         })
 
         printResult(compositionPath, resolved.artifactPath, result)
@@ -135,6 +137,10 @@ export function createCheckCommand(): Command {
     })
 
   return check
+}
+
+function layerFormat(artifact: Form, key: string): LayerFormat | undefined {
+  return Object.hasOwn(artifact.layers ?? {}, key) ? artifact.layers?.[key]?.format : undefined
 }
 
 function normalizeAdapter(value: string | undefined): AdapterName {
@@ -368,7 +374,7 @@ function printResult(compositionPath: string, artifactPath: string, result: Comp
   }
 
   if (result.unresolvedPaths.length > 0) {
-    console.log(kleur.red(`Unresolved field paths (${result.unresolvedPaths.length}):`))
+    console.log(kleur.red(`Unresolved field paths and invalid formats (${result.unresolvedPaths.length}):`))
     for (const path of result.unresolvedPaths) {
       console.log(`  - ${path} — ${kleur.gray(artifactPath)}`)
     }

@@ -52,7 +52,7 @@ export function Profile({ artifact, data }: { artifact: Form; data: DocumentData
 | --- | --- | --- |
 | `artifact` | `Form` | The form artifact every hook reads from |
 | `data` | `DocumentData` | `{ fields, parties, annexes?, defs? }`, the same render values `FormData` carries. Supplied `defs` are core's evaluated values; otherwise the provider evaluates them. |
-| `format` | `FormatOptions` | Optional `formatter`, `blank` placeholder, `partial`, and `progressive` policy |
+| `format` | `FormatOptions` | Optional `formatter`, `blank` placeholder, `partial`, `progressive` policy, and `presentation`: a layer `format` object applied to every value |
 
 Inputs are immutable snapshots. A provider update republishes only the selectors whose resolved value changed. Each provider creates an isolated store, including during SSR.
 
@@ -65,13 +65,13 @@ An installed `Document` component wraps `ArtifactProvider` and the token provide
 | Hook | Returns |
 | --- | --- |
 | `useArtifact()` | The bound `Form` |
-| `useField(path)` | `FieldBinding`: `field`, raw `value`, formatted `text`, and `blank` (true when `text` is the blank placeholder) |
-| `useList(path)` | `ListBinding`: the list `field`, its `item` definition, `rows`, and `text(index, path?)` for one cell |
-| `useTotals(names)` | One `TotalBinding` (`name`, `label`, `value`, `text`) per computed definition in `defs`, in the order given |
+| `useField(path, format?)` | `FieldBinding`: `field`, raw `value`, formatted `text`, and `blank` (true when `text` is the blank placeholder) |
+| `useList(path, formats?)` | `ListBinding`: the list `field`, its `item` definition, `rows`, and `text(index, path?, format?)` for one cell. `formats` takes a `format` for every cell and `columns`, an ordered list of `{ path, format }`; `cell(index, column)` prints one declared column in its own format, so one field can appear in several columns |
+| `useTotals(names, formats?)` | One `TotalBinding` (`name`, `label`, `value`, `text`) per computed definition in `defs`, in the order given. `formats` takes a `format` for every row and `rows`, one format per name in the same order |
 | `useParty(role)` | The parties filled for one declared role, always as an array |
-| `usePartyContact(role, index?, paths?)` | `PartyContactBinding`: `roleLabel`, `nameText` from the party record, and `organizationText`, `addressText`, `contactText` from the fields `paths` names (`organization`, `address`, and `contact`, one path or several), each left undefined when unbound or blank |
-| `useAnnex(path)` | `AnnexBinding`: the annex slot, its `label`, the `attachment`, and its `text` |
-| `useAnnexPicture(path)` | `AnnexBinding` plus `picture`, set only when the attachment is an image |
+| `usePartyContact(role, index?, paths?, format?)` | `PartyContactBinding`: `roleLabel`, `nameText` from the party record, and `organizationText`, `addressText`, `contactText` from the fields `paths` names (`organization`, `address`, and `contact`, one path or several), each left undefined when unbound or blank |
+| `useAnnex(path, format?)` | `AnnexBinding`: the annex slot, its `label`, the `attachment`, and its `text` |
+| `useAnnexPicture(path, format?)` | `AnnexBinding` plus `picture`, set only when the attachment is an image |
 | `useFormatter()` | The formatter registry, for components that format values themselves |
 
 Paths use Asterdoc's shared field-path grammar: dot-separated object members and either bracket or dot notation for zero-based list indexes (`lineItems[0].unitPrice` and `lineItems.0.unitPrice` are equivalent). Empty segments and the unsafe members `__proto__`, `prototype`, and `constructor` are rejected. A path the artifact does not declare throws `UnknownFieldPathError`. A path that resolves to a fieldset or a list throws `CompositeFieldPathError`, because it has no single value to print. An undeclared role throws `UnknownPartyRoleError`, and an undeclared definition throws `UnknownDefinitionError`. A hook used outside `ArtifactProvider` throws `MissingArtifactProviderError`.
@@ -80,7 +80,7 @@ Paths use Asterdoc's shared field-path grammar: dot-separated object members and
 
 `useSignature(role, index?, type?)` returns a `SignatureBinding` for one signing mark: `roleLabel`, `partyText`, `fieldLabel`, `required`, the `rule` and `dateRule` strings, and the invisible `marker` the seal flow locates. `type` is `"signature"` (the default) or `"initials"`. Core owns `SIGNATURE_RULE` and `INITIALS_RULE`; `@asterdoc/react` re-exports them alongside its `DATE_RULE` for the rules the default components draw.
 
-When `format` omits `formatter` or `progressive`, `ArtifactProvider` inherits that setting from the nearest `FormatterProvider`. A failed computed definition throws in a finished render, reports `defs.<name>` during a check, and prints the progressive placeholder in partial mode.
+When `format` omits `formatter` or `progressive`, `ArtifactProvider` inherits that setting from the nearest `FormatterProvider`. Its `presentation` merges per property over the inherited one, such as a React layer's `format` or an enclosing `ArtifactProvider`'s, and each hook's `format` merges over both. Without a `formatter`, values print with `@asterdoc/format`'s default formatter, which carries no lookup providers, so a browser bundle holds only what it uses. A format that needs one, such as `phone.style`, fails with `missing_format_provider` naming the entry point; pass a formatter created with that provider, such as `createFormatter({ providers: { phone: phoneProvider } })` from `@asterdoc/format/phone`, through `format.formatter` or `FormatterProvider`. A hook `format` that is malformed, or sets a key that changes none of the values it prints, throws `ElementFormatError` and reports `format:<path>` during a check. A failed computed definition throws in a finished render, reports `defs.<name>` during a check, and prints the progressive placeholder in partial mode.
 
 ### Document settings and paper
 

@@ -34,7 +34,7 @@ describe("the explicit PDF integration", () => {
     const manifest = JSON.parse(readFileSync(resolve(packageRoot, "package.json"), "utf8")) as {
       exports: Record<string, unknown>;
     };
-    expect(Object.keys(manifest.exports)).toEqual([".", "./chromium", "./check"]);
+    expect(Object.keys(manifest.exports)).toEqual([".", "./chromium", "./check", "./formatter"]);
     expect(renderPdf).toBeTypeOf("function");
     expect(checkComposition).toBeTypeOf("function");
     expect(chromiumAdapter.name).toBe("chromium");

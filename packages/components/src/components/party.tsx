@@ -12,7 +12,7 @@
  */
 /** @jsxRuntime classic */
 import React from "react";
-import { scaleTextClasses, useDocumentTokens, usePartyContact, type PartyContactPaths } from "@asterdoc/react";
+import { scaleTextClasses, useDocumentTokens, usePartyContact, type LayerFormat, type PartyContactPaths } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface PartyProps {
@@ -42,6 +42,11 @@ export interface PartyProps {
    * @default "party:<role>" or "party:<role>:<index>" past the first
    */
   keepId?: string;
+  /**
+   * How the name and every bound line print, merged over the document's
+   * presentation per property. Each key must apply to one of them.
+   */
+  format?: LayerFormat;
   /** Classes for the party's wrapping element. */
   className?: string;
 }
@@ -56,10 +61,11 @@ export function Party({
   variant = "block",
   label,
   keepId,
+  format,
   className,
 }: PartyProps) {
   const paths: PartyContactPaths = { organization, address, contact };
-  const binding = usePartyContact(role, index, paths);
+  const binding = usePartyContact(role, index, paths, format);
   const { typography } = useDocumentTokens();
   const heading = label === false ? undefined : (label ?? binding.roleLabel);
   const id = keepId ?? `party:${role}${index === 0 ? "" : `:${index}`}`;

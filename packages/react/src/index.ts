@@ -166,7 +166,10 @@ export {
   type ArtifactProviderProps,
   type FieldBinding,
   type ListBinding,
+  type ListColumn,
+  type ListFormats,
   type TotalBinding,
+  type TotalsFormats,
   type DocumentData,
 } from "./headless/artifact";
 export {
@@ -178,12 +181,14 @@ export {
 export {
   BLANK,
   createValueFormatter,
+  ElementFormatError,
   formatByType,
   ArtifactFieldFormatError,
   type DocumentFormatter,
   type FormatOptions,
   type ValueFormatter,
 } from "./lib/format";
+export type { LayerFormat } from "@asterdoc/types";
 export {
   isTextDirection,
   scriptOf,

@@ -1,5 +1,6 @@
 import { evaluateFormDefs } from "@asterdoc/core";
-import type { Attachment, Form, FormAnnex, FormField, Formatter, Party } from "@asterdoc/types";
+import { mergeFormats, type ModifierTarget } from "@asterdoc/render";
+import type { Attachment, Form, FormAnnex, FormField, Formatter, LayerFormat, Party } from "@asterdoc/types";
 import {
   createContext,
   useContext,
@@ -23,13 +24,17 @@ import {
 } from "../lib/fields";
 import {
   ArtifactFieldFormatError,
+  canonicalFormatKey,
   createValueFormatter,
+  ElementFormatError,
+  elementFormatProblems,
   formatByType,
   type DocumentFormatter,
   type FormatOptions,
 } from "../lib/format";
 import { useUnresolvedPathCollector, type UnresolvedPathCollector } from "../components/check-context";
-import { useArtifactFormatting } from "../components/formatter-context";
+import { FormatterProvider, useArtifactFormatting } from "../components/formatter-context";
+import { annexTargets, definitionTargets, fieldTargets } from "../lib/format-targets";
 import { usePartialValues } from "../components/partial-context";
 import { DRAWABLE_IMAGE_MEDIA_TYPES } from "../lib/image";
 
@@ -136,6 +141,27 @@ function snapshotOf(artifact: Form, data: DocumentData, formatting: DocumentForm
   };
 }
 
+interface Keyed<T> {
+  key: string;
+  value: T | undefined;
+}
+
+/**
+ * `value` kept as one object for as long as its canonical serialization is
+ * unchanged, so an inline format literal neither re-renders nor re-selects.
+ */
+function useKeyed<T extends object>(value: T | undefined): Keyed<T> {
+  const key = value === undefined ? "" : canonicalFormatKey(value);
+  const ref = useRef<Keyed<T> | undefined>(undefined);
+  if (ref.current?.key !== key) ref.current = { key, value };
+  return ref.current;
+}
+
+/** A selection key with an element format's own key, when it has one. */
+function keyed(key: string, element: Keyed<object>): string {
+  return element.key === "" ? key : `${key}\u0000format:${element.key}`;
+}
+
 /** Supplies artifact data to headless hooks without rendering a DOM element. */
 export function ArtifactProvider({ artifact, data, format, children }: ArtifactProviderProps) {
   const inheritedPartial = usePartialValues();
@@ -145,9 +171,10 @@ export function ArtifactProvider({ artifact, data, format, children }: ArtifactP
   const blank = format?.blank;
   const partial = format?.partial ?? inheritedPartial;
   const progressive = format?.progressive ?? inheritedFormatting.progressive;
+  const presentation = useKeyed(mergeFormats(inheritedFormatting.presentation, format?.presentation));
   const formatting = useMemo(
-    () => createValueFormatter({ formatter: formatterOption, blank, partial, progressive }),
-    [formatterOption, blank, partial, progressive]
+    () => createValueFormatter({ formatter: formatterOption, blank, partial, progressive, presentation: presentation.value }),
+    [formatterOption, blank, partial, progressive, presentation]
   );
   const snapshot = useMemo(() => snapshotOf(artifact, data, formatting, collector), [artifact, data, formatting, collector]);
   const storeRef = useRef<ArtifactStore | undefined>(undefined);
@@ -160,7 +187,17 @@ export function ArtifactProvider({ artifact, data, format, children }: ArtifactP
       storeRef.current?.emit();
     }
   }, [snapshot]);
-  return <ArtifactContext.Provider value={storeRef.current}>{children}</ArtifactContext.Provider>;
+  const provided = <ArtifactContext.Provider value={storeRef.current}>{children}</ArtifactContext.Provider>;
+  if (presentation.value === undefined) return provided;
+  return (
+    <FormatterProvider
+      formatter={inheritedFormatting.formatter}
+      progressive={inheritedFormatting.progressive}
+      presentation={presentation.value}
+    >
+      {provided}
+    </FormatterProvider>
+  );
 }
 
 function useStore(): ArtifactStore {
@@ -247,38 +284,109 @@ function sameField(a: FieldBinding, b: FieldBinding): boolean {
   return a.field === b.field && Object.is(a.value, b.value) && a.text === b.text && a.blank === b.blank;
 }
 
-function selectField(snapshot: ArtifactSnapshot, path: string): FieldBinding {
-  let field: FormField;
+/**
+ * Checks an element's `format` against the values it prints, before any
+ * value is read. A fault is thrown, or reported to a check as
+ * `format:<path>`; the element then prints without its format.
+ */
+function admitFormat(
+  snapshot: ArtifactSnapshot,
+  path: string,
+  format: LayerFormat | undefined,
+  targets: readonly ModifierTarget[]
+): LayerFormat | undefined {
+  if (format === undefined) return undefined;
+  const problems = elementFormatProblems(format, targets);
+  if (problems.length === 0) return format;
+  if (!snapshot.collector) throw new ElementFormatError(path, problems);
+  snapshot.collector.report(`format:${path}`);
+  return undefined;
+}
+
+/** The format a value prints with: the document's presentation, then each element level in order. */
+function effectiveFormat(snapshot: ArtifactSnapshot, ...levels: readonly (LayerFormat | undefined)[]): LayerFormat | undefined {
+  return levels.some((level) => level !== undefined)
+    ? mergeFormats(snapshot.formatting.presentation, ...levels)
+    : snapshot.formatting.presentation;
+}
+
+interface ResolvedField {
+  field: FormField;
+  declared: boolean;
+}
+
+function resolveOrReport(snapshot: ArtifactSnapshot, path: string): ResolvedField {
   try {
-    field = resolveField(snapshot.artifact, path);
+    return { field: resolveField(snapshot.artifact, path), declared: true };
   } catch (error) {
     if (!snapshot.collector) throw error;
     snapshot.collector.report(path);
-    field = { type: "text", label: path, required: false, visible: true };
+    return { field: { type: "text", label: path, required: false, visible: true }, declared: false };
   }
+}
+
+function bindField(snapshot: ArtifactSnapshot, path: string, field: FormField, format: LayerFormat | undefined): FieldBinding {
   const value = readValue(snapshot.data.fields, path);
-  const text = formatOrReport(snapshot, path, () => snapshot.formatting.format(field, value, path));
+  const text = formatOrReport(snapshot, path, () => snapshot.formatting.format(field, value, path, format));
   return { field, value, text, blank: text === snapshot.formatting.blank };
 }
 
-/** Reads and formats one declared field path. */
-export function useField(path: string): FieldBinding {
-  return useSelection(`field:${path}`, (snapshot) => selectField(snapshot, path), sameField);
+/**
+ * Reads and formats one declared field path. `format` is the element's own,
+ * merged over the document's presentation; it must apply to the field's type.
+ */
+export function useField(path: string, format?: LayerFormat): FieldBinding {
+  const element = useKeyed(format);
+  return useSelection(keyed(`field:${path}`, element), (snapshot) => {
+    const { field, declared } = resolveOrReport(snapshot, path);
+    const admitted = admitFormat(snapshot, path, element.value, declared ? fieldTargets(snapshot.artifact, path) : []);
+    return bindField(snapshot, path, field, effectiveFormat(snapshot, admitted));
+  }, sameField);
 }
 
 function sameFields(a: readonly FieldBinding[], b: readonly FieldBinding[]): boolean {
   return a.length === b.length && a.every((binding, index) => sameField(binding, b[index]!));
 }
 
+/** The element several fields belong to, when it prints more than the fields: a party block. */
+interface FieldGroupScope {
+  path: string;
+  targets: readonly ModifierTarget[];
+}
+
+function selectFields(
+  snapshot: ArtifactSnapshot,
+  paths: readonly string[],
+  format: LayerFormat | undefined,
+  scope?: FieldGroupScope
+): readonly FieldBinding[] {
+  const resolved = paths.map((path) => resolveOrReport(snapshot, path));
+  const targets = [
+    ...(scope?.targets ?? []),
+    ...resolved.flatMap(({ declared }, index) => declared ? fieldTargets(snapshot.artifact, paths[index]!) : []),
+  ];
+  const admitted = admitFormat(snapshot, scope?.path ?? paths.join(", "), format, targets);
+  const effective = effectiveFormat(snapshot, admitted);
+  return paths.map((path, index) => bindField(snapshot, path, resolved[index]!.field, effective));
+}
+
 /**
  * Reads and formats several declared field paths, each exactly as `useField`
  * reads its one, for a component binding a number of paths its props decide
- * (a party's organization, address, and contact lines).
+ * (a party's organization, address, and contact lines). `format` applies to
+ * all of them, and each of its keys must apply to at least one.
  */
-export function useFields(paths: readonly string[]): readonly FieldBinding[] {
+export function useFields(paths: readonly string[], format?: LayerFormat): readonly FieldBinding[] {
+  return useFieldGroup(paths, format);
+}
+
+/** `useFields` for an element that prints more than the fields, whose `format` is checked against all it prints. */
+export function useFieldGroup(paths: readonly string[], format?: LayerFormat, scope?: FieldGroupScope): readonly FieldBinding[] {
+  const element = useKeyed(format);
+  const scopeKey = scope === undefined ? "" : `${scope.path}\u0000${scope.targets.map((target) => target.kind).join(",")}`;
   return useSelection(
-    `fields:${JSON.stringify(paths)}`,
-    (snapshot) => paths.map((path) => selectField(snapshot, path)),
+    keyed(`fields:${JSON.stringify(paths)}${scopeKey === "" ? "" : `\u0000scope:${scopeKey}`}`, element),
+    (snapshot) => selectFields(snapshot, paths, element.value, scope),
     sameFields
   );
 }
@@ -319,17 +427,22 @@ function isAttachment(value: unknown): value is Attachment {
  * The text comes from the shared formatter's `attachment` kind, the same one
  * the text, DOCX, and PDF outputs print an annex with, so a composition that
  * prints an attachment's name prints what every other output prints.
+ * `format` is the element's own, merged over the document's presentation.
  */
-export function useAnnex(path: string): AnnexBinding {
-  return useSelection(`annex:${path}`, (snapshot) => {
+export function useAnnex(path: string, format?: LayerFormat): AnnexBinding {
+  const element = useKeyed(format);
+  return useSelection(keyed(`annex:${path}`, element), (snapshot) => {
     let annex: FormAnnex;
+    let declared = true;
     try {
       annex = resolveAnnex(snapshot.artifact, path);
     } catch (error) {
       if (!snapshot.collector) throw error;
       snapshot.collector.report(path);
       annex = UNRESOLVED_ANNEX;
+      declared = false;
     }
+    const admitted = admitFormat(snapshot, path, element.value, declared ? annexTargets(snapshot.artifact, path) : []);
     const value = readAnnex(snapshot.data.annexes, path);
     return {
       annex,
@@ -337,7 +450,7 @@ export function useAnnex(path: string): AnnexBinding {
       attachment: isAttachment(value) ? value : undefined,
       text: formatOrReport(snapshot, path, () => formatByType(
         "attachment", value, snapshot.formatting.formatter, snapshot.formatting.blank,
-        path, snapshot.formatting.progressive
+        path, snapshot.formatting.progressive, effectiveFormat(snapshot, admitted)
       )),
     };
   }, sameAnnex);
@@ -361,8 +474,8 @@ function isPicture(attachment: Attachment | undefined): boolean {
  * its own has no reason to call a spreadsheet wrong, and a composition that
  * owns its own markup cannot lose a check result the package promises.
  */
-export function useAnnexPicture(path: string): AnnexPictureBinding {
-  const binding = useAnnex(path);
+export function useAnnexPicture(path: string, format?: LayerFormat): AnnexPictureBinding {
+  const binding = useAnnex(path, format);
   const collector = useUnresolvedPathCollector();
   const picture = isPicture(binding.attachment) ? binding.attachment : undefined;
   if (binding.attachment !== undefined && picture === undefined) {
@@ -376,7 +489,33 @@ export interface ListBinding {
   item: FormField;
   rows: readonly unknown[];
   format: DocumentFormatter["format"];
-  text(index: number, path?: string): string;
+  /**
+   * One row's text, or one field's within it. `format` is merged over the
+   * list's, and must apply to that value's type.
+   */
+  text(index: number, path?: string, format?: LayerFormat): string;
+  /** One row's text in one declared column, the `column`-th of `ListFormats.columns`, in that column's format. */
+  cell(index: number, column: number): string;
+}
+
+/** One column a list prints: the path of a field within an item, and its format. */
+export interface ListColumn {
+  /** The field within an item, such as `amount`. */
+  path: string;
+  /** Merged over the list's format; it must apply to the field's type. */
+  format?: LayerFormat;
+}
+
+/** The element formats of a list: one for every value it prints, and one per column. */
+export interface ListFormats {
+  /** Merged under every column's format; each key must apply to at least one of the item's fields. */
+  format?: LayerFormat;
+  /**
+   * The columns the list prints, in order. A field may appear in several
+   * columns, each with its own format. Each format is checked against the
+   * item's declared field even when the list has no rows.
+   */
+  columns?: readonly ListColumn[];
 }
 
 function sameList(a: ListBinding, b: ListBinding): boolean {
@@ -387,11 +526,16 @@ function sameList(a: ListBinding, b: ListBinding): boolean {
 
 const EMPTY_ROWS: readonly unknown[] = Object.freeze([]);
 
-/** Reads one declared list and formats scalar items or fields within its rows. */
-export function useList(path: string): ListBinding {
-  return useSelection(`list:${path}`, (snapshot) => {
+/**
+ * Reads one declared list and formats scalar items or fields within its rows.
+ * `formats` are the element's own, merged over the document's presentation.
+ */
+export function useList(path: string, formats?: ListFormats): ListBinding {
+  const element = useKeyed(formats);
+  return useSelection(keyed(`list:${path}`, element), (snapshot) => {
     let field: FormField;
     let item: FormField;
+    let declared = true;
     try {
       field = resolveField(snapshot.artifact, path);
       item = itemField(snapshot.artifact, path);
@@ -400,21 +544,56 @@ export function useList(path: string): ListBinding {
       snapshot.collector.report(path);
       field = { type: "list", label: path, required: false, visible: true, item: { type: "text", required: false, visible: true } } as FormField;
       item = { type: "text", label: path, required: false, visible: true };
+      declared = false;
     }
+    const listFormat = admitFormat(snapshot, path, element.value?.format, declared ? fieldTargets(snapshot.artifact, path) : []);
+    const columns = element.value?.columns ?? [];
+    const columnFormats = columns.map(({ path: column, format }) => {
+      if (format === undefined) return undefined;
+      let targets: ModifierTarget[] = [];
+      if (declared) {
+        try {
+          resolveField(snapshot.artifact, `${path}.0.${column}`);
+          targets = fieldTargets(snapshot.artifact, `${path}.0.${column}`);
+        } catch (error) {
+          if (!snapshot.collector) throw error;
+          snapshot.collector.report(`${path}.${column}`);
+        }
+      }
+      return admitFormat(snapshot, `${path}.${column}`, format, targets);
+    });
     const value = readValue(snapshot.data.fields, path);
     if (value !== undefined && value !== null && !Array.isArray(value)) {
       if (!snapshot.collector) throw new InvalidListValueError(path, value);
       snapshot.collector.report(path);
     }
     const rows = Array.isArray(value) ? value : EMPTY_ROWS;
-    const text = (index: number, childPath?: string) => {
+    const print = (index: number, childPath: string | undefined, own: LayerFormat | undefined, rowField?: FormField) => {
       const rowPath = childPath ? `${path}.${index}.${childPath}` : `${path}.${index}`;
+      const effective = effectiveFormat(snapshot, listFormat, own);
       return formatOrReport(snapshot, rowPath, () => {
-        const rowField = resolveField(snapshot.artifact, rowPath);
-        return snapshot.formatting.format(rowField, readValue(snapshot.data.fields, rowPath), rowPath);
+        const resolved = rowField ?? resolveField(snapshot.artifact, rowPath);
+        return snapshot.formatting.format(resolved, readValue(snapshot.data.fields, rowPath), rowPath, effective);
       });
     };
-    return { field, item, rows, format: snapshot.formatting.format, text };
+    const text = (index: number, childPath?: string, format?: LayerFormat) => {
+      if (format === undefined) return print(index, childPath, undefined);
+      const rowPath = childPath ? `${path}.${index}.${childPath}` : `${path}.${index}`;
+      let rowField: FormField | undefined;
+      try {
+        rowField = resolveField(snapshot.artifact, rowPath);
+      } catch {
+        rowField = undefined;
+      }
+      const own = admitFormat(snapshot, rowPath, format, rowField ? fieldTargets(snapshot.artifact, rowPath) : []);
+      return print(index, childPath, own, rowField);
+    };
+    const cell = (index: number, column: number) => {
+      const declaredColumn = columns[column];
+      if (declaredColumn === undefined) throw new RangeError(`The list at "${path}" declares no column ${column}.`);
+      return print(index, declaredColumn.path, columnFormats[column]);
+    };
+    return { field, item, rows, format: snapshot.formatting.format, text, cell };
   }, sameList);
 }
 
@@ -433,32 +612,60 @@ function sameTotals(a: readonly TotalBinding[], b: readonly TotalBinding[]): boo
   });
 }
 
-/** Reads computed definitions in caller-selected display order. */
-export function useTotals(names: readonly string[]): readonly TotalBinding[] {
-  return useSelection(`totals:${names.join("\u0000")}`, (snapshot) => names.map((name) => {
-    const definition = snapshot.artifact.defs?.[name];
-    if (!definition) {
-      if (!snapshot.collector) throw new UnknownDefinitionError(name, snapshot.artifact.name);
-      snapshot.collector.report(`defs.${name}`);
-      return { name, label: name, value: undefined, text: snapshot.formatting.blank };
-    }
-    const value = snapshot.defs.get(name);
-    const issuePath = `defs.${name}`;
-    const issue = snapshot.definitionIssues.get(issuePath) ?? snapshot.definitionIssues.get("defs");
-    if (issue !== undefined) {
-      if (snapshot.collector) snapshot.collector.report(issuePath);
-      else if (!snapshot.formatting.partial) throw new Error(`${issuePath}: ${issue}`);
-    }
-    return {
-      name,
-      label: definition.label ?? name,
-      value,
-      text: formatOrReport(snapshot, issuePath, () => formatByType(
-        definition.type, value, snapshot.formatting.formatter, snapshot.formatting.blank,
-        issuePath, snapshot.formatting.progressive
-      )),
-    };
-  }), sameTotals);
+/** The element formats of a totals block: one for every row, and one per definition. */
+export interface TotalsFormats {
+  /** Merged under every row's format; each key must apply to at least one row's type. */
+  format?: LayerFormat;
+  /**
+   * One format per name, in the order of `names`, each checked against that
+   * definition's declared type. A definition named twice takes each its own.
+   */
+  rows?: readonly (LayerFormat | undefined)[];
+}
+
+/**
+ * Reads computed definitions in caller-selected display order. `formats` are
+ * the element's own, merged over the document's presentation.
+ */
+export function useTotals(names: readonly string[], formats?: TotalsFormats): readonly TotalBinding[] {
+  const element = useKeyed(formats);
+  return useSelection(keyed(`totals:${names.join("\u0000")}`, element), (snapshot) => {
+    const targets = names.flatMap((name) => definitionTargets(snapshot.artifact, name));
+    const blockPath = names.map((name) => `defs.${name}`).join(", ");
+    const blockFormat = admitFormat(snapshot, blockPath, element.value?.format, targets);
+    return names.map((name, index) => selectTotal(snapshot, name, blockFormat, element.value?.rows?.[index]));
+  }, sameTotals);
+}
+
+function selectTotal(
+  snapshot: ArtifactSnapshot,
+  name: string,
+  blockFormat: LayerFormat | undefined,
+  rowFormat: LayerFormat | undefined
+): TotalBinding {
+  const issuePath = `defs.${name}`;
+  const definition = snapshot.artifact.defs?.[name];
+  if (!definition) {
+    if (!snapshot.collector) throw new UnknownDefinitionError(name, snapshot.artifact.name);
+    snapshot.collector.report(issuePath);
+    return { name, label: name, value: undefined, text: snapshot.formatting.blank };
+  }
+  const rowAdmitted = admitFormat(snapshot, issuePath, rowFormat, definitionTargets(snapshot.artifact, name));
+  const value = snapshot.defs.get(name);
+  const issue = snapshot.definitionIssues.get(issuePath) ?? snapshot.definitionIssues.get("defs");
+  if (issue !== undefined) {
+    if (snapshot.collector) snapshot.collector.report(issuePath);
+    else if (!snapshot.formatting.partial) throw new Error(`${issuePath}: ${issue}`);
+  }
+  return {
+    name,
+    label: definition.label ?? name,
+    value,
+    text: formatOrReport(snapshot, issuePath, () => formatByType(
+      definition.type, value, snapshot.formatting.formatter, snapshot.formatting.blank,
+      issuePath, snapshot.formatting.progressive, effectiveFormat(snapshot, blockFormat, rowAdmitted)
+    )),
+  };
 }
 
 /** Reads parties for one declared artifact role. */

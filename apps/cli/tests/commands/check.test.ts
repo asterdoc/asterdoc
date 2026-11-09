@@ -150,6 +150,33 @@ describe('CLI check command', () => {
     expect(result.stderr).toContain('File not found')
   }, 30000)
 
+  it('checks the composition with its React layer format', async () => {
+    const dir = await isolatedFixture('layer-format-artifact.json', 'layer-format-composition.tsx')
+    try {
+      const result = await executeCliCommand(['check', 'layer-format-artifact.json'], { cwd: dir })
+      expect(result.exitCode).toBe(1)
+      expect(result.stdout).toContain('signedOn')
+
+      const artifact = JSON.parse(await fs.readFile(path.join(dir, 'layer-format-artifact.json'), 'utf-8'))
+      delete artifact.layers.composition.format
+      await fs.writeFile(path.join(dir, 'layer-format-artifact.json'), JSON.stringify(artifact, null, 2))
+      const unformatted = await executeCliCommand(['check', 'layer-format-artifact.json'], { cwd: dir })
+      expect(unformatted.exitCode).toBe(0)
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true })
+    }
+  }, 60000)
+
+  it('fails naming an element format that does not apply to its field', async () => {
+    const result = await executeCliCommand([
+      'check',
+      path.join(fixturesDir, 'element-format-artifact.json'),
+    ])
+
+    expect(result.exitCode).toBe(1)
+    expect(result.stdout).toContain('format:name')
+  }, 30000)
+
   it('checks cleanly when a Totals def has no sample data to format', async () => {
     // `total` evaluates to `{ amount: null, currency: null }` with no data at
     // all, which the money serializer rejects — but a value with no data

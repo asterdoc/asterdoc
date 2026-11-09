@@ -76,6 +76,7 @@
   "dependencies": {
     "@asterdoc/core": "workspace:^",
     "@asterdoc/render": "workspace:^",
+    "@asterdoc/schemas": "workspace:^",
     "@asterdoc/types": "workspace:^",
     "@asterdoc/format": "workspace:^"
   },

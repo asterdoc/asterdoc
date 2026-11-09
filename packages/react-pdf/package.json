@@ -20,6 +20,11 @@
       "types": "./dist/check.d.ts",
       "import": "./dist/check.js",
       "default": "./dist/check.js"
+    },
+    "./formatter": {
+      "types": "./dist/formatter.d.ts",
+      "import": "./dist/formatter.js",
+      "default": "./dist/formatter.js"
     }
   },
   "files": [

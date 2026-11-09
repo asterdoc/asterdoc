@@ -52,6 +52,7 @@ import { isAbsolute, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { createElement, type ReactNode } from "react";
+import { mergeFormats } from "@asterdoc/render";
 import { pageTextRuns } from "@asterdoc/render/pdf";
 import type {
   Form,
@@ -360,6 +361,7 @@ export function reactRenderer(
         ...options.pdf,
         formatter: request.ctx?.formatter ?? options.pdf?.formatter,
         progressive: request.ctx?.progressive ?? options.pdf?.progressive,
+        presentation: mergeFormats(options.pdf?.presentation, request.template.format),
         signingMarkers: options.pdf?.signingMarkers ?? (markers.length > 0),
       });
       if (markers.length > 0) await assertMarkersSurvived(bytes, markers);

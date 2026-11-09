@@ -1,7 +1,11 @@
+import { formatFieldOptions, formatterFor, mergeFormats } from "@asterdoc/render";
 import { formatParties } from "@asterdoc/render/text/field-formatter";
+import type { LayerFormat } from "@asterdoc/types";
 
 import { useUnresolvedPathCollector } from "../components/check-context";
-import { useArtifact, useDocumentFormatting, useFields, useParty, usePartialPlaceholder, type FieldBinding } from "./artifact";
+import { elementFormatProblems } from "../lib/format";
+import { partyTargets } from "../lib/format-targets";
+import { useArtifact, useDocumentFormatting, useFieldGroup, useParty, usePartialPlaceholder, type FieldBinding } from "./artifact";
 
 /**
  * The field paths a party's organization, address, and contact lines print
@@ -73,8 +77,15 @@ function lineText(bindings: readonly FieldBinding[]): string | undefined {
  * Each bound path reads and formats exactly as `useField` does, so an
  * unresolved path fails by name, or is reported to a check. A bound field
  * that is blank is left off, so an optional line never prints empty.
+ * `format` applies to the name and every bound line, merged over the
+ * document's presentation; each of its keys must apply to one of them.
  */
-export function usePartyContact(role: string, index = 0, paths: PartyContactPaths = EMPTY_PATHS): PartyContactBinding {
+export function usePartyContact(
+  role: string,
+  index = 0,
+  paths: PartyContactPaths = EMPTY_PATHS,
+  format?: LayerFormat
+): PartyContactBinding {
   const artifact = useArtifact();
   const parties = useParty(role);
   const formatting = useDocumentFormatting();
@@ -82,7 +93,9 @@ export function usePartyContact(role: string, index = 0, paths: PartyContactPath
   const partialPlaceholder = usePartialPlaceholder();
   const contactPaths = paths.contact === undefined ? [] : typeof paths.contact === "string" ? [paths.contact] : paths.contact;
   const bound = [paths.organization, paths.address].filter((path): path is string => path !== undefined);
-  const fields = useFields([...bound, ...contactPaths]);
+  const path = `parties.${role}[${index}]`;
+  const targets = partyTargets(artifact, role, index);
+  const fields = useFieldGroup([...bound, ...contactPaths], format, { path, targets });
   const definition = artifact.parties?.[role];
   const roleLabel = definition?.label ?? role;
   const party = parties[index];
@@ -101,13 +114,14 @@ export function usePartyContact(role: string, index = 0, paths: PartyContactPath
     throw new PartyIndexOutOfRangeError(role, index, parties.length);
   }
 
-  const path = `parties.${role}[${index}]`;
+  const admitted = format !== undefined && elementFormatProblems(format, []).length === 0 ? format : undefined;
+  const effective = admitted === undefined ? formatting.presentation : mergeFormats(formatting.presentation, admitted);
   const nameText = String(formatParties(
-    formatting.formatter,
+    formatterFor(formatting.formatter, effective),
     artifact,
     party,
     path,
-    { progressive: formatting.progressive },
+    formatFieldOptions(effective, { progressive: formatting.progressive }),
     role
   ) ?? formatting.blank);
   let next = 0;

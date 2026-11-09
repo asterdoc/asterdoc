@@ -8,6 +8,8 @@
  * manifest is written, and travels to the page with it.
  */
 
+import type { LayerFormat } from '@asterdoc/types'
+
 import type { DiscoveredComposition, SampleSource } from './discovery.js'
 
 /** The messages one composition may need, settled before either half runs. */
@@ -50,6 +52,20 @@ export function bindingLabel(entry: DiscoveredComposition): string {
 	return entry.artifact.layer
 		? `${entry.artifact.relative}#${entry.artifact.layer}`
 		: `${entry.artifact.relative} (sibling)`
+}
+
+/** The `format` of the React layer that names the composition, which its documents inherit. */
+export function layerPresentation(entry: DiscoveredComposition): LayerFormat | undefined {
+	const key = entry.artifact?.layer
+	const layers = entry.artifact?.artifact.layers
+	return key !== undefined && layers !== undefined && Object.hasOwn(layers, key) ? layers[key]?.format : undefined
+}
+
+/** What one check fault says, worded as the error the browser draws for it. */
+export function unresolvedPathMessage(formName: string, path: string): string {
+	return path.startsWith('format:')
+		? `The format at "${path.slice('format:'.length)}" is not valid, or sets a key that does not apply to the value it prints.`
+		: `The form "${formName}" declares no field at path "${path}".`
 }
 
 /** How a composition's sample is written in one line. */

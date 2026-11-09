@@ -1,7 +1,7 @@
 /** @jsxRuntime classic */
 import React from "react";
 import type { ReactNode } from "react";
-import { RENDER_ATTRIBUTES, scaleTextClasses, useDocumentTokens, useList, usePage, useTotals } from "@asterdoc/react";
+import { RENDER_ATTRIBUTES, scaleTextClasses, useDocumentTokens, useList, usePage, useTotals, type LayerFormat } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface TableColumn {
@@ -11,6 +11,11 @@ export interface TableColumn {
   align?: "left" | "right";
   /** Replaces a cell's plain text with markup built from the formatted text and the row value. */
   render?: (text: string, row: unknown) => ReactNode;
+  /**
+   * How this column's cells print, merged over the table's `format`. Each key
+   * must apply to the item field's type, checked even when there are no rows.
+   */
+  format?: LayerFormat;
 }
 
 /** One footer row, evaluated from one of the artifact's definitions. */
@@ -21,6 +26,8 @@ export interface TableFooterRow {
   label?: string;
   /** Draws the row larger, above a rule, the way a grand total reads. */
   emphasis?: boolean;
+  /** How this row's amount prints, merged over the document's presentation. Each key must apply to the def's type. */
+  format?: LayerFormat;
 }
 
 /**
@@ -48,16 +55,37 @@ export interface TableProps {
   continuedLabel?: string;
   /** Footer rows evaluated from the artifact's definitions; the page plan never opens a page on them without the table's last row. */
   footer?: readonly TableFooterRow[];
+  /**
+   * How every cell prints, merged over the document's presentation and under
+   * each column's `format`. Each key must apply to at least one item field.
+   * Footer rows take their own `format`.
+   */
+  format?: LayerFormat;
 }
 
-export function Table({ path, columns, id, className, continuedLabel, footer }: TableProps) {
-  const list = useList(path);
+function columnKeys(columns: readonly TableColumn[]): string[] {
+  const seen = new Map<string, number>();
+  return columns.map((column) => {
+    const occurrence = seen.get(column.field) ?? 0;
+    seen.set(column.field, occurrence + 1);
+    return `${column.field}#${occurrence}`;
+  });
+}
+
+export function Table({ path, columns, id, className, continuedLabel, footer, format }: TableProps) {
+  const keys = columnKeys(columns);
+  const list = useList(path, {
+    format,
+    columns: columns.map((column) => ({ path: column.field, format: column.format })),
+  });
   const page = usePage();
   const { typography, accentColor } = useDocumentTokens();
   const prefix = id ?? path;
   const headerId = `${prefix}:header`;
   const footerId = `${prefix}:footer`;
-  const footerTotals = useTotals((footer ?? []).map((row) => row.def));
+  const footerTotals = useTotals((footer ?? []).map((row) => row.def), {
+    rows: (footer ?? []).map((row) => row.format),
+  });
   const headerRepeated = page?.repeats.has(headerId) === true;
   const keepIds = [
     headerId,
@@ -67,8 +95,8 @@ export function Table({ path, columns, id, className, continuedLabel, footer }: 
   if (page && !keepIds.some((keepId) => page.keeps.has(keepId))) return null;
   const header = (column: TableColumn) => column.header ??
     (list.item.type === "fieldset" ? list.item.fields[column.field]?.label : undefined) ?? column.field;
-  const columnHeaders = columns.map((column) => (
-    <span key={column.field} className={`${column.width ?? "basis-1/4"} ${column.align === "right" ? "text-right" : "text-left"}`}>
+  const columnHeaders = columns.map((column, columnIndex) => (
+    <span key={keys[columnIndex]} className={`${column.width ?? "basis-1/4"} ${column.align === "right" ? "text-right" : "text-left"}`}>
       {header(column)}
     </span>
   ));
@@ -97,10 +125,10 @@ export function Table({ path, columns, id, className, continuedLabel, footer }: 
       )}
       {list.rows.map((row, index) => (
         <KeepTogether key={index} keepId={`${prefix}:${index}`} {...{ [RENDER_ATTRIBUTES.tableRow]: prefix }} className="flex gap-4 border-b border-neutral-200 py-1.5">
-          {columns.map((column) => {
-            const text = list.text(index, column.field);
+          {columns.map((column, columnIndex) => {
+            const text = list.cell(index, columnIndex);
             return (
-              <span key={column.field} data-field-path={`${path}.${index}.${column.field}`} className={`${column.width ?? "basis-1/4"} ${column.align === "right" ? "text-right" : "text-left"}`}>
+              <span key={keys[columnIndex]} data-field-path={`${path}.${index}.${column.field}`} className={`${column.width ?? "basis-1/4"} ${column.align === "right" ? "text-right" : "text-left"}`}>
                 {column.render ? column.render(text, row) : text}
               </span>
             );
@@ -111,7 +139,7 @@ export function Table({ path, columns, id, className, continuedLabel, footer }: 
         <KeepTogether keepId={footerId} {...{ [RENDER_ATTRIBUTES.tableFooter]: prefix }} className="flex flex-col gap-1 pt-1">
           {footer.map((row, index) => (
             <div
-              key={row.def}
+              key={index}
               data-def={row.def}
               className={scaleTextClasses(row.emphasis ? "flex w-full justify-between border-t border-neutral-800 pt-1 text-sm font-semibold" : "flex w-full justify-between text-xs", typography.scale)}
               style={row.emphasis && accentColor ? { borderColor: accentColor } : undefined}

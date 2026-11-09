@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "kind": "form",
+  "name": "signed",
+  "version": "1.0.0",
+  "title": "Signed",
+  "fields": {
+    "signedOn": {
+      "type": "date",
+      "label": "Signed on"
+    }
+  },
+  "layers": {
+    "composition": {
+      "kind": "file",
+      "mimeType": "text/tsx",
+      "path": "compositions/signed.tsx",
+      "format": { "date": { "pattern": "MM/DD/YYYY" } }
+    }
+  }
+}

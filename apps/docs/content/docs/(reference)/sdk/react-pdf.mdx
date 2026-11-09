@@ -18,6 +18,7 @@ The default entry installs Takumi, the WebAssembly engine every render uses unle
 | `@asterdoc/react-pdf` | `renderPdf`, the adapter types, the Takumi adapter, font and image resources, and React layer renderers |
 | `@asterdoc/react-pdf/check` | `checkComposition` and `checkElement`, which check a composition without producing PDF bytes |
 | `@asterdoc/react-pdf/chromium` | The experimental Chromium adapter |
+| `@asterdoc/react-pdf/formatter` | `defaultFormatter`, the full formatter renders and checks use when the caller passes none. It loads no PDF engine |
 
 ## Render a PDF
 
@@ -52,7 +53,8 @@ await writeFile("invoice.pdf", bytes);
 | `images` | `PdfImage[]` | Bytes for every image `src` that is neither a `data:` URI nor inline SVG markup. No engine fetches images; a missing one fails the render |
 | `fonts` | `PdfFontResource[]` | Application font faces to embed. A preview plan already carries the faces it measured with |
 | `applicationCss` | `string` | Compiled application CSS (Chromium adapter only) |
-| `formatter` / `progressive` | | Override the formatter and its progressive policy |
+| `formatter` / `progressive` | | Override the formatter and its progressive policy. Without one, values print with `@asterdoc/render`'s default formatter, which carries every lookup provider, so phone styles print. `checkComposition` and `checkElement` check with the same formatter |
+| `presentation` | `LayerFormat` | How every value prints, as a layer `format` declares it. A React layer renders with its own `format` merged over this one |
 | `signingMarkers` | `boolean` | Embeds the face that carries seal markers. Set by the seal flow; you rarely set it yourself |
 
 The result carries `bytes`; `unknownBreaks` and `unknownRepeats` for plan entries the tree had no keep for; and `fontResources`, the family, weight, style, and SHA-256 identity of every embedded face.
@@ -146,12 +148,12 @@ if (result.unresolvedPaths.length > 0 || result.unsupportedClasses.length > 0) {
 }
 ```
 
-`checkComposition` builds the element from `composition`, `artifact`, and `data`. `checkElement(element, { adapter? })` checks an element you have already built. Both return a `CompositionCheckResult` with three lists:
+`checkComposition` builds the element from `composition`, `artifact`, and `data`. `checkElement(element, { adapter?, presentation? })` checks an element you have already built. Pass the layer's `format` as `presentation` to either, so values are checked the way the layer prints them. Both return a `CompositionCheckResult` with three lists:
 
 | List | Contents |
 | --- | --- |
 | `unsupportedClasses` | Classes outside the adapter's verified vocabulary. Always empty for `chromium` |
-| `unresolvedPaths` | Field paths, party roles (`party:<role>`), party indexes (`party:<role>[<index>]`), non-picture annexes (`image:<path>`), and definitions (`defs.<name>`) that would fail |
+| `unresolvedPaths` | Field paths, party roles (`party:<role>`), party indexes (`party:<role>[<index>]`), non-picture annexes (`image:<path>`), definitions (`defs.<name>`), and element formats that are malformed or do not apply (`format:<path>`) that would fail |
 | `missingImages` | Image `src` values that are neither `data:` URIs nor inline SVG markup, which a render needs bytes for |
 
 The lists do not combine into a verdict. Whether `missingImages` fails your check depends on whether you supply image bytes at render time.

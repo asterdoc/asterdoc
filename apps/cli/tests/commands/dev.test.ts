@@ -22,7 +22,9 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { clientModule, stylesheetModule } from '../../src/commands/dev/harness.js'
+import { clientModule, manifestModule, previewModule, stylesheetModule } from '../../src/commands/dev/harness.js'
+import { layerPresentation, unresolvedPathMessage } from '../../src/commands/dev/messages.js'
+import type { DiscoveredComposition } from '../../src/commands/dev/discovery.js'
 import { DEV_PEERS, MissingPeerError, missingDevPeers } from '../../src/commands/dev/peers.js'
 import { projectAliases, servableRoots, serverOrigin, startDevServer } from '../../src/commands/dev/server.js'
 
@@ -278,6 +280,105 @@ describe('the proof view', () => {
     expect(client).toContain('try {\n    fromHash = decodeURIComponent')
     expect(client).toContain('state.entryId === entry?.id')
   })
+})
+
+describe('the layer format the preview inherits', () => {
+  const format = { date: { pattern: 'MM/DD/YYYY' } }
+  const entry = (layer: string | undefined, layers: Record<string, unknown> | undefined) => ({
+    id: 'compositions/signed',
+    relative: 'compositions/signed.tsx',
+    file: '/project/compositions/signed.tsx',
+    samples: [],
+    problems: [],
+    artifact: { relative: 'signed.json', file: '/project/signed.json', name: 'signed', layer, artifact: { name: 'signed', layers } },
+  }) as unknown as DiscoveredComposition
+
+  it('is the format of the layer that names the composition', () => {
+    expect(layerPresentation(entry('composition', { composition: { kind: 'file', format } }))).toEqual(format)
+    expect(layerPresentation(entry('composition', { composition: { kind: 'file' } }))).toBeUndefined()
+    expect(layerPresentation(entry(undefined, { composition: { kind: 'file', format } }))).toBeUndefined()
+  })
+
+  it('travels in the manifest and wraps the previewed composition', () => {
+    expect(manifestModule([entry('composition', { composition: { kind: 'file', format } })])).toContain(`presentation: ${JSON.stringify(format)},`)
+    expect(manifestModule([entry('composition', {})])).toContain('presentation: null,')
+    expect(clientModule()).toContain('presentation={entry.presentation}')
+    expect(clientModule()).toContain('<PreviewComposition')
+  })
+
+  it('names a format fault as a format, not a missing field', () => {
+    expect(unresolvedPathMessage('signed', 'format:name')).toBe(
+      'The format at "name" is not valid, or sets a key that does not apply to the value it prints.'
+    )
+    expect(unresolvedPathMessage('signed', 'name')).toBe('The form "signed" declares no field at path "name".')
+  })
+
+  it('checks the PDF route with the layer format and element formats', async () => {
+    const port = await availablePort()
+    const server = await startDevServer({ root: path.join(FIXTURES, 'layer-format'), host: '127.0.0.1', port, open: false })
+    const ask = (id: string) => fetch(`${server.url}/@asterdoc/dev/pdf`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Origin: server.url }, body: JSON.stringify({ id }),
+    })
+    try {
+      const signed = await ask('compositions/signed')
+      expect(signed.status).toBe(422)
+      expect(await signed.text()).toContain('signedOn')
+
+      const previewModule = await fetch(`${server.url}/asterdoc-dev.preview.tsx`)
+      expect(previewModule.status).toBe(200)
+      expect(await previewModule.text()).toContain('react-pdf/dist/formatter.js')
+
+      const wrong = await ask('compositions/wrong-format')
+      expect(wrong.status).toBe(422)
+      expect(await wrong.text()).toContain('The format at \\"name\\" is not valid')
+    } finally {
+      await server.close()
+    }
+  }, 60_000)
+})
+
+describe('the on-screen preview', () => {
+  const phoned = {
+    name: 'preview-phone',
+    fields: { phone: { type: 'phone', label: 'Phone' } },
+  }
+  const phoneData = { fields: { phone: { number: '+12025550123' } }, parties: {} }
+  let dir: string
+
+  beforeEach(async () => {
+    dir = await fs.mkdtemp(path.join(FIXTURES, 'preview-tmp-'))
+    await fs.writeFile(path.join(dir, 'preview.tsx'), previewModule())
+    await fs.writeFile(path.join(dir, 'phone.tsx'), [
+      "import { Document, Field } from '@asterdoc/components'",
+      'export function Styled({ artifact, data }) {',
+      "  return <Document artifact={artifact} data={data}><Field path=\"phone\" format={{ phone: { style: 'national' } }} /></Document>",
+      '}',
+      'export function Plain({ artifact, data }) {',
+      '  return <Document artifact={artifact} data={data}><Field path="phone" /></Document>',
+      '}',
+    ].join('\n'))
+  })
+
+  afterEach(async () => {
+    await fs.rm(dir, { recursive: true, force: true })
+  })
+
+  async function preview(name: 'Styled' | 'Plain', presentation: unknown): Promise<string> {
+    const { PreviewComposition } = await import(/* @vite-ignore */ path.join(dir, 'preview.tsx'))
+    const compositions = await import(/* @vite-ignore */ path.join(dir, 'phone.tsx'))
+    const { createElement } = await import('react')
+    const { renderToStaticMarkup } = await import('react-dom/server')
+    return renderToStaticMarkup(createElement(PreviewComposition, { Composition: compositions[name], artifact: phoned, data: phoneData, presentation }))
+  }
+
+  it('prints a phone style with the full formatter, as the PDF route does', async () => {
+    expect(await preview('Styled', null)).toContain('(202) 555-0123')
+  }, 30_000)
+
+  it('prints the layer format it is given', async () => {
+    expect(await preview('Plain', { phone: { style: 'national' } })).toContain('(202) 555-0123')
+    expect(await preview('Plain', null)).toContain('+12025550123')
+  }, 30_000)
 })
 
 describe('the running dev server', () => {

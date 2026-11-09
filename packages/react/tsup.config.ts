@@ -16,6 +16,7 @@ export default defineConfig({
   external: [
     "@asterdoc/core",
     "@asterdoc/render",
+    "@asterdoc/schemas",
     "@asterdoc/format",
     "@asterdoc/types",
     "react",

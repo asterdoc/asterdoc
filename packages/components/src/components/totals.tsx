@@ -1,6 +1,6 @@
 /** @jsxRuntime classic */
 import React from "react";
-import { scaleTextClasses, useDocumentTokens, useField, useTotals } from "@asterdoc/react";
+import { scaleTextClasses, useDocumentTokens, useField, useTotals, type LayerFormat } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
 export interface TotalRow {
@@ -12,6 +12,8 @@ export interface TotalRow {
   ratePath?: string;
   /** Renders the row as the emphasized grand total: a top rule and bold text. */
   emphasis?: boolean;
+  /** How this amount prints, merged over the block's `format`. Each key must apply to the def's type. */
+  format?: LayerFormat;
 }
 
 export interface TotalsProps {
@@ -22,6 +24,11 @@ export interface TotalsProps {
    * @default "totals"
    */
   id?: string;
+  /**
+   * How every amount prints, merged over the document's presentation and
+   * under each row's `format`. Each key must apply to at least one row.
+   */
+  format?: LayerFormat;
   /** Application-owned classes replacing the block's default column layout. */
   className?: string;
 }
@@ -31,12 +38,15 @@ function Rate({ path }: { path: string }) {
   return <span data-field-path={path} className="text-neutral-500">{` (${field.text})`}</span>;
 }
 
-export function Totals({ rows, id, className }: TotalsProps) {
-  const totals = useTotals(rows.map((row) => row.def));
+export function Totals({ rows, id, format, className }: TotalsProps) {
+  const totals = useTotals(rows.map((row) => row.def), {
+    format,
+    rows: rows.map((row) => row.format),
+  });
   const { accentColor, typography } = useDocumentTokens();
   return (
     <KeepTogether keepId={id ?? "totals"} className={className ?? "flex w-1/2 flex-col gap-1 self-end"}>
-      {rows.map((row, index) => <div key={row.def} data-def={row.def} className={scaleTextClasses(row.emphasis ? "flex w-full justify-between border-t border-neutral-800 pt-1 text-base font-semibold" : "flex w-full justify-between text-sm", typography.scale)} style={row.emphasis && accentColor ? { borderColor: accentColor } : undefined}>
+      {rows.map((row, index) => <div key={index} data-def={row.def} className={scaleTextClasses(row.emphasis ? "flex w-full justify-between border-t border-neutral-800 pt-1 text-base font-semibold" : "flex w-full justify-between text-sm", typography.scale)} style={row.emphasis && accentColor ? { borderColor: accentColor } : undefined}>
         <span className="text-neutral-600">{row.label ?? totals[index]!.label}{row.ratePath ? <Rate path={row.ratePath} /> : null}</span>
         <span className="text-neutral-900">{totals[index]!.text}</span>
       </div>)}

@@ -32,12 +32,13 @@ import {
 	clientModule,
 	elementModule,
 	HARNESS_MODULES,
+	previewModule,
 	indexHtml,
 	manifestModule,
 	PDF_ROUTE,
 	stylesheetModule,
 } from './harness.js'
-import { messagesFor } from './messages.js'
+import { layerPresentation, messagesFor, unresolvedPathMessage } from './messages.js'
 import { loadDevToolchain } from './peers.js'
 import { loadSampleData } from './sample-loader.js'
 
@@ -297,6 +298,7 @@ function harnessPlugin(
 		manifest: resolve(root, HARNESS_MODULES.manifest.slice(1)),
 		styles: resolve(root, HARNESS_MODULES.styles.slice(1)),
 		element: resolve(root, HARNESS_MODULES.element.slice(1)),
+		preview: resolve(root, HARNESS_MODULES.preview.slice(1)),
 	}
 
 	return {
@@ -314,6 +316,7 @@ function harnessPlugin(
 			if (id === paths.manifest) return manifestModule(current())
 			if (id === paths.styles) return stylesheetModule(root, ignored)
 			if (id === paths.element) return elementModule()
+			if (id === paths.preview) return previewModule()
 			return undefined
 		},
 	}
@@ -428,7 +431,8 @@ async function renderRoute(
 		const { checkElement } = (await server.ssrLoadModule('@asterdoc/react-pdf/check')) as {
 			checkElement: (element: unknown, options?: unknown) => Promise<CheckResult>
 		}
-		const check = await checkElement(element)
+		const presentation = layerPresentation(entry)
+		const check = await checkElement(element, { presentation })
 		const faults = [
 			...check.unsupportedClasses.map((className) => ({
 				kind: 'unsupported-class',
@@ -439,7 +443,7 @@ async function renderRoute(
 			// should not be described two ways in two panes.
 			...check.unresolvedPaths.map((path) => ({
 				kind: 'unresolved-path',
-				message: `The form "${entry.artifact?.name ?? ''}" declares no field at path "${path}".`,
+				message: unresolvedPathMessage(entry.artifact?.name ?? '', path),
 			})),
 		]
 		if (faults.length > 0) return findings(response, faults)
@@ -450,6 +454,7 @@ async function renderRoute(
 		const result = await renderPdf(element, {
 			images: await loadImages(root, check.missingImages),
 			plan: sent.plan,
+			presentation,
 		})
 
 		response.setHeader('Content-Type', 'application/pdf')

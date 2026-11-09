@@ -1,0 +1,23 @@
+{
+  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "kind": "form",
+  "name": "check-cli-element-format",
+  "version": "1.0.0",
+  "title": "Check CLI element format fixture",
+  "fields": {
+    "name": {
+      "type": "text",
+      "label": "Name",
+      "required": true,
+      "visible": true
+    }
+  },
+  "layers": {
+    "composition": {
+      "kind": "file",
+      "mimeType": "text/tsx",
+      "path": "element-format-composition.tsx",
+      "title": "Composition"
+    }
+  }
+}

@@ -27,10 +27,12 @@ export {
   type ParsedPdfBinding,
   type PdfBindingPart,
 } from './layer-bindings'
-export { formatterFor, hasNewFormatOptions, mergeFormats } from './presentation'
+export { formatFieldOptions, formatterFor, hasNewFormatOptions, mergeFormats } from './presentation'
 export { printValuePart } from './parts/print'
 export { ALL_VALUE_PARTS, UNSUPPORTED_PART, VALUE_PARTS } from './parts/rules'
 export { defaultFormatter } from './default-formatter'
+export { FORMAT_MODIFIER_RULES, formatModifiers, formatProblem } from './template/format-modifiers'
+export type { FormatModifier, FormatModifierRule, ModifierLiteral, ModifierTarget } from './template/format-modifiers'
 
 /** Options shared by the MIME-selected rendering engines. */
 export interface CreateLayerRendererOptions {

@@ -46,6 +46,7 @@ import {
   useDocumentTokens,
   useField,
   usePage,
+  type LayerFormat,
 } from "@asterdoc/react";
 import { KeepTogether } from "./keep-together";
 
@@ -115,6 +116,12 @@ export interface FieldProps {
    * @default false
    */
   rule?: boolean;
+  /**
+   * How this value prints, merged over the document's presentation per
+   * property, such as `{ date: { pattern: "MM/DD/YYYY" } }`. Each key must
+   * apply to the value's type.
+   */
+  format?: LayerFormat;
   /** Classes for the field's wrapping element: the keep itself, or the element holding the paragraphs. */
   className?: string;
 }
@@ -130,8 +137,8 @@ function FieldHeading({ heading }: { heading: string | undefined }) {
   );
 }
 
-function FieldValue({ path, label, paragraphs = false, rule = false, className }: FieldProps) {
-  const binding = useField(path);
+function FieldValue({ path, label, paragraphs = false, rule = false, format, className }: FieldProps) {
+  const binding = useField(path, format);
   const { dir, typography } = useDocumentTokens();
   const page = usePage();
   const heading = label === false ? undefined : (label ?? binding.field.label ?? path);
@@ -180,8 +187,8 @@ function FieldValue({ path, label, paragraphs = false, rule = false, className }
  * report is the binding's, not this file's, so a copy of this component that
  * draws the picture differently still produces it.
  */
-function FieldImage({ path, label, width, height, src, className }: FieldProps) {
-  const binding = useAnnexPicture(path);
+function FieldImage({ path, label, width, height, src, format, className }: FieldProps) {
+  const binding = useAnnexPicture(path, format);
   const heading = label === false ? undefined : (label ?? binding.label);
   // Checked whatever the slot holds, so a composition cannot pass a check
   // against a sample with nothing attached and then throw on the day a real

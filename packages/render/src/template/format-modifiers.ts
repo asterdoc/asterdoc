@@ -250,3 +250,34 @@ export function modifierFormat(entries: readonly FormatModifier[]): LayerFormat 
   }
   return format as LayerFormat
 }
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** The modifiers a format sets: one per leaf, keyed by its dotted path, such as `date.pattern`. */
+export function formatModifiers(format: LayerFormat): FormatModifier[] {
+  const entries: FormatModifier[] = []
+  const visit = (value: unknown, key: string) => {
+    if (value === undefined) return
+    if (isRecord(value)) {
+      for (const [member, inner] of Object.entries(value)) visit(inner, key === '' ? member : `${key}.${member}`)
+      return
+    }
+    entries.push({ key, value: value as ModifierLiteral, position: { line: 1, column: 1 } })
+  }
+  visit(format, '')
+  return entries
+}
+
+/**
+ * Why a format cannot print `targets`, by the rules template modifiers
+ * follow: an unknown key, a value the key does not take, or a key that
+ * applies to none of the targets. An element that prints several values
+ * passes them all; each key must apply to at least one. With no targets,
+ * only the keys and values are checked. Undefined when nothing is wrong.
+ */
+export function formatProblem(format: LayerFormat, targets: readonly ModifierTarget[]): string | undefined {
+  const entries = formatModifiers(format)
+  return (modifierListProblem(entries) ?? inapplicableModifier(entries, targets))?.message
+}

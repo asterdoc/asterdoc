@@ -94,8 +94,11 @@ composition that checks.
 
 The document is on the left, paginated in the browser at the page geometry
 `@asterdoc/react` fixes, and the PDF is on the right, rendered in Node from the
-same tree with the preview's page breaks passed as hints. Editing a composition
-or its sample updates both; editing an artifact reloads the page.
+same tree with the preview's page breaks passed as hints. Both print values
+with the full formatter, every lookup provider included, and with the React
+layer's `format`, so a phone style prints the same in each; a formatter the
+composition's document passes still wins. Editing a composition or its sample
+updates both; editing an artifact reloads the page.
 
 Before it renders, the PDF route runs the same check `asterdoc check` runs
 (`checkElement` from `@asterdoc/react-pdf/check`): every Tailwind class the engine

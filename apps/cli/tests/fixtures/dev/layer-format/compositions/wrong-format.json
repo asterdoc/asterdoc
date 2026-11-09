@@ -1,0 +1,13 @@
+{
+  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "kind": "form",
+  "name": "wrong-format",
+  "version": "1.0.0",
+  "title": "Wrong format",
+  "fields": {
+    "name": {
+      "type": "text",
+      "label": "Name"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.ts", "src/chromium.ts", "src/check.ts"],
+  entry: ["src/index.ts", "src/chromium.ts", "src/check.ts", "src/formatter.ts"],
   format: ["esm"],
   dts: { resolve: true },
   // Splitting is required: the entries share the adapter seam and the tree

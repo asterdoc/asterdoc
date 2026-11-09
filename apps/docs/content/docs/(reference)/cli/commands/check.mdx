@@ -40,7 +40,9 @@ kinds of fault, independently:
   verified vocabulary. Checking against `--adapter chromium` skips this,
   since a real browser accepts whatever CSS the tree produces.
 - **Unresolved field paths** — a `Field`/`Table` path, or a `Signature`
-  party role, the artifact does not declare.
+  party role, the artifact does not declare, and an element `format` that is
+  malformed or sets a key that does not apply (`format:<path>`). Values are
+  checked with the React layer's `format`.
 - **Missing images** — an image `src` that is not a `data:` URI, which a
   render would need bytes for.
 

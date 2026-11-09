@@ -1,4 +1,4 @@
-import type { Formatter, FormatterProgressivePolicy } from "@asterdoc/types";
+import type { Formatter, FormatterProgressivePolicy, LayerFormat } from "@asterdoc/types";
 /**
  * `renderPdf` — one call that turns the composed document into PDF bytes.
  *
@@ -38,6 +38,7 @@ import {
   pageGeometry,
   type DocumentTokensInput,
 } from "@asterdoc/react";
+import { defaultFormatter } from "./formatter";
 import {
   assertDirectionSupported,
   type PdfAdapter,
@@ -72,8 +73,19 @@ export interface RenderPdfOptions {
    * Chromium adapter only: Takumi refuses it.
    */
   applicationCss?: string;
+  /**
+   * The formatter values print with. Defaults to `@asterdoc/render`'s, which
+   * carries every lookup provider (phone numbers among them), so every layer
+   * format prints on the server.
+   */
   formatter?: Formatter;
   progressive?: FormatterProgressivePolicy;
+  /**
+   * How the document's values print, as a layer's `format` declares it. The
+   * document's own `format.presentation` and each element's `format` merge
+   * over it per property.
+   */
+  presentation?: LayerFormat;
   /**
    * Which engine writes the bytes. Pass an adapter object to supply an engine
    * directly. `takumi` is the default and is what parity is measured on.
@@ -270,7 +282,7 @@ export async function renderPdf(
     // against it. Both are contexts and neither emits markup, so the tree an
     // engine lays out is the tree the caller wrote.
     element: withDrawnPaper(
-      withTokenOverride(withPartialValues(withFormatter(element, options), options.partial), options.tokens),
+      withTokenOverride(withPartialValues(withFormatter(element, { formatter: options.formatter ?? defaultFormatter, progressive: options.progressive, presentation: options.presentation }), options.partial), options.tokens),
       tokens
     ),
     tokens,

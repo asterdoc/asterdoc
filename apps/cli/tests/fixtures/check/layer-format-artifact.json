@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "kind": "form",
+  "name": "check-cli-layer-format",
+  "version": "1.0.0",
+  "title": "Check CLI layer format fixture",
+  "fields": {
+    "signedOn": {
+      "type": "date",
+      "label": "Signed on",
+      "required": true,
+      "visible": true
+    }
+  },
+  "layers": {
+    "composition": {
+      "kind": "file",
+      "mimeType": "text/tsx",
+      "path": "layer-format-composition.tsx",
+      "title": "Composition",
+      "format": { "date": { "pattern": "MM/DD/YYYY" } }
+    }
+  }
+}
