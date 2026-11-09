@@ -31,6 +31,12 @@ describe('@asterdoc/sdk exports', () => {
     expect(sdk.createFormatter().safeFormatPhone('+12125551234', { style: 'national' })).toMatchObject({ success: false, status: 'unsupported' })
   })
 
+  it("exports the regions provider, which render's default formatter carries", () => {
+    expect(sdk.defaultFormatter.providers.regions).toBe(sdk.regionsProvider)
+    expect(sdk.regionsProvider.entryPoint).toBe('@asterdoc/format/regions')
+    expect(sdk.createFormatter().providers.regions).toBeUndefined()
+  })
+
   // The per-format wrappers dropped options (font, expressions) on the way to
   // createLayerRenderer. Callers use createLayerRenderer, the built-in default renderer, or the
   // @asterdoc/render subpaths.

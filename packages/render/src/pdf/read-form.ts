@@ -1,6 +1,7 @@
 import { defaultFormatter } from '../default-formatter'
 import { phoneProvider } from '@asterdoc/format/phone'
-import type { BinaryContent, Bindings, EnumOption, EnumOptionValue, Form, FormField, Formatter, LayerBooleanFormat, LayerDateFormat, LayerFormat, LayerPhoneFormat } from '@asterdoc/types'
+import { resolveAddressRegion, resolveCountry, resolveRegion, type PlaceOutcome } from '@asterdoc/format'
+import type { BinaryContent, Bindings, EnumOption, EnumOptionValue, Form, FormField, Formatter, LayerBooleanFormat, LayerCountryFormat, LayerDateFormat, LayerFormat, LayerPhoneFormat, LayerRegionFormat } from '@asterdoc/types'
 import { validateFieldBindings } from '../text/field-formatter'
 import { assertBindingFormats, fieldDefinition, parseBindings, resolveLayerBindings, splitPartIndex } from '../layer-bindings'
 import { formatterFor, mergeFormats } from '../presentation'
@@ -193,9 +194,11 @@ type Target =
   /** A declared field, written with the formatter's text. */
   | { kind: 'field'; field: FormField }
   /** A member of a structured value or a party, written as its raw value; a phone's `number` as its phone style prints it. */
-  | { kind: 'member'; type: 'number' | 'text' | 'phoneNumber' }
+  | { kind: 'member'; type: 'number' | 'text' | 'phoneNumber'; place?: AddressPlace }
   /** Something extraction cannot write back: a computed value, an annex, a whole party. */
   | { kind: 'fixed'; reason: string }
+
+type AddressPlace = { member: 'country' } | { member: 'region'; countryPath: string }
 
 /** The member paths of structured values that hold numbers, as bindings write them. */
 const numericMembers: Record<string, ReadonlySet<string>> = {
@@ -223,7 +226,11 @@ function targetFor(form: Form, path: string): Target {
     else {
       const member = rest.slice(index).join('.')
       if (field.type === 'phone' && member === 'number') return { kind: 'member', type: 'phoneNumber' }
-      return { kind: 'member', type: numericMembers[field.type]?.has(member) ? 'number' : 'text' }
+      const place: AddressPlace | undefined = field.type !== 'address' ? undefined
+        : member === 'country' ? { member: 'country' }
+          : member === 'region' ? { member: 'region', countryPath: [...segments.slice(0, index + 1), 'country'].join('.') }
+            : undefined
+      return { kind: 'member', type: numericMembers[field.type]?.has(member) ? 'number' : 'text', ...(place && { place }) }
     }
   }
   return { kind: 'field', field }
@@ -238,6 +245,27 @@ type Parsed = { ok: true; value: unknown; lossy: boolean } | { ok: false; reason
 const ok = (value: unknown, lossy = false): Parsed => ({ ok: true, value, lossy })
 const fail = (reason: string): Parsed => ({ ok: false, reason })
 const lost = (reason: string): Parsed => ({ ok: false, reason, lost: true })
+
+function placeParsed(outcome: PlaceOutcome): Parsed {
+  if (outcome.ok) return ok(outcome.value)
+  const ambiguous = outcome.code === 'ambiguous_country' || outcome.code === 'ambiguous_region' || outcome.code === 'needs_country'
+  return ambiguous ? lost(outcome.message) : fail(outcome.message)
+}
+
+function readCountry(raw: string, formatter: Formatter): Parsed {
+  return placeParsed(resolveCountry(raw, { locale: formatter.locale, regions: formatter.providers.regions }))
+}
+
+const FULL_REGION_CODE = /^[A-Za-z]{2}-[A-Za-z0-9]{1,3}$/
+
+function readAddressRegion(raw: string, country: string | undefined, formatter: Formatter): Parsed {
+  const regions = formatter.providers.regions
+  const text = raw.trim()
+  if (country !== undefined) return placeParsed(resolveAddressRegion(text, country, regions))
+  if (!FULL_REGION_CODE.test(text)) return lost('A subdivision name or short code is read in its address country; bind the address country to recover it.')
+  const full = placeParsed(resolveRegion(text, { regions }))
+  return full.ok ? ok(String(full.value).slice(String(full.value).indexOf('-') + 1)) : full
+}
 
 function numberSymbols(locale: string): { group: string; decimal: string } {
   try {
@@ -411,6 +439,8 @@ const composite = new Set(['address', 'person', 'organization', 'identification'
 interface Reader {
   formatter: Formatter
   date?: LayerDateFormat
+  country?: LayerCountryFormat
+  region?: LayerRegionFormat
   phone?: LayerPhoneFormat
   choice?: 'label' | 'value'
   boolean?: LayerBooleanFormat
@@ -626,6 +656,10 @@ function parseFieldValue(raw: string, field: FormField, reader: Reader): Parsed 
         ? ok(text)
         : fail('Only an ISO 8601 duration can be read back exactly.')
     }
+    case 'country':
+      return readCountry(raw, formatter)
+    case 'region':
+      return placeParsed(resolveRegion(raw, { ...(field.country !== undefined && { country: field.country }), regions: formatter.providers.regions }))
     case 'phone': {
       if (reader.phone?.style !== undefined) return parsePhone(raw, reader)
       const text = raw.trim().replace(/[\s().-]/g, '')
@@ -643,6 +677,7 @@ function parseTarget(raw: string, target: Target, reader: Reader): Parsed {
     return value === undefined ? fail('The text is not a number.') : ok(value)
   }
   if (target.type === 'phoneNumber' && reader.phone?.style !== undefined) return parsePhoneNumber(raw.trim(), reader.phone)
+  if (target.place?.member === 'country' && reader.country) return readCountry(raw, reader.formatter)
   return ok(raw)
 }
 
@@ -652,6 +687,7 @@ function parseTarget(raw: string, target: Target, reader: Reader): Parsed {
 
 type Reading =
   | { kind: 'value'; value: unknown; lossy: boolean }
+  | { kind: 'region'; raw: string; countryPath: string; formatter: Formatter }
   | { kind: 'empty' }
   | { kind: 'unparseable'; reason: string }
   | { kind: 'not_recoverable'; reason: string }
@@ -671,6 +707,10 @@ interface PathWork {
 function readingOf(parsed: Parsed): Reading {
   if (parsed.ok) return { kind: 'value', value: parsed.value, lossy: parsed.lossy }
   return parsed.lost ? { kind: 'not_recoverable', reason: parsed.reason } : { kind: 'unparseable', reason: parsed.reason }
+}
+
+function readRegions(readings: Reading[], countryOf: (path: string) => string | undefined): Reading[] {
+  return readings.map((entry) => entry.kind === 'region' ? readingOf(readAddressRegion(entry.raw, countryOf(entry.countryPath), entry.formatter)) : entry)
 }
 
 function source(state: FieldState | undefined, name: string): PdfExtractionSource {
@@ -710,6 +750,9 @@ function readDirect(state: FieldState, target: Target, reader: Reader): Reading 
   if (target.kind === 'fixed') return { kind: 'not_recoverable', reason: target.reason }
   if (target.kind === 'field' && composite.has(target.field.type)) {
     return { kind: 'not_recoverable', reason: `A ${target.field.type} value written as one piece of text cannot be split back into its parts; bind its parts to recover it.` }
+  }
+  if (target.kind === 'member' && target.place?.member === 'region' && reader.region) {
+    return { kind: 'region', raw: state.raw, countryPath: target.place.countryPath, formatter: reader.formatter }
   }
   const parsed = parseTarget(state.raw, target, reader)
   return readingOf(parsed)
@@ -810,6 +853,8 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
       found = {
         formatter: effective?.money ? localized.compose({ money: effective.money }) : localized,
         ...(effective?.date && { date: effective.date }),
+        ...(effective?.country && { country: effective.country }),
+        ...(effective?.region && { region: effective.region }),
         ...(effective?.phone && { phone: effective.phone }),
         ...(effective?.choice?.display && { choice: effective.choice.display }),
         ...(effective?.boolean && { boolean: effective.boolean }),
@@ -907,8 +952,25 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
 
   const data: PdfExtractedData = { fields: {} }
   const entries: PdfExtractionEntry[] = []
+  const resolvedPaths = new Map<string, ReturnType<typeof resolvePath>>()
+  const resolve = (path: string, entry: PathWork) => {
+    let resolved = resolvedPaths.get(path)
+    if (!resolved) {
+      resolved = resolvePath(entry, targetFor(form, path), reader)
+      resolvedPaths.set(path, resolved)
+    }
+    return resolved
+  }
+  const countryOf = (path: string): string | undefined => {
+    const entry = work.get(path)
+    const resolved = entry && !entry.readings.some((item) => item.kind === 'region') ? resolve(path, entry) : undefined
+    if (resolved?.status !== 'recovered' || typeof resolved.value !== 'string') return undefined
+    const country = resolveCountry(resolved.value, { locale: reader.formatter.locale, regions: reader.formatter.providers.regions })
+    return country.ok ? country.value : undefined
+  }
+  for (const entry of work.values()) entry.readings = readRegions(entry.readings, countryOf)
   for (const [path, entry] of work) {
-    const resolved = resolvePath(entry, targetFor(form, path), reader)
+    const resolved = resolve(path, entry)
     if (resolved.status === 'recovered') placeValue(data, path, resolved.value)
     entries.push({
       path,

@@ -109,7 +109,30 @@ const MoneyFieldSchema = BaseFieldSchema.extend({
 
 const AddressFieldSchema = BaseFieldSchema.extend({
 	type: z.literal('address'),
+	codes: z.boolean()
+		.describe('Store country as an ISO 3166-1 alpha-2 code and region as the ISO 3166-2 code after the dash (ON). Names and other codes are converted on input. Without it, the address stores what it is given')
+		.optional(),
 	default: AddressSchema.optional(),
+});
+
+const CountryCodeSchema = z.string()
+	.regex(/^[A-Z]{2}$/)
+	.describe('ISO 3166-1 alpha-2 country code in upper case (e.g., CA)');
+
+const CountryFieldSchema = BaseFieldSchema.extend({
+	type: z.literal('country'),
+	default: CountryCodeSchema.describe('Default value: an ISO 3166-1 alpha-2 country code in upper case (e.g., CA)').optional(),
+});
+
+const RegionFieldSchema = BaseFieldSchema.extend({
+	type: z.literal('region'),
+	country: CountryCodeSchema
+		.describe('ISO 3166-1 alpha-2 code of the country the subdivision must belong to (e.g., US for a US state). Omit to allow any subdivision')
+		.optional(),
+	default: z.string()
+		.regex(/^[A-Z]{2}-[A-Z0-9]{1,3}$/)
+		.describe('Default value: a full ISO 3166-2 subdivision code in upper case (e.g., CA-ON)')
+		.optional(),
 });
 
 const PhoneFieldSchema = BaseFieldSchema.extend({
@@ -344,6 +367,8 @@ export const FIELD_SCHEMAS = [
 	BboxFieldSchema,
 	MoneyFieldSchema,
 	AddressFieldSchema,
+	CountryFieldSchema,
+	RegionFieldSchema,
 	PhoneFieldSchema,
 	DurationFieldSchema,
 	EmailFieldSchema,

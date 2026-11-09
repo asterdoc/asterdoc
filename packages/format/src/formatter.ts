@@ -18,6 +18,7 @@ import {
 	type NormalizedPhone,
 	type ValidatedParty,
 } from './contacts'
+import { REGIONS_ENTRY_POINT } from './places'
 import {
 	BUILT_IN_TEMPORAL_MESSAGES,
 	dateTimeDefaults,
@@ -584,6 +585,10 @@ function createProviders(providers: FormatProviders | undefined): FormatProvider
 	const phone: unknown = providers.phone
 	if (phone !== undefined && (!isRecord(phone) || typeof phone.parse !== 'function' || typeof phone.callingCode !== 'function' || typeof phone.longest !== 'function')) {
 		throw new FormatConfigurationError(`The phone provider must be the phoneProvider of ${PHONE_PROVIDER_ENTRY_POINT}, or implement parse, callingCode and longest.`)
+	}
+	const regions: unknown = providers.regions
+	if (regions !== undefined && (!isRecord(regions) || typeof regions.entryPoint !== 'string' || !Array.isArray(regions.subdivisions))) {
+		throw new FormatConfigurationError(`The regions provider must be the regionsProvider of ${REGIONS_ENTRY_POINT}, or carry entryPoint and subdivisions.`)
 	}
 	return Object.freeze({ ...providers })
 }

@@ -2,6 +2,7 @@ import { project } from "../event-log/projector";
 import { fillStateOf } from "./payload";
 import type {
 	Actor,
+	Issue,
 	SessionEvent,
 } from "../event-log/types";
 import type {
@@ -17,8 +18,8 @@ function defaultNow(): string {
 	return new Date().toISOString();
 }
 
-function reject(code: CommandErrorCode, reason: string): CommandResult {
-	return { ok: false, code, reason };
+function reject(code: CommandErrorCode, reason: string, issues?: Issue[]): CommandResult {
+	return issues && issues.length > 0 ? { ok: false, code, reason, issues } : { ok: false, code, reason };
 }
 
 function appendEvents(
@@ -156,6 +157,7 @@ export function execute(
 							validation.issues.map((i) => i.message).join("; ") ||
 							"value rejected by field schema"
 						}`,
+						validation.issues,
 					);
 				}
 				values[fieldPath] = validation.value;
@@ -226,6 +228,7 @@ export function execute(
 					"invalid-value",
 					validation.issues.map((i) => i.message).join("; ") ||
 						"value rejected by field schema",
+					validation.issues,
 				);
 			}
 			const emitted: SessionEvent[] = [
@@ -271,6 +274,7 @@ export function execute(
 					"invalid-value",
 					validation.issues.map((i) => i.message).join("; ") ||
 						"value rejected by field schema",
+					validation.issues,
 				);
 			}
 			const emitted: SessionEvent[] = [
@@ -512,6 +516,7 @@ export function execute(
 					"invalid-value",
 					validation.issues.map((i) => i.message).join("; ") ||
 						"party value rejected by schema",
+					validation.issues,
 				);
 			}
 			const filled = Object.values(projected.parties).filter(
@@ -551,6 +556,7 @@ export function execute(
 					"invalid-value",
 					validation.issues.map((i) => i.message).join("; ") ||
 						"annex value rejected by schema",
+					validation.issues,
 				);
 			}
 			const emitted: SessionEvent[] = [

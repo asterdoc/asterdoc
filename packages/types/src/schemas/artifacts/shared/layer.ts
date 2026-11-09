@@ -149,6 +149,25 @@ export interface LayerBooleanFormat {
 }
 
 /**
+ * How a layer or binding presents a country: an address's `country` member
+ * or a `country` field. The value is normalized first; without this format it
+ * prints as stored.
+ */
+export interface LayerCountryFormat {
+  /** `code` prints the ISO 3166-1 alpha-2 code, `name` the country name in the format's locale. */
+  display: "code" | "name";
+}
+
+/**
+ * How a layer or binding presents a subdivision: an address's `region` member
+ * or a `region` field. Without this format it prints as stored.
+ */
+export interface LayerRegionFormat {
+  /** `code` prints the ISO 3166-2 code after the dash (`ON`), `full` the whole code (`CA-ON`), `name` its English name. */
+  display: "code" | "name" | "full";
+}
+
+/**
  * How values print. On a layer it applies over the formatter the caller
  * renders with; on a PDF binding, over the layer's format. Levels merge per
  * kind and per property: a binding's `money` keeps the layer's other money
@@ -167,6 +186,10 @@ export interface LayerFormat {
   choice?: LayerChoiceFormat;
   /** How booleans are presented in text. */
   boolean?: LayerBooleanFormat;
+  /** How countries are presented. */
+  country?: LayerCountryFormat;
+  /** How subdivisions are presented. */
+  region?: LayerRegionFormat;
 }
 
 /**

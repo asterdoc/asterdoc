@@ -73,6 +73,7 @@ import {
 	type NormalizedPartyInput,
 } from '@/validation'
 import { evaluatePartyRequiredness } from '@/validation/party'
+import { canonicalizationError, canonicalizeFieldValues } from '@/validation/canonicalize'
 import { toYAML } from '@/serialization/serialization'
 import { deepClone, deepReadonlyClone } from '@/utils/clone'
 import {
@@ -2081,7 +2082,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			let validatedAnnexes = mergePatchValues(annexValues, patchAnnexes)
 
 			if (patchFields !== undefined) {
-				const fieldResult = validateProgressiveFieldsPatch(formDef, patchFields)
+				const fieldResult = validateProgressiveFieldsPatch(formDef, patchFields, { current: fieldValues })
 				if (!fieldResult.success) throw new FormValidationError(fieldResult.errors)
 				validatedFields = mergePatchValues(fieldValues, fieldResult.value)
 			}
@@ -2871,6 +2872,12 @@ function normalizeRehydratedParties(
 	return result.value
 }
 
+function canonicalRehydratedFields(formDef: Form, fields: Record<string, unknown> | undefined, phase: string): Record<string, unknown> | undefined {
+	const result = canonicalizeFieldValues(formDef.fields, fields, { mode: phase === 'draft' ? 'progressive' : 'complete', path: 'fields' })
+	if (!result.success) throw new FormValidationError(result.issues.map(canonicalizationError))
+	return result.value as Record<string, unknown> | undefined
+}
+
 /**
  * Load a RuntimeForm from JSON.
  *
@@ -2885,7 +2892,7 @@ export function runtimeFormFromJSON<F extends Form>(
 	// The RuntimeFormJSON union already constrains the valid combinations
 	const config = {
 		form: snapshotArtifactDefinition(json.form),
-		fields: json.fields,
+		fields: canonicalRehydratedFields(json.form, json.fields, json.phase),
 		parties: normalizeRehydratedParties(json.form, json.parties),
 		annexes: json.annexes,
 		signers: json.signers,
@@ -2976,7 +2983,7 @@ function createFormInstance<F extends Form>(formDef: F, options?: ArtifactInstan
 				parties: undefined,
 				annexes: undefined,
 			} as Form
-			const defaultedFields = validateFormData(fieldsOnlyForm, { fields }, { applyDefaults: true })
+			const defaultedFields = validateFormData(fieldsOnlyForm, { fields }, { applyDefaults: true, mode: 'progressive' })
 			if (!defaultedFields.success) throw new FormValidationError(defaultedFields.errors)
 			let validatedFields = (defaultedFields.data as { fields?: Record<string, unknown> }).fields ?? {}
 			let validatedParties: Record<string, RuntimeParty | RuntimeParty[]> = {}

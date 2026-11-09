@@ -10,7 +10,7 @@ export async function executeFill(
 ): Promise<FillOutput> {
 	try {
 		const normalized = FillInputSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject } = await import('@asterdoc/core')
+		const { isChecklist, isForm, loadFromObject, placeDisplayNames } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		const kind = artifactKind(artifact)
 		if (isForm(artifact)) {
@@ -26,11 +26,13 @@ export async function executeFill(
 				}
 			}
 			const draft = result.data
+			const display = placeDisplayNames(instance.fields, draft.fields)
 			return {
 				accepted: true,
 				complete: draft.isValid(),
 				artifact_kind: 'form',
 				data: formDraftPayload(draft),
+				...(Object.keys(display).length > 0 && { display }),
 				evaluation_context: contextSnapshot(draft.context),
 			}
 		}

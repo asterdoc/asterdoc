@@ -6,8 +6,8 @@ import {
 } from "../src/catalog.js";
 
 describe("catalog", () => {
-	it("exposes all 24 component names", () => {
-		expect(CATALOG_COMPONENT_NAMES.length).toBe(24);
+	it("exposes all 26 component names", () => {
+		expect(CATALOG_COMPONENT_NAMES.length).toBe(26);
 	});
 
 	it("includes the expected primitives", () => {

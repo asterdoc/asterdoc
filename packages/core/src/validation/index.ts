@@ -72,6 +72,9 @@ export type { LayerValidationIssue, ValidateLayersOptions, ValidateLayersResult 
 // Data validation
 export { validateFormData } from './data'
 
+export { canonicalizeFieldValue, placeDisplayNames } from './canonicalize'
+export type { CanonicalizationIssue, CanonicalizationMode, CanonicalizeOptions, CanonicalizeResult } from './canonicalize'
+
 // Progressive validation
 export {
   validateFieldInput,
@@ -87,6 +90,7 @@ export {
 export type {
   ProgressiveValidationResult,
   FieldInputValidationInput,
+  FieldsPatchValidationOptions,
   PartyInputValidationInput,
   AnnexInputValidationInput,
   ChecklistItemInputValidationInput,

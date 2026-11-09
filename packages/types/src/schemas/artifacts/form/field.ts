@@ -83,6 +83,8 @@ export type FormField =
   | BboxField
   | MoneyField
   | AddressField
+  | CountryField
+  | RegionField
   | PhoneField
   | DurationField
   | EmailField
@@ -189,8 +191,39 @@ export interface MoneyField extends BaseField {
 export interface AddressField extends BaseField {
   /** Discriminator for address field type. */
   type: "address";
+  /**
+   * Store `country` as an ISO 3166-1 alpha-2 code and `region` as the ISO
+   * 3166-2 code after the dash (`ON`). Names and other codes are converted on
+   * input. Without it, the address stores what it is given.
+   */
+  codes?: boolean;
   /** Default value for the field. */
   default?: Address;
+}
+
+/**
+ * Country field. The stored value is an ISO 3166-1 alpha-2 code in upper
+ * case; input also takes an alpha-3 code or a country name.
+ */
+export interface CountryField extends BaseField {
+  /** Discriminator for country field type. */
+  type: "country";
+  /** Default value for the field: an ISO 3166-1 alpha-2 code. */
+  default?: string;
+}
+
+/**
+ * State, province or other subdivision field. The stored value is the full
+ * ISO 3166-2 code in upper case (`CA-ON`); input also takes the code after
+ * the dash when `country` is set, or a subdivision name.
+ */
+export interface RegionField extends BaseField {
+  /** Discriminator for region field type. */
+  type: "region";
+  /** ISO 3166-1 alpha-2 code the subdivision must belong to. Omit to allow any. */
+  country?: string;
+  /** Default value for the field: a full ISO 3166-2 code. */
+  default?: string;
 }
 
 /**

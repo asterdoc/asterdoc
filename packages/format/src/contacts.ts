@@ -322,7 +322,7 @@ export function formatAddress(
 	options: AddressFormatOptions,
 	context: AddressLayoutContext,
 ): string {
-	const countryCode = address.countryCode
+	const countryCode = options.layoutCountry?.toUpperCase() ?? address.countryCode
 	if (options.layout === 'generic') return genericAddress(address)
 	const custom = Object.entries(options.countryLayouts ?? {}).find(([country]) => country.toUpperCase() === countryCode)?.[1]
 	if (custom !== undefined) return custom(address, context)
@@ -424,6 +424,9 @@ export function formatOrganization(organization: OrganizationValue, context: Mes
 export function validateAddressOptions(options: AddressFormatOptions): void {
 	if (options.layout !== undefined && options.layout !== 'country' && options.layout !== 'generic') {
 		throw new Error('Address layout must be "country" or "generic".')
+	}
+	if (options.layoutCountry !== undefined && (typeof options.layoutCountry !== 'string' || !/^[A-Z]{2}$/i.test(options.layoutCountry))) {
+		throw new Error('Address layoutCountry must be an ISO alpha-2 code.')
 	}
 	if (options.countryLayouts !== undefined) {
 		if (!isRecord(options.countryLayouts)) throw new Error('Address countryLayouts must be an object.')

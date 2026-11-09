@@ -24,6 +24,7 @@ import {
 } from '@asterdoc/expr'
 import {
   FormattedFieldValue,
+  formatAddressMember,
   formatAttachmentValue,
   formatDefinitionValue,
   formatFieldValue,
@@ -141,7 +142,11 @@ function stringReturnKind(node: Expr, registry: Registry | undefined): 'date' | 
 
 const VALUE_KINDS = new Set(['number', 'date', 'datetime', 'money', 'boolean'])
 
-function formatDeclared(formatter: Formatter, declared: DeclaredValue, raw: unknown, options: FieldFormattingOptions): unknown {
+function formatDeclared(formatter: Formatter, declared: DeclaredValue, raw: unknown, options: FieldFormattingOptions, owner?: unknown): unknown {
+  if (declared.source === 'member' && declared.owner.kind === 'address') {
+    const text = formatAddressMember(formatter, owner, declared.owner.path, declared.member, options)
+    if (text !== undefined) return text
+  }
   switch (declared.source) {
     case 'field': return formatFieldValue(formatter, declared.field, raw, declared.path, options)
     case 'definition': return formatDefinitionValue(formatter, declared.kind, raw, declared.path, options)
@@ -164,7 +169,7 @@ const blocked = new Set(['__proto__', 'constructor', 'prototype'])
 export function dataPath(value: unknown, segments: readonly string[]): unknown {
   let current = value
   for (const [index, segment] of segments.entries()) {
-    current = unwrapFormattedValue(current)
+    if (!(current instanceof FormattedFieldValue && Object.hasOwn(current, segment))) current = unwrapFormattedValue(current)
     if (blocked.has(segment) || current === null || current === undefined) return undefined
     if (typeof current !== 'object') return undefined
     current = (current as Record<string, unknown>)[segment]
@@ -340,7 +345,7 @@ export class TemplateScope {
     const options = formatFieldOptions(effective, progressive === undefined ? {} : { progressive })
     const modified = { path: source, options }
     if (chosen.declared) {
-      const formatted = formatDeclared(formatter, chosen.declared, this.environment.resolveRaw(chosen.path!), options)
+      const formatted = formatDeclared(formatter, chosen.declared, this.environment.resolveRaw(chosen.path!), options, chosen.target.owner?.value)
       if (formatted === null || formatted === undefined) return ''
       if (!isPlainRecord(formatted) && !Array.isArray(formatted)) return String(formatted)
       return this.formatValue(this.evaluate(chosenNode, source, position), chosenNode, formatter, modified)

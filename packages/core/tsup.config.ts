@@ -21,6 +21,7 @@ export default defineConfig({
   external: [
     // Mark workspace dependencies as external (they'll be installed separately)
     "@asterdoc/expr",
+    "@asterdoc/format",
     "@asterdoc/schemas", // Schema JSON is imported directly from package root
     "@asterdoc/types",
     // Mark runtime dependencies as external (they're in package.json dependencies)

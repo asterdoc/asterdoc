@@ -48,6 +48,8 @@ export type {
   BboxField,
   MoneyField,
   AddressField,
+  CountryField,
+  RegionField,
   PhoneField,
   DurationField,
   EmailField,

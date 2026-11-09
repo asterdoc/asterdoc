@@ -78,6 +78,11 @@ export interface AddressFormatOptions {
 	layout?: AddressLayoutPolicy
 	/** Additional or replacement layouts keyed by ISO 3166-1 alpha-2 country code. */
 	countryLayouts?: Readonly<Record<string, AddressLayoutFormatter>>
+	/**
+	 * ISO 3166-1 alpha-2 code whose layout applies, for an address whose
+	 * `country` holds a display name rather than a code.
+	 */
+	layoutCountry?: string
 }
 
 /**
@@ -148,9 +153,34 @@ export interface PhoneProvider {
  * Lookup data a formatter is created with. A format that needs a provider the
  * formatter lacks fails with `missing_format_provider`, naming its entry point.
  */
+/** One ISO 3166-2 subdivision a regions provider knows. */
+export interface Subdivision {
+	/** The full ISO 3166-2 code, upper case: `CA-ON`. */
+	readonly code: string
+	/** The ISO 3166-1 alpha-2 code of its country: `CA`. */
+	readonly country: string
+	/** Its English name, when the provider's data has one. */
+	readonly name?: string
+}
+
+/**
+ * Subdivision data for region lookup and display, and for country names that
+ * are also subdivision names. `@asterdoc/format/regions` exports one built
+ * from CLDR.
+ */
+export interface RegionsProvider {
+	/** The entry point this provider comes from, named in `missing_format_provider` errors. */
+	readonly entryPoint: string
+	/** The data release the subdivisions come from. */
+	readonly source: { readonly package: string; readonly version: string }
+	readonly subdivisions: readonly Subdivision[]
+}
+
 export interface FormatProviders {
 	/** Phone numbering plans, from `@asterdoc/format/phone`. */
 	readonly phone?: PhoneProvider
+	/** ISO 3166-2 subdivisions with English names, from `@asterdoc/format/regions`. */
+	readonly regions?: RegionsProvider
 }
 
 /** Options for person presentation. */

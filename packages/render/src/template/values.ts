@@ -46,7 +46,7 @@ const ORGANIZATION_MEMBERS = { name: TEXT, legalName: TEXT, domicile: TEXT, enti
  */
 export const MEMBER_KINDS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
   money: { amount: 'number', currency: TEXT },
-  address: { line1: TEXT, line2: TEXT, locality: TEXT, region: TEXT, postalCode: TEXT, country: TEXT },
+  address: { line1: TEXT, line2: TEXT, locality: TEXT, region: 'region', postalCode: TEXT, country: 'country' },
   phone: { number: TEXT, type: TEXT, extension: TEXT },
   coordinate: { lat: 'number', lon: 'number' },
   bbox: { southWest: 'coordinate', northEast: 'coordinate' },

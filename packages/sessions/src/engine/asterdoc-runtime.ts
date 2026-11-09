@@ -1,4 +1,5 @@
-import { loadFromObject } from "@asterdoc/core";
+import { loadFromObject, type ValidationError } from "@asterdoc/core";
+import type { Issue } from "../event-log/types";
 import { assertCoercionOptions, coerceFieldValue, type CoercionOptions, type CoercionTarget } from "./coerce";
 import { templateFieldPath, unflattenPaths } from "./payload";
 import type { ArtifactRuntime, FillStateSnapshot } from "./types";
@@ -30,7 +31,7 @@ export function createAsterdocRuntime(
 	const fieldList = walkFields(instance.fields);
 	const knownFieldPaths = new Set(fieldList.map((f) => f.fieldPath));
 	const coercionTargets = new Map<string, CoercionTarget>(
-		fieldList.map((f) => [f.fieldPath, f.target]),
+		fieldList.flatMap((f) => (f.target ? [[f.fieldPath, f.target] as const] : [])),
 	);
 
 	const partyList = Object.entries(instance.parties ?? {}).map(([roleId, def]) => ({
@@ -136,7 +137,11 @@ export function createAsterdocRuntime(
 			value,
 			options,
 		);
-		const result = instance.validateFieldInput({ fieldPath, value: coerced });
+		const result = instance.validateFieldInput({
+			fieldPath,
+			value: coerced,
+			...(options.locale !== undefined ? { locale: options.locale } : {}),
+		});
 		if (result.success) {
 			// Persist the value core's schema produced, not the input: e.g. "20"
 			// is stored as the number 20, and any normalization core applies
@@ -188,16 +193,21 @@ export function createAsterdocRuntime(
 	};
 }
 
-function issuesOf(errors: ReadonlyArray<{ field: string; message: string }>) {
-	return errors.map((e) => ({ fieldPath: e.field, message: e.message }));
+function issuesOf(errors: ReadonlyArray<ValidationError>): Issue[] {
+	return errors.map((e) => ({
+		fieldPath: e.field,
+		message: e.message,
+		...(e.code !== undefined ? { code: e.code } : {}),
+		...(e.candidates !== undefined ? { candidates: e.candidates.map(({ code, name }) => ({ code, name })) } : {}),
+	}));
 }
 
 type FieldEntry = {
 	fieldPath: string;
 	required: boolean;
 	type?: string;
-	/** What value coercion needs to know about the field. */
-	target: CoercionTarget;
+	/** The field's definition, which value coercion reads. */
+	target?: CoercionTarget;
 };
 
 /**
@@ -228,14 +238,10 @@ function walkFields(fields: unknown, prefix = ""): FieldEntry[] {
 
 function entryOf(fieldPath: string, def: Record<string, unknown> | null): FieldEntry {
 	const type = typeof def?.type === "string" ? def.type : undefined;
-	const currency = typeof def?.currency === "string" ? def.currency : undefined;
 	return {
 		fieldPath,
 		required: def?.required === true,
 		...(type !== undefined ? { type } : {}),
-		target: {
-			...(type !== undefined ? { type } : {}),
-			...(currency !== undefined ? { currency } : {}),
-		},
+		...(def && type !== undefined ? { target: def as unknown as CoercionTarget } : {}),
 	};
 }

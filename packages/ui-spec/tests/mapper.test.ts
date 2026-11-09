@@ -416,6 +416,30 @@ describe("fieldToSpec", () => {
 		expect(fieldToSpec(field).type).toBe("AddressForm");
 	});
 
+	it("passes an address field's codes flag to AddressForm", () => {
+		const spec = fieldToSpec({ type: "address", codes: true });
+		expect(spec.type).toBe("AddressForm");
+		expect(propsOf(spec).codes).toBe(true);
+	});
+
+	it("maps a country field to CountryInput", () => {
+		const spec = fieldToSpec({ type: "country", label: "Country of birth", default: "CA" });
+		expect(spec.type).toBe("CountryInput");
+		expect(propsOf(spec)).toMatchObject({ label: "Country of birth", default: "CA" });
+	});
+
+	it("maps a region field to RegionInput with its country constraint", () => {
+		const spec = fieldToSpec({ type: "region", label: "State", country: "US" });
+		expect(spec.type).toBe("RegionInput");
+		expect(propsOf(spec).country).toBe("US");
+	});
+
+	it("refuses RegionInput props whose country is not an upper-case alpha-2 code", () => {
+		expect(validateProps("RegionInput", { country: "US" })).toEqual({ country: "US" });
+		expect(() => validateProps("RegionInput", { country: "usa" })).toThrow();
+		expect(() => validateProps("CountryInput", { default: "canada" })).toThrow();
+	});
+
 	it("maps a person field to PersonForm", () => {
 		const field: FormField = {
 			type: "person",

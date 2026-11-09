@@ -21,6 +21,7 @@ import type {
   FormData,
 } from '@asterdoc/types'
 
+import type { PlaceCandidate } from '@asterdoc/format'
 import type { RendererRegistry } from './rendering/renderer-registry'
 import type { DeepReadonly } from './artifacts/shared/definition-types'
 
@@ -50,6 +51,13 @@ export interface ValidationError {
   message: string
   /** The invalid value that caused the error */
   value?: unknown
+  /**
+   * Why the input could not be stored, when it is a structured outcome such
+   * as `unknown_country` or `ambiguous_region`.
+   */
+  code?: string
+  /** What to choose from instead: up to five nearest places, or every place an ambiguous input names. */
+  candidates?: PlaceCandidate[]
 }
 
 /**

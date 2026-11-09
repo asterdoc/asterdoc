@@ -57,6 +57,8 @@ export function formatFieldOptions(format: LayerFormat | undefined, base: FieldF
     ...(format?.phone && { phone: format.phone }),
     ...(format?.boolean && { boolean: format.boolean }),
     ...(format?.choice?.display && { choices: format.choice.display }),
+    ...(format?.country && { country: format.country }),
+    ...(format?.region && { region: format.region }),
   }
 }
 

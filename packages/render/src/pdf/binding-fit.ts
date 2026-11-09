@@ -40,6 +40,7 @@
  * render time is not known here.
  */
 
+import { COUNTRY_CODES, countryName, displayRegion, subdivisionsOf } from '@asterdoc/format'
 import type { BindingValue, Bindings, EnumOption, Form, FormField, Formatter, LayerFormat } from '@asterdoc/types'
 import { acroFields, textFieldDrawing, widgetLayout, type AcroField } from './acroform'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
@@ -50,6 +51,7 @@ import { fieldDefinition } from '../layer-bindings'
 import { PdfModel } from './syntax'
 import { defaultFormatter } from '../default-formatter'
 import { formatterFor, mergeFormats } from '../presentation'
+import { pathSegments } from '../path'
 
 /**
  * The text a typical value is made of: an English pangram with its word spaces,
@@ -337,13 +339,40 @@ function phoneNumberMember(form: Form, path: string): FormField | undefined {
   return parent?.type === 'phone' ? parent : undefined
 }
 
+function countrySource(path: string, display: 'code' | 'name', formatter: Formatter): SourceAnalysis {
+  const codes = Object.keys(COUNTRY_CODES)
+  const printed = display === 'name' ? codes.map((code) => countryName(code, formatter.locale)) : codes
+  return listedSource(path, printed, display === 'name' ? `every country name in ${formatter.locale}` : 'every country code', () => printed)
+}
+
+function regionSource(path: string, country: string | undefined, display: 'code' | 'name' | 'full', formatter: Formatter): SourceAnalysis {
+  const regions = formatter.providers.regions
+  if (!regions) return { kind: 'other' }
+  const pool = country === undefined ? regions.subdivisions : subdivisionsOf(country, regions)
+  const printed = pool.map((subdivision) => displayRegion(subdivision.code, display, regions))
+  const noun = { code: 'code', name: 'name', full: 'full code' }[display]
+  return listedSource(path, printed, `every subdivision ${noun}${country === undefined ? '' : ` of ${country}`}`, () => printed)
+}
+
+function addressMemberSource(form: Form, path: string, format: LayerFormat | undefined, formatter: Formatter): SourceAnalysis {
+  const segments = pathSegments(path)
+  const member = segments.at(-1)
+  if (fieldDefinition(form, segments.slice(0, -1).join('.'))?.type !== 'address') return { kind: 'other' }
+  if (member === 'country' && format?.country) return countrySource(path, format.country.display, formatter)
+  if (member === 'region' && format?.region) return regionSource(path, undefined, format.region.display, formatter)
+  return { kind: 'other' }
+}
+
 /** What one binding path fills a text field with. */
 function analyzeSource(form: Form, { path, qualifier }: PdfBindingPart, format: LayerFormat | undefined, formatter: Formatter): SourceAnalysis {
   const field = fieldDefinition(form, path)
   if (!field) {
-    const phone = qualifier === undefined ? phoneNumberMember(form, path) : undefined
-    return phone ? phoneSource(path, format, formatter, false) : { kind: 'other' }
+    if (qualifier !== undefined) return { kind: 'other' }
+    const phone = phoneNumberMember(form, path)
+    return phone ? phoneSource(path, format, formatter, false) : addressMemberSource(form, path, format, formatter)
   }
+  if (qualifier === undefined && field.type === 'country') return countrySource(path, format?.country?.display ?? 'code', formatter)
+  if (qualifier === undefined && field.type === 'region') return regionSource(path, field.country, format?.region?.display ?? 'full', formatter)
   if (qualifier !== undefined) {
     // A qualifier on a boolean, choice, or list field tests a value, which fills a checkbox.
     if (!TEXT_TYPES.has(field.type)) return { kind: 'other' }

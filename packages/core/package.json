@@ -66,6 +66,7 @@
   },
   "dependencies": {
     "@asterdoc/expr": "workspace:^",
+    "@asterdoc/format": "workspace:^",
     "@asterdoc/render": "workspace:^",
     "@asterdoc/schemas": "workspace:^",
     "@asterdoc/types": "workspace:^",
@@ -75,7 +76,6 @@
   },
   "devDependencies": {
     "@asterdoc/eslint-config": "workspace:*",
-    "@asterdoc/format": "workspace:^",
     "@asterdoc/resolvers": "workspace:*",
     "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",

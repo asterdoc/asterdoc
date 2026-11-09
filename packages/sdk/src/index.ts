@@ -37,6 +37,7 @@ export type { ExtractedField, LocateQuery, UnknownMarker } from '@asterdoc/rende
 export * from '@asterdoc/format'
 export { defaultFormatter } from '@asterdoc/render'
 export { phoneProvider } from '@asterdoc/format/phone'
+export { regionsProvider } from '@asterdoc/format/regions'
 
 // Re-export from @asterdoc/sessions
 export * from '@asterdoc/sessions'

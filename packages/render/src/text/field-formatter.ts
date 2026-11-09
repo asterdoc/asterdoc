@@ -10,11 +10,26 @@ import type {
 	FormAnnex,
 	DefsSection,
 	LayerBooleanFormat,
+	LayerCountryFormat,
 	LayerDateFormat,
 	LayerPhoneFormat,
+	LayerRegionFormat,
 	MoneyFormatOptions,
 } from '@asterdoc/types'
-import { MISSING_RATING_SCALE, UNSUPPORTED_COUNTRY_LAYOUT, UNSUPPORTED_LIST_JOIN } from '@asterdoc/format'
+import {
+	MISSING_RATING_SCALE,
+	UNSUPPORTED_COUNTRY_LAYOUT,
+	UNSUPPORTED_LIST_JOIN,
+	REGIONS_ENTRY_POINT,
+	countryName,
+	displayRegion,
+	hasSubdivisions,
+	resolveAddressRegion,
+	resolveCountry,
+	resolveRegion,
+	type PlaceOutcome,
+	type RegionsProvider,
+} from '@asterdoc/format'
 import { bindingDataPath, renderDataPath } from '../layer-bindings'
 import { getPath, pathSegments } from '../path'
 
@@ -44,6 +59,10 @@ export interface FieldFormattingOptions {
 	 * `format.date` passes it here.
 	 */
 	date?: LayerDateFormat
+	/** How countries print: an address's `country` member and `country` fields. */
+	country?: LayerCountryFormat
+	/** How subdivisions print: an address's `region` member and `region` fields. */
+	region?: LayerRegionFormat
 }
 
 type RecordValue = Record<string, unknown>
@@ -63,9 +82,9 @@ const renderedValues = new WeakMap<FormattedFieldValue, string>()
  * supplying the selected formatter's text for interpolation.
  */
 export class FormattedFieldValue {
-	constructor(value: unknown, text: string) {
-		if (value !== null && typeof value === 'object') {
-			for (const [key, member] of Object.entries(value)) {
+	constructor(value: unknown, text: string, members: unknown = value) {
+		if (members !== null && typeof members === 'object') {
+			for (const [key, member] of Object.entries(members)) {
 				if (key === 'toString' || key === '__proto__' || key === 'constructor' || key === 'prototype') continue
 				Object.defineProperty(this, key, { configurable: false, enumerable: true, value: member, writable: false })
 			}
@@ -259,18 +278,104 @@ function patternDate(
 	})
 }
 
+function placeValue(outcome: PlaceOutcome, path: string, fieldType: string): string {
+	if (outcome.ok) return outcome.value
+	throw new ArtifactFieldFormatError(path, fieldType, 'invalid', [{ code: outcome.code, message: outcome.message, path, kind: fieldType }])
+}
+
+function countryCode(value: unknown, formatter: Formatter, path: string, fieldType: string): string {
+	return placeValue(resolveCountry(stringInput(value, path, fieldType), { locale: formatter.locale, regions: formatter.providers.regions }), path, fieldType)
+}
+
+function regionsOf(formatter: Formatter, path: string, fieldType: string): RegionsProvider {
+	const regions = formatter.providers.regions
+	if (regions) return regions
+	throw formatIssue(path, fieldType, 'missing_format_provider', `A region format needs the regions provider: create the formatter with providers: { regions: regionsProvider } from ${REGIONS_ENTRY_POINT}.`)
+}
+
+function countryText(code: string, format: LayerCountryFormat, formatter: Formatter): string {
+	return format.display === 'name' ? countryName(code, formatter.locale) : code
+}
+
+function regionText(formatter: Formatter, value: unknown, country: string | undefined, format: LayerRegionFormat, path: string, fieldType: string): string {
+	const text = stringInput(value, path, fieldType)
+	const regions = regionsOf(formatter, path, fieldType)
+	if (country === undefined) return displayRegion(placeValue(resolveRegion(text, { regions }), path, fieldType), format.display, regions)
+	const short = placeValue(resolveAddressRegion(text, country, regions), path, fieldType)
+	return hasSubdivisions(country, regions) ? displayRegion(`${country}-${short}`, format.display, regions) : short
+}
+
+function displayedAddress(
+	formatter: Formatter,
+	value: RecordValue,
+	path: string,
+	options: FieldFormattingOptions | undefined,
+): { address: RecordValue; layoutCountry?: string } {
+	if (!options?.country && !options?.region) return { address: value }
+	const code = isMissing(value.country) ? undefined : countryCode(value.country, formatter, childPath(path, 'country'), 'address')
+	const address: RecordValue = { ...value }
+	if (options.country && code !== undefined) address.country = countryText(code, options.country, formatter)
+	if (options.region && !isMissing(value.region)) {
+		const regionPath = childPath(path, 'region')
+		if (code === undefined) throw formatIssue(regionPath, 'address', 'needs_country', 'A subdivision printed as a code or name needs the address country.')
+		address.region = regionText(formatter, value.region, code, options.region, regionPath, 'address')
+	}
+	return { address, ...(code !== undefined && { layoutCountry: code }) }
+}
+
+function addressMemberText(formatter: Formatter, value: unknown, path: string, member: string, options?: FieldFormattingOptions): string | undefined {
+	if (!isRecord(value)) return undefined
+	if (member === 'country' && options?.country && !isMissing(value.country)) {
+		return countryText(countryCode(value.country, formatter, childPath(path, 'country'), 'address'), options.country, formatter)
+	}
+	if (member === 'region' && options?.region && !isMissing(value.region)) {
+		return displayedAddress(formatter, value, path, { region: options.region }).address.region as string
+	}
+	return undefined
+}
+
+/**
+ * An address's `country` or `region` member as a country or region format
+ * prints it, read in the address it sits in; `undefined` when no such format
+ * applies to the member.
+ *
+ * @throws {ArtifactFieldFormatError} when the member or its address country does not normalize.
+ */
+export function formatAddressMember(formatter: Formatter, address: unknown, path: string, member: string, options?: FieldFormattingOptions): string | undefined {
+	return guardFormatting(path, 'address', () => addressMemberText(formatter, address, path, member, options))
+}
+
 function address(formatter: Formatter, value: unknown, path: string, fieldType: string, options?: FieldFormattingOptions): unknown {
-	return callFormatterWithFallback(
-		path,
-		fieldType,
-		value,
-		() => formatter.safeFormatAddress(recordInput(value, path, fieldType)),
-		{
-			code: UNSUPPORTED_COUNTRY_LAYOUT,
-			substitute: () => formatter.safeFormatAddress(recordInput(value, path, fieldType), { layout: 'generic' }),
-			options,
-		},
-	)
+	return guardFormatting(path, fieldType, () => {
+		const stored = recordInput(value, path, fieldType)
+		const { address: shown, layoutCountry } = displayedAddress(formatter, stored, path, options)
+		const layout = layoutCountry === undefined ? {} : { layoutCountry }
+		const result = callFormatterWithFallback(
+			path,
+			fieldType,
+			value,
+			() => formatter.safeFormatAddress(shown, layout),
+			{
+				code: UNSUPPORTED_COUNTRY_LAYOUT,
+				substitute: () => formatter.safeFormatAddress(shown, { layout: 'generic' }),
+				options,
+			},
+		)
+		return shown === stored || !(result instanceof FormattedFieldValue) ? result : new FormattedFieldValue(value, String(result), shown)
+	})
+}
+
+function country(formatter: Formatter, value: unknown, path: string, options?: FieldFormattingOptions): unknown {
+	if (!options?.country) return stringInput(value, path, 'country')
+	return new FormattedFieldValue(value, countryText(countryCode(value, formatter, path, 'country'), options.country, formatter))
+}
+
+function region(formatter: Formatter, field: Extract<FormField, { type: 'region' }>, value: unknown, path: string, options?: FieldFormattingOptions): unknown {
+	if (!options?.region) return stringInput(value, path, 'region')
+	const text = stringInput(value, path, 'region')
+	const regions = regionsOf(formatter, path, 'region')
+	const code = placeValue(resolveRegion(text, { ...(field.country !== undefined && { country: field.country }), regions }), path, 'region')
+	return new FormattedFieldValue(value, displayRegion(code, options.region.display, regions))
 }
 
 function stringInput(value: unknown, path: string, fieldType: string): string {
@@ -330,6 +435,8 @@ function formatLeaf(
 		switch (field.type) {
 			case 'money': return callFormatter(path, field.type, value, () => formatter.safeFormatMoney(recordInput(value, path, field.type), options?.money), options)
 			case 'address': return address(formatter, value, path, field.type, options)
+			case 'country': return country(formatter, value, path, options)
+			case 'region': return region(formatter, field, value, path, options)
 			case 'phone': return callFormatter(path, field.type, value, () => formatter.safeFormatPhone(typeof value === 'string' ? value : recordInput(value, path, field.type), options?.phone), options)
 			case 'person': return callFormatter(path, field.type, value, () => formatter.safeFormatPerson(recordInput(value, path, field.type)), options)
 			case 'organization': return callFormatter(path, field.type, value, () => formatter.safeFormatOrganization(recordInput(value, path, field.type)), options)
@@ -674,6 +781,10 @@ function fieldAt(
 		return fieldAt(formatter, child, value[segment], childPath(path, segment), rest, options)
 	}
 	if (field.type === 'phone' && segments.length === 1 && segment === 'number') return phoneNumberAt(formatter, value, path, options)
+	if (field.type === 'address' && rest.length === 0) {
+		const text = guardFormatting(path, field.type, () => addressMemberText(formatter, value, path, segment, options))
+		if (text !== undefined) return text
+	}
 	return rawAt(value, segments)
 }
 
@@ -814,6 +925,8 @@ const partyRuntimePath = objectPath({
 const pathNodesByType: Readonly<Record<string, PathNode>> = {
 	money: moneyPath,
 	address: addressPath,
+	country: leafPath,
+	region: leafPath,
 	phone: phonePath,
 	person: personPath,
 	organization: organizationPath,

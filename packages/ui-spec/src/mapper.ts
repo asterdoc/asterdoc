@@ -21,6 +21,8 @@ import type {
 	BooleanField,
 	MoneyField,
 	AddressField,
+	CountryField,
+	RegionField,
 	PhoneField,
 	DurationField,
 	EmailField,
@@ -287,6 +289,28 @@ export function fieldToSpec(field: FormField, ctx: MapperContext = {}): SpecNode
 				props: {
 					...baseProps,
 					default: (field as AddressField).default,
+					codes: (field as AddressField).codes,
+				},
+				...optionalFieldPath(ctx),
+			};
+
+		case "country":
+			return {
+				type: "CountryInput",
+				props: {
+					...baseProps,
+					default: (field as CountryField).default,
+				},
+				...optionalFieldPath(ctx),
+			};
+
+		case "region":
+			return {
+				type: "RegionInput",
+				props: {
+					...baseProps,
+					default: (field as RegionField).default,
+					country: (field as RegionField).country,
 				},
 				...optionalFieldPath(ctx),
 			};

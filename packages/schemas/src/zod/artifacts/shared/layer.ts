@@ -252,6 +252,22 @@ const LayerBooleanFormatSchema = z.object({
 	description: 'How a layer or binding presents booleans in text. Checkboxes always take the boolean',
 });
 
+const LayerCountryFormatSchema = z.object({
+	display: z.enum(['code', 'name'])
+		.describe('`code` prints the ISO 3166-1 alpha-2 code; `name` prints the country name in the format\'s locale'),
+}).strict().meta({
+	title: 'LayerCountryFormat',
+	description: 'How a layer or binding presents countries',
+});
+
+const LayerRegionFormatSchema = z.object({
+	display: z.enum(['code', 'name', 'full'])
+		.describe('`code` prints the ISO 3166-2 code after the dash (ON); `full` prints the whole code (CA-ON); `name` prints the English subdivision name'),
+}).strict().meta({
+	title: 'LayerRegionFormat',
+	description: 'How a layer or binding presents subdivisions (states, provinces)',
+});
+
 /** A BCP 47 language tag: a language subtag, then hyphen-separated subtags. */
 const LOCALE_PATTERN = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/;
 
@@ -273,6 +289,8 @@ export const FormatSchema = z.object({
 	phone: LayerPhoneFormatSchema.optional(),
 	choice: LayerChoiceFormatSchema.optional(),
 	boolean: LayerBooleanFormatSchema.optional(),
+	country: LayerCountryFormatSchema.optional(),
+	region: LayerRegionFormatSchema.optional(),
 }).strict().meta({
 	title: 'LayerFormat',
 	description: 'How values print, applied over the caller\'s formatter on a layer and over the layer\'s format on a PDF binding',

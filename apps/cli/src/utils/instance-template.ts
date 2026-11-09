@@ -42,6 +42,8 @@ function getFieldDefault(field: FormField): unknown {
     case 'date':
     case 'datetime':
     case 'time':
+    case 'country':
+    case 'region':
       return ''
 
     case 'boolean':

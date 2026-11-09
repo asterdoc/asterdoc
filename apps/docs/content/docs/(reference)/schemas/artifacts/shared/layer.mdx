@@ -209,6 +209,18 @@ A layer that reuses bindings through `bindingsFrom` takes each binding with its 
     description: 'Text a boolean prints in text boxes and text layers, in place of the locale\'s word. A checkbox always takes the boolean',
     isOptional: true,
   },
+  {
+    name: 'country',
+    type: "{ display: 'code' | 'name' }",
+    description: 'Prints a `country` field and an address `country` member as its ISO 3166-1 alpha-2 code or its name in the format locale. Without it, the value prints as stored',
+    isOptional: true,
+  },
+  {
+    name: 'region',
+    type: "{ display: 'code' | 'name' | 'full' }",
+    description: 'Prints a `region` field and an address `region` member as the code after the dash (`ON`), the whole ISO 3166-2 code (`CA-ON`) or its English name. Without it, the value prints as stored. It needs the regions provider, `@asterdoc/format/regions`, which the default formatter includes',
+    isOptional: true,
+  },
 ]} />
 
 Levels apply from lowest to highest: the caller's formatter, then the layer's `format`, then a binding's `format`. Each kind merges per property, so a binding's `money` keeps the layer's other money choices, and a higher `locale` replaces a lower one. React layers accept a `format` but do not apply it yet. See [Artifact formatting](/sdk/renderers/pdf#artifact-formatting).

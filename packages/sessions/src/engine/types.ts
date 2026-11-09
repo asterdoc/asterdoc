@@ -92,7 +92,13 @@ export type CommandErrorCode =
 
 export type CommandResult =
 	| { ok: true; session: FormSession; emitted: SessionEvent[] }
-	| { ok: false; code: CommandErrorCode; reason: string };
+	| {
+			ok: false;
+			code: CommandErrorCode;
+			reason: string;
+			/** For `invalid-value`: the validator's issues, with their codes and candidates. */
+			issues?: Issue[];
+	  };
 
 /**
  * Per-field schema validation outcome. On success, `value` carries the

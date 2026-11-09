@@ -16,6 +16,11 @@
       "types": "./dist/phone.d.ts",
       "import": "./dist/phone.js",
       "default": "./dist/phone.js"
+    },
+    "./regions": {
+      "types": "./dist/regions.d.ts",
+      "import": "./dist/regions.js",
+      "default": "./dist/regions.js"
     }
   },
   "sideEffects": false,
@@ -74,6 +79,8 @@
     "@asterdoc/eslint-config": "workspace:*",
     "@asterdoc/typescript-config": "workspace:*",
     "@types/node": "catalog:",
+    "cldr-core": "catalog:",
+    "cldr-subdivisions-full": "catalog:",
     "eslint": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:",

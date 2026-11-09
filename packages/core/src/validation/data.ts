@@ -11,6 +11,7 @@ export type { ValidationError, ValidationSuccess, ValidationFailure, ValidationR
 
 // Import types for internal use
 import type { ValidationError, ValidationResult } from '@/types'
+import { canonicalizationError, canonicalizeFieldValues, type CanonicalizationMode } from './canonicalize'
 
 /**
  * Build a Zod schema from a compiled JSON Schema
@@ -340,7 +341,7 @@ export function mapZodIssuesToValidationErrors(
 export function validateFormData<F extends Form>(
 	form: F,
 	data: Record<string, unknown>,
-	options: { applyDefaults?: boolean } = {},
+	options: { applyDefaults?: boolean; locale?: string; mode?: CanonicalizationMode } = {},
 ): ValidationResult<InferFormPayload<F>> {
 	// Compile the form to a JSON Schema
 	const jsonSchema = compile(form)
@@ -353,6 +354,18 @@ export function validateFormData<F extends Form>(
 	// opt out so an ordinary patch never restores omitted defaulted values.
 	if (options.applyDefaults !== false) {
 		dataCopy = applyDefaults(dataCopy, jsonSchema)
+	}
+
+	if (isRecordValue(dataCopy) && isRecordValue(dataCopy.fields)) {
+		const canonical = canonicalizeFieldValues(form.fields, dataCopy.fields, {
+			locale: options.locale,
+			mode: options.mode ?? 'complete',
+			path: 'fields',
+		})
+		if (!canonical.success) {
+			return { success: false, data: null, errors: canonical.issues.map(canonicalizationError) }
+		}
+		dataCopy = { ...dataCopy, fields: canonical.value }
 	}
 
 	// Build Zod schema from JSON Schema

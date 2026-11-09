@@ -108,7 +108,7 @@ const SHAPE_GUIDANCE: Record<CompositeValueType, string> = {
 	money:
 		'Monetary amount. `amount` is a number (decimal, not a string: 100.50, not "100.50"). `currency` is an ISO 4217 code in capitals (e.g. "USD", "EUR").',
 	address:
-		'Postal address. `line1` is the street address; `line2` is the unit, apartment, or suite. `locality` is the city or town (not `city`). `region` is the state or province. `postalCode` uses capital letters, digits, spaces, and hyphens. `country` is an ISO 3166-1 code (e.g. "US", "FRA") or the full country name.',
+		'Postal address. `line1` is the street address; `line2` is the unit, apartment, or suite. `locality` is the city or town (not `city`). `region` is the state or province, as a name or a code (e.g. "Ontario" or "ON"). `postalCode` uses capital letters, digits, spaces, and hyphens. `country` is a country name or an ISO 3166-1 code (e.g. "Canada", "CA", "CAN"). Give the names or codes the user said; an address that stores codes converts names itself and reports any that match more than one place.',
 	phone:
 		'Telephone number. `number` MUST be E.164: a leading `+`, the country dialing code, then the national number (e.g. "+12154852665"). If the user gives a domestic number without a country code, prepend the dialing code that fits the form\'s context (default +1 for US and Canada forms). Strip spaces, dashes, and parentheses. `type` is the kind of number (e.g. "mobile", "fax").',
 	coordinate: 'Geographic point. `lat` and `lon` are numbers in decimal degrees.',

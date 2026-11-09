@@ -71,6 +71,8 @@ export type FieldToDataType<F> = F extends { type: 'text' }
                   ? Money
                   : F extends { type: 'address' }
                     ? Address
+                    : F extends { type: 'country' | 'region' }
+                    ? string
                     : F extends { type: 'phone' }
                       ? Phone
                       : F extends { type: 'duration' }
@@ -402,6 +404,9 @@ export function compile(form: Form): JsonSchema {
   }
 }
 
+const COUNTRY_CODE_PATTERN = '^[A-Z]{2}$'
+const REGION_CODE_PATTERN = '^[A-Z]{2}-[A-Z0-9]{1,3}$'
+
 /**
  * Convert form field definitions into a data validation schema
  */
@@ -493,6 +498,15 @@ function compileField(field: FormField): JsonSchema {
     case 'person':
     case 'organization':
       return withDefault(compositeJsonSchema(field.type), field)
+
+    case 'country':
+      return withDefault({ type: 'string', pattern: COUNTRY_CODE_PATTERN }, field)
+
+    case 'region':
+      return withDefault({
+        type: 'string',
+        pattern: field.country === undefined ? REGION_CODE_PATTERN : `^${field.country}-[A-Z0-9]{1,3}$`,
+      }, field)
 
     case 'money': {
       const schema = compositeJsonSchema('money')

@@ -9,6 +9,7 @@ import {
 import { parse } from '@/serialization/serialization'
 import { validatePdfLayers, type LayerValidationIssue } from './pdf-layers'
 import { validatePdfBindingPaths } from './pdf-bindings'
+import { validatePlaceDefinitions, validatePlaceFormats } from './place-definitions'
 import { validateFileReferences } from './file-references'
 import { validateLayerReferences } from './layer-references'
 import {
@@ -200,6 +201,14 @@ export function validateDefinition<T = unknown>(
     }
   }
 
+  if (validateSchemaOption && allIssues.length === 0 && isFormDefinition(artifact)) {
+    const placeIssues = validatePlaceDefinitions(artifact)
+    if (placeIssues.length > 0) {
+      if (!collectAllErrors) return { issues: placeIssues.slice(0, 1) }
+      allIssues.push(...placeIssues)
+    }
+  }
+
   // Step 4: PDF binding values name paths the form declares (with logic validation)
   if (logic && allIssues.length === 0 && hasTemplateLayers(artifact) && artifact.kind === 'form') {
     const bindingIssues = validatePdfBindingPaths(artifact as unknown as Form)
@@ -217,6 +226,10 @@ export function validateDefinition<T = unknown>(
 }
 
 const TEMPLATE_KINDS = new Set(['form', 'document', 'checklist'])
+
+function isFormDefinition(artifact: unknown): artifact is Form {
+  return typeof artifact === 'object' && artifact !== null && (artifact as { kind?: unknown }).kind === 'form'
+}
 
 function hasTemplateLayers(artifact: unknown): artifact is TemplateArtifact {
   return typeof artifact === 'object'
@@ -266,7 +279,9 @@ function readOnce(resolver: Resolver): Resolver {
  *   of its template, and that every value a binding accepts can fill its PDF
  *   text field: it fits the box at the minimum font size, and has no more
  *   characters than a comb field has boxes. A bound text field with nothing
- *   bounding its length is a warning.
+ *   bounding its length is a warning;
+ * - for a form, that a stored value a layer prints with a country or region
+ *   format normalizes; a default that does not is a warning.
  *
  * @example
  * ```typescript
@@ -286,7 +301,8 @@ export async function validateLayers<T = unknown>(
   const templateIssues = validateOptions.logic === false || !hasTemplateLayers(artifact) ? [] : await validateFileTemplates(artifact, reader)
   const pdf = hasTemplateLayers(artifact) && artifact.kind === 'form' ? await validatePdfLayers(artifact as unknown as Form, reader) : []
   const errors = [...fileIssues, ...templateIssues, ...pdf.filter((issue) => issue.severity === 'error')]
-  const warnings = pdf.filter((issue) => issue.severity === 'warning')
+  const places = hasTemplateLayers(artifact) && artifact.kind === 'form' ? validatePlaceFormats(artifact as unknown as Form) : []
+  const warnings = [...pdf.filter((issue) => issue.severity === 'warning'), ...places]
   const outcome: StandardSchemaV1.Result<T> = errors.length > 0 ? { issues: errors } : result
   return warnings.length > 0 ? { ...outcome, warnings } : outcome
 }

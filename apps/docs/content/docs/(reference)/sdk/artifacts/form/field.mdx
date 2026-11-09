@@ -3,7 +3,7 @@ title: field
 description: Define form fields for data capture
 ---
 
-Define form fields for capturing user input. Asterdoc supports 24 field types covering text, numeric, temporal, entity, spatial, and selection inputs.
+Define form fields for capturing user input. Asterdoc supports 26 field types covering text, numeric, temporal, entity, spatial, and selection inputs.
 
 ## Examples
 
@@ -114,6 +114,8 @@ const form = a.form()
 | `coordinate` | Lat/lng point | `field.coordinate()` |
 | `bbox` | Bounding box | `field.bbox()` |
 | `address` | Postal address | `field.address()` |
+| `country` | Country, stored as an ISO 3166-1 code | `field.country()` |
+| `region` | State or province, stored as an ISO 3166-2 code | `field.region()` |
 | `phone` | Phone number | `field.phone()` |
 
 ### Container
@@ -245,6 +247,20 @@ Email fields have no `pattern`: the email format is the constraint.
 <PropertiesTable properties={[
   { name: 'allowedTypes', type: '(...types: string[]) => this', description: 'Allowed ID document types' },
   { name: 'default', type: '(value: Identification) => this', description: 'Default value' },
+]} />
+
+#### Address
+
+<PropertiesTable properties={[
+  { name: 'codes', type: '(value?: boolean) => this', description: 'Store country and region as ISO codes; names are converted on input' },
+  { name: 'default', type: '(value: Address) => this', description: 'Default value' },
+]} />
+
+#### Region
+
+<PropertiesTable properties={[
+  { name: 'country', type: '(code: string) => this', description: 'ISO 3166-1 alpha-2 code the subdivision must belong to' },
+  { name: 'default', type: '(value: string) => this', description: 'Default value: a full ISO 3166-2 code' },
 ]} />
 
 #### Fieldset

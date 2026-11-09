@@ -16,6 +16,8 @@ import type {
 	BboxField,
 	MoneyField,
 	AddressField,
+	CountryField,
+	RegionField,
 	PhoneField,
 	DurationField,
 	EmailField,
@@ -196,8 +198,32 @@ export interface AddressFieldBuilder<R extends CondExpr | undefined = undefined>
 	required(value: undefined): AddressFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): AddressFieldBuilder<V>;
 	visible(value?: CondExpr): AddressFieldBuilder<R>;
+	codes(value?: boolean): AddressFieldBuilder<R>;
 	default(value: Address): AddressFieldBuilder<R>;
 	build(): BuiltField<AddressField, R>;
+}
+
+export interface CountryFieldBuilder<R extends CondExpr | undefined = undefined> {
+	label(value: string): CountryFieldBuilder<R>;
+	description(value: string): CountryFieldBuilder<R>;
+	required(): CountryFieldBuilder<true>;
+	required(value: undefined): CountryFieldBuilder<true>;
+	required<const V extends CondExpr>(value: V): CountryFieldBuilder<V>;
+	visible(value?: CondExpr): CountryFieldBuilder<R>;
+	default(value: string): CountryFieldBuilder<R>;
+	build(): BuiltField<CountryField, R>;
+}
+
+export interface RegionFieldBuilder<R extends CondExpr | undefined = undefined> {
+	label(value: string): RegionFieldBuilder<R>;
+	description(value: string): RegionFieldBuilder<R>;
+	required(): RegionFieldBuilder<true>;
+	required(value: undefined): RegionFieldBuilder<true>;
+	required<const V extends CondExpr>(value: V): RegionFieldBuilder<V>;
+	visible(value?: CondExpr): RegionFieldBuilder<R>;
+	country(code: string): RegionFieldBuilder<R>;
+	default(value: string): RegionFieldBuilder<R>;
+	build(): BuiltField<RegionField, R>;
 }
 
 export interface PhoneFieldBuilder<R extends CondExpr | undefined = undefined> {
@@ -529,10 +555,38 @@ export function addressField(): AddressFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		codes(value = true) { _def.codes = value; return self; },
 		default(value: Address) { _def.default = value; return self; },
 		build() { return parseField(_def) as AddressField; },
 	};
 	return self as unknown as AddressFieldBuilder;
+}
+
+export function countryField(): CountryFieldBuilder {
+	const _def: Record<string, unknown> = { type: 'country' };
+	const self = {
+		label(value: string) { _def.label = value; return self; },
+		description(value: string) { _def.description = value; return self; },
+		required(value: CondExpr = true) { _def.required = value; return self; },
+		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		default(value: string) { _def.default = value; return self; },
+		build() { return parseField(_def) as CountryField; },
+	};
+	return self as unknown as CountryFieldBuilder;
+}
+
+export function regionField(): RegionFieldBuilder {
+	const _def: Record<string, unknown> = { type: 'region' };
+	const self = {
+		label(value: string) { _def.label = value; return self; },
+		description(value: string) { _def.description = value; return self; },
+		required(value: CondExpr = true) { _def.required = value; return self; },
+		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		country(code: string) { _def.country = code; return self; },
+		default(value: string) { _def.default = value; return self; },
+		build() { return parseField(_def) as RegionField; },
+	};
+	return self as unknown as RegionFieldBuilder;
 }
 
 export function phoneField(): PhoneFieldBuilder {
@@ -817,6 +871,8 @@ export type FieldAPI = {
 	bbox(): BboxFieldBuilder;
 	money(): MoneyFieldBuilder;
 	address(): AddressFieldBuilder;
+	country(): CountryFieldBuilder;
+	region(): RegionFieldBuilder;
 	phone(): PhoneFieldBuilder;
 	duration(): DurationFieldBuilder;
 	email(): EmailFieldBuilder;
@@ -855,6 +911,8 @@ export const field: FieldAPI = Object.assign(fieldImpl, {
 	bbox: bboxField,
 	money: moneyField,
 	address: addressField,
+	country: countryField,
+	region: regionField,
 	phone: phoneField,
 	duration: durationField,
 	email: emailField,

@@ -23,7 +23,7 @@ export async function executeUpdateFill(
 ): Promise<UpdateFillOutput> {
 	try {
 		const normalized = UpdateFillInputSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject } = await import('@asterdoc/core')
+		const { isChecklist, isForm, loadFromObject, placeDisplayNames } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		if (isForm(artifact)) {
 			const instance = loadFromObject<'form'>(artifact, { resolver: makeResolver(base_url, config) })
@@ -37,7 +37,15 @@ export async function executeUpdateFill(
 			}
 			for (const path of normalized.clear ?? []) draft = draft.clear(path as never)
 			for (const path of normalized.reset ?? []) draft = draft.reset(path as never)
-			return { accepted: true, complete: draft.isValid(), artifact_kind: 'form', data: formDraftPayload(draft), evaluation_context: contextSnapshot(draft.context) }
+			const display = placeDisplayNames(instance.fields, draft.fields)
+			return {
+				accepted: true,
+				complete: draft.isValid(),
+				artifact_kind: 'form',
+				data: formDraftPayload(draft),
+				...(Object.keys(display).length > 0 && { display }),
+				evaluation_context: contextSnapshot(draft.context),
+			}
 		}
 
 		if (isChecklist(artifact)) {

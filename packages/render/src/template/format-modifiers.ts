@@ -82,6 +82,18 @@ function choiceField(target: ModifierTarget): string | undefined {
   return target.declared?.source === 'field' ? undefined : `choice.display needs the options a choice field declares, and ${describeTarget(target)} is not a declared field.`
 }
 
+function isBlank(value: unknown): boolean {
+  return value === null || value === undefined || (typeof value === 'string' && value.trim() === '')
+}
+
+function regionCountryProblem(target: ModifierTarget): string | undefined {
+  const { declared, owner } = target
+  if (declared?.source !== 'member' || !owner || !('value' in owner)) return undefined
+  const address = owner.value
+  const country = address !== null && typeof address === 'object' ? (address as Record<string, unknown>).country : undefined
+  return isBlank(country) ? `region.display reads ${declared.path} in its address country, and ${owner.declared.path}.country is empty.` : undefined
+}
+
 /**
  * Every format modifier key a placeholder can write, with its rule. A key
  * is a dotted path into the layer format; the format it sets merges over the
@@ -124,6 +136,14 @@ export const FORMAT_MODIFIER_RULES = new Map<string, FormatModifierRule>([
   ['boolean.falseLabel', {
     value: label('boolean.falseLabel'),
     applies: onlyFor('boolean.falseLabel', ['boolean'], 'booleans'),
+  }],
+  ['country.display', {
+    value: oneOf('country.display', ['code', 'name']),
+    applies: onlyFor('country.display', ['country', 'address'], 'countries and addresses'),
+  }],
+  ['region.display', {
+    value: oneOf('region.display', ['code', 'name', 'full']),
+    applies: (target, value) => onlyFor('region.display', ['region', 'address'], 'subdivisions and addresses')(target, value) ?? regionCountryProblem(target),
   }],
 ])
 

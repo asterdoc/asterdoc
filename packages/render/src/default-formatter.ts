@@ -1,5 +1,6 @@
 import { createFormatter } from '@asterdoc/format'
 import { phoneProvider } from '@asterdoc/format/phone'
+import { regionsProvider } from '@asterdoc/format/regions'
 import type { Formatter } from '@asterdoc/types'
 
 /**
@@ -7,4 +8,4 @@ import type { Formatter } from '@asterdoc/types'
  * `@asterdoc/format` defaults, with every lookup provider, so each layer
  * format an artifact can declare prints.
  */
-export const defaultFormatter: Formatter = createFormatter({ providers: { phone: phoneProvider } })
+export const defaultFormatter: Formatter = createFormatter({ providers: { phone: phoneProvider, regions: regionsProvider } })

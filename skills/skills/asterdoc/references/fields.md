@@ -1,6 +1,6 @@
 ---
 name: fields
-description: The 24 Asterdoc field types. Properties per type, the exact fill value per type, SDK builders, and how to choose a type.
+description: The 26 Asterdoc field types. Properties per type, the exact fill value per type, SDK builders, and how to choose a type.
 metadata:
   tags: fields, types, fill values, constraints, fieldset, list, enum, money, phone, datetime, builders
 ---
@@ -27,7 +27,7 @@ Every field type takes `type` plus these four optional properties, along with th
 
 ## Field Type Reference
 
-Asterdoc has 24 field types. The fill value column is the exact JSON a payload carries under `fields.<id>`.
+Asterdoc has 26 field types. The fill value column is the exact JSON a payload carries under `fields.<id>`.
 
 | Type | Fill value | Use for |
 |------|-----------|---------|
@@ -44,6 +44,8 @@ Asterdoc has 24 field types. The fill value column is the exact JSON a payload c
 | `email` | `"jane@example.com"` | Email addresses |
 | `phone` | `{ "number": "+14155552671", "type"?: "mobile", "extension"?: "12" }` | Phone numbers |
 | `address` | `{ "line1", "line2"?, "locality", "region", "postalCode", "country" }` | Postal addresses |
+| `country` | `"CA"` (ISO 3166-1 alpha-2); input also takes `"CAN"` or `"Canada"` | Countries |
+| `region` | `"CA-ON"` (ISO 3166-2); input also takes `"Ontario"`, or `"ON"` when `country` is set | States, provinces |
 | `person` | `{ "name", "title"?, "firstName"?, "middleName"?, "lastName"?, "suffix"? }` | People |
 | `organization` | `{ "name", "legalName"?, "domicile"?, "entityType"?, "entityId"?, "taxId"? }` | Companies |
 | `identification` | `{ "type", "number", "issuer"?, "issueDate"?, "expiryDate"? }` | Passports, licenses, tax ids |
@@ -235,15 +237,33 @@ Fill with an array of option values. Duplicates fail with `Array items must be u
 
 | Property | Type | Description |
 |----------|------|-------------|
+| `codes` | boolean | Store `country` as an ISO 3166-1 alpha-2 code and `region` as the ISO 3166-2 code after the dash (`ON`). Names and other codes are converted on input |
 | `default` | address object | Default value |
 
-`line1`, `locality`, `region`, `postalCode` and `country` are required; `line2` is optional. `country` is an ISO 3166-1 code (`US`, `GB`) or a country name. Every address value, including a `default`, requires `postalCode` to contain 3-20 characters of `A-Z`, digits, spaces and hyphens.
+`line1`, `locality`, `region`, `postalCode` and `country` are required; `line2` is optional. `country` is an ISO 3166-1 code (`US`, `GB`) or a country name; with `codes: true` it is stored as the alpha-2 code, and `region` as the code after the dash. In a country with no subdivision codes (`VA`), a region that is not a full code is stored as given. Every address value, including a `default`, requires `postalCode` to contain 3-20 characters of `A-Z`, digits, spaces and hyphens.
 
 ```json schema=fields
 "propertyAddress": {
   "type": "address",
   "label": "Property address",
   "default": { "line1": "10 Main St", "locality": "Springfield", "region": "IL", "postalCode": "62701", "country": "US" }
+}
+```
+
+#### country, region
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `country` | ISO 3166-1 alpha-2 code | `region` only. The country the subdivision must belong to: `"US"` for a US state. Omit to allow any |
+| `default` | code string | Default value: `"CA"` for `country`, `"CA-ON"` for `region` |
+
+A `country` value is stored as the alpha-2 code; a `region` value as the full ISO 3166-2 code. Input takes a code or a name, and an input that names more than one place (`"Georgia"`) is refused with candidates to choose from. Use `region` with `country` instead of a copied list of states.
+
+```json schema=fields
+"stateOfBirth": {
+  "type": "region",
+  "label": "State of birth",
+  "country": "US"
 }
 ```
 
@@ -345,6 +365,8 @@ Fill value: `{ "dependents": [{ "name": "Kim", "dateOfBirth": "2019-04-02" }] }`
 | Email addresses | `email` | `text` |
 | Phone numbers | `phone` | `text` |
 | Postal addresses | `address` | `text`, several `text` fields |
+| Countries | `country` | `text`, an `enum` of countries |
+| States, provinces | `region` | `text`, an `enum` of states |
 | A person's name parts | `person` | `text` |
 | Company details | `organization` | `text` |
 | Passports, licenses, SSN, EIN | `identification` or `text`+`pattern` | bare `text` |
@@ -412,7 +434,7 @@ const builtForm = a
 
 ### Field builder methods
 
-`a.field.<type>()` exists for all 24 types. Every builder has `.label()`, `.description()`, `.required(cond = true)`, `.visible(cond = true)` and `.build()`. Every type except `fieldset` and `list` has `.default(value)`. The type-specific methods mirror the properties above:
+`a.field.<type>()` exists for all 26 types. Every builder has `.label()`, `.description()`, `.required(cond = true)`, `.visible(cond = true)` and `.build()`. Every type except `fieldset` and `list` has `.default(value)`. The type-specific methods mirror the properties above:
 
 <!-- dep:C6 -->
 | Builder | Methods |
@@ -427,6 +449,8 @@ const builtForm = a
 | `enum` | `.options([{ value, label? }])` |
 | `multiselect` | `.options([...])`, `.min(n)`, `.max(n)` |
 | `identification` | `.allowedTypes(...types)` |
+| `address` | `.codes(on = true)` |
+| `region` | `.country(code)` |
 | `fieldset` | `.field(id, def)`, `.fields({ ... })` |
 | `list` | `.item(def)`, `.minItems(n)`, `.maxItems(n)` |
 

@@ -27,12 +27,25 @@ function entries(value: unknown, max: number): { value: unknown[]; truncated: bo
 	return { value: [], truncated: false }
 }
 
+const COUNTRY_INPUT = 'A country name or an ISO 3166-1 code (Canada, CA or CAN). Pass what the person said; it is stored as the alpha-2 code, and a name that matches more than one place is refused with candidates to ask about.'
+const REGION_INPUT = 'A state or province name, or its ISO 3166-2 code (Ontario or CA-ON, or ON when the field sets country). Pass what the person said; it is stored as the full code, and a name that matches more than one place is refused with candidates to ask about.'
+const ADDRESS_CODES_INPUT = 'country and region take names or codes (Canada or CA, Ontario or ON). Pass what the person said; they are stored as codes, and a name that matches more than one place is refused with candidates to ask about.'
+
+function inputHint(definition: Record<string, unknown>): string | undefined {
+	if (definition.type === 'country') return COUNTRY_INPUT
+	if (definition.type === 'region') return REGION_INPUT
+	if (definition.type === 'address' && definition.codes === true) return ADDRESS_CODES_INPUT
+	return undefined
+}
+
 function fieldSummary(definition: unknown, max: number, depth = 0): unknown {
 	if (!isRecord(definition)) return definition
 	const summary: Record<string, unknown> = {}
-	for (const key of ['type', 'label', 'description', 'required', 'default', 'min', 'max', 'minLength', 'maxLength', 'enum', 'format', 'items']) {
+	for (const key of ['type', 'label', 'description', 'required', 'default', 'min', 'max', 'minLength', 'maxLength', 'enum', 'format', 'items', 'country', 'codes']) {
 		if (definition[key] !== undefined) summary[key] = boundedValue(definition[key], max, depth)
 	}
+	const hint = inputHint(definition)
+	if (hint !== undefined) summary.input = hint
 	if (depth < 4 && isRecord(definition.fields)) {
 		const fieldEntries = Object.entries(definition.fields).slice(0, max)
 		summary.fields = Object.fromEntries(fieldEntries.map(([id, value]) => [id, fieldSummary(value, max, depth + 1)]))

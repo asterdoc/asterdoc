@@ -213,7 +213,19 @@ const uriInputProps = fieldBackedProps({
 const addressFormProps = catalogObject({
 	...baseInputProps,
 	default: AddressSchema.optional(),
+	codes: z.boolean().optional(),
 });
+
+const countryInputProps = fieldBackedProps({
+	...baseInputProps,
+	default: z.string().optional(),
+}, (props) => ({ type: "country", ...props }));
+
+const regionInputProps = fieldBackedProps({
+	...baseInputProps,
+	default: z.string().optional(),
+	country: z.string().optional(),
+}, (props) => ({ type: "region", ...props }));
 
 const personFormProps = catalogObject({
 	...baseInputProps,
@@ -279,6 +291,8 @@ export const CATALOG = {
 	PhoneInput: { props: phoneInputProps },
 	UriInput: { props: uriInputProps },
 	AddressForm: { props: addressFormProps },
+	CountryInput: { props: countryInputProps },
+	RegionInput: { props: regionInputProps },
 	PersonForm: { props: personFormProps },
 	OrganizationForm: { props: organizationFormProps },
 	IdentificationInput: { props: identificationInputProps },

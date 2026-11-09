@@ -135,7 +135,7 @@ function FieldValue({ path, label, paragraphs = false, rule = false, className }
   const { dir, typography } = useDocumentTokens();
   const page = usePage();
   const heading = label === false ? undefined : (label ?? binding.field.label ?? path);
-  const isolated = dir === "rtl" && ["phone", "identification"].includes(binding.field.type);
+  const isolated = dir === "rtl" && ["phone", "identification", "country", "region"].includes(binding.field.type);
   const text = rule && binding.blank ? FIELD_RULE : binding.text;
   const headingText = <FieldHeading heading={heading} />;
   const valueText = (part: string) => (

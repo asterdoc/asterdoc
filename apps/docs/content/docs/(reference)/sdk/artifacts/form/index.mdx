@@ -305,6 +305,8 @@ const partialFields = form.validateFieldsPatch({
 })
 ```
 
+A `country` field, a `region` field and an address with `codes: true` store ISO codes. Their input takes names or codes, and `locale` adds names in that language: `form.validateFieldInput({ fieldPath: 'birthCountry', value: 'Allemagne', locale: 'fr-FR' })` returns `DE`. An input that names no place or more than one returns a `ValidationError` with a `code` (`unknown_country`, `ambiguous_country`, `needs_country`, `unknown_region`, `ambiguous_region`) and `candidates: { code, name }[]`. `update()` and `safeUpdate()` report the same errors.
+
 ### Party input validation
 
 ```ts

@@ -257,6 +257,84 @@ describe('format modifiers on template placeholders', () => {
     })
   })
 
+  describe('country and region keys', () => {
+    const places = {
+      kind: 'form',
+      name: 'places',
+      fields: {
+        home: { type: 'address', label: 'Home', codes: true },
+        born: { type: 'country', label: 'Born' },
+        state: { type: 'region', label: 'State', country: 'US' },
+        homes: { type: 'list', label: 'Homes', item: { type: 'address', label: 'Home' } },
+        note: { type: 'text', label: 'Note' },
+      },
+    } as unknown as Form
+    const placeData = {
+      home: { line1: '1 Main St', locality: 'Ottawa', region: 'ON', postalCode: 'K1A 0B1', country: 'CA' },
+      born: 'DE',
+      state: 'US-TX',
+      homes: [{ line1: '1 Rue X', locality: 'Lyon', region: 'ARA', postalCode: '69001', country: 'FR' }],
+      note: 'CA',
+    }
+    const placeEnv = createTypeEnv({
+      fields: T.object,
+      'fields.home': T.object,
+      'fields.home.country': T.string,
+      'fields.home.region': T.string,
+      'fields.born': T.string,
+      'fields.state': T.string,
+      'fields.homes': T.array(T.object),
+      'fields.homes.region': T.string,
+      'fields.note': T.string,
+    })
+    const placeRender = (template: string, fields: Record<string, unknown> = placeData) => renderText({ form: places, data: fields, template })
+    const placeCheck = (template: string) => checkTextTemplate(template, placeEnv, { values: formValueResolver(places) })
+
+    it('print country fields and address countries as codes or names', () => {
+      expect(placeRender('{{ fields.born | country.display="name" }}|{{ fields.born }}')).toBe('Germany|DE')
+      expect(placeRender('{{ fields.home.country | country.display="name", locale="fr-FR" }}|{{ fields.home.country }}')).toBe('Canada|CA')
+      expect(placeRender('{{ fields.born | country.display="name", locale="fr-FR" }}')).toBe('Allemagne')
+      expect(placeCheck('{{ fields.born | country.display="name" }}{{ fields.home.country | country.display="code" }}')).toEqual([])
+    })
+
+    it('print region fields and address regions as code, full code or name, reading the address country', () => {
+      expect(placeRender('{{ fields.state | region.display="code" }}|{{ fields.state | region.display="name" }}|{{ fields.state }}')).toBe('TX|Texas|US-TX')
+      expect(placeRender('{{ fields.home.region | region.display="full" }}|{{ fields.home.region | region.display="name" }}')).toBe('CA-ON|Ontario')
+      expect(placeRender('{{#each fields.homes}}{{ item.region | region.display="name" }}{{/each}}')).toBe('Auvergne-Rhône-Alpes')
+      expect(placeCheck('{{#each fields.homes}}{{ item.region | region.display="name" }}{{/each}}')).toEqual([])
+    })
+
+    it('print a whole address with its country and region named', () => {
+      expect(placeRender('{{ fields.home | country.display="name", region.display="name" }}')).toBe('1 Main St, Ottawa, Ontario, K1A 0B1, Canada')
+    })
+
+    it('refuse a wrong value and a kind the key does not take, at check and at render', () => {
+      for (const [template, message] of [
+        ['{{ fields.born | country.display="full" }}', /country\.display takes "code", "name", not "full"/],
+        ['{{ fields.note | country.display="name" }}', /country\.display applies to countries and addresses, not to fields\.note, a text value/],
+        ['{{ fields.born | region.display="name" }}', /region\.display applies to subdivisions and addresses, not to fields\.born, a country value/],
+      ] as Array<[string, RegExp]>) {
+        expect(placeCheck(template), template).toEqual([expect.objectContaining({ code: 'format-modifier', message: expect.stringMatching(message) })])
+        expect(() => placeRender(template), template).toThrowError(TemplateError)
+      }
+    })
+
+    it('refuse an address region at render when its address has no country', () => {
+      const rule = FORMAT_MODIFIER_RULES.get('region.display')!
+      const declared = formValueResolver(places).describe(['fields', 'home', 'region'])!
+      const owner = declared.source === 'member' ? declared.owner : declared
+      expect(rule.applies({ kind: 'region', declared, owner: { declared: owner } }, 'name')).toBeUndefined()
+      expect(rule.applies({ kind: 'region', declared, owner: { declared: owner, value: placeData.home } }, 'name')).toBeUndefined()
+      expect(rule.applies({ kind: 'region', declared, owner: { declared: owner, value: { ...placeData.home, country: ' ' } } }, 'name'))
+        .toBe('region.display reads fields.home.region in its address country, and fields.home.country is empty.')
+    })
+
+    it('fail with the outcome code when a stored value does not normalize', () => {
+      expect(() => placeRender('{{ fields.home.country | country.display="name" }}', { ...placeData, home: { ...placeData.home, country: 'Atlantis' } }))
+        .toThrowError(expect.objectContaining({ issues: [expect.objectContaining({ code: 'unknown_country', path: 'fields.home.country' })] }))
+    })
+  })
+
   it('applies modifiers before HTML escaping, in {{ }} and {{{ }}}', () => {
     const html = { mimeType: 'text/html' }
     expect(render('{{ fields.note | locale="en-US" }}|{{{ fields.note | locale="en-US" }}}|{{{ fields.due | date.pattern="MM/DD/YYYY" }}}', html))
@@ -334,7 +412,7 @@ describe('format modifiers on template placeholders', () => {
       ['{{ fields.lines | locale="en-US" }}', /fields\.lines holds several; write them on a placeholder inside \{\{#each\}\}/],
       ['{{ fields.lines[0] | locale="en-US" }}', /fields\.lines\[0\] holds several/],
       ['{{ parties.witnesses | locale="en-US" }}', /parties\.witnesses holds several/],
-      ['{{ fields.home.country | date.pattern="MM/DD/YYYY" }}', /not to fields\.home\.country, a text value/],
+      ['{{ fields.home.country | date.pattern="MM/DD/YYYY" }}', /not to fields\.home\.country, a country value/],
       ['{{#each fields.lines}}{{ item.name | date.pattern="MM/DD/YYYY" }}{{/each}}', /not to fields\.lines\[0\]\.name, a text value/],
     ]
     for (const [template, message] of cases) {

@@ -31,6 +31,7 @@ A path that the artifact does not declare fails the call.
 | `complete` | `boolean` | Whether the updated draft meets every requirement |
 | `artifact_kind` | `"form" \| "checklist"` | Artifact kind |
 | `data` | `object` | The full updated draft payload |
+| `display` | `object` | Words for each stored country and region code, keyed by path: `"fields.client_address.region": "Ontario, Canada"`. Confirm values to the person with these, not with a bare code. Absent when no value stores a code |
 | `evaluation_context` | `object` | The draft's fixed context |
 | `errors` | [`ToolError[]`](/ai-tools#errors) | One entry per rejected value |
 | `error` | [`ToolError`](/ai-tools#errors) | Summary error when the update failed |

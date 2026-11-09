@@ -30,6 +30,7 @@ Party IDs follow the pattern `<role>-<index>`, such as `tenant-0`.
 | `complete` | `boolean` | Whether the draft meets every requirement |
 | `artifact_kind` | `"form" \| "checklist"` | Artifact kind |
 | `data` | `object` | The full draft payload, with defaults applied. Pass it to [`update_fill`](/ai-tools/update-fill), [`get_fill_state`](/ai-tools/get-fill-state), or [`render`](/ai-tools/render). |
+| `display` | `object` | Words for each stored country and region code, keyed by path: `"fields.client_address.region": "Ontario, Canada"`. Confirm values to the person with these, not with a bare code. Absent when no value stores a code |
 | `evaluation_context` | `object` | The fixed context of the draft, such as `asOf`. Pass it to the next call. |
 | `errors` | [`ToolError[]`](/ai-tools#errors) | One entry per rejected value |
 | `error` | [`ToolError`](/ai-tools#errors) | Summary error when the fill failed |

@@ -1,11 +1,7 @@
-import { CANONICAL_SHAPES, isCompositeType } from "@asterdoc/core";
+import { CANONICAL_SHAPES, isCompositeType, type FormField } from "@asterdoc/core";
 
-/** What value coercion needs to know about a field. */
-export type CoercionTarget = {
-	type?: string;
-	/** A money field's declared ISO 4217 currency, if it declares one. */
-	currency?: string;
-};
+/** The field a value is coerced for: its full definition, as the artifact declares it. */
+export type CoercionTarget = FormField;
 
 export type CoercionOptions = {
 	/**
@@ -13,6 +9,11 @@ export type CoercionOptions = {
 	 * one. Without it, a phone number must start with `+`.
 	 */
 	defaultCallingCode?: string;
+	/**
+	 * The session locale. Country names in it are accepted besides English
+	 * names when a country, region or `codes: true` address value is stored.
+	 */
+	locale?: string;
 };
 
 const CALLING_CODE = /^\+[1-9]\d{0,2}$/;
@@ -80,7 +81,7 @@ export function coerceFieldValue(
 		if (isRecord(parsed)) normalized = parsed;
 	}
 	if (type === "money" && (typeof normalized === "string" || typeof normalized === "number")) {
-		normalized = wrapMoney(normalized, target?.currency) ?? normalized;
+		normalized = wrapMoney(normalized, target?.type === "money" ? target.currency : undefined) ?? normalized;
 	} else if (typeof normalized === "string") {
 		const member = soleRequiredStringMember(type);
 		if (member !== undefined) normalized = { [member]: normalized };

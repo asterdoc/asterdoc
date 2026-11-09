@@ -1,6 +1,7 @@
-import type { Attachment, Checklist, ChecklistItem, Form, FormParty, RuntimeParty } from '@asterdoc/types'
+import type { Attachment, Checklist, ChecklistItem, Form, FormField, FormParty, RuntimeParty } from '@asterdoc/types'
 import type { ValidationError } from '@/types'
 import { compile } from '@/inference'
+import { canonicalizationError, canonicalizeAddressMember, canonicalizeFieldValue, canonicalizeFieldValues, type CanonicalizeResult } from './canonicalize'
 import { jsonSchemaToZod, mapZodIssueToValidationError } from './data'
 import { validatePartyForRole, validatePartyId } from './party'
 
@@ -13,6 +14,24 @@ export type ProgressiveValidationResult<T> =
 export interface FieldInputValidationInput {
 	fieldPath: string | string[]
 	value: unknown
+	/** The input locale: country names in it are accepted besides English names. */
+	locale?: string
+	/**
+	 * For a member of a `codes: true` address (`home.region`): the address it
+	 * is written into, whose country a region is read in.
+	 */
+	owner?: unknown
+}
+
+/** Options for validating a fields patch. */
+export interface FieldsPatchValidationOptions {
+	/** The input locale: country names in it are accepted besides English names. */
+	locale?: string
+	/**
+	 * The field values stored before the patch. A patch to a `codes: true`
+	 * address is canonicalized merged over the stored address.
+	 */
+	current?: Record<string, unknown>
 }
 
 export interface PartyInputValidationInput {
@@ -86,6 +105,34 @@ function getFormFieldsSchema(form: Form): JsonSchemaObject | null {
 	if (!properties) return null
 	const fieldsSchema = properties.fields
 	return isRecord(fieldsSchema) ? fieldsSchema : null
+}
+
+type FieldTarget = { field: FormField; member?: undefined } | { field: FormField & { type: 'address' }; member: 'country' | 'region' }
+
+function getFieldAtPath(fields: Record<string, FormField> | undefined, path: string[]): FieldTarget | undefined {
+	let field: FormField | undefined
+	let children = fields
+	for (const [index, segment] of path.entries()) {
+		if (field?.type === 'list' && /^\d+$/.test(segment)) {
+			field = field.item
+			children = field.type === 'fieldset' ? field.fields : undefined
+			continue
+		}
+		if (field?.type === 'address' && index === path.length - 1 && (segment === 'country' || segment === 'region')) {
+			return { field, member: segment }
+		}
+		field = children && Object.hasOwn(children, segment) ? children[segment] : undefined
+		if (!field) return undefined
+		children = field.type === 'fieldset' ? field.fields : undefined
+	}
+	return field ? { field } : undefined
+}
+
+function canonicalTarget(target: FieldTarget | undefined, input: FieldInputValidationInput, path: string): CanonicalizeResult {
+	if (!target) return { success: true, value: input.value }
+	if (target.member === undefined) return canonicalizeFieldValue(target.field, input.value, { locale: input.locale, mode: 'progressive', path })
+	if (target.field.codes !== true) return { success: true, value: input.value }
+	return canonicalizeAddressMember(target.member, input.value, { locale: input.locale, mode: 'progressive', path, owner: input.owner })
 }
 
 function getSchemaAtPath(rootSchema: JsonSchemaObject, path: string[]): JsonSchemaObject | null {
@@ -332,7 +379,10 @@ export function validateFieldInput(
 		])
 	}
 
-	const parsed = jsonSchemaToZod(targetSchema).safeParse(input.value)
+	const canonical = canonicalTarget(getFieldAtPath(form.fields, fieldPathSegments), input, ['fields', ...fieldPathSegments].join('.'))
+	if (!canonical.success) return failure(canonical.issues.map(canonicalizationError))
+
+	const parsed = jsonSchemaToZod(targetSchema).safeParse(canonical.value)
 	if (parsed.success) {
 		return success(parsed.data)
 	}
@@ -350,6 +400,7 @@ export function validateFieldInput(
 export function validateFieldsPatch(
 	form: Form,
 	fields: unknown,
+	options: FieldsPatchValidationOptions = {},
 ): ProgressiveValidationResult<Record<string, unknown>> {
 	const fieldsSchema = getFormFieldsSchema(form)
 	if (!fieldsSchema) {
@@ -361,8 +412,11 @@ export function validateFieldsPatch(
 		return failure(unknownFieldErrors)
 	}
 
+	const canonical = canonicalizeFieldValues(form.fields, fields, { locale: options.locale, mode: 'progressive', path: 'fields', current: options.current })
+	if (!canonical.success) return failure(canonical.issues.map(canonicalizationError))
+
 	const partialSchema = makeSchemaOptionalRecursively(fieldsSchema)
-	const parsed = jsonSchemaToZod(partialSchema).safeParse(fields)
+	const parsed = jsonSchemaToZod(partialSchema).safeParse(canonical.value)
 	if (parsed.success) {
 		return success(parsed.data as Record<string, unknown>)
 	}

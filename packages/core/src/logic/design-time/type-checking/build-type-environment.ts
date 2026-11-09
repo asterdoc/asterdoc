@@ -50,6 +50,8 @@ const FIELD_TYPE_TO_EXPR: Record<string, ExprType> = {
   enum: T.unknown,
   multiselect: T.array(T.unknown),
   coordinate: T.object,
+  country: T.string,
+  region: T.string,
   address: T.object,
   phone: T.object,
   bbox: T.object,

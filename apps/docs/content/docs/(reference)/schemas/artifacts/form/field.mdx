@@ -14,6 +14,8 @@ type FormField =
   | BboxField
   | MoneyField
   | AddressField
+  | CountryField
+  | RegionField
   | PhoneField
   | DurationField
   | EmailField
@@ -527,9 +529,57 @@ Postal address input field.
     description: 'Discriminator for address field type',
   },
   {
+    name: 'codes',
+    type: 'boolean',
+    description: 'Store `country` as an ISO 3166-1 alpha-2 code and `region` as the ISO 3166-2 code after the dash (`ON`). Names and other codes are converted on input, and a patch is read merged over the stored address. In a country with no subdivision codes, a region that is not a full code is stored exactly as given; a full code of another country (`US-CA` under `VA`) is refused. Without it, the address stores what it is given',
+    isOptional: true,
+  },
+  {
     name: 'default',
     type: 'Address',
     description: 'Default value for the field',
+    isOptional: true,
+  },
+]} />
+
+### CountryField
+
+Country field. The stored value is an ISO 3166-1 alpha-2 code in upper case (`CA`). Input also takes an alpha-3 code (`CAN`) or a country name (`Canada`); a name that matches more than one place is refused with candidates.
+
+<PropertiesTable properties={[
+  {
+    name: 'type',
+    type: "'country'",
+    description: 'Discriminator for country field type',
+  },
+  {
+    name: 'default',
+    type: 'string',
+    description: 'Default value: an ISO 3166-1 alpha-2 code',
+    isOptional: true,
+  },
+]} />
+
+### RegionField
+
+State, province or other subdivision field. The stored value is the full ISO 3166-2 code in upper case (`CA-ON`). Input also takes a subdivision name (`Ontario`), or the code after the dash (`ON`) when `country` is set.
+
+<PropertiesTable properties={[
+  {
+    name: 'type',
+    type: "'region'",
+    description: 'Discriminator for region field type',
+  },
+  {
+    name: 'country',
+    type: 'string',
+    description: 'ISO 3166-1 alpha-2 code the subdivision must belong to, such as `US` for a US state. Omit to allow any subdivision',
+    isOptional: true,
+  },
+  {
+    name: 'default',
+    type: 'string',
+    description: 'Default value: a full ISO 3166-2 code',
     isOptional: true,
   },
 ]} />

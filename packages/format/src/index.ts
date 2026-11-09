@@ -3,9 +3,9 @@
  *
  * Immutable, locale-aware presentation of structured artifact values.
  *
- * This package owns display formatting only. It does not parse localized
- * input, serialize stored artifacts, convert currencies, or apply business
- * validation rules.
+ * This package owns display formatting and the lookups that turn country
+ * and subdivision input into ISO codes. It does not serialize stored
+ * artifacts, convert currencies, or apply business validation rules.
  */
 
 export {
@@ -67,6 +67,31 @@ export {
 	PHONE_REGION_MISMATCH,
 	UNSUPPORTED_COUNTRY_LAYOUT,
 } from './contacts'
+
+export {
+	COUNTRY_CODES,
+	countryName,
+	displayRegion,
+	findSubdivision,
+	isCountryCode,
+	normalizePlaceName,
+	REGIONS_ENTRY_POINT,
+	regionName,
+	resolveCountry,
+	resolveRegion,
+	resolveAddressRegion,
+	hasSubdivisions,
+	subdivisionsOf,
+	type CountryLookupOptions,
+	type PlaceCandidate,
+	type PlaceFailure,
+	type PlaceIssueCode,
+	type PlaceOutcome,
+	type RegionDisplay,
+	type RegionLookupOptions,
+	type RegionsProvider,
+	type Subdivision,
+} from './places'
 
 export {
 	FORMAT_KINDS,

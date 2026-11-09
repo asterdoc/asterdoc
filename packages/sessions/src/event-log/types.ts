@@ -40,6 +40,12 @@ export type Issue = {
 	fieldPath?: string;
 	message: string;
 	code?: string;
+	/**
+	 * What to choose from instead, for an input that names no place or more
+	 * than one (`unknown_country`, `ambiguous_region`, ...): ISO codes with
+	 * their names.
+	 */
+	candidates?: Array<{ code: string; name: string }>;
 };
 
 export type SessionEvent =

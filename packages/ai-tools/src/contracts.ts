@@ -206,11 +206,20 @@ export const ExtractInputSchema = withSourceFields({
 })
 export type ExtractInput = z.infer<typeof ExtractInputSchema>
 
+export const PlaceCandidateSchema = z.object({
+	code: z.string().describe('ISO 3166-1 alpha-2 country code or full ISO 3166-2 subdivision code'),
+	name: z.string().describe('The place name to show the person'),
+})
+
 export const ToolErrorSchema = z.object({
 	code: z.string(),
 	message: z.string(),
 	path: z.array(z.union([z.string(), z.number()])).optional(),
 	retryable: z.boolean().optional(),
+	candidates: z
+		.array(PlaceCandidateSchema)
+		.optional()
+		.describe('For an input that names no place or more than one: the places to ask the person to choose from'),
 })
 
 export const ValidationIssueSchema = z.object({
@@ -295,6 +304,10 @@ export const FillOutputSchema = z.object({
 	complete: z.boolean(),
 	artifact_kind: z.enum(['form', 'document', 'bundle', 'checklist']).optional(),
 	data: z.record(z.string(), z.unknown()).optional(),
+	display: z
+		.record(z.string(), z.string())
+		.optional()
+		.describe('Words for each stored country and region code, keyed by path (fields.home_address.region: Ontario, Canada). Confirm values to the person with these, never with a bare code'),
 	evaluation_context: z.record(z.string(), z.unknown()).optional(),
 	errors: z.array(ToolErrorSchema).optional(),
 	error: ToolErrorSchema.optional(),
