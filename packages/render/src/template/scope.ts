@@ -7,7 +7,7 @@
  * `last` answer where a row sits, and exist only inside a loop.
  */
 
-import type { Formatter, FormatterProgressivePolicy, LayerFormat } from '@asterdoc/types'
+import type { Formatter, FormatterProgressivePolicy, LayerFormat, ValuePart } from '@asterdoc/types'
 import {
   buildRegistry,
   EvaluationError,
@@ -33,11 +33,13 @@ import {
   type FieldFormattingOptions,
 } from '../text/field-formatter'
 import { formatFieldOptions, formatterFor, mergeFormats } from '../presentation'
+import { printValuePart } from '../parts/print'
 import { TemplateError, type TemplatePosition } from './errors'
 import {
   chosenModifiers,
   inapplicableModifier,
   modifierFormat,
+  PART_MODIFIER,
   type ModifierProblem,
   type ModifierTarget,
 } from './format-modifiers'
@@ -344,6 +346,8 @@ export class TemplateScope {
     const formatter = formatterFor(callerFormatter, effective)
     const options = formatFieldOptions(effective, progressive === undefined ? {} : { progressive })
     const modified = { path: source, options }
+    const part = applied.entries.find((entry) => entry.key === PART_MODIFIER)?.value as ValuePart | undefined
+    if (part !== undefined) return this.presentPart(formatter, chosen, part, source, options)
     if (chosen.declared) {
       const formatted = formatDeclared(formatter, chosen.declared, this.environment.resolveRaw(chosen.path!), options, chosen.target.owner?.value)
       if (formatted === null || formatted === undefined) return ''
@@ -355,6 +359,16 @@ export class TemplateScope {
       return String(formatDefinitionValue(formatter, chosen.target.kind, fromValue(value), source, options))
     }
     return this.formatValue(value, chosenNode, formatter, modified)
+  }
+
+  /** The digits a `part` modifier prints, read from the raw value; a missing declared value prints as the artifact prints it missing. */
+  private presentPart(formatter: Formatter, chosen: ChosenValue, part: ValuePart, source: string, options: FieldFormattingOptions): string {
+    const raw = chosen.declared ? this.environment.resolveRaw(chosen.path!) : fromValue(chosen.value!)
+    if ((raw === null || raw === undefined) && chosen.declared) {
+      const missing = formatDeclared(formatter, chosen.declared, raw, options)
+      return missing === null || missing === undefined ? '' : String(missing)
+    }
+    return printValuePart(formatter, chosen.target!.kind, raw, part, chosen.declared?.path ?? source, { ...(options.phone && { phone: options.phone }) }) ?? ''
   }
 
   private chosenValue(node: Expr, source: string, position: TemplatePosition): ChosenValue {

@@ -31,6 +31,7 @@ export type {
   Bindings,
   BindingObject,
   BindingValue,
+  ValuePart,
   CondExpr,
   // Expression types
   BaseExpression,

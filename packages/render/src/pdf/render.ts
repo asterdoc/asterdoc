@@ -1,5 +1,5 @@
 import { defaultFormatter } from '../default-formatter'
-import type { BinaryContent, Bindings, Form, FormField, Formatter, LayerFormat } from '@asterdoc/types'
+import type { BinaryContent, Bindings, Form, FormField, Formatter, LayerFormat, ValuePart } from '@asterdoc/types'
 import { formatFieldData, formatValueAt, validateFieldBindings, unwrapFormattedValue } from '../text/field-formatter'
 import { getPath, pathSegments } from '../path'
 import {
@@ -12,6 +12,8 @@ import {
   type ParsedLayerBinding,
 } from '../layer-bindings'
 import { formatFieldOptions, formatterFor, hasNewFormatOptions, mergeFormats } from '../presentation'
+import { bindingDeclaration } from '../parts/rules'
+import { printValuePart } from '../parts/print'
 import { acroFields, setAcroFieldValue, type AcroField } from './acroform'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
 import { applyPdfOverlays, type PdfOverlay } from './overlay'
@@ -49,7 +51,7 @@ function assign(field: AcroField | undefined, value: unknown, model: PdfModel, f
 }
 
 function declaresFormat(binding: Bindings[string]): boolean {
-  return typeof binding === 'object' && binding !== null && binding.format !== undefined
+  return typeof binding === 'object' && binding !== null && (binding.format !== undefined || binding.part !== undefined)
 }
 
 function sourcePaths(bindings: readonly ParsedLayerBinding[]): string[][] {
@@ -120,9 +122,13 @@ export async function renderPdf({
     validateFieldBindings(form, Object.fromEntries(sources.map((source, index) => [String(index), source])))
   }
   assertBindingFormats(form, parsed)
-  const read = (source: string, bindingFormat?: LayerFormat): unknown => {
+  const read = (source: string, bindingFormat?: LayerFormat, part?: ValuePart): unknown => {
     if (!form || !perValue) return getPath(preprocessed, renderDataPath(preprocessed, source))
     const effective = mergeFormats(format, bindingFormat)
+    if (part !== undefined) {
+      const declared = bindingDeclaration(form, source)!
+      return printValuePart(formatterFor(formatter, effective), declared.kind, getPath(data, renderDataPath(data, source)), part, declared.path, { ...(effective?.phone && { phone: effective.phone }) })
+    }
     return formatValueAt(data, form, formatterFor(formatter, effective), source, formatFieldOptions(effective, { choices: 'value' }))
   }
   assertListBindingCapacity(form, data, parsed)
@@ -153,7 +159,7 @@ export async function renderPdf({
       if (model.dict(catalogRef)?.entries.delete('NeedsRendering')) model.markUpdated(catalogRef)
       // Bindings given, even none, replace filling PDF fields by field id.
       if (bindings) {
-        for (const { field: pdfName, parts, format: bindingFormat } of parsed) {
+        for (const { field: pdfName, parts, format: bindingFormat, part: valuePart } of parsed) {
           const field = byName.get(pdfName)
           if (parts.length > 1) {
             const combined = parts.map((part) => read(part.source, bindingFormat)).filter((value) => value !== null && value !== undefined && String(value) !== '').join(', ')
@@ -175,7 +181,7 @@ export async function renderPdf({
             }
             continue
           }
-          assign(field, read(parts[0]!.source, bindingFormat), model, fonts)
+          assign(field, read(parts[0]!.source, bindingFormat, valuePart), model, fonts)
         }
       } else if (form) {
         for (const [name, definition] of Object.entries(form.fields ?? {}) as [string, FormField][]) {

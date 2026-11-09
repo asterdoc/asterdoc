@@ -166,7 +166,25 @@ A binding value can also be an object: `path` is the string the binding would be
 }
 ```
 
-A layer that reuses bindings through `bindingsFrom` takes each binding with its own `format`. Its layer `format` stays its own.
+A binding object can also take `part`, to print one piece of a value as plain digits, for a form with separate boxes:
+
+| Kind | Parts |
+|---|---|
+| `date` | `year` (4 digits), `month`, `day` (2 digits) |
+| `phone` | `countryCode`, `nationalNumber`, `extension`; for +1 numbers, `areaCode` and `subscriberNumber` |
+| `money` | `units`, `cents` |
+
+```json
+"bindings": {
+  "topmostSubform[0].Page1[0].f1_04[0]": { "path": "fields.dob", "part": "month" },
+  "topmostSubform[0].Page1[0].f1_05[0]": { "path": "fields.dob", "part": "day" },
+  "topmostSubform[0].Page1[0].f1_06[0]": { "path": "fields.dob", "part": "year" }
+}
+```
+
+A part is never formatted as a whole value. Money is rounded half-expand to two decimals, then split: `1.999` prints `2` and `00`. A negative amount, a currency without two minor digits, and `areaCode` or `subscriberNumber` on a number outside +1 fail at render with `unsupported_part`. Under a `phone.region`, every phone part but `extension` refuses a number of another plan with `phone_region_mismatch`. Validation rejects a part the value's kind does not have, and a part on a `:` qualifier or a joined path. Reading the PDF back joins the parts only when every part the value needs is bound: a date's year, month and day; money's units and cents, in the currency the field declares; a phone's country code and national number, or a +1 number's area code and subscriber number. Otherwise the path is `not_recoverable`. A filled part that disagrees with the joined value, such as an area code beside another national number, makes it `unparseable`.
+
+A layer that reuses bindings through `bindingsFrom` takes each binding with its own `format` and `part`. Its layer `format` stays its own.
 
 ## Format
 

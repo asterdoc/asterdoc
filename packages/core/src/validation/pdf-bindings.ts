@@ -4,14 +4,14 @@
  * A PDF layer's `bindings` map AcroForm field names (keys) to Asterdoc paths
  * (values). Rendering refuses a value it cannot parse or that names no path
  * the form declares, so `validate()` reports each one first. An inverted binding, with a field
- * name in the value position, is the common case. A binding object's format on
- * an option test, which fills a checkbox and prints nothing, is reported too.
+ * name in the value position, is the common case. A binding object's format or
+ * part where it cannot apply, such as on an option test, is reported too.
  */
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { isPdfMimeType } from '@asterdoc/schemas'
 import type { BindingValue, Form } from '@asterdoc/types'
-import { bindingFormatProblem, parseBinding, PdfBindingSyntaxError, type ParsedPdfBinding } from '@asterdoc/render'
+import { bindingFormatProblem, bindingPartProblem, parseBinding, PdfBindingSyntaxError, type ParsedPdfBinding } from '@asterdoc/render'
 import { ArtifactFieldFormatError, validateFieldBindings } from '@asterdoc/render/text'
 
 function bindingProblem(form: Form, bindingKey: string, value: BindingValue): string | undefined {
@@ -31,13 +31,14 @@ function bindingProblem(form: Form, bindingKey: string, value: BindingValue): st
       return `"${source}" is not a known Asterdoc path (${detail})`
     }
   }
-  const formatProblem = bindingFormatProblem(form, parsed)
-  return formatProblem && `Binding ${JSON.stringify(parsed.path)} ${formatProblem}`
+  const problem = bindingFormatProblem(form, parsed) ?? bindingPartProblem(form, parsed)
+  return problem && `Binding ${JSON.stringify(parsed.path)} ${problem}`
 }
 
 /**
  * Check that every value of every PDF layer's own `bindings` parses, names
- * only Asterdoc paths the form declares, and sets no format on an option test.
+ * only Asterdoc paths the form declares, and sets no format or part where it
+ * cannot apply.
  * A layer reusing bindings through `bindingsFrom` is checked where the
  * bindings are declared.
  */

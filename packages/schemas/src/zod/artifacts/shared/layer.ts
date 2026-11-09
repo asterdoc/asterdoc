@@ -296,9 +296,16 @@ export const FormatSchema = z.object({
 	description: 'How values print, applied over the caller\'s formatter on a layer and over the layer\'s format on a PDF binding',
 });
 
+/** A piece of a date, phone or money value that a binding prints on its own, as plain digits. */
+const ValuePartSchema = z.enum([
+	'year', 'month', 'day',
+	'countryCode', 'nationalNumber', 'extension', 'areaCode', 'subscriberNumber',
+	'units', 'cents',
+]);
+
 /**
  * One PDF binding written as an object: the binding text it would be as a
- * string, and the format its value prints with.
+ * string, the format its value prints with, and the part of it it prints.
  */
 export const PdfBindingObjectSchema = z.object({
 	path: z.string()
@@ -308,9 +315,12 @@ export const PdfBindingObjectSchema = z.object({
 	format: FormatSchema
 		.describe('How this binding\'s value prints, merged over the layer\'s format. A joined path applies it to each value before the join. Not on an option test such as status:married')
 		.optional(),
+	part: ValuePartSchema
+		.describe('The piece of the value the field prints, as plain digits: a date\'s year, month or day; a phone\'s countryCode, nationalNumber or extension, and for +1 numbers areaCode and subscriberNumber; a money amount\'s units or cents. Not on a qualified path such as ssn:2, or a joined path')
+		.optional(),
 }).strict().meta({
 	title: 'PdfBinding',
-	description: 'A PDF binding with its own format',
+	description: 'A PDF binding with its own format or part',
 });
 
 /**

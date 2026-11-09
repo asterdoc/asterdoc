@@ -15,6 +15,7 @@ export { getPath, pathSegments } from './path'
 export {
   assertBindingFormats,
   bindingFormatProblem,
+  bindingPartProblem,
   isOptionTest,
   parseBinding,
   parseBindings,
@@ -27,6 +28,8 @@ export {
   type PdfBindingPart,
 } from './layer-bindings'
 export { formatterFor, hasNewFormatOptions, mergeFormats } from './presentation'
+export { printValuePart } from './parts/print'
+export { ALL_VALUE_PARTS, UNSUPPORTED_PART, VALUE_PARTS } from './parts/rules'
 export { defaultFormatter } from './default-formatter'
 
 /** Options shared by the MIME-selected rendering engines. */

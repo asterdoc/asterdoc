@@ -1,5 +1,6 @@
 import { phoneProvider } from '@asterdoc/format/phone'
 import type { LayerFormat } from '@asterdoc/types'
+import { isValuePart, partProblem } from '../parts/rules'
 import type { DeclaredValue } from './values'
 
 /** A literal a format modifier takes: a string, a number, or a boolean. */
@@ -94,6 +95,9 @@ function regionCountryProblem(target: ModifierTarget): string | undefined {
   return isBlank(country) ? `region.display reads ${declared.path} in its address country, and ${owner.declared.path}.country is empty.` : undefined
 }
 
+/** The modifier that prints a piece of a value, such as a date's `year`, instead of formatting it whole. */
+export const PART_MODIFIER = 'part'
+
 /**
  * Every format modifier key a placeholder can write, with its rule. A key
  * is a dotted path into the layer format; the format it sets merges over the
@@ -144,6 +148,10 @@ export const FORMAT_MODIFIER_RULES = new Map<string, FormatModifierRule>([
   ['region.display', {
     value: oneOf('region.display', ['code', 'name', 'full']),
     applies: (target, value) => onlyFor('region.display', ['region', 'address'], 'subdivisions and addresses')(target, value) ?? regionCountryProblem(target),
+  }],
+  [PART_MODIFIER, {
+    value: (value) => isValuePart(value) ? undefined : partProblem('', value, ''),
+    applies: (target, value) => partProblem(target.kind, value, describeTarget(target)),
   }],
 ])
 
@@ -223,10 +231,15 @@ export function chosenModifiers(
   return { entries: applied }
 }
 
-/** The format a list of known, well-formed modifiers sets, each dotted key a path into it. */
+/**
+ * The format a list of known, well-formed modifiers sets, each dotted key a
+ * path into it. `part` chooses what prints rather than how, so it is not in
+ * the format.
+ */
 export function modifierFormat(entries: readonly FormatModifier[]): LayerFormat {
   const format: Record<string, unknown> = {}
   for (const { key, value } of entries) {
+    if (key === PART_MODIFIER) continue
     const segments = key.split('.')
     let at = format
     for (const segment of segments.slice(0, -1)) {

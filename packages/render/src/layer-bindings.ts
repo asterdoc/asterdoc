@@ -1,5 +1,6 @@
-import type { BindingValue, Bindings, Form, FormField, LayerFormat } from '@asterdoc/types'
+import type { BindingValue, Bindings, Form, FormField, LayerFormat, ValuePart } from '@asterdoc/types'
 import { pathSegments } from './path'
+import { ALL_VALUE_PARTS, bindingDeclaration, isValuePart, partsOf } from './parts/rules'
 
 /** The part of a layer that decides which bindings it fills with. */
 export interface LayerBindingsSpec {
@@ -66,6 +67,8 @@ export interface ParsedPdfBinding {
   parts: PdfBindingPart[]
   /** The format a binding object declares, merged over its layer's format. */
   format?: LayerFormat
+  /** The part of the value a binding object prints, such as a date's `year`. */
+  part?: ValuePart
 }
 
 /** One binding of a layer, with the PDF field it fills. */
@@ -88,11 +91,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  *   part. Space around the `:` is ignored.
  * - `city, state, zip` joins several whole values with `, `. A part of a joined
  *   binding takes no qualifier.
- * - `{ path, format }` reads `path` as a string binding does and prints with
- *   `format`.
+ * - `{ path, format, part }` reads `path` as a string binding does and prints
+ *   with `format`, or prints only `part` of the value.
  *
  * @throws {PdfBindingSyntaxError} for a value of neither shape, an empty part
- * or qualifier, or a qualifier inside a joined binding.
+ * or qualifier, a qualifier inside a joined binding, or a `part` that is not
+ * a string.
  */
 export function parseBinding(value: BindingValue): ParsedPdfBinding {
   if (typeof value === 'string') return { path: value, parts: parsePath(value) }
@@ -102,7 +106,15 @@ export function parseBinding(value: BindingValue): ParsedPdfBinding {
   if (value.format !== undefined && !isRecord(value.format)) {
     throw new PdfBindingSyntaxError(value.path, 'has a format that is not an object')
   }
-  return { path: value.path, parts: parsePath(value.path), ...(value.format !== undefined && { format: value.format }) }
+  if (value.part !== undefined && typeof value.part !== 'string') {
+    throw new PdfBindingSyntaxError(value.path, 'has a part that is not a string')
+  }
+  return {
+    path: value.path,
+    parts: parsePath(value.path),
+    ...(value.format !== undefined && { format: value.format }),
+    ...(value.part !== undefined && { part: value.part as ValuePart }),
+  }
 }
 
 function parsePath(binding: string): PdfBindingPart[] {
@@ -164,12 +176,37 @@ export function bindingFormatProblem(form: Form | undefined, binding: ParsedPdfB
 }
 
 /**
- * Refuse any binding whose format cannot apply.
+ * Why a binding's part cannot apply, or undefined when it can. A part reads
+ * one whole value of a kind that has it, so it takes no joined path and no
+ * `:` qualifier.
+ */
+export function bindingPartProblem(form: Form | undefined, binding: ParsedPdfBinding): string | undefined {
+  const { part } = binding
+  if (part === undefined) return undefined
+  if (binding.parts.length > 1) return `prints the part "${part}" of a joined binding, which reads whole values`
+  const [only] = binding.parts as [PdfBindingPart]
+  if (only.qualifier !== undefined) {
+    const source = `${only.source}:${only.qualifier}`
+    return isOptionTest(form, only)
+      ? `sets a part on the option test "${source}", which fills a checkbox and prints no value`
+      : `sets a part on the split part "${source}", which prints a piece of the raw value`
+  }
+  if (!form) return `prints the part "${part}", which needs the artifact's declarations to read`
+  const declared = bindingDeclaration(form, only.source)
+  const what = declared ? `${declared.path}, ${/^[aeiou]/.test(declared.kind) ? 'an' : 'a'} ${declared.kind} value` : `"${only.source}", which the artifact does not declare`
+  if (!isValuePart(part)) return `has the part ${JSON.stringify(part)}, which is none of ${ALL_VALUE_PARTS.map((name) => JSON.stringify(name)).join(', ')}`
+  const parts = declared && partsOf(declared.kind)
+  if (!parts) return `prints the part "${part}" of ${what}; only date, phone and money values have parts`
+  return parts.includes(part) ? undefined : `prints the part "${part}" of ${what}, whose parts are ${parts.map((name) => JSON.stringify(name)).join(', ')}`
+}
+
+/**
+ * Refuse any binding whose format or part cannot apply.
  * @throws {PdfBindingSyntaxError} naming the first such binding.
  */
 export function assertBindingFormats(form: Form | undefined, bindings: readonly ParsedPdfBinding[]): void {
   for (const binding of bindings) {
-    const problem = bindingFormatProblem(form, binding)
+    const problem = bindingFormatProblem(form, binding) ?? bindingPartProblem(form, binding)
     if (problem) throw new PdfBindingSyntaxError(binding.path, problem)
   }
 }

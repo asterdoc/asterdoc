@@ -126,8 +126,15 @@ describe("a binding object", () => {
   it("refuses a binding object without a path, with an empty path, or with an undeclared key", () => {
     expect(PdfBindingsSchema.safeParse({ f1: { format: dateFormat } }).success).toBe(false);
     expect(PdfBindingsSchema.safeParse({ f1: { path: "" } }).success).toBe(false);
-    expect(messages(PdfBindingsSchema.safeParse({ f1: { path: "fields.dob", part: "year" } })).join("\n")).toContain("part");
+    expect(messages(PdfBindingsSchema.safeParse({ f1: { path: "fields.dob", digits: 4 } })).join("\n")).toContain("digits");
     expect(PdfBindingsSchema.safeParse({ f1: { path: "fields.dob", format: { date: { pattern: "DD.MM.YYYY" } } } }).success).toBe(false);
+  });
+
+  it("takes a part of a date, phone or money value, and refuses any other part", () => {
+    const parts = ["year", "month", "day", "countryCode", "nationalNumber", "extension", "areaCode", "subscriberNumber", "units", "cents"];
+    for (const part of parts) expect(messages(PdfBindingsSchema.safeParse({ f1: { path: "fields.x", part } })), part).toEqual([]);
+    expect(PdfBindingsSchema.safeParse({ f1: { path: "fields.dob", part: "week" } }).success).toBe(false);
+    expect(PdfBindingsSchema.safeParse({ f1: { path: "fields.dob", part: "Year" } }).success).toBe(false);
   });
 
   it("is refused on a layer that is not a PDF, as any binding is", () => {

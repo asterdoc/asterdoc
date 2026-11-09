@@ -1,10 +1,11 @@
 import { defaultFormatter } from '../default-formatter'
 import { phoneProvider } from '@asterdoc/format/phone'
 import { resolveAddressRegion, resolveCountry, resolveRegion, type PlaceOutcome } from '@asterdoc/format'
-import type { BinaryContent, Bindings, EnumOption, EnumOptionValue, Form, FormField, Formatter, LayerBooleanFormat, LayerCountryFormat, LayerDateFormat, LayerFormat, LayerPhoneFormat, LayerRegionFormat } from '@asterdoc/types'
+import type { BinaryContent, Bindings, EnumOption, EnumOptionValue, Form, FormField, Formatter, LayerBooleanFormat, LayerCountryFormat, LayerDateFormat, LayerFormat, LayerPhoneFormat, LayerRegionFormat, ValuePart } from '@asterdoc/types'
 import { validateFieldBindings } from '../text/field-formatter'
 import { assertBindingFormats, fieldDefinition, parseBindings, resolveLayerBindings, splitPartIndex } from '../layer-bindings'
 import { formatterFor, mergeFormats } from '../presentation'
+import { bindingDeclaration } from '../parts/rules'
 import { pathSegments } from '../path'
 import { acroFields, type AcroField } from './acroform'
 import { isName, PdfEncryptedError, PdfModel, type PdfValue } from './syntax'
@@ -702,6 +703,10 @@ interface PathWork {
   optionKind?: 'enum' | 'multiselect'
   /** The reader of the first split part's binding, which reads the joined parts. */
   partsReader?: Reader
+  /** The text of each value part a binding prints, such as a date's `year`; undefined for a bound field with no text. */
+  valueParts: Map<ValuePart, string | undefined>
+  /** The kind of value the parts are pieces of. */
+  partKind?: string
 }
 
 function readingOf(parsed: Parsed): Reading {
@@ -762,8 +767,88 @@ function sameValue(left: unknown, right: unknown): boolean {
   return JSON.stringify(left) === JSON.stringify(right)
 }
 
+const notRecoverable = (reason: string): Reading => ({ kind: 'not_recoverable', reason })
+const unparseable = (reason: string): Reading => ({ kind: 'unparseable', reason })
+const recovered = (value: unknown): Reading => ({ kind: 'value', value, lossy: false })
+
+function unboundParts(parts: ReadonlyMap<ValuePart, string | undefined>, needed: readonly ValuePart[], kind: string): Reading | undefined {
+  const absent = needed.filter((part) => !parts.has(part))
+  if (absent.length === 0) return undefined
+  return notRecoverable(`A ${kind} is joined back only from all of ${needed.join(', ')}, and ${absent.join(', ')} ${absent.length === 1 ? 'is' : 'are'} not bound.`)
+}
+
+function readDateParts(parts: ReadonlyMap<ValuePart, string | undefined>): Reading {
+  const problem = unboundParts(parts, ['year', 'month', 'day'], 'date')
+  if (problem) return problem
+  const [year, month, day] = (['year', 'month', 'day'] as const).map((part) => parts.get(part)?.trim() ?? '')
+  if (!/^\d{4}$/.test(year!) || !/^\d{1,2}$/.test(month!) || !/^\d{1,2}$/.test(day!)) {
+    return unparseable('The date parts are not a four-digit year, and a month and day of one or two digits.')
+  }
+  const value = isoDate(Number(year), Number(month), Number(day))
+  return value === undefined ? unparseable('The date parts name no calendar date.') : recovered(value)
+}
+
+function readMoneyParts(parts: ReadonlyMap<ValuePart, string | undefined>, target: Target): Reading {
+  const problem = unboundParts(parts, ['units', 'cents'], 'money amount')
+  if (problem) return problem
+  const currency = target.kind === 'field' && target.field.type === 'money' ? target.field.currency : undefined
+  if (currency === undefined) return notRecoverable('Money parts print no currency; declare the field\'s currency to read them back.')
+  const units = parts.get('units')?.trim() ?? ''
+  const cents = parts.get('cents')?.trim() ?? ''
+  if (!/^\d+$/.test(units) || !/^\d{2}$/.test(cents)) return unparseable('The money parts are not whole units and two digits of cents.')
+  return recovered({ amount: Number(`${units}.${cents}`), currency })
+}
+
+function readPhoneParts(parts: ReadonlyMap<ValuePart, string | undefined>): Reading {
+  const split = parts.has('areaCode') && parts.has('subscriberNumber')
+  if (!parts.has('nationalNumber') && !split) {
+    return notRecoverable('A phone number is joined back only from its nationalNumber, or a +1 number\'s areaCode and subscriberNumber, and neither is bound.')
+  }
+  if (!parts.has('countryCode') && !split) return notRecoverable('A phone number is joined back only with its countryCode, which is not bound.')
+  const text = (part: ValuePart) => parts.get(part)?.trim() ?? ''
+  const national = parts.has('nationalNumber') ? text('nationalNumber') : `${text('areaCode')}${text('subscriberNumber')}`
+  const countryCode = parts.has('countryCode') ? text('countryCode') : '1'
+  if (!/^\d{1,3}$/.test(countryCode) || !/^\d+$/.test(national)) return unparseable('The phone parts are not a country calling code and a national number in digits.')
+  const parsed = phoneProvider.parse(`+${countryCode}${national}`)
+  if (!parsed) return unparseable(`+${countryCode}${national} is not a valid phone number.`)
+  const northAmerican = parsed.countryCallingCode === '1' && parsed.nationalNumber.length === 10
+  const printed: Partial<Record<ValuePart, string | undefined>> = {
+    countryCode: parsed.countryCallingCode,
+    nationalNumber: parsed.nationalNumber,
+    areaCode: northAmerican ? parsed.nationalNumber.slice(0, 3) : undefined,
+    subscriberNumber: northAmerican ? parsed.nationalNumber.slice(3) : undefined,
+  }
+  const conflicts = (['countryCode', 'nationalNumber', 'areaCode', 'subscriberNumber'] as const)
+    .filter((part) => text(part) !== '' && text(part) !== printed[part])
+  if (conflicts.length > 0) {
+    return unparseable(`The phone parts do not agree: ${conflicts.join(' and ')} ${conflicts.length === 1 ? 'is' : 'are'} not what ${parsed.number} prints${!northAmerican && conflicts.some((part) => part === 'areaCode' || part === 'subscriberNumber') ? ', and areaCode and subscriberNumber exist only for +1 numbers' : ''}.`)
+  }
+  const extension = text('extension')
+  return recovered({ number: parsed.number, ...(extension && { extension }) })
+}
+
+/**
+ * Join value parts back into the value they are pieces of, only when every
+ * part that holds it is bound: a date's year, month and day; a money
+ * amount's units and cents, in the currency its field declares; a phone's
+ * countryCode and nationalNumber, or a +1 number's areaCode and
+ * subscriberNumber, with the extension when it is bound.
+ */
+function readValueParts(work: PathWork, target: Target): Reading | undefined {
+  const parts = work.valueParts
+  if (parts.size === 0) return undefined
+  if ([...parts.values()].every((text) => text === undefined || text.trim() === '')) return { kind: 'empty' }
+  if (target.kind === 'fixed') return notRecoverable(target.reason)
+  if (work.partKind === 'date') return readDateParts(parts)
+  if (work.partKind === 'money') return readMoneyParts(parts, target)
+  if (work.partKind === 'phone') return readPhoneParts(parts)
+  return notRecoverable(`A ${work.partKind ?? 'value'} has no parts to join back.`)
+}
+
 function resolvePath(work: PathWork, target: Target, reader: Reader): { status: PdfExtractionStatus; value?: unknown; reason?: string; lossy?: boolean } {
   const readings = [...work.readings]
+  const joined = readValueParts(work, target)
+  if (joined) readings.push(joined)
 
   if (work.parts.size > 0) {
     const positions = [...work.parts.keys()].sort((left, right) => left - right)
@@ -893,13 +978,13 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
   const workFor = (path: string): PathWork => {
     let entry = work.get(path)
     if (!entry) {
-      entry = { sources: [], readings: [], parts: new Map(), options: new Map() }
+      entry = { sources: [], readings: [], parts: new Map(), options: new Map(), valueParts: new Map() }
       work.set(path, entry)
     }
     return entry
   }
 
-  for (const { field: pdfName, parts, format: bindingFormat } of parsed) {
+  for (const { field: pdfName, parts, format: bindingFormat, part: valuePart } of parsed) {
     const state = states.get(pdfName)
     const bindingReader = readerFor(bindingFormat)
 
@@ -917,6 +1002,16 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
     const { path, qualifier } = parts[0]!
     const entry = workFor(path)
     entry.sources.push(source(state, pdfName))
+    if (valuePart !== undefined) {
+      const text = state?.raw
+      const earlier = entry.valueParts.get(valuePart)
+      if (earlier !== undefined && text !== undefined && earlier !== text) {
+        entry.readings.push(unparseable(`The PDF fields that carry the part ${valuePart} hold different values.`))
+      }
+      entry.partKind ??= bindingDeclaration(form, path)?.kind
+      entry.valueParts.set(valuePart, earlier ?? text)
+      continue
+    }
     const target = targetFor(form, path)
     const fieldType = target.kind === 'field' ? target.field.type : undefined
     const isPart = qualifier !== undefined && fieldType !== 'boolean' && fieldType !== 'enum' && fieldType !== 'multiselect' && splitPartIndex(qualifier) !== undefined

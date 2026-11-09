@@ -72,7 +72,7 @@ describe('formats on an artifact layer and its bindings', () => {
 	test('a binding object passed at render time is checked as a layer binding is', async () => {
 		await expect(filled().render({ layer: 'pdf', bindings: { name: { path: 'signed', format: { date: { pattern: 'D/M/YY' } } } } as never }))
 			.rejects.toThrow('binding "name", is not a valid binding object')
-		await expect(filled().render({ layer: 'pdf', bindings: { name: { path: 'signed', part: 'year' } } as never })).rejects.toThrow('part')
+		await expect(filled().render({ layer: 'pdf', bindings: { name: { path: 'signed', part: 'week' } } as never })).rejects.toThrow('part')
 	})
 
 	test('a text layer applies its format, inline and from a file', async () => {
@@ -124,6 +124,24 @@ describe('validating binding formats', () => {
 			married: { path: 'status:married' },
 		}))
 		expect(result.issues).toBeUndefined()
+	})
+
+	test('accepts a part the value has, and renders it', async () => {
+		expect(validate(pdfForm({ year: { path: 'signed', part: 'year' } })).issues).toBeUndefined()
+		expect(await box(await filled().render({ layer: 'pdf', bindings: { name: { path: 'signed', part: 'year' } } }))).toBe('2021')
+	})
+
+	test('refuses a part the value does not have, on a qualifier, or on a joined path, naming the binding', () => {
+		const cases: Array<[Record<string, unknown>, string]> = [
+			[{ path: 'ssn', part: 'year' }, 'Binding "ssn" prints the part "year" of fields.ssn, a text value; only date, phone and money values have parts.'],
+			[{ path: 'signed', part: 'cents' }, 'Binding "signed" prints the part "cents" of fields.signed, a date value, whose parts are "year", "month", "day".'],
+			[{ path: 'ssn:2', part: 'year' }, 'Binding "ssn:2" sets a part on the split part "ssn:2", which prints a piece of the raw value.'],
+			[{ path: 'status:married', part: 'year' }, 'Binding "status:married" sets a part on the option test "status:married", which fills a checkbox and prints no value.'],
+			[{ path: 'signed, ssn', part: 'year' }, 'Binding "signed, ssn" prints the part "year" of a joined binding, which reads whole values.'],
+		]
+		for (const [binding, message] of cases) {
+			expect(validate(pdfForm({ box: binding })).issues, message).toEqual([{ message: `Layer "pdf", binding "box": ${message}`, path: ['layers', 'pdf', 'bindings', 'box'] }])
+		}
 	})
 
 	test('checks a binding object path as it checks a string', () => {

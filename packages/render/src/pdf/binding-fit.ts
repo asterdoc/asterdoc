@@ -31,7 +31,11 @@
  * the longest number the style prints, every digit the widest digit: in
  * `phone.region`'s plan under `national` and `digits`, in any plan under
  * `international` and `e164`; a whole phone adds the extension label and an
- * extension of the longest length the phone value allows. A comma-joined
+ * extension of the longest length the phone value allows. A binding's `part`
+ * prints plain digits, checked at the most digits it holds, each the widest
+ * digit: a phone's `nationalNumber` and `countryCode` in `phone.region`'s plan,
+ * which render enforces, or in any plan; money `units` by the field's `max`.
+ * A comma-joined
  * binding joins each path's value with ", ". More characters than a comb field
  * has boxes is an error.
  *
@@ -41,7 +45,7 @@
  */
 
 import { COUNTRY_CODES, countryName, displayRegion, subdivisionsOf } from '@asterdoc/format'
-import type { BindingValue, Bindings, EnumOption, Form, FormField, Formatter, LayerFormat } from '@asterdoc/types'
+import type { BindingValue, Bindings, EnumOption, Form, FormField, Formatter, LayerFormat, ValuePart } from '@asterdoc/types'
 import { acroFields, textFieldDrawing, widgetLayout, type AcroField } from './acroform'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
 import { layoutFieldText, MIN_FONT_SIZE, PdfFieldFillError, type FieldLayout } from './field-appearance'
@@ -52,6 +56,8 @@ import { PdfModel } from './syntax'
 import { defaultFormatter } from '../default-formatter'
 import { formatterFor, mergeFormats } from '../presentation'
 import { pathSegments } from '../path'
+import { bindingDeclaration } from '../parts/rules'
+import { splitAmount } from '../parts/print'
 
 /**
  * The text a typical value is made of: an English pangram with its word spaces,
@@ -134,7 +140,7 @@ interface BoundSource {
 
 type SourceAnalysis =
   | { kind: 'bounded'; source: BoundSource }
-  | { kind: 'unbounded'; path: string }
+  | { kind: 'unbounded'; path: string; bound?: string }
   | { kind: 'other' }
 
 /** Longest widest value a message quotes in full. */
@@ -332,6 +338,64 @@ function choiceSource(path: string, field: FormField, format?: LayerFormat, form
   return listedSource(path, values, basis, (font) => selections(values, count, (value) => value, font, (chosen) => chosen.join(', ')))
 }
 
+/** The most digits money `units` print: those of the field's `max`, rounded as parts round it; undefined when nothing bounds it. */
+function unitDigits(field: FormField | undefined): number | undefined {
+  if (field?.type !== 'money' || field.max === undefined || field.max < 0) return undefined
+  return splitAmount(field.max).units.length
+}
+
+/**
+ * The most digits a part prints: fixed for a date's parts, money `cents`, and
+ * a +1 number's `areaCode` and `subscriberNumber`; the longest number of
+ * `phone.region`'s plan, or of any plan, for `nationalNumber`; the field's
+ * `max` for money `units`.
+ */
+function partDigits(form: Form, path: string, part: ValuePart, format: LayerFormat | undefined, formatter: Formatter): { digits: number; basis: string } | 'unbounded' | undefined {
+  switch (part) {
+    case 'year': return { digits: 4, basis: 'its four-digit year' }
+    case 'month':
+    case 'day': return { digits: 2, basis: `its two-digit ${part}` }
+    case 'cents': return { digits: 2, basis: 'its two-digit cents' }
+    case 'areaCode': return { digits: 3, basis: 'its three-digit area code' }
+    case 'subscriberNumber': return { digits: 7, basis: 'its seven-digit subscriber number' }
+    case 'countryCode': {
+      const region = format?.phone?.region
+      const code = region === undefined ? undefined : formatter.providers.phone?.callingCode(region)
+      return code === undefined
+        ? { digits: 3, basis: 'a country calling code of up to three digits' }
+        : { digits: code.length, basis: `the country calling code of the ${region} numbering plan` }
+    }
+    case 'extension': return { digits: EXTENSION_MAX_LENGTH, basis: `an extension of ${EXTENSION_MAX_LENGTH} digits` }
+    case 'nationalNumber': {
+      const region = format?.phone?.region
+      const longest = formatter.providers.phone?.longest('digits', region)
+      if (!longest) return undefined
+      return { digits: longest.length, basis: `the longest national number of ${region === undefined ? 'any numbering plan' : `the ${region} numbering plan`}` }
+    }
+    case 'units': {
+      const digits = unitDigits(fieldDefinition(form, path))
+      return digits === undefined ? 'unbounded' : { digits, basis: 'the units of its max' }
+    }
+  }
+}
+
+/** A part prints plain digits: as many as the part holds at most, each the widest digit. */
+function partSource(form: Form, path: string, part: ValuePart, format: LayerFormat | undefined, formatter: Formatter): SourceAnalysis {
+  const bound = partDigits(form, path, part, format, formatter)
+  if (bound === undefined) return { kind: 'other' }
+  if (bound === 'unbounded') return { kind: 'unbounded', path, bound: 'max' }
+  return {
+    kind: 'bounded',
+    source: {
+      path,
+      probe: '0123456789',
+      basis: `part ${part}, ${bound.basis}`,
+      exact: true,
+      value: (font) => widestCharacter(font, [DIGITS]).repeat(bound.digits),
+    },
+  }
+}
+
 /** The phone field a `phone.number` member path reads, which prints as the phone's number. */
 function phoneNumberMember(form: Form, path: string): FormField | undefined {
   if (!path.endsWith('.number')) return undefined
@@ -388,7 +452,10 @@ function analyzeBinding(form: Form, value: BindingValue, format: LayerFormat | u
   const parsed = parseBinding(value)
   const effective = mergeFormats(format, parsed.format)
   const localized = formatterFor(formatter, effective)
-  const sources = parsed.parts.map((part) => analyzeSource(form, part, effective, localized))
+  const { part } = parsed
+  const sources = part === undefined
+    ? parsed.parts.map((source) => analyzeSource(form, source, effective, localized))
+    : parsed.parts.map((source) => bindingDeclaration(form, source.source) ? partSource(form, source.path, part, effective, localized) : { kind: 'other' as const })
   // A joined value is checked only when every part is known.
   if (sources.some((source) => source.kind === 'other')) return undefined
   return { binding: parsed.path, sources }
@@ -468,7 +535,7 @@ export async function checkPdfBindingFit({ template, form, bindings, layerFont, 
         paths,
         severity: 'warning',
         reason: 'unbounded',
-        message: `${paths.join(', ')} has no maxLength or pattern that bounds its length, so a long value can fail to fill the ${describe(layouts[0]!)}${drawing.comb ? ` with ${drawing.comb} comb boxes` : ''}`,
+        message: `${paths.join(', ')} has no ${unbounded[0]!.bound ?? 'maxLength or pattern'} that bounds its length, so a long value can fail to fill the ${describe(layouts[0]!)}${drawing.comb ? ` with ${drawing.comb} comb boxes` : ''}`,
       })
       continue
     }

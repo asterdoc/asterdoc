@@ -262,7 +262,30 @@ export interface BindingObject {
    * `status:married` takes none.
    */
   format?: LayerFormat;
+  /**
+   * The piece of the value the field prints, as plain digits: a date's
+   * `year`, `month` or `day`; a phone's `countryCode`, `nationalNumber` or
+   * `extension`, and for +1 numbers `areaCode` and `subscriberNumber`; a money
+   * amount's `units` or `cents`. Not on a `:` qualifier or a joined path.
+   */
+  part?: ValuePart;
 }
+
+/**
+ * A piece of a date, phone or money value that a binding or placeholder
+ * prints on its own, as plain digits.
+ */
+export type ValuePart =
+  | "year"
+  | "month"
+  | "day"
+  | "countryCode"
+  | "nationalNumber"
+  | "extension"
+  | "areaCode"
+  | "subscriberNumber"
+  | "units"
+  | "cents";
 
 /** One PDF binding: a path string, or a binding object that also carries a format. */
 export type BindingValue = string | BindingObject;

@@ -91,6 +91,7 @@ export type {
   Bindings,
   BindingObject,
   BindingValue,
+  ValuePart,
   // Document
   Document,
   // Checklist
