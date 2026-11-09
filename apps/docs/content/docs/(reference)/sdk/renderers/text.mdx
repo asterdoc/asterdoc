@@ -155,8 +155,10 @@ Returns the rendered template as a `string`. A template that cannot render throw
 Checks every expression in a template against a type environment, without rendering. `validate()` runs it on inline layers and `validateLayers()` on file layers.
 
 ```ts
-function checkTextTemplate(template: string, env: TypeEnv): TemplateDiagnostic[]
+function checkTextTemplate(template: string, env: TypeEnv, options?: TemplateCheckOptions): TemplateDiagnostic[]
 ```
+
+`options.values` is a `TemplateValueResolver`: what the artifact declares at each path, so [format modifiers](#format-modifiers) are checked against field types. Build one from a form with `formValueResolver(form)`; `validate()` and `validateLayers()` pass the artifact's. Without it, modifiers are checked against static types only.
 
 Each diagnostic has a `code`, a `message`, the `expression`, and its `position` (`line` and `column`).
 
@@ -167,6 +169,23 @@ Lists the signing directives a template writes, including those inside blocks, w
 ```ts
 function textTemplateSigningDirectives(template: string): SigningDirectiveUse[] | undefined
 ```
+
+## Format Modifiers
+
+A value placeholder can set how its value prints, after a single `|`:
+
+```
+{{ fields.dob | date.pattern="MM/DD/YYYY" }}
+{{ fields.fee | money.currencyDisplay="none", locale="fr-FR" }}
+```
+
+Modifiers are a comma-separated list of `key=literal`. Keys are paths into the layer [format](/schemas/artifacts/shared/layer#format): `locale`, `date.pattern`, and `money.currencyDisplay`. Values are string, number, or boolean literals. They merge over the caller's formatter and the layer's `format`, per property.
+
+- A path prints its raw value formatted with its field, computed value, party, or annex definition, including list items, fieldset members, and members of structured values (a money `amount` is a number), inside `{{#each}}` too. A computed expression formats by its type, and a loop over a conditional or `coalesce` reads the rows of the branch it takes.
+- In a conditional or `coalesce`, each modifier must apply to at least one branch; the branch that prints takes those that apply to it.
+- They work in `{{ }}` and `{{{ }}}`, and apply before HTML escaping. Block markers take none.
+- `||` is never a separator; the expression language refuses it as before.
+- Validation refuses an unknown key, a value the key does not take, and a key that does not apply to the value, such as `date.pattern` on a text field.
 
 ## Automatic Formatting
 

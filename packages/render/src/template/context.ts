@@ -105,12 +105,28 @@ function withConfiguredFunctions(context: EvaluationContext, expressions: Templa
 export interface TemplateData {
   context: EvaluationContext
   resolveData(segments: readonly string[]): unknown
+  resolveRaw(segments: readonly string[]): unknown
+}
+
+function pathLookup(values: Record<string, unknown>): (segments: readonly string[]) => unknown {
+  const defs = record(values.defs)
+  return (segments) => {
+    const [head, ...rest] = segments
+    if (head === undefined) return undefined
+    if (head === 'fields') {
+      if (rest.length === 0) return undefined
+      return dataPath(record(values.fields) ?? values, rest)
+    }
+    if (head === 'parties' || head === 'annexes' || head === 'items') return dataPath(values[head], rest)
+    if (defs && Object.prototype.hasOwnProperty.call(defs, head)) return dataPath(defs[head], rest)
+    return undefined
+  }
 }
 
 /**
- * The expression context and render-data lookup for one render. `raw` holds
- * unformatted values; `prepared` holds the formatted values the renderer
- * prints.
+ * The expression context and data lookups for one render. `raw` holds
+ * unformatted values, which format modifiers format; `prepared` holds the
+ * formatted values the renderer prints.
  */
 export function templateData(
   raw: Record<string, unknown>,
@@ -124,20 +140,5 @@ export function templateData(
         hostFunctions: expressions?.functions,
         registry: expressions?.signatures ? buildRegistry(expressions.signatures) : undefined,
       })
-  const defs = record(prepared.defs)
-
-  return {
-    context,
-    resolveData(segments) {
-      const [head, ...rest] = segments
-      if (head === undefined) return undefined
-      if (head === 'fields') {
-        if (rest.length === 0) return undefined
-        return dataPath(record(prepared.fields) ?? prepared, rest)
-      }
-      if (head === 'parties' || head === 'annexes' || head === 'items') return dataPath(prepared[head], rest)
-      if (defs && Object.prototype.hasOwnProperty.call(defs, head)) return dataPath(defs[head], rest)
-      return undefined
-    },
-  }
+  return { context, resolveData: pathLookup(prepared), resolveRaw: pathLookup(raw) }
 }

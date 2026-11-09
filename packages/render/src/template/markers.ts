@@ -8,7 +8,9 @@
  */
 
 import { parse, type Expr } from '@asterdoc/expr'
+import type { LayerFormat } from '@asterdoc/types'
 import { removedSyntaxHint, TemplateError, type TemplateDiagnostic, type TemplatePosition } from './errors'
+import { modifierFormat, modifierListProblem, type FormatModifier, type ModifierLiteral } from './format-modifiers'
 
 export interface ExpressionSlot {
   /** Expression source as written. */
@@ -18,6 +20,23 @@ export interface ExpressionSlot {
   /** Why it does not parse, with the replacement for removed syntax. */
   problem?: TemplateDiagnostic
   position: TemplatePosition
+  /** The format modifiers a value placeholder writes after a single `|`. */
+  modifiers?: FormatModifiers
+}
+
+/**
+ * The format modifiers of one placeholder, such as
+ * `date.pattern="MM/DD/YYYY", locale="en-US"`. They are not part of the
+ * expression: the placeholder's expression prints, and they choose how.
+ */
+export interface FormatModifiers {
+  /** The whole placeholder as written, expression and modifiers, for messages. */
+  text: string
+  entries: FormatModifier[]
+  /** The format the modifiers set, merged over the layer's format. */
+  format: LayerFormat
+  /** Why the modifiers do not parse, or name an unknown key or a value the key does not take. */
+  problem?: TemplateDiagnostic
 }
 
 export interface TextNode {
@@ -73,6 +92,148 @@ export function expressionSlot(source: string, position: TemplatePosition): Expr
       position,
     },
   }
+}
+
+/**
+ * The offset of the `|` that starts a placeholder's format modifiers: the
+ * first single `|` outside a string literal, or -1. `||` is never a
+ * separator; the expression parser refuses it as it always has.
+ */
+export function modifierSeparator(source: string): number {
+  let quote: string | undefined
+  for (let index = 0; index < source.length; index++) {
+    const char = source[index]!
+    if (quote !== undefined) {
+      if (char === '\\') index++
+      else if (char === quote) quote = undefined
+      continue
+    }
+    if (char === '"' || char === "'") quote = char
+    else if (char === '|') {
+      if (source[index + 1] === '|') index++
+      else return index
+    }
+  }
+  return -1
+}
+
+const CLOSING_QUOTE: Readonly<Record<string, string>> = { '"': '"', "'": "'", '\u201C': '\u201D', '\u2018': '\u2019' }
+const ESCAPES: Readonly<Record<string, string>> = { n: '\n', t: '\t', r: '\r' }
+
+class ModifierSyntaxError extends Error {
+  constructor(message: string, readonly offset: number) {
+    super(message)
+  }
+}
+
+function parseModifierList(source: string, base: number): Array<{ key: string; value: ModifierLiteral; offset: number }> {
+  const entries: Array<{ key: string; value: ModifierLiteral; offset: number }> = []
+  let index = 0
+  const skipSpace = () => {
+    while (index < source.length && /\s/.test(source[index]!)) index++
+  }
+  const fail = (message: string): never => {
+    throw new ModifierSyntaxError(message, base + index)
+  }
+  const literal = (key: string): ModifierLiteral => {
+    const char = source[index]
+    const closing = char === undefined ? undefined : CLOSING_QUOTE[char]
+    if (closing !== undefined) {
+      const start = index
+      index++
+      let value = ''
+      while (index < source.length && source[index] !== closing) {
+        if (source[index] === '\\' && index + 1 < source.length) {
+          const next = source[index + 1]!
+          value += ESCAPES[next] ?? next
+          index += 2
+          continue
+        }
+        value += source[index]
+        index++
+      }
+      if (index >= source.length) {
+        index = start
+        return fail(`The value of ${key} is a string with no closing quote.`)
+      }
+      index++
+      return value
+    }
+    const number = /^-?\d+(?:\.\d+)?/.exec(source.slice(index))
+    if (number) {
+      index += number[0].length
+      return Number(number[0])
+    }
+    const word = /^(?:true|false)\b/.exec(source.slice(index))
+    if (word) {
+      index += word[0].length
+      return word[0] === 'true'
+    }
+    return fail(`The value of ${key} must be a string, number, or boolean literal, such as ${key}="value".`)
+  }
+
+  skipSpace()
+  if (index >= source.length) fail('A | starts format modifiers, written key=value, such as date.pattern="MM/DD/YYYY".')
+  for (;;) {
+    skipSpace()
+    const offset = index
+    const key = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*/.exec(source.slice(index))?.[0]
+    if (!key) fail('A format modifier is written key=value, such as date.pattern="MM/DD/YYYY".')
+    index += key!.length
+    skipSpace()
+    if (source[index] !== '=') fail(`The format modifier ${key} needs a value: write ${key}=value.`)
+    index++
+    skipSpace()
+    entries.push({ key: key!, value: literal(key!), offset: base + offset })
+    skipSpace()
+    if (index >= source.length) return entries
+    if (source[index] !== ',') fail('Separate format modifiers with commas, such as locale="en-US", date.pattern="MM/DD/YYYY".')
+    index++
+  }
+}
+
+/**
+ * Parse a value placeholder: its expression, and the format modifiers after
+ * the first single `|` outside a string literal. A string literal in the
+ * modifiers may use straight or curly quotes, since Word turns `"` into `“`.
+ */
+export function valueSlot(source: string, position: TemplatePosition): ExpressionSlot {
+  const text = source.trimStart()
+  const separator = modifierSeparator(text)
+  if (separator === -1) return expressionSlot(text, position)
+  const positionAt = positionFinder(text, position)
+  const slot = expressionSlot(text.slice(0, separator), position)
+  const whole = text.trim()
+  const modifiers: FormatModifiers = { text: whole, entries: [], format: {} }
+  try {
+    modifiers.entries = parseModifierList(text.slice(separator + 1), separator + 1)
+      .map(({ key, value, offset }) => ({ key, value, position: positionAt(offset) }))
+  } catch (error) {
+    if (!(error instanceof ModifierSyntaxError)) throw error
+    modifiers.problem = { code: 'syntax', message: error.message, expression: whole, position: positionAt(error.offset) }
+    return { ...slot, modifiers }
+  }
+  const problem = modifierListProblem(modifiers.entries)
+  if (problem) {
+    modifiers.problem = { code: 'format-modifier', message: problem.message, expression: whole, position: problem.entry.position }
+    return { ...slot, modifiers }
+  }
+  modifiers.format = modifierFormat(modifiers.entries)
+  return { ...slot, modifiers }
+}
+
+/** The rule a block marker with format modifiers breaks. */
+export const BLOCK_MODIFIER_RULE = 'A block marker takes no format modifiers; write them on a value placeholder, such as {{item.date | date.pattern="MM/DD/YYYY"}}.'
+
+/**
+ * Parse the expression of a block marker or DOCX control command. A block
+ * marker takes no format modifiers, so a single `|` in it is a `markers`
+ * problem.
+ */
+export function blockSlot(source: string, position: TemplatePosition): ExpressionSlot {
+  if (modifierSeparator(source) === -1) return expressionSlot(source, position)
+  const trimmed = source.trim()
+  return { source: trimmed, position, problem: { code: 'markers', message: BLOCK_MODIFIER_RULE, expression: trimmed, position } }
 }
 
 const TAG = /\{\{\{[\s\S]*?\}\}\}|\{\{[\s\S]*?\}\}/g
@@ -146,9 +307,11 @@ export function parseTemplate(template: string, base?: TemplatePosition): Templa
       if (name === 'with') fail('{{#with}} is removed; write full paths, such as parties.tenant.name.', index)
       if (name !== 'if' && name !== 'unless' && name !== 'each') fail(`Unsupported block {{#${name}}}; use {{#if}}, {{#unless}}, or {{#each}}.`, index)
       const expressionOffset = innerOffset + 1 + name.length + (expression.length - expression.trimStart().length)
+      const slot = blockSlot(expression, positionAt(expressionOffset))
+      if (slot.problem?.code === 'markers') fail(slot.problem.message, index)
       const block: BlockNode = {
         type: name as BlockNode['type'],
-        slot: expressionSlot(expression, positionAt(expressionOffset)),
+        slot,
         children: [],
         inverse: [],
       }
@@ -174,7 +337,7 @@ export function parseTemplate(template: string, base?: TemplatePosition): Templa
       continue
     }
 
-    output.push({ type: 'value', slot: expressionSlot(inner, positionAt(innerOffset)), escaped: !triple })
+    output.push({ type: 'value', slot: valueSlot(inner, positionAt(innerOffset)), escaped: !triple })
   }
 
   if (cursor < template.length) pushText(template.slice(cursor))

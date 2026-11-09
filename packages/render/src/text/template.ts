@@ -1,8 +1,10 @@
-import type { Formatter } from '@asterdoc/types'
+import type { Formatter, FormatterProgressivePolicy, LayerFormat } from '@asterdoc/types'
 import type { EvaluationContext, Expr, Value } from '@asterdoc/expr'
 import { TemplateError, type TemplateDiagnostic } from '../template/errors'
 import { parseTemplate, type ExpressionSlot, type TemplateNode } from '../template/markers'
-import { fromValue, TemplateScope, type Frame } from '../template/scope'
+import { fromValue, TemplateScope, type Frame, type TemplateEnvironment } from '../template/scope'
+import { sourceRows } from '../template/targets'
+import type { TemplateValueResolver } from '../template/values'
 import { unwrapFormattedValue } from './field-formatter'
 
 /**
@@ -23,14 +25,27 @@ export type SigningDirective = (party: unknown, root: Record<string, unknown>, a
 /** Names a template writes as signing directives rather than as expression functions. */
 export const SIGNING_DIRECTIVES: ReadonlySet<string> = new Set(['signature', 'initials', 'signatureDate', 'capacity', 'printedName'])
 
+/** The rule a signing directive with format modifiers breaks. */
+export const DIRECTIVE_MODIFIER_RULE = 'A signing directive places a signing mark and takes no format modifiers.'
+
 export interface TemplateRenderOptions {
   /** The expression context: fields, computed values, parties, items, and configured functions. */
   context: EvaluationContext
   /** Render data (formatted values and signing records) at an expression path. */
   resolveData(segments: readonly string[]): unknown
+  /** Raw data at an expression path, which format modifiers format. */
+  resolveRaw(segments: readonly string[]): unknown
   /** The render data root, which signing directives read captures and signers from. */
   root: Record<string, unknown>
+  /** The layer's formatter: the caller's, in the layer format's locale. */
   formatter: Formatter
+  /** The caller's formatter, before the layer's format. */
+  callerFormatter: Formatter
+  /** The layer's format, under each placeholder's format modifiers. */
+  format?: LayerFormat
+  progressive?: FormatterProgressivePolicy
+  /** What the artifact declares at each path. */
+  values?: TemplateValueResolver
   directives?: Record<string, SigningDirective>
   /** Escapes an interpolated value for the output format; identity when the format needs none. */
   escape: (value: string) => string
@@ -61,19 +76,26 @@ export function loopRows(value: Value, slot: ExpressionSlot, layer?: string): re
   return fail(slot, `A loop source must be a list, got ${value.kind}.`, 'type-mismatch', layer)
 }
 
-/** Frames for each row of a loop source, carrying the rows' render data and origin. */
+/** Frames for each row of a loop source, carrying the rows' render data, raw data, path, and origin. */
 export function loopFrames(
   scope: TemplateScope,
+  slot: ExpressionSlot,
   node: Expr,
   rows: readonly Value[],
   bind: Pick<Frame, 'kind' | 'name'>,
 ): Frame[] {
   const data = unwrapFormattedValue(scope.dataAt(node))
+  const chosen = scope.chosenBranch(node, slot.source, slot.position) ?? node
+  const raw = scope.rawAt(chosen)
+  const registry = scope.root.registry
   const origin = scope.originOf(node)
   return rows.map((value, index) => ({
     ...bind,
     value,
     data: Array.isArray(data) ? data[index] : undefined,
+    raw: Array.isArray(raw) ? raw[index] : fromValue(value),
+    rows: sourceRows(node, scope.frames, String(index), registry),
+    row: sourceRows(chosen, scope.frames, String(index), registry, true)[0] ?? { kind: 'unknown' },
     index,
     count: rows.length,
     origin: origin ? { listPath: origin.listPath, indices: [...origin.indices, index] } : undefined,
@@ -121,9 +143,15 @@ export function renderTemplateNodes(nodes: readonly TemplateNode[], scope: Templ
     const expression = parsed(node.slot, options.layer)
 
     if (node.type === 'value') {
-      const text = expression.kind === 'Call' && SIGNING_DIRECTIVES.has(expression.callee)
-        ? renderDirective(expression, node.slot, scope, options)
-        : scope.present(expression, node.slot.source, node.slot.position)
+      const { modifiers } = node.slot
+      if (modifiers?.problem) throw new TemplateError(modifiers.problem, options.layer)
+      const directive = expression.kind === 'Call' && SIGNING_DIRECTIVES.has(expression.callee)
+      if (directive && modifiers) {
+        throw new TemplateError({ code: 'format-modifier', message: DIRECTIVE_MODIFIER_RULE, expression: modifiers.text, position: node.slot.position }, options.layer)
+      }
+      const text = directive
+        ? renderDirective(expression as Extract<Expr, { kind: 'Call' }>, node.slot, scope, options)
+        : scope.present(expression, node.slot.source, node.slot.position, modifiers)
       result += text instanceof Markup ? text.value : node.escaped ? escape(text) : text
       continue
     }
@@ -141,11 +169,25 @@ export function renderTemplateNodes(nodes: readonly TemplateNode[], scope: Templ
       result += renderTemplateNodes(node.inverse, scope, options)
       continue
     }
-    for (const frame of loopFrames(scope, expression, rows, { kind: 'each' })) {
+    for (const frame of loopFrames(scope, node.slot, expression, rows, { kind: 'each' })) {
       result += renderTemplateNodes(node.children, scope.push(frame), options)
     }
   }
   return result
+}
+
+/** The environment a template scope renders in, from the render options. */
+export function templateEnvironment(options: TemplateRenderOptions): TemplateEnvironment {
+  return {
+    formatter: options.formatter,
+    resolveData: options.resolveData,
+    resolveRaw: options.resolveRaw,
+    callerFormatter: options.callerFormatter,
+    ...(options.format && { format: options.format }),
+    ...(options.progressive && { progressive: options.progressive }),
+    ...(options.values && { values: options.values }),
+    layer: options.layer,
+  }
 }
 
 export function escapeHtml(value: string): string {
@@ -162,11 +204,7 @@ export function escapeHtml(value: string): string {
 
 /** Render a text template with the artifact expression language. */
 export function renderTemplate(template: string, options: TemplateRenderOptions): string {
-  const scope = new TemplateScope(options.context, {
-    formatter: options.formatter,
-    resolveData: options.resolveData,
-    layer: options.layer,
-  })
+  const scope = new TemplateScope(options.context, templateEnvironment(options))
   try {
     return renderTemplateNodes(parseTemplate(template), scope, options)
   } catch (error) {

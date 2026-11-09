@@ -183,6 +183,39 @@ describe('authoring validation of template expressions', () => {
     ])
   })
 
+  it('checks format modifiers against each path\'s field type, inline and in file layers', async () => {
+    expect(validate(artifact('{{ fields.due | date.pattern="MM/DD/YYYY" }} {{#each fields.lines}}{{ item.amount | locale="de-DE" }}{{/each}}')).issues).toBeUndefined()
+    expect(validate(artifact('{{ fields.note | date.pattern="MM/DD/YYYY" }}')).issues).toEqual([{
+      message: 'Template error at layer "md", line 1, column 18 in {{fields.note | date.pattern="MM/DD/YYYY"}}: date.pattern applies to dates, not to fields.note, a text value.',
+      path: ['layers', 'md'],
+    }])
+    const resolver = createMemoryResolver({
+      contents: {
+        'wrong.md': '{{ fields.price | date.pattern="MM/DD/YYYY" }}',
+        'wrong.docx': docx(['{{ fields.due | money.currencyDisplay="none" }}']),
+      },
+    })
+    const withFiles = {
+      ...artifact('{{fields.qty}}'),
+      layers: {
+        md: { kind: 'file', mimeType: 'text/markdown', path: 'wrong.md' },
+        word: { kind: 'file', mimeType: DOCX, path: 'wrong.docx' },
+      },
+    }
+    expect((await validateLayers(withFiles, { resolver })).issues?.map((issue) => issue.message)).toEqual([
+      expect.stringContaining('date.pattern applies to dates, not to fields.price, a money value.'),
+      expect.stringContaining('money.currencyDisplay applies to money values, not to fields.due, a date value.'),
+    ])
+  })
+
+  it('renders format modifiers through an artifact, with its field metadata', async () => {
+    const draft = form.from({
+      ...artifact('{{ fields.due | date.pattern="MM/DD/YYYY" }} {{ fields.price | money.currencyDisplay="none" }} {{ fields.due }}'),
+      defaultLayer: 'md',
+    } as never).fill(seed as never)
+    expect(await draft.render({ renderer: createLayerRenderer() })).toBe('03/05/2024 19.95 Mar 5, 2024')
+  })
+
   it('checks file-backed text and DOCX layers through the resolver', async () => {
     const resolver = createMemoryResolver({
       contents: {

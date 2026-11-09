@@ -11,9 +11,12 @@
 import { unzipSync } from 'fflate'
 import { checkAst, formatType, T, type Diagnostic, type Expr, type ExprType, type TypeEnv } from '@asterdoc/expr'
 import { removedSyntaxHint, TemplateError, type TemplateDiagnostic, type TemplatePosition } from './errors'
-import { expressionSlot, parseTemplate, type ExpressionSlot, type TemplateNode } from './markers'
+import { blockSlot, parseTemplate, type ExpressionSlot, type TemplateNode } from './markers'
 import { frameFor, LOOP_FUNCTION_NAMES, referenceSegments, withLoopFunctions } from './scope'
-import { SIGNING_DIRECTIVES } from '../text/template'
+import { inapplicableModifier, type ModifierTarget } from './format-modifiers'
+import { contextTarget, pathContexts, printedBranches, sourceRows, staticKind, type RowContext } from './targets'
+import type { TemplateValueResolver } from './values'
+import { DIRECTIVE_MODIFIER_RULE, SIGNING_DIRECTIVES } from '../text/template'
 import {
   docxControlProblems,
   DOCX_TEMPLATE_PARTS,
@@ -28,13 +31,20 @@ interface CheckFrame {
   element: ExprType
   /** The loop source's path in the type environment, when it is one. */
   sourcePath?: string
+  rows: readonly RowContext[]
 }
 
+const UNKNOWN_ROWS: readonly RowContext[] = [{ kind: 'unknown' }]
+
 class CheckScope {
-  constructor(readonly env: TypeEnv, readonly frames: readonly CheckFrame[] = []) {}
+  constructor(readonly env: TypeEnv, readonly values?: TemplateValueResolver, readonly frames: readonly CheckFrame[] = []) {}
 
   push(frame: CheckFrame): CheckScope {
-    return new CheckScope(this.env, [...this.frames, frame])
+    return new CheckScope(this.env, this.values, [...this.frames, frame])
+  }
+
+  pop(): CheckScope {
+    return new CheckScope(this.env, this.values, this.frames.slice(0, -1))
   }
 
   frameFor(name: string): CheckFrame | undefined {
@@ -154,22 +164,43 @@ function checkSlot(slot: ExpressionSlot, scope: CheckScope, role: 'value' | 'con
     if (type.kind !== 'array') {
       return { diagnostics: [{ code: 'type-mismatch', message: `A loop source must be a list, got ${formatType(type)}.`, expression: slot.source, position: slot.position }] }
     }
-    return { diagnostics: [], frame: { kind: 'each', element: type.element, sourcePath: scope.sourcePath(slot.ast) } }
+    const rows = sourceRows(slot.ast, scope.frames, '0', scope.env.registry)
+    return { diagnostics: [], frame: { kind: 'each', element: type.element, sourcePath: scope.sourcePath(slot.ast), rows } }
   }
   return { diagnostics: [] }
+}
+
+function checkModifiers(slot: ExpressionSlot, scope: CheckScope, expressionChecks: boolean): TemplateDiagnostic[] {
+  const modifiers = slot.modifiers
+  if (!modifiers) return []
+  if (modifiers.problem) return [modifiers.problem]
+  if (!slot.ast || !expressionChecks) return []
+  if (slot.ast.kind === 'Call' && SIGNING_DIRECTIVES.has(slot.ast.callee)) {
+    return [{ code: 'format-modifier', message: DIRECTIVE_MODIFIER_RULE, expression: modifiers.text, position: slot.position }]
+  }
+  const targets = printedBranches(slot.ast).flatMap((branch): ModifierTarget[] => {
+    const staticTarget = (): ModifierTarget => ({ kind: staticKind(checkAst(branch, scope.typeEnv()).type) })
+    const contexts = pathContexts(branch, scope.frames)
+    if (!contexts) return [staticTarget()]
+    return contexts.map((context) => contextTarget(context, scope.values) ?? staticTarget())
+  })
+  const problem = inapplicableModifier(modifiers.entries, targets)
+  return problem ? [{ code: 'format-modifier', message: problem.message, expression: modifiers.text, position: problem.entry.position }] : []
 }
 
 function checkNodes(nodes: readonly TemplateNode[], scope: CheckScope, found: TemplateDiagnostic[]): void {
   for (const node of nodes) {
     if (node.type === 'text') continue
     if (node.type === 'value') {
-      found.push(...checkSlot(node.slot, scope, 'value').diagnostics)
+      const { diagnostics } = checkSlot(node.slot, scope, 'value')
+      found.push(...diagnostics)
+      found.push(...checkModifiers(node.slot, scope, diagnostics.length === 0))
       continue
     }
     if (node.type === 'each') {
       const { diagnostics, frame } = checkSlot(node.slot, scope, 'loop')
       found.push(...diagnostics)
-      checkNodes(node.children, frame ? scope.push(frame) : scope.push({ kind: 'each', element: T.unknown }), found)
+      checkNodes(node.children, frame ? scope.push(frame) : scope.push({ kind: 'each', element: T.unknown, rows: UNKNOWN_ROWS }), found)
       checkNodes(node.inverse, scope, found)
       continue
     }
@@ -184,8 +215,19 @@ function markerProblem(error: unknown): TemplateDiagnostic[] {
   throw error
 }
 
-/** Check every expression in a text, Markdown, or HTML template. */
-export function checkTextTemplate(template: string, env: TypeEnv): TemplateDiagnostic[] {
+/** What template checks read beside the type environment. */
+export interface TemplateCheckOptions {
+  /**
+   * What the artifact declares at each path, so format modifiers are checked
+   * against field types and metadata; build one from a form with
+   * `formValueResolver`. Without it, modifiers are checked against static
+   * types only.
+   */
+  values?: TemplateValueResolver
+}
+
+/** Check every expression and format modifier in a text, Markdown, or HTML template. */
+export function checkTextTemplate(template: string, env: TypeEnv, options: TemplateCheckOptions = {}): TemplateDiagnostic[] {
   let nodes: TemplateNode[]
   try {
     nodes = parseTemplate(template)
@@ -193,18 +235,18 @@ export function checkTextTemplate(template: string, env: TypeEnv): TemplateDiagn
     return markerProblem(error)
   }
   const found: TemplateDiagnostic[] = []
-  checkNodes(nodes, new CheckScope(env), found)
+  checkNodes(nodes, new CheckScope(env, options.values), found)
   return found
 }
 
-export interface DocxCheckOptions {
+export interface DocxCheckOptions extends TemplateCheckOptions {
   /** Command delimiters, when the template does not use `{{` and `}}`. */
   cmdDelimiter?: [string, string]
 }
 
 const textDecoder = new TextDecoder()
 
-/** Check every control command and expression in a Word template. */
+/** Check every control command, expression, and format modifier in a Word template. */
 export function checkDocxTemplate(template: Uint8Array, env: TypeEnv, options: DocxCheckOptions = {}): TemplateDiagnostic[] {
   const delimiters = options.cmdDelimiter ?? ['{{', '}}']
   const found: TemplateDiagnostic[] = []
@@ -216,7 +258,7 @@ export function checkDocxTemplate(template: Uint8Array, env: TypeEnv, options: D
     for (const { index, message } of docxControlProblems(commands)) {
       found.push({ code: 'markers', message, location: `${part} paragraph ${index + 1}` })
     }
-    let scope = new CheckScope(env)
+    let scope = new CheckScope(env, options.values)
     const open: Array<'IF' | 'FOR'> = []
     paragraphs.forEach((match, index) => {
       const location = `${part} paragraph ${index + 1}`
@@ -227,20 +269,20 @@ export function checkDocxTemplate(template: Uint8Array, env: TypeEnv, options: D
       if (command !== undefined) {
         const forMatch = command.match(/^FOR\s+(\S+)\s+IN\s+(.+)$/)
         if (forMatch) {
-          const slot = expressionSlot(forMatch[2]!, { line: 1, column: 1 })
+          const slot = blockSlot(forMatch[2]!, { line: 1, column: 1 })
           const { diagnostics, frame } = checkSlot(slot, scope, 'loop')
           found.push(...locateCommand(diagnostics))
-          scope = scope.push({ ...(frame ?? { element: T.unknown }), kind: 'named', name: forMatch[1]! })
+          scope = scope.push({ ...(frame ?? { element: T.unknown, rows: UNKNOWN_ROWS }), kind: 'named', name: forMatch[1]! })
           open.push('FOR')
           return
         }
         if (/^IF\s+/.test(command)) {
-          found.push(...locateCommand(checkSlot(expressionSlot(command.slice(3), { line: 1, column: 1 }), scope, 'condition').diagnostics))
+          found.push(...locateCommand(checkSlot(blockSlot(command.slice(3), { line: 1, column: 1 }), scope, 'condition').diagnostics))
           open.push('IF')
           return
         }
         if (/^END-(?:FOR|IF)/.test(command)) {
-          if (open.pop() === 'FOR') scope = new CheckScope(scope.env, scope.frames.slice(0, -1))
+          if (open.pop() === 'FOR') scope = scope.pop()
           return
         }
         if (command === 'ELSE') return

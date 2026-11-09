@@ -11,7 +11,13 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type { Checklist, Form, Layer, Resolver } from '@asterdoc/types'
 import { createTypeEnv, T, type ExprType, type TypeEnv } from '@asterdoc/expr'
-import { checkTextTemplate, textTemplateSigningDirectives, type TemplateDiagnostic } from '@asterdoc/render/text'
+import {
+  checkTextTemplate,
+  formValueResolver,
+  textTemplateSigningDirectives,
+  type TemplateCheckOptions,
+  type TemplateDiagnostic,
+} from '@asterdoc/render/text'
 import { checkDocxTemplate } from '@asterdoc/render/docx'
 import { isDocxMimeType, isTextTemplateMimeType } from '@asterdoc/schemas'
 import { flowPlacementIssues } from '@/validation/layer-references'
@@ -61,6 +67,10 @@ export function buildTemplateTypeEnvironment(artifact: TemplateArtifact): TypeEn
   return createTypeEnv({})
 }
 
+function templateCheckOptions(artifact: TemplateArtifact): TemplateCheckOptions {
+  return artifact.kind === 'form' ? { values: formValueResolver(artifact as unknown as Form) } : {}
+}
+
 function issueFor(key: string, diagnostic: TemplateDiagnostic): StandardSchemaV1.Issue {
   const where = [
     `layer "${key}"`,
@@ -80,8 +90,9 @@ export function validateInlineTemplates(artifact: TemplateArtifact): StandardSch
   const layers = Object.entries(artifact.layers ?? {}).filter(([, layer]) => layer.kind === 'inline' && isTextLayer(layer))
   if (layers.length === 0) return []
   const env = buildTemplateTypeEnvironment(artifact)
+  const options = templateCheckOptions(artifact)
   return layers.flatMap(([key, layer]) =>
-    checkTextTemplate((layer as Extract<Layer, { kind: 'inline' }>).text, env).map((diagnostic) => issueFor(key, diagnostic)))
+    checkTextTemplate((layer as Extract<Layer, { kind: 'inline' }>).text, env, options).map((diagnostic) => issueFor(key, diagnostic)))
 }
 
 /**
@@ -95,6 +106,7 @@ export async function validateFileTemplates(artifact: TemplateArtifact, resolver
     layer.kind === 'file' && (isTextLayer(layer) || isDocxMimeType(layer.mimeType)))
   if (layers.length === 0) return []
   const env = buildTemplateTypeEnvironment(artifact)
+  const options = templateCheckOptions(artifact)
   const issues: StandardSchemaV1.Issue[] = []
   for (const [key, layer] of layers) {
     const path = (layer as Extract<Layer, { kind: 'file' }>).path
@@ -106,10 +118,10 @@ export async function validateFileTemplates(artifact: TemplateArtifact, resolver
     }
     if (isTextLayer(layer)) {
       const text = new TextDecoder().decode(bytes)
-      issues.push(...checkTextTemplate(text, env).map((diagnostic) => issueFor(key, diagnostic)))
+      issues.push(...checkTextTemplate(text, env, options).map((diagnostic) => issueFor(key, diagnostic)))
       issues.push(...flowPlacementIssues(key, layer, textTemplateSigningDirectives(text)))
     } else {
-      issues.push(...checkDocxTemplate(bytes, env).map((diagnostic) => issueFor(key, diagnostic)))
+      issues.push(...checkDocxTemplate(bytes, env, options).map((diagnostic) => issueFor(key, diagnostic)))
     }
   }
   return issues

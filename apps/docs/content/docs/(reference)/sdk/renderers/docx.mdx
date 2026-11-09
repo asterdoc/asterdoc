@@ -188,7 +188,15 @@ The old comparison syntax (`===`, `!==`, and `$row` loop names) is no longer acc
 
 ### checkDocxTemplate()
 
-Checks every control command and expression in a Word package against a type environment. `validateLayers()` runs it on file-backed DOCX layers. Each diagnostic names the part and paragraph, such as `word/document.xml paragraph 12`.
+Checks every control command, expression, and [format modifier](/sdk/renderers/text#format-modifiers) in a Word package against a type environment. `validateLayers()` runs it on file-backed DOCX layers. Each diagnostic names the part and paragraph, such as `word/document.xml paragraph 12`.
+
+```ts
+function checkDocxTemplate(template: Uint8Array, env: TypeEnv, options?: DocxCheckOptions): TemplateDiagnostic[]
+```
+
+`options.values` checks modifiers against field types, as for text templates; `options.cmdDelimiter` names other command delimiters.
+
+Placeholders take the same format modifiers as text templates, such as `{{ fields.dob | date.pattern="MM/DD/YYYY" }}`, in the body, headers, and footers. Word may split a placeholder across runs and turn `"` into curly quotes; both are read as written. Control commands take no modifiers.
 
 ## Automatic Formatting
 

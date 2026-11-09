@@ -4,6 +4,7 @@ import { formatFieldData, type FieldFormattingOptions } from './field-formatter'
 import { createTextSignatureDirectives, type TextSignatureOptions } from './signatures'
 import { escapeHtml, renderTemplate } from './template'
 import { templateData, type TemplateExpressionOptions } from '../template/context'
+import { formValueResolver } from '../template/values'
 import { formatFieldOptions, formatterFor } from '../presentation'
 
 export interface RenderTextOptions {
@@ -32,7 +33,8 @@ function escapeFor(mimeType: string | undefined): (value: string) => string {
 }
 
 export function renderText(options: RenderTextOptions): string {
-  const formatter = formatterFor(options.formatter ?? defaultFormatter, options.format)
+  const callerFormatter = options.formatter ?? defaultFormatter
+  const formatter = formatterFor(callerFormatter, options.format)
   const progressive: FieldFormattingOptions | undefined = options.progressive === undefined
     ? undefined
     : { progressive: options.progressive }
@@ -40,12 +42,17 @@ export function renderText(options: RenderTextOptions): string {
   const data = options.form
     ? formatFieldData(options.data, options.form, formatter, formattingOptions)
     : options.data
-  const { context, resolveData } = templateData(options.data, data, options.form, options.expressions)
+  const { context, resolveData, resolveRaw } = templateData(options.data, data, options.form, options.expressions)
   return renderTemplate(options.template, {
     context,
     resolveData,
+    resolveRaw,
     root: data,
     formatter,
+    callerFormatter,
+    ...(options.format && { format: options.format }),
+    ...(options.progressive && { progressive: options.progressive }),
+    ...(options.form && { values: formValueResolver(options.form) }),
     directives: createTextSignatureDirectives(options.signatureOptions, options.mimeType),
     layer: options.layer,
     escape: escapeFor(options.mimeType),

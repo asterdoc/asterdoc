@@ -3,11 +3,12 @@ import type { Form, Formatter, LayerFormat } from '@asterdoc/types'
 import { unzipSync, zipSync } from 'fflate'
 import { formatFieldData } from '../text/field-formatter'
 import { formatFieldOptions, formatterFor } from '../presentation'
-import { loopFrames, loopRows, renderTemplateNodes, type SigningDirective, type TemplateRenderOptions } from '../text/template'
+import { loopFrames, loopRows, renderTemplateNodes, templateEnvironment, type SigningDirective, type TemplateRenderOptions } from '../text/template'
 import { templateData, type TemplateExpressionOptions } from '../template/context'
 import { TemplateError } from '../template/errors'
-import { expressionSlot, parseTemplate } from '../template/markers'
+import { blockSlot, parseTemplate } from '../template/markers'
 import { TemplateScope } from '../template/scope'
+import { formValueResolver } from '../template/values'
 import { createDocxSignatureDirectives, type DocxSignatureOptions } from './signatures'
 
 export type { DocxSignatureOptions } from './signatures'
@@ -246,14 +247,14 @@ function expandControls(xml: string, run: DocxRun): string {
     if (isFor) {
       const match = opening.command.match(/^FOR\s+(\S+)\s+IN\s+(.+)$/)!
       const alias = match[1]!
-      const slot = expressionSlot(match[2]!, { line: 1, column: 1 })
+      const slot = blockSlot(match[2]!, { line: 1, column: 1 })
       if (!slot.ast) throw new TemplateError(slot.problem!, run.options.layer)
       const rows = loopRows(run.scope.evaluate(slot.ast, slot.source, slot.position), slot, run.options.layer)
-      return loopFrames(run.scope, slot.ast, rows, { kind: 'named', name: alias })
+      return loopFrames(run.scope, slot, slot.ast, rows, { kind: 'named', name: alias })
         .map((frame) => expandControls(truthyBody, { ...run, scope: run.scope.push(frame) }))
         .join('')
     }
-    const slot = expressionSlot(opening.command.slice(3), { line: 1, column: 1 })
+    const slot = blockSlot(opening.command.slice(3), { line: 1, column: 1 })
     if (!slot.ast) throw new TemplateError(slot.problem!, run.options.layer)
     const value = run.scope.evaluate(slot.ast, slot.source, slot.position)
     if (value.kind !== 'boolean' && value.kind !== 'null') {
@@ -323,18 +324,22 @@ export async function renderDocx({
   const prepared = form
     ? formatFieldData(data, form, formatter, format && formatFieldOptions(format))
     : data
-  const { context, resolveData } = templateData(data, prepared, form, expressions)
+  const { context, resolveData, resolveRaw } = templateData(data, prepared, form, expressions)
   const directives: Record<string, SigningDirective> = createDocxSignatureDirectives(signatureOptions)
   const templateOptions: TemplateRenderOptions = {
     context,
     resolveData,
+    resolveRaw,
     root: prepared,
     formatter,
+    callerFormatter,
+    ...(format && { format }),
+    ...(form && { values: formValueResolver(form) }),
     directives,
     escape: (text) => text,
     layer,
   }
-  const scope = new TemplateScope(context, { formatter, resolveData, layer })
+  const scope = new TemplateScope(context, templateEnvironment(templateOptions))
   const files = unzipSync(template)
   const delimiters = options.cmdDelimiter ?? ['{{', '}}']
   const processLineBreaks = options.processLineBreaks ?? true

@@ -483,10 +483,27 @@ export function formatParties(
 ): unknown {
 	if (isMissing(value)) return missingValue(value, path, 'party', options)
 	if (Array.isArray(value)) return value.map((entry, index) => formatParties(formatter, form, entry, childPath(path, index), options, role))
+	return formatPartyValue(formatter, role ? form.parties?.[role]?.partyType : undefined, value, path, options)
+}
+
+/** One party, formatted as its role's declared party type, or as the type its members show. */
+export function formatPartyValue(
+	formatter: Formatter,
+	partyType: string | undefined,
+	value: unknown,
+	path: string,
+	options?: FieldFormattingOptions,
+): unknown {
+	if (isMissing(value)) return missingValue(value, path, 'party', options)
 	const party = recordInput(value, path, 'party')
-	const partyType = role ? form.parties?.[role]?.partyType : undefined
 	const resolvedPartyType = partyType === 'person' || partyType === 'organization' ? partyType : inferredPartyType(party)
 	return callFormatter(path, 'party', value, () => formatter.safeFormatParty(party, { partyType: resolvedPartyType }), options)
+}
+
+/** One attachment, such as an annex. */
+export function formatAttachmentValue(formatter: Formatter, value: unknown, path: string, options?: FieldFormattingOptions): unknown {
+	if (isMissing(value)) return missingValue(value, path, 'attachment', options)
+	return callFormatter(path, 'attachment', value, () => formatter.safeFormatAttachment(recordInput(value, path, 'attachment')), options)
 }
 
 function formatAnnexes(
@@ -696,8 +713,7 @@ function annexAt(formatter: Formatter, form: Form, values: unknown, segments: re
 	if (!Object.prototype.hasOwnProperty.call(values, key) && !(options?.progressive && form.annexes?.[key])) return undefined
 	const path = `annexes.${key}`
 	if (!form.annexes?.[key] && !form.allowAdditionalAnnexes) throw formatIssue(path, 'attachment', 'unknown_path', `Unknown annex ${JSON.stringify(key)}.`)
-	if (isMissing(value)) return missingValue(value, path, 'attachment', options)
-	return callFormatter(path, 'attachment', value, () => formatter.safeFormatAttachment(recordInput(value, path, 'attachment')), options)
+	return formatAttachmentValue(formatter, value, path, options)
 }
 
 /** Roots fill data carries beside field values when the request has them: see `flattenRenderData`. */
