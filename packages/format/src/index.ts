@@ -60,7 +60,13 @@ export {
 export { FormatConfigurationError, FormatError, UnsupportedLocaleError, isFormatError } from './errors'
 
 export { MISSING_RATING_SCALE, UNSUPPORTED_LIST_JOIN } from './selection'
-export { UNSUPPORTED_COUNTRY_LAYOUT } from './contacts'
+export {
+	INVALID_PHONE,
+	MISSING_FORMAT_PROVIDER,
+	PHONE_PROVIDER_ENTRY_POINT,
+	PHONE_REGION_MISMATCH,
+	UNSUPPORTED_COUNTRY_LAYOUT,
+} from './contacts'
 
 export {
 	FORMAT_KINDS,
@@ -123,6 +129,11 @@ export {
 	type PartyFormatOptions,
 	type PersonFormatOptions,
 	type PhoneFormatOptions,
+	type PhoneNumberDetails,
+	type PhoneProvider,
+	type PhoneStyle,
+	type ProvidedPhoneStyle,
+	type FormatProviders,
 	type PercentageFormatOptions,
 	type TemporalFormatImplementation,
 	type TemporalFormatImplementationContext,

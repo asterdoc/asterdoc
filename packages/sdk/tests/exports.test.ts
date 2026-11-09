@@ -24,6 +24,13 @@ describe('@asterdoc/sdk exports', () => {
     expect(sdk.extractFieldsFromPdf).toBe(pdf.extractFieldsFromPdf)
   })
 
+  it("exports render's default formatter, which prints every phone style, and the phone provider", () => {
+    expect(sdk.defaultFormatter).toBe(render.defaultFormatter)
+    expect(sdk.defaultFormatter.formatPhone('+12125551234', { style: 'national' })).toBe('(212) 555-1234')
+    expect(sdk.defaultFormatter.providers.phone).toBe(sdk.phoneProvider)
+    expect(sdk.createFormatter().safeFormatPhone('+12125551234', { style: 'national' })).toMatchObject({ success: false, status: 'unsupported' })
+  })
+
   // The per-format wrappers dropped options (font, expressions) on the way to
   // createLayerRenderer. Callers use createLayerRenderer, the built-in default renderer, or the
   // @asterdoc/render subpaths.

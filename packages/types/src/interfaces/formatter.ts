@@ -80,10 +80,77 @@ export interface AddressFormatOptions {
 	countryLayouts?: Readonly<Record<string, AddressLayoutFormatter>>
 }
 
+/**
+ * How a phone number prints: `e164` as stored (`+12125551234`),
+ * `international` (`+1 212 555 1234`) and `national` (`(212) 555-1234`) in the
+ * numbering plan's own layout, or `digits`, the national significant number
+ * with no trunk prefix or punctuation (`2125551234`).
+ */
+export type PhoneStyle = 'e164' | 'international' | 'national' | 'digits'
+
 /** Options for phone presentation. */
 export interface PhoneFormatOptions {
 	/** Override the package-owned extension label for this call or formatter. */
 	extensionLabel?: string
+	/**
+	 * How the number prints; the extension prints after it as with `e164`.
+	 * Every style but `e164` needs the phone provider.
+	 * @default 'e164'
+	 */
+	style?: PhoneStyle
+	/**
+	 * The ISO 3166-1 alpha-2 region whose numbering plan a national box
+	 * expects. Under `national` and `digits`, a number with another country
+	 * calling code is refused rather than printed without it.
+	 */
+	region?: string
+}
+
+/** A phone number as a phone provider reads it. */
+export interface PhoneNumberDetails {
+	/** The number in E.164 form. */
+	readonly number: string
+	/** The country calling code, without `+`: `1`, `44`. */
+	readonly countryCallingCode: string
+	/** The national significant number: no trunk prefix, no punctuation. */
+	readonly nationalNumber: string
+	/** The ISO 3166-1 alpha-2 region the number belongs to, when one region claims it. */
+	readonly region?: string
+	/** The number in its plan's international layout. */
+	readonly international: string
+	/** The number in its plan's national layout, with the trunk prefix. */
+	readonly national: string
+}
+
+/** The phone styles a phone provider prints. */
+export type ProvidedPhoneStyle = Exclude<PhoneStyle, 'e164'>
+
+/**
+ * Phone numbering-plan data, which phone styles other than `e164` need.
+ * `@asterdoc/format/phone` provides one.
+ */
+export interface PhoneProvider {
+	/**
+	 * Read a valid phone number: E.164 or international text, or national text
+	 * when `region` names its plan. Undefined when the text is not a valid number.
+	 */
+	parse(text: string, region?: string): PhoneNumberDetails | undefined
+	/** The country calling code of a region, without `+`, or undefined for a region the data does not know. */
+	callingCode(region: string): string | undefined
+	/**
+	 * The longest text a style prints, for a number of `region`'s plan or of
+	 * any plan, with every digit written `0`. Fit checks measure it.
+	 */
+	longest(style: ProvidedPhoneStyle, region?: string): string
+}
+
+/**
+ * Lookup data a formatter is created with. A format that needs a provider the
+ * formatter lacks fails with `missing_format_provider`, naming its entry point.
+ */
+export interface FormatProviders {
+	/** Phone numbering plans, from `@asterdoc/format/phone`. */
+	readonly phone?: PhoneProvider
 }
 
 /** Options for person presentation. */
@@ -295,6 +362,8 @@ export interface FormatterOptions {
 	multiselect?: MultiselectFormatOptions
 	rating?: RatingFormatOptions
 	overrides?: FormatterOverrides
+	/** Lookup data some formats need. `compose()` keeps the providers and adds these over them. */
+	providers?: FormatProviders
 }
 
 export type NumericValueByKind = {
@@ -493,6 +562,8 @@ export interface Formatter {
 	readonly calendar: string
 	readonly numberingSystem?: string
 	readonly messages: FormatterMessages
+	/** The lookup data this formatter was created with. */
+	readonly providers: FormatProviders
 
 	format<K extends FormatKind>(
 		kind: K,

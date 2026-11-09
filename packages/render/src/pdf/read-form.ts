@@ -1,7 +1,8 @@
-import { defaultFormatter } from '@asterdoc/format'
-import type { BinaryContent, Bindings, EnumOption, Form, FormField, Formatter, LayerDateFormat, LayerFormat } from '@asterdoc/types'
+import { defaultFormatter } from '../default-formatter'
+import { phoneProvider } from '@asterdoc/format/phone'
+import type { BinaryContent, Bindings, EnumOption, EnumOptionValue, Form, FormField, Formatter, LayerBooleanFormat, LayerDateFormat, LayerFormat, LayerPhoneFormat } from '@asterdoc/types'
 import { validateFieldBindings } from '../text/field-formatter'
-import { assertBindingFormats, parseBindings, resolveLayerBindings, splitPartIndex } from '../layer-bindings'
+import { assertBindingFormats, fieldDefinition, parseBindings, resolveLayerBindings, splitPartIndex } from '../layer-bindings'
 import { formatterFor, mergeFormats } from '../presentation'
 import { pathSegments } from '../path'
 import { acroFields, type AcroField } from './acroform'
@@ -191,8 +192,8 @@ async function loadFormFields(bytes: BinaryContent): Promise<{ model: PdfModel; 
 type Target =
   /** A declared field, written with the formatter's text. */
   | { kind: 'field'; field: FormField }
-  /** A member of a structured value or a party, written as its raw value. */
-  | { kind: 'member'; type: 'number' | 'text' }
+  /** A member of a structured value or a party, written as its raw value; a phone's `number` as its phone style prints it. */
+  | { kind: 'member'; type: 'number' | 'text' | 'phoneNumber' }
   /** Something extraction cannot write back: a computed value, an annex, a whole party. */
   | { kind: 'fixed'; reason: string }
 
@@ -219,7 +220,11 @@ function targetFor(form: Form, path: string): Target {
     const segment = rest[index]!
     if (field.type === 'list' && /^\d+$/.test(segment)) field = field.item
     else if (field.type === 'fieldset' && field.fields[segment]) field = field.fields[segment]!
-    else return { kind: 'member', type: numericMembers[field.type]?.has(rest.slice(index).join('.')) ? 'number' : 'text' }
+    else {
+      const member = rest.slice(index).join('.')
+      if (field.type === 'phone' && member === 'number') return { kind: 'member', type: 'phoneNumber' }
+      return { kind: 'member', type: numericMembers[field.type]?.has(member) ? 'number' : 'text' }
+    }
   }
   return { kind: 'field', field }
 }
@@ -228,10 +233,11 @@ function targetFor(form: Form, path: string): Target {
 // Parsing values
 // ---------------------------------------------------------------------------
 
-type Parsed = { ok: true; value: unknown; lossy: boolean } | { ok: false; reason: string }
+type Parsed = { ok: true; value: unknown; lossy: boolean } | { ok: false; reason: string; lost?: true }
 
 const ok = (value: unknown, lossy = false): Parsed => ({ ok: true, value, lossy })
 const fail = (reason: string): Parsed => ({ ok: false, reason })
+const lost = (reason: string): Parsed => ({ ok: false, reason, lost: true })
 
 function numberSymbols(locale: string): { group: string; decimal: string } {
   try {
@@ -405,6 +411,142 @@ const composite = new Set(['address', 'person', 'organization', 'identification'
 interface Reader {
   formatter: Formatter
   date?: LayerDateFormat
+  phone?: LayerPhoneFormat
+  choice?: 'label' | 'value'
+  boolean?: LayerBooleanFormat
+}
+
+function optionLabel(option: EnumOption, options: readonly EnumOption[], formatter: Formatter): string {
+  const result = formatter.safeFormatEnum(option.value, { options })
+  return result.success ? result.value : option.label ?? String(option.value)
+}
+
+function sharedLabelReason(label: string): string {
+  return `More than one option prints the label "${label}", so the value cannot be told apart.`
+}
+
+/** How a printed label is compared once it does not match exactly: without surrounding space, and without regard to case. */
+function normalizedLabel(label: string): string {
+  return label.trim().toLocaleLowerCase()
+}
+
+/**
+ * The one candidate whose label is the text: an exact match first, then a
+ * normalized one. More than one candidate at either step cannot be told apart.
+ */
+function matchLabelOf<T>(raw: string, candidates: readonly { value: T; label: string }[]): { value: T } | { ambiguous: string } | undefined {
+  for (const same of [(label: string) => label === raw, (label: string) => normalizedLabel(label) === normalizedLabel(raw)]) {
+    const matches = candidates.filter((candidate) => same(candidate.label))
+    if (matches.length > 1) return { ambiguous: matches[0]!.label }
+    if (matches.length === 1) return { value: matches[0]!.value }
+  }
+  return undefined
+}
+
+/** Match text printed as an option label to its option. Two options with that label cannot be told apart. */
+function matchLabel(raw: string, options: readonly EnumOption[], formatter: Formatter): Parsed | undefined {
+  const match = matchLabelOf(raw, options.map((option) => ({ value: option.value, label: optionLabel(option, options, formatter) })))
+  if (!match) return undefined
+  return 'ambiguous' in match ? lost(sharedLabelReason(match.ambiguous)) : ok(match.value)
+}
+
+const LIST_MARKERS = ['\u0001', '\u0002', '\u0003', '\u0004']
+
+/** The separators the formatter's list joins labels with: two, three and four labels give every one. */
+function listSeparators(formatter: Formatter): string[] {
+  const options = LIST_MARKERS.map((label, index) => ({ value: index, label }))
+  const separators = new Set<string>()
+  for (let count = 2; count <= LIST_MARKERS.length; count++) {
+    const result = formatter.safeFormatMultiselect(options.slice(0, count).map((option) => option.value), { options })
+    if (!result.success) continue
+    let rest = result.value
+    for (const marker of LIST_MARKERS.slice(0, count)) {
+      const at = rest.indexOf(marker)
+      if (at > 0) separators.add(rest.slice(0, at))
+      rest = rest.slice(at + marker.length)
+    }
+  }
+  return [...separators]
+}
+
+/**
+ * Match text printed as a list of option labels. Every reading of the text
+ * into labels and the list's separators is tried, and only one that the
+ * formatter prints back exactly counts; more than one is ambiguous.
+ */
+function matchLabelList(raw: string, options: readonly EnumOption[], formatter: Formatter): Parsed | undefined {
+  const text = raw.trim()
+  const labels = options.map((option) => optionLabel(option, options, formatter))
+  const separators = listSeparators(formatter)
+  const readings = new Map<string, EnumOptionValue[]>()
+  const visit = (position: number, chosen: number[]): void => {
+    if (readings.size > 1) return
+    labels.forEach((label, index) => {
+      if (chosen.includes(index) || !label || !text.startsWith(label, position)) return
+      const next = [...chosen, index]
+      const end = position + label.length
+      if (end === text.length) {
+        const values = next.map((choice) => options[choice]!.value)
+        const printed = formatter.safeFormatMultiselect(values, { options })
+        if (printed.success && printed.value === text) readings.set(JSON.stringify(values), values)
+        return
+      }
+      for (const separator of separators) {
+        if (text.startsWith(separator, end)) visit(end + separator.length, next)
+      }
+    })
+  }
+  visit(0, [])
+  if (readings.size > 1) return lost('The text reads as more than one selection, because options share a label.')
+  const [values] = readings.values()
+  return values ? ok(values) : undefined
+}
+
+function parseBooleanLabels(raw: string, labels: LayerBooleanFormat, formatter: Formatter): Parsed {
+  const yes = formatter.safeFormatBoolean(true, labels)
+  const no = formatter.safeFormatBoolean(false, labels)
+  if (!yes.success || !no.success) return fail('The boolean labels cannot be printed.')
+  if (yes.value === no.value) return lost(`True and false both print "${yes.value}", so the value cannot be told apart.`)
+  const match = matchLabelOf(raw, [{ value: true, label: yes.value }, { value: false, label: no.value }])
+  if (!match) return fail(`The text is neither "${yes.value}" nor "${no.value}".`)
+  return 'ambiguous' in match ? lost(`The text reads as both "${yes.value}" and "${no.value}", so the value cannot be told apart.`) : ok(match.value)
+}
+
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** The extension label the formatter prints between a number and its extension. */
+function extensionLabel(formatter: Formatter): string | undefined {
+  const sample = '+12025550123'
+  const result = formatter.safeFormatPhone({ number: sample, extension: '0' }, { style: 'e164' })
+  return result.success ? result.value.slice(sample.length + 1, -2) : undefined
+}
+
+const E164 = /^\+[1-9]\d{1,14}$/
+
+/** Read a phone number printed in a phone style back into E.164. */
+function parsePhoneNumber(text: string, phone: LayerPhoneFormat): Parsed {
+  const style = phone.style ?? 'e164'
+  if ((style === 'national' || style === 'digits') && phone.region === undefined) {
+    return lost(`A number printed as ${style} carries no country calling code; declare format.phone.region to read it back.`)
+  }
+  if (style === 'e164') {
+    const number = text.replace(/[\s().-]/g, '')
+    return E164.test(number) ? ok(number) : fail('The text is not an international phone number.')
+  }
+  const parsed = style === 'national' || style === 'digits' ? phoneProvider.parse(text, phone.region) : text.startsWith('+') ? phoneProvider.parse(text) : undefined
+  return parsed ? ok(parsed.number) : fail(`The text is not a valid phone number written ${style}.`)
+}
+
+function parsePhone(raw: string, reader: Reader): Parsed {
+  const phone = reader.phone!
+  const text = raw.trim()
+  const label = extensionLabel(reader.formatter)
+  const extension = label ? text.match(new RegExp(`^(.*\\S)\\s+${escapeRegExp(label)}\\s+(\\S.*)$`, 'u')) : null
+  const number = parsePhoneNumber(extension ? extension[1]! : text, phone)
+  if (!number.ok) return number
+  return ok({ number: number.value, ...(extension && { extension: extension[2] }) })
 }
 
 function parseFieldValue(raw: string, field: FormField, reader: Reader): Parsed {
@@ -419,10 +561,14 @@ function parseFieldValue(raw: string, field: FormField, reader: Reader): Parsed 
     case 'uri':
       return ok(raw)
     case 'enum': {
+      const labelled = reader.choice === 'label' ? matchLabel(raw, field.enum, formatter) : undefined
+      if (labelled) return labelled
       const option = matchOption(raw, field.enum, formatter)
       return option ? ok(option.value) : fail('The text matches none of the field\'s options.')
     }
     case 'multiselect': {
+      const labelled = reader.choice === 'label' ? matchLabelList(raw, field.enum, formatter) : undefined
+      if (labelled) return labelled
       // Fill joins the option values with ", "; a value may itself hold a comma.
       for (const parts of [raw.split(', '), raw.split(',')]) {
         const values = parts.map((part) => part.trim()).filter(Boolean)
@@ -432,6 +578,9 @@ function parseFieldValue(raw: string, field: FormField, reader: Reader): Parsed 
       return fail('The selection includes a value that matches none of the field\'s options.')
     }
     case 'boolean': {
+      if (reader.boolean && (reader.boolean.trueLabel !== undefined || reader.boolean.falseLabel !== undefined)) {
+        return parseBooleanLabels(raw, reader.boolean, formatter)
+      }
       const text = raw.trim()
       const yes = formatter.safeFormatBoolean(true)
       const no = formatter.safeFormatBoolean(false)
@@ -478,8 +627,9 @@ function parseFieldValue(raw: string, field: FormField, reader: Reader): Parsed 
         : fail('Only an ISO 8601 duration can be read back exactly.')
     }
     case 'phone': {
+      if (reader.phone?.style !== undefined) return parsePhone(raw, reader)
       const text = raw.trim().replace(/[\s().-]/g, '')
-      return /^\+[1-9]\d{1,14}$/.test(text) ? ok({ number: text }) : fail('The text is not an international phone number.')
+      return E164.test(text) ? ok({ number: text }) : fail('The text is not an international phone number.')
     }
   }
   return fail(`Values of type ${field.type} cannot be read back.`)
@@ -492,6 +642,7 @@ function parseTarget(raw: string, target: Target, reader: Reader): Parsed {
     const value = parseNumber(raw, reader.formatter.locale)
     return value === undefined ? fail('The text is not a number.') : ok(value)
   }
+  if (target.type === 'phoneNumber' && reader.phone?.style !== undefined) return parsePhoneNumber(raw.trim(), reader.phone)
   return ok(raw)
 }
 
@@ -517,8 +668,19 @@ interface PathWork {
   partsReader?: Reader
 }
 
+function readingOf(parsed: Parsed): Reading {
+  if (parsed.ok) return { kind: 'value', value: parsed.value, lossy: parsed.lossy }
+  return parsed.lost ? { kind: 'not_recoverable', reason: parsed.reason } : { kind: 'unparseable', reason: parsed.reason }
+}
+
 function source(state: FieldState | undefined, name: string): PdfExtractionSource {
   return state?.raw === undefined ? { field: name } : { field: name, value: state.raw }
+}
+
+/** A radio button or dropdown holds export values, never the labels a text box prints. */
+function exportValues(reader: Reader): Reader {
+  const { choice: _choice, boolean: _boolean, ...values } = reader
+  return values
 }
 
 function readDirect(state: FieldState, target: Target, reader: Reader): Reading {
@@ -535,14 +697,14 @@ function readDirect(state: FieldState, target: Target, reader: Reader): Reading 
   }
   if (field.type === 'radio') {
     if (!state.on || state.raw === undefined) return { kind: 'empty' }
-    const parsed = parseTarget(state.raw, target, reader)
-    return parsed.ok ? { kind: 'value', value: parsed.value, lossy: parsed.lossy } : { kind: 'unparseable', reason: parsed.reason }
+    const parsed = parseTarget(state.raw, target, exportValues(reader))
+    return readingOf(parsed)
   }
   if (field.type === 'dropdown') {
     if (!state.selected || state.selected.length === 0) return { kind: 'empty' }
     const raw = state.selected.join(', ')
-    const parsed = parseTarget(raw, target, reader)
-    return parsed.ok ? { kind: 'value', value: parsed.value, lossy: parsed.lossy } : { kind: 'unparseable', reason: parsed.reason }
+    const parsed = parseTarget(raw, target, exportValues(reader))
+    return readingOf(parsed)
   }
   if (state.raw === undefined) return { kind: 'empty' }
   if (target.kind === 'fixed') return { kind: 'not_recoverable', reason: target.reason }
@@ -550,7 +712,7 @@ function readDirect(state: FieldState, target: Target, reader: Reader): Reading 
     return { kind: 'not_recoverable', reason: `A ${target.field.type} value written as one piece of text cannot be split back into its parts; bind its parts to recover it.` }
   }
   const parsed = parseTarget(state.raw, target, reader)
-  return parsed.ok ? { kind: 'value', value: parsed.value, lossy: parsed.lossy } : { kind: 'unparseable', reason: parsed.reason }
+  return readingOf(parsed)
 }
 
 function sameValue(left: unknown, right: unknown): boolean {
@@ -572,7 +734,7 @@ function resolvePath(work: PathWork, target: Target, reader: Reader): { status: 
       readings.push({ kind: 'unparseable', reason: 'A part before the last filled part is empty, so the parts cannot be joined in order.' })
     } else {
       const parsed = parseTarget(values.slice(0, lastFilled + 1).join('-'), target, work.partsReader ?? reader)
-      readings.push(parsed.ok ? { kind: 'value', value: parsed.value, lossy: parsed.lossy } : { kind: 'unparseable', reason: parsed.reason })
+      readings.push(readingOf(parsed))
     }
   }
 
@@ -648,6 +810,9 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
       found = {
         formatter: effective?.money ? localized.compose({ money: effective.money }) : localized,
         ...(effective?.date && { date: effective.date }),
+        ...(effective?.phone && { phone: effective.phone }),
+        ...(effective?.choice?.display && { choice: effective.choice.display }),
+        ...(effective?.boolean && { boolean: effective.boolean }),
       }
       readers.set(key, found)
     }
@@ -814,4 +979,66 @@ export function selectPdfExtractionLayer(
   }
   // The format is the layer's own: a layer reusing another's bindings declares its own.
   return { key, bindings, ...(layer.format && { format: layer.format }) }
+}
+
+/** A layer format whose printed labels read-back cannot tell apart. */
+export interface PdfLabelCollision {
+  /** The PDF field the binding fills, or the field id a layer without bindings fills by. */
+  field: string
+  /** The artifact path whose labels collide. */
+  path: string
+  message: string
+}
+
+/** Options for {@link findPdfLabelCollisions}. */
+export interface FindPdfLabelCollisionsOptions {
+  form: Form
+  /** The layer's bindings; without them, each field fills the PDF field of its own name. */
+  bindings?: Bindings
+  /** The layer's format, with each binding's own format merged over it. */
+  format?: LayerFormat
+  /** The formatter the layer is filled with. Defaults to the default formatter. */
+  formatter?: Formatter
+}
+
+function labelCollisions(field: FormField, path: string, format: LayerFormat | undefined, formatter: Formatter): string[] {
+  if ((field.type === 'enum' || field.type === 'multiselect') && format?.choice?.display === 'label') {
+    const byLabel = new Map<string, { label: string; values: EnumOptionValue[] }>()
+    for (const option of field.enum) {
+      const label = optionLabel(option, field.enum, formatter)
+      const group = byLabel.get(normalizedLabel(label)) ?? { label, values: [] }
+      group.values.push(option.value)
+      byLabel.set(normalizedLabel(label), group)
+    }
+    return [...byLabel.values()]
+      .filter(({ values }) => values.length > 1)
+      .map(({ label, values }) => `options ${values.map((value) => JSON.stringify(value)).join(', ')} of ${path} all print the label "${label}", apart from space and case, so reading the PDF back cannot tell them apart`)
+  }
+  if (field.type === 'boolean' && format?.boolean && (format.boolean.trueLabel !== undefined || format.boolean.falseLabel !== undefined)) {
+    const yes = formatter.safeFormatBoolean(true, format.boolean)
+    const no = formatter.safeFormatBoolean(false, format.boolean)
+    if (yes.success && no.success && normalizedLabel(yes.value) === normalizedLabel(no.value)) {
+      return [`true and false of ${path} print "${yes.value}" and "${no.value}", equal apart from space and case, so reading the PDF back cannot tell them apart`]
+    }
+  }
+  return []
+}
+
+/**
+ * Find the labels a PDF layer prints that read-back cannot tell apart: two
+ * options of one choice field that print the same label under
+ * `choice.display: label`, or `boolean` labels equal for true and false.
+ * Filling still works; extraction reports such a value as not recoverable.
+ */
+export function findPdfLabelCollisions({ form, bindings, format, formatter = defaultFormatter }: FindPdfLabelCollisionsOptions): PdfLabelCollision[] {
+  const targets = bindings
+    ? parseBindings(bindings).flatMap(({ field, parts, format: bindingFormat }) =>
+      parts.length === 1 && parts[0]!.qualifier === undefined ? [{ field, path: parts[0]!.path, format: mergeFormats(format, bindingFormat) }] : [])
+    : Object.keys(form.fields ?? {}).map((name) => ({ field: name, path: name, format }))
+  return targets.flatMap((target) => {
+    const field = fieldDefinition(form, target.path)
+    if (!field) return []
+    return labelCollisions(field, `fields.${target.path}`, target.format, formatterFor(formatter, target.format))
+      .map((message) => ({ field: target.field, path: `fields.${target.path}`, message }))
+  })
 }

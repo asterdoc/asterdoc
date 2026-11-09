@@ -1,5 +1,6 @@
 import type { Address, Organization, Person } from '@asterdoc/types'
 
+import { FormatError } from './errors'
 import { resolveMessage, type MessageContext } from './messages'
 import { isMissing, isRecord, issue, statusForIssues, type Validation } from './shared'
 import type {
@@ -11,6 +12,8 @@ import type {
 	FormatterMessages,
 	PartyFormatOptions,
 	PhoneFormatOptions,
+	PhoneProvider,
+	PhoneStyle,
 } from './types'
 
 export interface NormalizedPhone {
@@ -347,10 +350,55 @@ const COUNTRY_LAYOUTS: Readonly<Record<string, (address: NormalizedAddress, cont
 	SA: (address) => countryAddress([address.line1, address.line2, `${address.postalCode} ${address.locality}`, address.region, address.country]),
 }
 
-export function formatPhone(phone: NormalizedPhone, options: PhoneFormatOptions, context: MessageContext): string {
-	if (phone.extension === undefined) return phone.number
+/** The code a format fails with when the formatter lacks the provider it needs. */
+export const MISSING_FORMAT_PROVIDER = 'missing_format_provider'
+
+/** The code a phone style other than `e164` fails with for a number that is not valid in any numbering plan. */
+export const INVALID_PHONE = 'invalid_phone'
+
+/** The code `national` and `digits` fail with for a number outside the numbering plan `phone.region` names. */
+export const PHONE_REGION_MISMATCH = 'phone_region_mismatch'
+
+/** The entry point of the phone provider, which every phone style but `e164` needs. */
+export const PHONE_PROVIDER_ENTRY_POINT = '@asterdoc/format/phone'
+
+const PHONE_STYLES: readonly PhoneStyle[] = ['e164', 'international', 'national', 'digits']
+
+function styledNumber(number: string, options: PhoneFormatOptions, provider: PhoneProvider | undefined): string {
+	const style = options.style ?? 'e164'
+	if (style === 'e164') return number
+	if (!provider) {
+		throw new FormatError('unsupported', 'phone', [issue(
+			'phone',
+			MISSING_FORMAT_PROVIDER,
+			`Phone style "${style}" needs the phone provider: create the formatter with providers: { phone: phoneProvider } from ${PHONE_PROVIDER_ENTRY_POINT}.`,
+		)])
+	}
+	const parsed = provider.parse(number)
+	if (!parsed) {
+		throw new FormatError('invalid', 'phone', [issue('phone', INVALID_PHONE, `${number} is not a valid phone number in any numbering plan, so it cannot print as ${style}.`, 'number')])
+	}
+	if (options.region !== undefined && (style === 'national' || style === 'digits')) {
+		const expected = provider.callingCode(options.region)
+		if (expected !== parsed.countryCallingCode) {
+			throw new FormatError('invalid', 'phone', [issue(
+				'phone',
+				PHONE_REGION_MISMATCH,
+				`${number} has country calling code +${parsed.countryCallingCode}, but the box expects a number of region ${options.region}${expected === undefined ? '' : ` (+${expected})`}; printed as ${style} it would lose its calling code.`,
+				'number',
+			)])
+		}
+	}
+	if (style === 'international') return parsed.international
+	if (style === 'national') return parsed.national
+	return parsed.nationalNumber
+}
+
+export function formatPhone(phone: NormalizedPhone, options: PhoneFormatOptions, context: MessageContext, provider?: PhoneProvider): string {
+	const number = styledNumber(phone.number, options, provider)
+	if (phone.extension === undefined) return number
 	const label = options.extensionLabel ?? resolveMessage(context, 'phone.extension')
-	return `${phone.number} ${label} ${phone.extension}`
+	return `${number} ${label} ${phone.extension}`
 }
 
 export function formatPerson(person: PersonValue): string {
@@ -390,6 +438,12 @@ export function validateAddressOptions(options: AddressFormatOptions): void {
 export function validatePhoneOptions(options: PhoneFormatOptions): void {
 	if (options.extensionLabel !== undefined && (typeof options.extensionLabel !== 'string' || options.extensionLabel.trim().length === 0)) {
 		throw new Error('Phone extensionLabel must be a non-empty string.')
+	}
+	if (options.style !== undefined && !PHONE_STYLES.includes(options.style)) {
+		throw new Error('Phone style must be "e164", "international", "national", or "digits".')
+	}
+	if (options.region !== undefined && (typeof options.region !== 'string' || !/^[A-Z]{2}$/.test(options.region))) {
+		throw new Error('Phone region must be an uppercase ISO 3166-1 alpha-2 code.')
 	}
 }
 

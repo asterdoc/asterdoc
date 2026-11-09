@@ -1,4 +1,4 @@
-import { defaultFormatter } from '@asterdoc/format'
+import { defaultFormatter } from '../default-formatter'
 import type { BinaryContent, Bindings, Form, FormField, Formatter, LayerFormat } from '@asterdoc/types'
 import { formatFieldData, formatValueAt, validateFieldBindings, unwrapFormattedValue } from '../text/field-formatter'
 import { getPath, pathSegments } from '../path'

@@ -175,6 +175,31 @@ describe('CLI render command', () => {
       expect(result.stderr).toContain('binding "petWeight", is not a valid binding object')
     })
 
+    it('should print a phone style from the layer format with the bundled phone provider', async () => {
+      const artifactPath = path.join(tempDir, 'phone.json')
+      await fs.writeFile(artifactPath, JSON.stringify({
+        $schema: ASTERDOC_SCHEMA_URL,
+        kind: 'form',
+        name: 'phone',
+        version: '1.0.0',
+        title: 'Phone',
+        fields: { phone: { type: 'phone', label: 'Phone' }, agreed: { type: 'boolean', label: 'Agreed' } },
+        layers: {
+          default: {
+            kind: 'inline',
+            mimeType: 'text/plain',
+            text: 'Call {{fields.phone}} ({{fields.agreed}})',
+            format: { phone: { style: 'national' }, boolean: { trueLabel: 'agreed' } },
+          },
+        },
+      }))
+      const data = JSON.stringify({ fields: { phone: { number: '+12125551234' }, agreed: true } })
+
+      const result = await executeCliCommand(['render', artifactPath, '--data', data])
+
+      expect(result).toMatchObject({ exitCode: 0, stdout: 'Call (212) 555-1234 (agreed)' })
+    })
+
     it('should refuse --bindings for a layer that is not a PDF', async () => {
       const data = JSON.stringify({ fields: { name: 'Milo', species: 'cat', weight: 5, hasVaccination: true } })
 

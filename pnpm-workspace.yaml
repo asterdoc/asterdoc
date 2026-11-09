@@ -14,6 +14,9 @@ catalog:
   ajv: "^8.17.1"
   ajv-formats: "^3.0.1"
   yaml: "^2.8.1"
+  # Phone styles of @asterdoc/format/phone, with minimal metadata. Pinned:
+  # its metadata decides printed output, so an update is a reviewed change.
+  libphonenumber-js: "1.13.15"
 
   "@neondatabase/serverless": "^1.0.2"
   "@orpc/contract": "^1.10.3"

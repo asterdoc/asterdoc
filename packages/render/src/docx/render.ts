@@ -1,4 +1,4 @@
-import { defaultFormatter } from '@asterdoc/format'
+import { defaultFormatter } from '../default-formatter'
 import type { Form, Formatter, LayerFormat } from '@asterdoc/types'
 import { unzipSync, zipSync } from 'fflate'
 import { formatFieldData } from '../text/field-formatter'

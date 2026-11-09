@@ -22,16 +22,25 @@
  * A split binding (`path:2`) takes the matching hyphen-separated part of the
  * pattern, or the whole value's bound when the pattern does not fix the parts.
  * Enum and multiselect fields write known option values, so they are checked
- * exactly: the widest option value, or the widest `max` values (all of them
- * without `max`) joined with ", ". A comma-joined binding joins each path's
- * value with ", ". More characters than a comb field has boxes is an error.
+ * exactly: the option value widest in glyphs and the one longest in
+ * characters, or for each selection size up to `max` (all of them without
+ * `max`) the widest and the longest values joined with ", ". Under
+ * `choice.display: label` the labels are measured instead, a multiselect's
+ * joined as the formatter lists them. A boolean under `boolean` labels is
+ * checked exactly at both labels. A phone under a `phone.style` is checked at
+ * the longest number the style prints, every digit the widest digit: in
+ * `phone.region`'s plan under `national` and `digits`, in any plan under
+ * `international` and `e164`; a whole phone adds the extension label and an
+ * extension of the longest length the phone value allows. A comma-joined
+ * binding joins each path's value with ", ". More characters than a comb field
+ * has boxes is an error.
  *
  * The font is the one filling would choose: the layer's declared font, then
  * the form's own font for the field, then Helvetica. A font supplied only at
  * render time is not known here.
  */
 
-import type { BindingValue, Bindings, Form, FormField } from '@asterdoc/types'
+import type { BindingValue, Bindings, EnumOption, Form, FormField, Formatter, LayerFormat } from '@asterdoc/types'
 import { acroFields, textFieldDrawing, widgetLayout, type AcroField } from './acroform'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
 import { layoutFieldText, MIN_FONT_SIZE, PdfFieldFillError, type FieldLayout } from './field-appearance'
@@ -39,6 +48,8 @@ import { analyzePattern, REFERENCE_REPERTOIRE, type CharSet } from './pattern-bo
 import { parseBinding, splitPartIndex, type PdfBindingPart } from '../layer-bindings'
 import { fieldDefinition } from '../layer-bindings'
 import { PdfModel } from './syntax'
+import { defaultFormatter } from '../default-formatter'
+import { formatterFor, mergeFormats } from '../presentation'
 
 /**
  * The text a typical value is made of: an English pangram with its word spaces,
@@ -84,6 +95,10 @@ export interface CheckPdfBindingFitOptions {
   bindings?: Bindings
   /** The font the layer declares. */
   layerFont?: PdfFont
+  /** How the layer prints values, with each binding's own format merged over it. */
+  format?: LayerFormat
+  /** The formatter the layer is filled with, which prints labels. Defaults to the default formatter. */
+  formatter?: Formatter
 }
 
 const TEXT_TYPES = new Set(['text', 'email', 'uuid', 'uri'])
@@ -105,6 +120,11 @@ interface BoundSource {
   probe: string
   /** What bounds the value, such as `maxLength 200`. */
   basis: string
+  /**
+   * The candidate with the most characters, when it can differ from the
+   * widest: a comb holds characters, not width, so both are checked.
+   */
+  longest?: (font: MeasuringFont) => string
   /** True when the value is one of known option values, so typical and widest are one check. */
   exact: boolean
   value(font: MeasuringFont, kind: ValueKind): string
@@ -194,29 +214,136 @@ function textSource(path: string, field: FormField & { maxLength?: number; patte
   }
 }
 
-function choiceSource(path: string, field: FormField): SourceAnalysis {
-  if (field.type !== 'enum' && field.type !== 'multiselect') return { kind: 'other' }
-  const values = field.enum.map((option) => String(option.value))
-  if (values.length === 0) return { kind: 'other' }
-  const count = field.type === 'multiselect' ? Math.min(field.max ?? values.length, values.length) : 1
+const DIGITS: CharSet = { any: false, chars: [...'0123456789'] }
+
+/** Every candidate is printed in full, so the widest is checked exactly. */
+function widest(font: MeasuringFont, candidates: readonly string[]): string {
+  return candidates.reduce((best, candidate) => measure(font, candidate) > measure(font, best) ? candidate : best, candidates[0] ?? '')
+}
+
+function longestOf(candidates: readonly string[]): string {
+  return candidates.reduce((best, candidate) => [...candidate].length > [...best].length ? candidate : best, candidates[0] ?? '')
+}
+
+/**
+ * Every printed value is known: the widest of `printedFor(font)` by glyph
+ * width, and the longest by characters, are each checked.
+ */
+function listedSource(path: string, probe: readonly string[], basis: string, printedFor: (font: MeasuringFont) => readonly string[]): SourceAnalysis {
+  if (probe.length === 0) return { kind: 'other' }
   return {
     kind: 'bounded',
     source: {
       path,
-      probe: values.join(''),
-      basis: field.type === 'enum' ? 'its widest option value' : count === values.length ? 'all its option values' : `its ${count} widest option values`,
+      probe: probe.join(''),
+      basis,
       exact: true,
-      value(font) {
-        return [...values].sort((left, right) => measure(font, right) - measure(font, left)).slice(0, count).join(', ')
-      },
+      value: (font) => widest(font, printedFor(font)),
+      longest: (font) => longestOf(printedFor(font)),
     },
   }
 }
 
+/**
+ * The selections of up to `count` options that print widest and longest: for
+ * each size, the options widest by glyph width and the options longest by
+ * characters, each printed as `join` prints them.
+ */
+function selections<T>(options: readonly T[], count: number, text: (option: T) => string, font: MeasuringFont, join: (chosen: T[]) => string): string[] {
+  const byWidth = [...options].sort((left, right) => measure(font, text(right)) - measure(font, text(left)))
+  const byLength = [...options].sort((left, right) => [...text(right)].length - [...text(left)].length)
+  const printed: string[] = []
+  for (let size = 1; size <= count; size++) printed.push(join(byWidth.slice(0, size)), join(byLength.slice(0, size)))
+  return printed
+}
+
+function printed(result: ReturnType<Formatter['safeFormatEnum']>): string | undefined {
+  return result.success ? result.value : undefined
+}
+
+function labelSource(path: string, field: FormField & { enum: readonly EnumOption[] }, formatter: Formatter): SourceAnalysis {
+  const options = field.enum
+  const labels = options.map((option) => printed(formatter.safeFormatEnum(option.value, { options })))
+  if (labels.some((label) => label === undefined)) return { kind: 'other' }
+  const byValue = new Map(options.map((option, index) => [option.value, labels[index]!]))
+  if (field.type === 'enum') return listedSource(path, labels as string[], 'its option labels', () => labels as string[])
+  const count = Math.min(field.type === 'multiselect' ? field.max ?? options.length : 1, options.length)
+  const join = (chosen: EnumOption[]) => {
+    const values = chosen.map((option) => option.value)
+    return printed(formatter.safeFormatMultiselect(values, { options })) ?? values.map((value) => byValue.get(value)!).join(', ')
+  }
+  return listedSource(path, labels as string[], count === options.length ? 'all its option labels' : `up to ${count} of its option labels`, (font) =>
+    selections(options, count, (option) => byValue.get(option.value)!, font, join))
+}
+
+function booleanSource(path: string, format: LayerFormat | undefined, formatter: Formatter): SourceAnalysis {
+  if (format?.boolean?.trueLabel === undefined && format?.boolean?.falseLabel === undefined) return { kind: 'other' }
+  const labels = [true, false].map((value) => printed(formatter.safeFormatBoolean(value, format.boolean)))
+  if (labels.some((label) => label === undefined)) return { kind: 'other' }
+  return listedSource(path, labels as string[], 'its boolean labels', () => labels as string[])
+}
+
+const EXTENSION_MAX_LENGTH = 20
+
+/** What a whole phone prints after its number at most: the formatter's extension label and the longest extension, every digit written 0. */
+function extensionShape(formatter: Formatter): string | undefined {
+  const sample = '+12025550123'
+  const result = formatter.safeFormatPhone({ number: sample, extension: '0'.repeat(EXTENSION_MAX_LENGTH) }, { style: 'e164' })
+  return result.success ? result.value.slice(sample.length).replace(/\d/g, '0') : undefined
+}
+
+/**
+ * A phone under a style prints at most its plan's longest number: `region`'s
+ * plan under `national` and `digits`, which refuse another calling code, and
+ * any plan under `international` and `e164`, which print one. A whole phone
+ * adds its extension; a `number` member does not.
+ */
+function phoneSource(path: string, format: LayerFormat | undefined, formatter: Formatter, withExtension: boolean): SourceAnalysis {
+  const style = format?.phone?.style
+  if (style === undefined) return { kind: 'other' }
+  const region = style === 'national' || style === 'digits' ? format?.phone?.region : undefined
+  const number = style === 'e164' ? `+${'0'.repeat(15)}` : formatter.providers.phone?.longest(style, region)
+  const extension = withExtension ? extensionShape(formatter) : ''
+  if (!number || extension === undefined) return { kind: 'other' }
+  const shape = `${number}${extension}`
+  const plan = style === 'e164' ? 'any E.164 number' : region === undefined ? 'any numbering plan' : `the ${region} numbering plan`
+  return {
+    kind: 'bounded',
+    source: {
+      path,
+      probe: `${shape.replace(/0/g, '')}0123456789`,
+      basis: `phone style ${style} for ${plan}${withExtension ? `, with an extension of ${EXTENSION_MAX_LENGTH} digits` : ''}`,
+      exact: true,
+      value: (font) => shape.replace(/0/g, widestCharacter(font, [DIGITS])),
+    },
+  }
+}
+
+function choiceSource(path: string, field: FormField, format?: LayerFormat, formatter: Formatter = defaultFormatter): SourceAnalysis {
+  if (field.type === 'boolean') return booleanSource(path, format, formatter)
+  if (field.type === 'phone') return phoneSource(path, format, formatter, true)
+  if (field.type !== 'enum' && field.type !== 'multiselect') return { kind: 'other' }
+  if (format?.choice?.display === 'label') return labelSource(path, field, formatter)
+  const values = field.enum.map((option) => String(option.value))
+  const count = field.type === 'multiselect' ? Math.min(field.max ?? values.length, values.length) : 1
+  const basis = field.type === 'enum' ? 'its widest option value' : count === values.length ? 'all its option values' : `its ${count} widest option values`
+  return listedSource(path, values, basis, (font) => selections(values, count, (value) => value, font, (chosen) => chosen.join(', ')))
+}
+
+/** The phone field a `phone.number` member path reads, which prints as the phone's number. */
+function phoneNumberMember(form: Form, path: string): FormField | undefined {
+  if (!path.endsWith('.number')) return undefined
+  const parent = fieldDefinition(form, path.slice(0, -'.number'.length))
+  return parent?.type === 'phone' ? parent : undefined
+}
+
 /** What one binding path fills a text field with. */
-function analyzeSource(form: Form, { path, qualifier }: PdfBindingPart): SourceAnalysis {
+function analyzeSource(form: Form, { path, qualifier }: PdfBindingPart, format: LayerFormat | undefined, formatter: Formatter): SourceAnalysis {
   const field = fieldDefinition(form, path)
-  if (!field) return { kind: 'other' }
+  if (!field) {
+    const phone = qualifier === undefined ? phoneNumberMember(form, path) : undefined
+    return phone ? phoneSource(path, format, formatter, false) : { kind: 'other' }
+  }
   if (qualifier !== undefined) {
     // A qualifier on a boolean, choice, or list field tests a value, which fills a checkbox.
     if (!TEXT_TYPES.has(field.type)) return { kind: 'other' }
@@ -224,13 +351,15 @@ function analyzeSource(form: Form, { path, qualifier }: PdfBindingPart): SourceA
     return part === undefined ? { kind: 'other' } : textSource(path, field as FormField & { maxLength?: number }, part)
   }
   if (TEXT_TYPES.has(field.type)) return textSource(path, field as FormField & { maxLength?: number })
-  return choiceSource(path, field)
+  return choiceSource(path, field, format, formatter)
 }
 
 /** The binding's path text and the sources it reads, or undefined when it is not checked. */
-function analyzeBinding(form: Form, value: BindingValue): { binding: string; sources: SourceAnalysis[] } | undefined {
+function analyzeBinding(form: Form, value: BindingValue, format: LayerFormat | undefined, formatter: Formatter): { binding: string; sources: SourceAnalysis[] } | undefined {
   const parsed = parseBinding(value)
-  const sources = parsed.parts.map((part) => analyzeSource(form, part))
+  const effective = mergeFormats(format, parsed.format)
+  const localized = formatterFor(formatter, effective)
+  const sources = parsed.parts.map((part) => analyzeSource(form, part, effective, localized))
   // A joined value is checked only when every part is known.
   if (sources.some((source) => source.kind === 'other')) return undefined
   return { binding: parsed.path, sources }
@@ -277,7 +406,7 @@ function fitFailure(field: AcroField, binding: string, sources: BoundSource[], l
  * @throws {PdfFontError} when the layer's font cannot be read.
  * @throws {PdfBindingSyntaxError} when a binding cannot be parsed.
  */
-export async function checkPdfBindingFit({ template, form, bindings, layerFont }: CheckPdfBindingFitOptions): Promise<PdfBindingFitIssue[]> {
+export async function checkPdfBindingFit({ template, form, bindings, layerFont, format, formatter = defaultFormatter }: CheckPdfBindingFitOptions): Promise<PdfBindingFitIssue[]> {
   const model = await PdfModel.load(template)
   const acro = acroFields(model)
   if (!acro) return []
@@ -292,7 +421,7 @@ export async function checkPdfBindingFit({ template, form, bindings, layerFont }
   for (const [name, value] of entries) {
     const field = byName.get(name)
     if (!field || field.type !== 'text') continue
-    const analysis = analyzeBinding(form, value)
+    const analysis = analyzeBinding(form, value, format, formatter)
     if (!analysis) continue
     const { binding, sources: analyzed } = analysis
     const drawing = textFieldDrawing(field)
@@ -336,9 +465,15 @@ function checkLayout(fonts: PdfFontSet, field: AcroField, binding: string, sourc
     if (error instanceof PdfFieldFillError) return undefined
     throw error
   }
-  for (const kind of ['typical', 'widest'] as const) {
-    if (kind === 'widest' && sources.every((source) => source.exact)) break
-    const text = sources.map((source) => source.value(chosen, kind)).join(', ')
+  const exact = sources.every((source) => source.exact)
+  const checks: { kind: ValueKind; text: string }[] = [
+    { kind: 'typical', text: sources.map((source) => source.value(chosen, 'typical')).join(', ') },
+    ...(exact ? [] : [{ kind: 'widest' as const, text: sources.map((source) => source.value(chosen, 'widest')).join(', ') }]),
+  ]
+  if (sources.some((source) => source.longest)) {
+    checks.push({ kind: exact ? 'typical' : 'widest', text: sources.map((source) => source.longest?.(chosen) ?? source.value(chosen, 'widest')).join(', ') })
+  }
+  for (const { kind, text } of checks) {
     try {
       layoutFieldText(layout, text, fonts.select(field.name, text, layout.appearance.fontName))
     } catch (error) {

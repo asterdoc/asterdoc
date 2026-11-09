@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup'
 
 export default defineConfig({
-	entry: ['src/index.ts'],
+	entry: ['src/index.ts', 'src/phone.ts'],
 	format: ['esm'],
 	dts: {
 		resolve: true,
@@ -9,5 +9,5 @@ export default defineConfig({
 	splitting: false,
 	sourcemap: false,
 	clean: true,
-	external: ['@asterdoc/types'],
+	external: ['@asterdoc/types', 'libphonenumber-js'],
 })

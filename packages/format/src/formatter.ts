@@ -7,6 +7,7 @@ import {
 	formatOrganization as formatContactOrganization,
 	formatPerson as formatContactPerson,
 	formatPhone as formatContactPhone,
+	PHONE_PROVIDER_ENTRY_POINT,
 	validateAddress,
 	validateContactOptions,
 	validateOrganization,
@@ -82,6 +83,7 @@ import {
 	type FormatterMessages,
 	type FormatterOptions,
 	type FormatterOverrides,
+	type FormatProviders,
 	type Identification,
 	type MoneyFormatOptions,
 	type NumericFormatKind,
@@ -154,6 +156,7 @@ interface FormatterConfig extends KindOptions {
 	readonly numberingSystem?: string
 	readonly cacheSize: number
 	readonly messages: FormatterMessages
+	readonly providers: FormatProviders
 }
 
 interface CachedByBucket {
@@ -329,6 +332,7 @@ function mergeConfig(base: FormatterConfig, addition: FormatterOptions): Formatt
 		cacheSize: addition.cacheSize ?? base.cacheSize,
 		...(kinds as KindOptions),
 		messages: mergeMessages(base.messages, addition.messages),
+		providers: { ...base.providers, ...addition.providers },
 	}
 }
 
@@ -570,7 +574,18 @@ function createConfig(options: FormatterOptions): FormatterConfig {
 			),
 			options.messages,
 		),
+		providers: createProviders(options.providers),
 	}
+}
+
+function createProviders(providers: FormatProviders | undefined): FormatProviders {
+	if (providers === undefined) return Object.freeze({})
+	if (!isRecord(providers)) throw new FormatConfigurationError('Formatter providers must be an object.')
+	const phone: unknown = providers.phone
+	if (phone !== undefined && (!isRecord(phone) || typeof phone.parse !== 'function' || typeof phone.callingCode !== 'function' || typeof phone.longest !== 'function')) {
+		throw new FormatConfigurationError(`The phone provider must be the phoneProvider of ${PHONE_PROVIDER_ENTRY_POINT}, or implement parse, callingCode and longest.`)
+	}
+	return Object.freeze({ ...providers })
 }
 
 function overrideLayers(overrides: FormatterOverrides | undefined): Layer[] {
@@ -598,6 +613,7 @@ class FormatterImpl implements Formatter {
 	readonly calendar: string
 	readonly numberingSystem?: string
 	readonly messages: FormatterMessages
+	readonly providers: FormatProviders
 
 	private readonly config: FormatterConfig
 	private readonly caches: FormatterCaches
@@ -612,6 +628,7 @@ class FormatterImpl implements Formatter {
 		this.calendar = this.config.calendar
 		this.numberingSystem = this.config.numberingSystem
 		this.messages = this.config.messages
+		this.providers = this.config.providers
 		const caches: Record<string, BoundedCache<unknown>> = {}
 		for (const bucket of CACHE_BUCKETS) caches[bucket] = new BoundedCache(this.config.cacheSize)
 		this.caches = caches as FormatterCaches
@@ -676,9 +693,16 @@ class FormatterImpl implements Formatter {
 			createDateTimeFormat(kind, policy, policy.timeZone, dateTimeDefaults('date', intlOptions(options) as never))
 		} else if (family === 'contact') {
 			guardOptions(kind, () => validateContactOptions(kind as 'address', options as FormatOptionsByKind['address']))
+			if (kind === 'phone') this.checkPhoneRegion(options as FormatOptionsByKind['phone'])
 		} else if (family === 'selection') {
 			guardOptions(kind, () => validateSelectionOptions(kind as SelectionFormatKind, options as FormatOptionsByKind['boolean']))
 		}
+	}
+
+	private checkPhoneRegion(options: FormatOptionsByKind['phone']): void {
+		const { phone } = this.providers
+		if (options.region === undefined || !phone || phone.callingCode(options.region) !== undefined) return
+		throw new FormatConfigurationError(`Phone region ${JSON.stringify(options.region)} names no numbering plan the phone provider knows.`)
 	}
 
 	private checkCalendarAndTimeZone(policy: CallPolicy): void {
@@ -780,7 +804,7 @@ class FormatterImpl implements Formatter {
 					options: options as AddressFormatOptions,
 				})
 			case 'phone':
-				return formatContactPhone(parsed as NormalizedPhone, options, this.messageContext(policy.locale))
+				return formatContactPhone(parsed as NormalizedPhone, options, this.messageContext(policy.locale), this.providers.phone)
 			case 'person':
 				return formatContactPerson(parsed as Record<string, unknown>)
 			case 'organization':

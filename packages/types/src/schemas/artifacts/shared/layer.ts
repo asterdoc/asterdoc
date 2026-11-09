@@ -119,6 +119,35 @@ export interface LayerDateFormat {
   pattern: LayerDatePattern;
 }
 
+/** How a phone number prints. */
+export type LayerPhoneStyle = "e164" | "international" | "national" | "digits";
+
+/** How a layer or binding presents phone numbers. The extension prints as with `e164`. */
+export interface LayerPhoneFormat {
+  /** `e164` as stored, `international`, `national`, or `digits` (the national significant number). */
+  style?: LayerPhoneStyle;
+  /**
+   * ISO 3166-1 alpha-2 region whose numbering plan a national box expects.
+   * Under `national` and `digits` a number with another calling code is
+   * refused, and read-back of those styles needs it.
+   */
+  region?: string;
+}
+
+/** How a layer or binding presents `enum` and `multiselect` values in text. */
+export interface LayerChoiceFormat {
+  /** `label` prints each option's label, `value` its value. Checkboxes, radios and dropdowns always take values. */
+  display?: "label" | "value";
+}
+
+/** How a layer or binding presents `boolean` values in text. */
+export interface LayerBooleanFormat {
+  /** Printed for true, in place of the locale's word. */
+  trueLabel?: string;
+  /** Printed for false, in place of the locale's word. */
+  falseLabel?: string;
+}
+
 /**
  * How values print. On a layer it applies over the formatter the caller
  * renders with; on a PDF binding, over the layer's format. Levels merge per
@@ -132,6 +161,12 @@ export interface LayerFormat {
   money?: LayerMoneyFormat;
   /** How date values are presented. */
   date?: LayerDateFormat;
+  /** How phone numbers are presented. */
+  phone?: LayerPhoneFormat;
+  /** How choices are presented in text. */
+  choice?: LayerChoiceFormat;
+  /** How booleans are presented in text. */
+  boolean?: LayerBooleanFormat;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { defaultFormatter } from '@asterdoc/format'
+import { defaultFormatter } from '../default-formatter'
 import type {
   Formatter,
   FormatterProgressivePolicy,

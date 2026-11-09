@@ -191,6 +191,24 @@ A layer that reuses bindings through `bindingsFrom` takes each binding with its 
     description: 'Prints every date in the numeric order the template asks for',
     isOptional: true,
   },
+  {
+    name: 'phone',
+    type: "{ style?: 'e164' | 'international' | 'national' | 'digits', region?: string }",
+    description: '`style` prints the number as stored (`e164`), in its plan\'s layout, or as the national digits only; the extension prints after it. `region` (ISO 3166-1 alpha-2) names the plan a national box expects: a number with another calling code is refused under `national` and `digits`, and reading those styles back needs it. Styles other than `e164` need the phone provider, `@asterdoc/format/phone`',
+    isOptional: true,
+  },
+  {
+    name: 'choice',
+    type: "{ display?: 'label' | 'value' }",
+    description: 'What `enum` and `multiselect` values print in text boxes and text layers. Checkboxes, radio buttons and dropdowns always take option values',
+    isOptional: true,
+  },
+  {
+    name: 'boolean',
+    type: '{ trueLabel?: string, falseLabel?: string }',
+    description: 'Text a boolean prints in text boxes and text layers, in place of the locale\'s word. A checkbox always takes the boolean',
+    isOptional: true,
+  },
 ]} />
 
 Levels apply from lowest to highest: the caller's formatter, then the layer's `format`, then a binding's `format`. Each kind merges per property, so a binding's `money` keeps the layer's other money choices, and a higher `locale` replaces a lower one. React layers accept a `format` but do not apply it yet. See [Artifact formatting](/sdk/renderers/pdf#artifact-formatting).

@@ -377,7 +377,7 @@ export class TemplateScope {
   private formatValue(value: Value, node: Expr, formatter = this.environment.formatter, modified?: { path: string; options: FieldFormattingOptions }): string {
     switch (value.kind) {
       case 'null': return ''
-      case 'boolean': return formatter.formatBoolean(value.value)
+      case 'boolean': return formatter.formatBoolean(value.value, modified?.options.boolean)
       case 'number': return formatter.formatNumber(value.value.toNumber())
       case 'string': {
         const returns = stringReturnKind(node, this.root.registry)

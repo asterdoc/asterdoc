@@ -213,6 +213,45 @@ const LayerDateFormatSchema = z.object({
 	description: 'How a layer or binding presents date values',
 });
 
+/** How a layer or binding prints phone numbers; the extension prints as with `e164`. */
+const LayerPhoneFormatSchema = z.object({
+	style: z.enum(['e164', 'international', 'national', 'digits'])
+		.describe('`e164` prints the stored number (+12125551234); `international` (+1 212 555 1234) and `national` ((212) 555-1234) use the numbering plan\'s layout; `digits` prints the national significant number with no trunk prefix or punctuation (2125551234)')
+		.optional(),
+	region: z.string()
+		.regex(/^[A-Z]{2}$/)
+		.describe('ISO 3166-1 alpha-2 region whose numbering plan a national box expects, such as US. Under `national` and `digits`, a number with another country calling code is refused; reading those styles back needs it')
+		.optional(),
+}).strict().meta({
+	title: 'LayerPhoneFormat',
+	description: 'How a layer or binding presents phone numbers',
+});
+
+/** How a layer or binding prints `enum` and `multiselect` values in text. */
+const LayerChoiceFormatSchema = z.object({
+	display: z.enum(['label', 'value'])
+		.describe('`label` prints each option\'s label, `value` its value. Checkboxes, radio buttons and dropdowns always take option values')
+		.optional(),
+}).strict().meta({
+	title: 'LayerChoiceFormat',
+	description: 'How a layer or binding presents choices in text',
+});
+
+/** How a layer or binding prints `boolean` values in text. */
+const LayerBooleanFormatSchema = z.object({
+	trueLabel: z.string()
+		.max(200)
+		.describe('Text printed for true, in place of the locale\'s word')
+		.optional(),
+	falseLabel: z.string()
+		.max(200)
+		.describe('Text printed for false, in place of the locale\'s word')
+		.optional(),
+}).strict().meta({
+	title: 'LayerBooleanFormat',
+	description: 'How a layer or binding presents booleans in text. Checkboxes always take the boolean',
+});
+
 /** A BCP 47 language tag: a language subtag, then hyphen-separated subtags. */
 const LOCALE_PATTERN = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/;
 
@@ -231,6 +270,9 @@ export const FormatSchema = z.object({
 		.optional(),
 	money: LayerMoneyFormatSchema.optional(),
 	date: LayerDateFormatSchema.optional(),
+	phone: LayerPhoneFormatSchema.optional(),
+	choice: LayerChoiceFormatSchema.optional(),
+	boolean: LayerBooleanFormatSchema.optional(),
 }).strict().meta({
 	title: 'LayerFormat',
 	description: 'How values print, applied over the caller\'s formatter on a layer and over the layer\'s format on a PDF binding',

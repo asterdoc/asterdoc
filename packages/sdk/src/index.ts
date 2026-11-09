@@ -35,6 +35,8 @@ export type { ExtractedField, LocateQuery, UnknownMarker } from '@asterdoc/rende
 
 // Re-export the standalone presentation formatter for SDK consumers.
 export * from '@asterdoc/format'
+export { defaultFormatter } from '@asterdoc/render'
+export { phoneProvider } from '@asterdoc/format/phone'
 
 // Re-export from @asterdoc/sessions
 export * from '@asterdoc/sessions'

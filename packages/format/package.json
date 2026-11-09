@@ -11,11 +11,17 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./phone": {
+      "types": "./dist/phone.d.ts",
+      "import": "./dist/phone.js",
+      "default": "./dist/phone.js"
     }
   },
   "sideEffects": false,
   "files": [
     "dist",
+    "notices",
     "README.md",
     "LICENSE"
   ],
@@ -61,7 +67,8 @@
     "benchmark": "pnpm --silent run build >/dev/null && node scripts/benchmark.mjs"
   },
   "dependencies": {
-    "@asterdoc/types": "workspace:^"
+    "@asterdoc/types": "workspace:^",
+    "libphonenumber-js": "catalog:"
   },
   "devDependencies": {
     "@asterdoc/eslint-config": "workspace:*",

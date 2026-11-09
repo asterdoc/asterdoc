@@ -12,7 +12,7 @@ import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type { Bindings, FileLayer, Form, Resolver } from '@asterdoc/types'
 import { isPdfMimeType } from '@asterdoc/schemas'
 import { resolveLayerBindings } from '@asterdoc/render'
-import { checkPdfBindingFit, inspectAcroFormFields, type PdfBindingFitIssue } from '@asterdoc/render/pdf'
+import { checkPdfBindingFit, findPdfLabelCollisions, inspectAcroFormFields, type PdfBindingFitIssue } from '@asterdoc/render/pdf'
 
 /** A validation issue with the severity the validation model gives it. */
 export interface LayerValidationIssue extends StandardSchemaV1.Issue {
@@ -54,8 +54,10 @@ async function unknownBindingKeys(layerKey: string, layer: FileLayer, template: 
 /**
  * Check every file-backed PDF layer of a form: each binding key must name an
  * AcroForm field of the template, and each binding to a text field must fit
- * its box for every value the bound field accepts. An unknown key and a value
- * that cannot fit are errors; a text field with no length bound is a warning.
+ * its box for every value the bound field accepts, as the layer's format
+ * prints it. An unknown key and a value that cannot fit are errors; a text
+ * field with no length bound, and labels the format prints that reading the
+ * PDF back cannot tell apart, are warnings.
  * A template that cannot be read is skipped: `validateFileReferences` reports it.
  */
 export async function validatePdfLayers(form: Form, resolver: Resolver): Promise<LayerValidationIssue[]> {
@@ -83,8 +85,13 @@ export async function validatePdfLayers(form: Form, resolver: Resolver): Promise
     try {
       const bindings = resolveLayerBindings(layers, layer)
       if (bindings) issues.push(...await unknownBindingKeys(key, fileLayer, template, bindings))
-      const found = await checkPdfBindingFit({ template, form, bindings, ...(layerFont && { layerFont }) })
+      const found = await checkPdfBindingFit({ template, form, bindings, ...(layerFont && { layerFont }), ...(fileLayer.format && { format: fileLayer.format }) })
       issues.push(...found.map((issue) => issueFor(key, issue)))
+      issues.push(...findPdfLabelCollisions({ form, bindings, ...(fileLayer.format && { format: fileLayer.format }) }).map((collision) => ({
+        message: `Layer "${key}", PDF field "${collision.field}": ${collision.message}`,
+        path: bindings ? ['layers', key, 'bindings', collision.field] : ['layers', key, 'format'],
+        severity: 'warning' as const,
+      })))
     } catch (error) {
       issues.push({
         message: `Layer "${key}" could not be checked: ${error instanceof Error ? error.message : String(error)}`,

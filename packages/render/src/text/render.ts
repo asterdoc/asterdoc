@@ -1,4 +1,4 @@
-import { defaultFormatter } from '@asterdoc/format'
+import { defaultFormatter } from '../default-formatter'
 import type { Form, Formatter, LayerFormat } from '@asterdoc/types'
 import { formatFieldData, type FieldFormattingOptions } from './field-formatter'
 import { createTextSignatureDirectives, type TextSignatureOptions } from './signatures'

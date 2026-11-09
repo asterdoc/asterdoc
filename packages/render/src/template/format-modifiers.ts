@@ -1,3 +1,4 @@
+import { phoneProvider } from '@asterdoc/format/phone'
 import type { LayerFormat } from '@asterdoc/types'
 import type { DeclaredValue } from './values'
 
@@ -71,6 +72,16 @@ export function onlyFor(key: string, kinds: readonly string[], noun: string): Fo
   return (target) => kinds.includes(target.kind) ? undefined : `${key} applies to ${noun}, not to ${describeTarget(target)}.`
 }
 
+function label(key: string): FormatModifierRule['value'] {
+  return (value) => typeof value === 'string' && value.length <= 200 ? undefined : `${key} takes a string of at most 200 characters, not ${literalText(value)}.`
+}
+
+/** A choice prints a label from the options its field declares, so only a declared choice field takes `choice.display`. */
+function choiceField(target: ModifierTarget): string | undefined {
+  if (target.kind !== 'enum' && target.kind !== 'multiselect') return `choice.display applies to enum and multiselect values, not to ${describeTarget(target)}.`
+  return target.declared?.source === 'field' ? undefined : `choice.display needs the options a choice field declares, and ${describeTarget(target)} is not a declared field.`
+}
+
 /**
  * Every format modifier key a placeholder can write, with its rule. A key
  * is a dotted path into the layer format; the format it sets merges over the
@@ -91,6 +102,28 @@ export const FORMAT_MODIFIER_RULES = new Map<string, FormatModifierRule>([
   ['money.currencyDisplay', {
     value: oneOf('money.currencyDisplay', ['none']),
     applies: onlyFor('money.currencyDisplay', ['money'], 'money values'),
+  }],
+  ['phone.style', {
+    value: oneOf('phone.style', ['e164', 'international', 'national', 'digits']),
+    applies: onlyFor('phone.style', ['phone'], 'phone numbers'),
+  }],
+  ['phone.region', {
+    value: (value) => typeof value === 'string' && phoneProvider.callingCode(value) !== undefined
+      ? undefined
+      : `phone.region takes the ISO 3166-1 alpha-2 code of a numbering plan, such as "US", not ${literalText(value)}.`,
+    applies: onlyFor('phone.region', ['phone'], 'phone numbers'),
+  }],
+  ['choice.display', {
+    value: oneOf('choice.display', ['label', 'value']),
+    applies: choiceField,
+  }],
+  ['boolean.trueLabel', {
+    value: label('boolean.trueLabel'),
+    applies: onlyFor('boolean.trueLabel', ['boolean'], 'booleans'),
+  }],
+  ['boolean.falseLabel', {
+    value: label('boolean.falseLabel'),
+    applies: onlyFor('boolean.falseLabel', ['boolean'], 'booleans'),
   }],
 ])
 

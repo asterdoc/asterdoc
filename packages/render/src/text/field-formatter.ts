@@ -9,7 +9,9 @@ import type {
 	FormField,
 	FormAnnex,
 	DefsSection,
+	LayerBooleanFormat,
 	LayerDateFormat,
+	LayerPhoneFormat,
 	MoneyFormatOptions,
 } from '@asterdoc/types'
 import { MISSING_RATING_SCALE, UNSUPPORTED_COUNTRY_LAYOUT, UNSUPPORTED_LIST_JOIN } from '@asterdoc/format'
@@ -24,9 +26,14 @@ export interface FieldFormattingOptions {
 	progressive?: ProgressiveFormattingOptions
 	/**
 	 * What a choice prints: its option label (the default) or its option value.
-	 * A PDF box writes the value, the code the form expects, such as "C" or "5".
+	 * A PDF box writes the value, the code the form expects, such as "C" or "5",
+	 * unless its layer or binding format sets `choice.display`.
 	 */
 	choices?: 'label' | 'value'
+	/** How every phone number prints. A layer that declares `format.phone` passes it here. */
+	phone?: LayerPhoneFormat
+	/** The labels every boolean prints with. A layer that declares `format.boolean` passes it here. */
+	boolean?: LayerBooleanFormat
 	/**
 	 * Options for every money value, applied over the formatter's own policy.
 	 * A PDF layer that declares `format.money` passes it here.
@@ -323,7 +330,7 @@ function formatLeaf(
 		switch (field.type) {
 			case 'money': return callFormatter(path, field.type, value, () => formatter.safeFormatMoney(recordInput(value, path, field.type), options?.money), options)
 			case 'address': return address(formatter, value, path, field.type, options)
-			case 'phone': return callFormatter(path, field.type, value, () => formatter.safeFormatPhone(typeof value === 'string' ? value : recordInput(value, path, field.type)), options)
+			case 'phone': return callFormatter(path, field.type, value, () => formatter.safeFormatPhone(typeof value === 'string' ? value : recordInput(value, path, field.type), options?.phone), options)
 			case 'person': return callFormatter(path, field.type, value, () => formatter.safeFormatPerson(recordInput(value, path, field.type)), options)
 			case 'organization': return callFormatter(path, field.type, value, () => formatter.safeFormatOrganization(recordInput(value, path, field.type)), options)
 			case 'coordinate': return callFormatter(path, field.type, value, () => formatter.safeFormatCoordinate(recordInput(value, path, field.type)), options)
@@ -337,7 +344,7 @@ function formatLeaf(
 			case 'time': return callFormatter(path, field.type, value, () => formatter.safeFormatTime(stringInput(value, path, field.type)), options)
 			case 'number': return callFormatter(path, field.type, value, () => formatter.safeFormatNumber(numberInput(value, path, field.type)), options)
 			case 'percentage': return callFormatter(path, field.type, value, () => formatter.safeFormatPercentage(numberInput(value, path, field.type)), options)
-			case 'boolean': return callFormatter(path, field.type, value, () => formatter.safeFormatBoolean(booleanInput(value, path, field.type)), options)
+			case 'boolean': return callFormatter(path, field.type, value, () => formatter.safeFormatBoolean(booleanInput(value, path, field.type), options?.boolean), options)
 			case 'enum': if (options?.choices === 'value') {
 				const choice = optionInput(value, path, field.type)
 				return new FormattedFieldValue(value, String(choice))
@@ -426,7 +433,7 @@ export function formatDefinitionValue(
 		switch (type) {
 			case 'money': return callFormatter(path, type, value, () => formatter.safeFormatMoney(recordInput(value, path, type), options?.money), options)
 			case 'address': return address(formatter, value, path, type, options)
-			case 'phone': return callFormatter(path, type, value, () => formatter.safeFormatPhone(typeof value === 'string' ? value : recordInput(value, path, type)), options)
+			case 'phone': return callFormatter(path, type, value, () => formatter.safeFormatPhone(typeof value === 'string' ? value : recordInput(value, path, type), options?.phone), options)
 			case 'person': return callFormatter(path, type, value, () => formatter.safeFormatPerson(recordInput(value, path, type)), options)
 			case 'organization': return callFormatter(path, type, value, () => formatter.safeFormatOrganization(recordInput(value, path, type)), options)
 			case 'party': {
@@ -463,7 +470,7 @@ export function formatDefinitionValue(
 				return callFormatter(path, type, value, () => formatter.safeFormatNumber(number), options)
 			}
 			case 'percentage': return callFormatter(path, type, value, () => formatter.safeFormatPercentage(numberInput(value, path, type)), options)
-			case 'boolean': return callFormatter(path, type, value, () => formatter.safeFormatBoolean(booleanInput(value, path, type)), options)
+			case 'boolean': return callFormatter(path, type, value, () => formatter.safeFormatBoolean(booleanInput(value, path, type), options?.boolean), options)
 			case 'string': return stringInput(value, path, type)
 			default: throw new ArtifactFieldFormatError(path, type, 'unsupported', [{ code: 'unsupported_type', message: `Unsupported computed value type ${JSON.stringify(type)}.`, path, kind: type }])
 		}
@@ -666,7 +673,16 @@ function fieldAt(
 		if (!Object.prototype.hasOwnProperty.call(value, segment) && !options?.progressive) return undefined
 		return fieldAt(formatter, child, value[segment], childPath(path, segment), rest, options)
 	}
+	if (field.type === 'phone' && segments.length === 1 && segment === 'number') return phoneNumberAt(formatter, value, path, options)
 	return rawAt(value, segments)
+}
+
+function phoneNumberAt(formatter: Formatter, value: unknown, path: string, options?: FieldFormattingOptions): unknown {
+	const number = rawAt(value, ['number'])
+	const style = options?.phone?.style
+	if (style === undefined || style === 'e164' || isMissing(number)) return number
+	const memberPath = childPath(path, 'number')
+	return callFormatter(memberPath, 'phone', number, () => formatter.safeFormatPhone(stringInput(number, memberPath, 'phone'), options?.phone), options)
 }
 
 function partyAt(formatter: Formatter, form: Form, parties: unknown, segments: readonly string[], options?: FieldFormattingOptions): unknown {

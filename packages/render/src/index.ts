@@ -27,6 +27,7 @@ export {
   type PdfBindingPart,
 } from './layer-bindings'
 export { formatterFor, hasNewFormatOptions, mergeFormats } from './presentation'
+export { defaultFormatter } from './default-formatter'
 
 /** Options shared by the MIME-selected rendering engines. */
 export interface CreateLayerRendererOptions {
