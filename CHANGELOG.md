@@ -4,6 +4,20 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-10
+
+0.12 lets a form choose how each value prints: a country as its code or its name, a phone in one of several styles, an identifier with or without its mask, any part of a date, phone or amount. It adds check-digit rules, sensitive values, test cases inside artifacts, and verified template checksums, and a new schema version, 2026-11-10. Artifacts on older schema versions keep loading: the SDK upgrades them in memory.
+
+### Highlights
+
+- A `format` on any layer that prints values (PDF, text, Markdown, HTML, DOCX, React), on a single PDF binding (`{ path, format, part }`), on a template placeholder (`{{ fields.phone | phone=national }}`) or on a React element. With no format, output is the same as in 0.11.
+- New `country` and `region` field types, `codes: true` on addresses, and `mask` on text fields. Input in names, codes or formatted text is stored as one canonical value, and agents get candidates when an answer is ambiguous.
+- Rules can check identifiers with `checkDigit` (Luhn, ISO 7064 MOD 97-10 and MOD 11-2, Verhoeff, Damm) and `weightedMod`, use `substring`, `charAt` and `split`, and attach their failure to field `paths`.
+- Fields can be `sensitive`: rule explanations and AI tool errors print `[redacted]` with the value's kind and length.
+- An artifact can carry its own `tests`, run by `runTests()` and `asterdoc validate`.
+- Render and seal verify layer and font checksums, and a seal records the definition's `contentHash`.
+- Older schema versions upgrade in memory on load, so no artifact needs to be migrated or republished.
+
 ### Breaking changes
 
 #### Core
@@ -16,17 +30,75 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 - An instance's `migratedFrom` is `undefined` once its definition is edited after it was read. A definition read from a file and edited to hold a value with no JSON form throws `DefinitionNotJsonError` from `clone()` and `contentHash()`.
 - Every framework package needs Node 20 or later (`engines.node` was `>=18`): render and seal use `globalThis.crypto`. The AI integration packages (`ai-sdk`, `ai-tools`, `tanstack-ai`, `mastra`) keep their Node 22 requirement.
 
+### Upgrading from 0.11
+
+1. Use Node 20 or later for the framework packages.
+2. Replace `assertCurrentSchemaVersion` with `upgradeArtifact(artifact, { required, strictSchema: true })` where you must refuse older schema versions.
+3. Run `asterdoc validate` on your artifacts: a layer or font whose `checksum` no longer matches its file now fails render and seal. Correct the checksum or the file.
+4. Edit an artifact's authoring definition, not a runtime's: a runtime's definition is frozen.
+
 ### Other changes
+
+#### Schemas
+
+- Schema version `2026-11-10`. Every change is additive to `2026-11-06`, and artifacts on older dates are upgraded on load. A date newer than the SDK knows fails with "newer than this SDK knows; update @asterdoc/core".
+- `format` on every layer kind that prints values, with `country`, `region`, `phone`, `choice`, `boolean`, `person`, `text.mask`, `case`, `locale`, and `money.fractionDigits` and `useGrouping`. `money.currencyDisplay` is optional.
+- A PDF binding can be an object, `{ path, format?, part? }`.
+- Field types `country` (ISO 3166-1 alpha-2) and `region` (full ISO 3166-2 code, optional `country` constraint). `codes: true` on `address` fields, `mask` on `text` fields, and `sensitive` on fields.
+- Rule `paths`, and a form `tests` section.
+
+#### Expressions
+
+- `checkDigit(value, algorithm)` for `luhn`, `mod97-10`, `mod11-2`, `verhoeff` and `damm`; `weightedMod(value, weights, modulus)`; and the string tools `substring`, `charAt` and `split`, which count UTF-16 code units.
+
+#### Format
+
+- `@asterdoc/format/phone` (libphonenumber-js) and `@asterdoc/format/regions` (ISO 3166-2 subdivisions with English names) are lookup providers. A formatter from `createFormatter()` carries neither; the default formatters of the SDK, render, CLI and `@asterdoc/react-pdf/formatter` carry both.
+- Country normalization, region lookup and mask parsing, with structured outcome codes (`ambiguous_country`, `unknown_region`, `mask_mismatch` and others).
+- `MoneyFormatOptions` takes `fractionDigits` and `useGrouping`.
+
+#### Render
+
+- PDF, text and DOCX layers print each value with its layer, binding and placeholder formats. A format that cannot print a value throws `ArtifactFieldFormatError`, with the code in `issues[].code`.
+- Template placeholders take format modifiers, `{{ path | key=value }}`, checked with the template.
+- A PDF binding can print one `part` of a date, phone, amount or masked value.
+- The fit check measures the widest value a format can print. Reading a filled PDF back marks a value `lossy` when its format dropped information.
 
 #### Core
 
+- `canonicalizeFieldValue`: `country`, `region`, `codes: true` address and masked fields are stored canonical on every write path. `validateFieldInput` returns the outcome code and candidates, and `fieldInputGuidance` and `placeDisplayNames` help agents ask for and show these values.
+- A failed rule attaches to its `paths`, and its id is the stable code. A failed rule's explanation prints the values it read, with sensitive values redacted unless `explain: { raw: true }`.
+- `runTests()` runs an artifact's test cases; each can set `context.asOf`.
+- `DraftForm.render({ require: 'complete' })` refuses a draft with an error-severity failure.
 - `contentHash()` on every artifact instance and runtime: the `sha256:` digest of the RFC 8785 canonical JSON of the definition as stored, at the schema version it declares. `canonicalJson` and `contentHashOf` are exported.
 - `verifyLayerChecksum` is exported: it checks bytes against a layer's or font's declared checksum the way render and seal do, and throws `LayerChecksumError` on a mismatch.
 - A form seal records `integrity`: `contentHash`, `sdkVersion`, `migratedFrom`, and `uncovered`, the content the hash leaves out (a layer file or font with no checksum, a React module, a renderer or adapter supplied at seal time). `sealBundle` records the bundle's and each artifact part's, lists every annex supplied as bytes, and reads the bundle at the current schema version.
 
+#### Sessions
+
+- Coercion gets the whole field and the session's locale, so country, region and masked answers are stored canonical, and refusals keep their outcome code.
+
+#### AI tools
+
+- Fill tools store a place name as its code and return candidates for an ambiguous or unknown answer. Results carry `display` and `lossy` beside the stored data. Sensitive values are redacted in tool errors.
+
+#### React
+
+- A React layer's `format` and an element's `format` on the printing hooks; `createValueFormatter` and `formatByType`. The browser default formatter carries no phone or regions provider, so neither ships in a browser bundle unless you add it.
+
+#### React PDF
+
+- `@asterdoc/react-pdf/formatter`: a formatter with every lookup provider. The PDF renderer and its check apply layer and element formats.
+
+#### Essentials
+
+- The bundled forms are at version 1.1.0, on schema `2026-11-10`: ACH routing numbers pass the ABA check, account numbers, SSNs, EINs, ITINs and identity document numbers are sensitive, and each form carries its own test cases.
+
 #### CLI
 
+- `asterdoc validate` runs an artifact's test cases, and warns when a test sets a sensitive field.
 - `asterdoc validate` says what a missing checksum on a layer file or font costs: render and seal cannot verify it, and the content hash does not cover it.
+- `asterdoc data template` knows the `country` and `region` field types.
 
 ## [0.11.0] - 2026-11-07
 

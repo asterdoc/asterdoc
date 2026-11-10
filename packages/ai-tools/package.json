@@ -1,6 +1,6 @@
 {
   "name": "@asterdoc/ai-tools",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Core AI tool protocol for Asterdoc — neutral tool definitions, execute functions, schemas, and registry HTTP client",
   "type": "module",
   "main": "./dist/index.js",
