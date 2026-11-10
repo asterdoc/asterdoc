@@ -73,6 +73,7 @@ export type { LayerValidationIssue, ValidateLayersOptions, ValidateLayersResult 
 export { validateFormData } from './data'
 
 export { canonicalizeFieldValue, placeDisplayNames } from './canonicalize'
+export { fieldInputGuidance } from './input-guidance'
 export type { CanonicalizationIssue, CanonicalizationMode, CanonicalizeOptions, CanonicalizeResult } from './canonicalize'
 
 // Progressive validation

@@ -22,6 +22,25 @@ function reject(code: CommandErrorCode, reason: string, issues?: Issue[]): Comma
 	return issues && issues.length > 0 ? { ok: false, code, reason, issues } : { ok: false, code, reason };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function memberWrite(
+	cmd: Extract<Command, { kind: "answer" | "revise" }>,
+	owner: { fieldPath: string; member: string },
+	session: FormSession,
+): Command {
+	const existing = project(session.events).answers[owner.fieldPath]?.value;
+	const stored = isRecord(existing) ? existing : undefined;
+	return {
+		kind: stored ? "revise" : "answer",
+		fieldPath: owner.fieldPath,
+		value: { ...stored, [owner.member]: cmd.value },
+		source: cmd.source,
+	};
+}
+
 function appendEvents(
 	session: FormSession,
 	emitted: SessionEvent[],
@@ -88,6 +107,11 @@ export function execute(
 	options: ExecuteOptions = {},
 ): CommandResult {
 	const now = options.now ?? defaultNow;
+
+	if ((cmd.kind === "answer" || cmd.kind === "revise") && !runtime.hasField(cmd.fieldPath)) {
+		const owner = runtime.memberOf?.(cmd.fieldPath);
+		if (owner) return execute(session, runtime, memberWrite(cmd, owner, session), actor, options);
+	}
 
 	if (
 		options.expectedEventCount !== undefined &&

@@ -1,4 +1,4 @@
-import { loadFromObject, type ValidationError } from "@asterdoc/core";
+import { CANONICAL_SHAPES, loadFromObject, type ValidationError } from "@asterdoc/core";
 import type { Issue } from "../event-log/types";
 import { assertCoercionOptions, coerceFieldValue, type CoercionOptions, type CoercionTarget } from "./coerce";
 import { templateFieldPath, unflattenPaths } from "./payload";
@@ -50,6 +50,25 @@ export function createAsterdocRuntime(
 
 	function hasField(fieldPath: string): boolean {
 		return knownFieldPaths.has(templateFieldPath(fieldPath));
+	}
+
+	const codedAddressPaths = new Set(
+		fieldList.flatMap((f) =>
+			f.target?.type === "address" && f.target.codes === true ? [f.fieldPath] : [],
+		),
+	);
+	const addressMembers = new Set(
+		[...CANONICAL_SHAPES.address.required, ...CANONICAL_SHAPES.address.optional].map((spec) => spec.name),
+	);
+
+	function memberOf(fieldPath: string): { fieldPath: string; member: string } | undefined {
+		const dot = fieldPath.lastIndexOf(".");
+		if (dot <= 0) return undefined;
+		const owner = fieldPath.slice(0, dot);
+		const member = fieldPath.slice(dot + 1);
+		return codedAddressPaths.has(templateFieldPath(owner)) && addressMembers.has(member)
+			? { fieldPath: owner, member }
+			: undefined;
 	}
 
 	function hasParty(roleId: string): boolean {
@@ -176,6 +195,7 @@ export function createAsterdocRuntime(
 
 	return {
 		hasField,
+		memberOf,
 		hasParty,
 		hasAnnex,
 		getFillState,

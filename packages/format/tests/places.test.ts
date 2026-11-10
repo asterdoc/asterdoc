@@ -89,7 +89,7 @@ describe('resolveCountry', () => {
 			ok: false,
 			code: 'ambiguous_country',
 			message: expect.any(String),
-			candidates: [{ code: 'GE', name: 'Georgia' }, { code: 'US-GA', name: 'Georgia' }],
+			candidates: [{ code: 'GE', name: 'Georgia' }, { code: 'US-GA', name: 'Georgia, United States' }],
 		})
 	})
 
@@ -127,14 +127,14 @@ describe('resolveRegion', () => {
 	it('reports a name used in more than one country as ambiguous with every candidate', () => {
 		const outcome = resolveRegion('Victoria', { regions })
 		expect(outcome).toMatchObject({ ok: false, code: 'ambiguous_region' })
-		expect(outcome.ok ? [] : outcome.candidates).toEqual([{ code: 'AU-VIC', name: 'Victoria' }, { code: 'MT-45', name: 'Victoria' }])
+		expect(outcome.ok ? [] : outcome.candidates).toEqual([{ code: 'AU-VIC', name: 'Victoria, Australia' }, { code: 'MT-45', name: 'Victoria, Malta' }])
 		expect(resolveRegion('Victoria', { regions, country: 'AU' })).toEqual({ ok: true, value: 'AU-VIC' })
 	})
 
 	it('refuses a code of another country, offering subdivisions of the right one', () => {
 		const outcome = resolveRegion('US-ON', { regions, country: 'CA' })
 		expect(outcome).toMatchObject({ ok: false, code: 'unknown_region' })
-		expect(outcome.ok ? undefined : outcome.candidates[0]).toEqual({ code: 'CA-ON', name: 'Ontario' })
+		expect(outcome.ok ? undefined : outcome.candidates[0]).toEqual({ code: 'CA-ON', name: 'Ontario, Canada' })
 	})
 
 	it('refuses an unknown name with up to five nearest candidates', () => {
@@ -142,7 +142,7 @@ describe('resolveRegion', () => {
 		expect(outcome).toMatchObject({ ok: false, code: 'unknown_region' })
 		if (outcome.ok) return
 		expect(outcome.candidates).toHaveLength(5)
-		expect(outcome.candidates[0]).toEqual({ code: 'CA-ON', name: 'Ontario' })
+		expect(outcome.candidates[0]).toEqual({ code: 'CA-ON', name: 'Ontario, Canada' })
 	})
 
 	it('fails without the regions provider', () => {

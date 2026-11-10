@@ -105,6 +105,7 @@ const DUAL_CODED_SUBDIVISIONS: Readonly<Record<string, string>> = {
 export interface PlaceCandidate {
 	/** An ISO 3166-1 alpha-2 code or a full ISO 3166-2 code. */
 	readonly code: string
+	/** A country's name, or a subdivision's name with its country's (`Georgia, United States`), so candidates that share a name stay apart. */
 	readonly name: string
 }
 
@@ -301,7 +302,7 @@ export function resolveCountry(input: string, options: CountryLookupOptions = {}
 		return failure(
 			'ambiguous_country',
 			`${JSON.stringify(trimmed)} names a country and a subdivision of another country.`,
-			[countryCandidate(code, locale), ...others.map(regionCandidate)],
+			[countryCandidate(code, locale), ...others.map((subdivision) => regionCandidate(subdivision, locale))],
 		)
 	}
 	return { ok: true, value: code }
@@ -339,8 +340,8 @@ export function regionName(subdivision: Subdivision): string {
 	return subdivision.name ?? subdivision.code
 }
 
-function regionCandidate(subdivision: Subdivision): PlaceCandidate {
-	return { code: subdivision.code, name: regionName(subdivision) }
+function regionCandidate(subdivision: Subdivision, locale = 'en'): PlaceCandidate {
+	return { code: subdivision.code, name: `${regionName(subdivision)}, ${countryName(subdivision.country, locale)}` }
 }
 
 /** The subdivision with a full ISO 3166-2 code, if the provider has it. */
@@ -358,7 +359,7 @@ function nearestRegions(input: string, pool: readonly Subdivision[]): PlaceCandi
 		[normalizePlaceName(subdivision.code.slice(subdivision.code.indexOf('-') + 1)), subdivision] as const,
 		...(subdivision.name === undefined ? [] : [[normalizePlaceName(subdivision.name), subdivision] as const]),
 	])
-	return nearest(input, entries, (subdivision) => subdivision.code).map(regionCandidate)
+	return nearest(input, entries, (subdivision) => subdivision.code).map((subdivision) => regionCandidate(subdivision))
 }
 
 function unique(subdivisions: readonly Subdivision[]): Subdivision[] {
@@ -395,14 +396,14 @@ export function resolveRegion(input: string, options: RegionLookupOptions = {}):
 		const matches = unique([...(byShortCode ? [byShortCode] : []), ...byName])
 		if (matches.length === 1) return { ok: true, value: matches[0]!.code }
 		if (matches.length > 1) {
-			return failure('ambiguous_region', `${JSON.stringify(trimmed)} names more than one subdivision of ${country}.`, matches.map(regionCandidate))
+			return failure('ambiguous_region', `${JSON.stringify(trimmed)} names more than one subdivision of ${country}.`, matches.map((subdivision) => regionCandidate(subdivision)))
 		}
 		return failure('unknown_region', `No subdivision of ${country} matches ${JSON.stringify(trimmed)}.`, nearestRegions(trimmed, pool))
 	}
 	const matches = unique(index.byName.get(key) ?? [])
 	if (matches.length === 1) return { ok: true, value: matches[0]!.code }
 	if (matches.length > 1) {
-		return failure('ambiguous_region', `${JSON.stringify(trimmed)} names subdivisions in more than one place.`, matches.map(regionCandidate))
+		return failure('ambiguous_region', `${JSON.stringify(trimmed)} names subdivisions in more than one place.`, matches.map((subdivision) => regionCandidate(subdivision)))
 	}
 	if (SHORT_CODE.test(trimmed)) {
 		return failure('needs_country', `${JSON.stringify(trimmed)} reads as a subdivision code, which needs a country.`)

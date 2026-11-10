@@ -53,7 +53,7 @@ describe('a country field', () => {
 			field: 'fields.birthCountry',
 			message: expect.any(String),
 			code: 'ambiguous_country',
-			candidates: [{ code: 'GE', name: 'Georgia' }, { code: 'US-GA', name: 'Georgia' }],
+			candidates: [{ code: 'GE', name: 'Georgia' }, { code: 'US-GA', name: 'Georgia, United States' }],
 		}])
 	})
 
@@ -93,7 +93,7 @@ describe('a region field', () => {
 		expect(errorsOf(() => draft().update({ fields: { province: 'ON' } }))[0]).toMatchObject({ code: 'needs_country', candidates: [] })
 		expect(errorsOf(() => draft().update({ fields: { province: 'Victoria' } }))[0]).toMatchObject({
 			code: 'ambiguous_region',
-			candidates: [{ code: 'AU-VIC', name: 'Victoria' }, { code: 'MT-45', name: 'Victoria' }],
+			candidates: [{ code: 'AU-VIC', name: 'Victoria, Australia' }, { code: 'MT-45', name: 'Victoria, Malta' }],
 		})
 	})
 })

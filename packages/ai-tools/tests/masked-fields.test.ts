@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { fieldInputGuidance } from '@asterdoc/core'
 import { executeFill } from '../src/tools/fill'
 import { executeInspectArtifact } from '../src/tools/inspect-artifact'
 import { executeUpdateFill } from '../src/tools/update-fill'
@@ -40,6 +41,7 @@ describe('a masked field through the agent tools', () => {
     const result = await executeInspectArtifact({ source: 'artifact', artifact, sections: ['fields'] })
     const fields = (result as { sections?: { fields?: Record<string, Record<string, unknown>> } }).sections?.fields
     expect(fields?.ssn).toMatchObject({ mask: '###-##-####', input: expect.stringContaining('with or without its separators') })
+    expect(fields?.ssn?.input).toBe(fieldInputGuidance(artifact.fields.ssn))
     expect(fields?.name).not.toHaveProperty('input')
   })
 })

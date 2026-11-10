@@ -280,6 +280,7 @@ export {
   validateFormData,
   canonicalizeFieldValue,
   placeDisplayNames,
+  fieldInputGuidance,
   validateFieldInput,
   validateFieldsPatch,
   validatePartyInput,

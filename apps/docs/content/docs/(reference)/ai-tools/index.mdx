@@ -46,7 +46,7 @@ Tools return failures in the result instead of throwing. A failed call carries a
 | `message` | `string` | Human-readable message |
 | `path` | `(string \| number)[]` | Optional path to the value that failed |
 | `retryable` | `boolean` | Optional hint that the call may succeed if retried |
-| `candidates` | `{ code, name }[]` | For a country or region input that names no place (`unknown_country`, `unknown_region`, up to five nearest) or more than one (`ambiguous_country`, `ambiguous_region`, every match). Ask the person to choose |
+| `candidates` | `{ code, name }[]` | For a country or region input that names no place (`unknown_country`, `unknown_region`, up to five nearest) or more than one (`ambiguous_country`, `ambiguous_region`, every match). A subdivision's `name` includes its country (`Georgia, United States`). Ask the person to choose by name. A subdivision picked for a country field is answered with its country code, the part before the dash (`US-GA` → `US`) |
 
 ## How the tools work together
 

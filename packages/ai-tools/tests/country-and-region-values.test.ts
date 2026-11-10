@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { fieldInputGuidance } from '@asterdoc/core'
 import { ToolErrorSchema } from '../src/contracts'
 import { executeFill } from '../src/tools/fill'
 import { executeInspectArtifact } from '../src/tools/inspect-artifact'
@@ -44,7 +45,7 @@ describe('filling country and region values through the agent tools', () => {
 			code: 'ambiguous_country',
 			message: expect.any(String),
 			path: ['fields', 'birth_country'],
-			candidates: [{ code: 'GE', name: 'Georgia' }, { code: 'US-GA', name: 'Georgia' }],
+			candidates: [{ code: 'GE', name: 'Georgia' }, { code: 'US-GA', name: 'Georgia, United States' }],
 		}])
 		expect(result.errors?.every((error) => ToolErrorSchema.safeParse(error).success)).toBe(true)
 	})
@@ -69,7 +70,7 @@ describe('filling country and region values through the agent tools', () => {
 		const result = await executeUpdateFill({ source: 'artifact', artifact, data: { fields: {} }, patch: { fields: { state: 'Texaz' } } })
 		expect(result.accepted).toBe(false)
 		expect(result.errors?.[0]).toMatchObject({ code: 'unknown_region', path: ['fields', 'state'] })
-		expect(result.errors?.[0]?.candidates?.[0]).toEqual({ code: 'US-TX', name: 'Texas' })
+		expect(result.errors?.[0]?.candidates?.[0]).toEqual({ code: 'US-TX', name: 'Texas, United States' })
 	})
 
 	it('validates one input to its code, keeping candidates on a refusal', async () => {
@@ -79,13 +80,16 @@ describe('filling country and region values through the agent tools', () => {
 			.toMatchObject({ code: 'ambiguous_country', candidates: [{ code: 'CD' }, { code: 'CG' }] })
 	})
 
-	it('tells the agent that country and region fields take names or codes', async () => {
+	it('tells the agent that country and region fields take names or codes, in core guidance words', async () => {
 		const result = await executeInspectArtifact({ source: 'artifact', artifact, sections: ['fields'] })
 		const fields = result.sections?.fields as Record<string, { input?: string; codes?: boolean; country?: string }>
-		expect(fields.birth_country?.input).toContain('country name or an ISO 3166-1 code')
+		expect(fields.birth_country?.input).toBe(fieldInputGuidance(artifact.fields.birth_country))
+		expect(fields.birth_country?.input).toContain('ISO 3166-1')
 		expect(fields.state).toMatchObject({ country: 'US' })
-		expect(fields.state?.input).toContain('ISO 3166-2')
+		expect(fields.state?.input).toBe(fieldInputGuidance(artifact.fields.state))
+		expect(fields.state?.input).toContain('only subdivisions of US')
 		expect(fields.client_address).toMatchObject({ codes: true })
+		expect(fields.client_address?.input).toBe(fieldInputGuidance(artifact.fields.client_address))
 		expect(fields.client_address?.input).toContain('names or codes')
 		expect(fields.notes?.input).toBeUndefined()
 	})

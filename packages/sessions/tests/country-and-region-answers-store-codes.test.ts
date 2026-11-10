@@ -17,6 +17,8 @@ const artifact = {
 		birthCountry: { type: "country" },
 		state: { type: "region", country: "US" },
 		home: { type: "address", codes: true },
+		postal: { type: "address" },
+		price: { type: "money" },
 		previous: { type: "list", item: { type: "fieldset", fields: { country: { type: "country" } } } },
 	},
 	layers: { composition: { kind: "file", mimeType: "text/plain", path: "p.txt" } },
@@ -52,7 +54,7 @@ describe("answers to country and region fields", () => {
 				fieldPath: "fields.birthCountry",
 				message: expect.any(String),
 				code: "ambiguous_country",
-				candidates: [{ code: "GE", name: "Georgia" }, { code: "US-GA", name: "Georgia" }],
+				candidates: [{ code: "GE", name: "Georgia" }, { code: "US-GA", name: "Georgia, United States" }],
 			}],
 		});
 	});
@@ -68,5 +70,75 @@ describe("answers to country and region fields", () => {
 	it("record the stored code on an accepted answer", () => {
 		const result = execute(started(), createAsterdocRuntime(artifact), { kind: "answer", fieldPath: "birthCountry", value: "Deutschland", source: "user" }, USER);
 		expect(result.ok && result.emitted).toEqual([expect.objectContaining({ t: "FieldAnswered", value: "DE" })]);
+	});
+});
+
+describe("a write to one member of an address", () => {
+	const runtime = createAsterdocRuntime(artifact);
+	const toronto = { line1: "1 Bay St", locality: "Toronto", region: "ON", postalCode: "M5J 2N8", country: "CA" };
+
+	function withHome(): FormSession {
+		const result = execute(started(), runtime, { kind: "answer", fieldPath: "home", value: toronto, source: "user" }, USER);
+		if (!result.ok) throw new Error(result.reason);
+		return result.session;
+	}
+
+	it("resolves to the address that holds it, and only for a member the shape has", () => {
+		expect(runtime.hasField("home.region")).toBe(false);
+		expect(runtime.memberOf?.("home.region")).toEqual({ fieldPath: "home", member: "region" });
+		expect(runtime.memberOf?.("home.planet")).toBeUndefined();
+		expect(runtime.memberOf?.("birthCountry")).toBeUndefined();
+		expect(runtime.memberOf?.("birthCountry.region")).toBeUndefined();
+		expect(runtime.memberOf?.("postal.country")).toBeUndefined();
+		expect(runtime.memberOf?.("price.amount")).toBeUndefined();
+	});
+
+	it("leaves members of an address without codes and of other composites unknown", () => {
+		expect(execute(started(), runtime, { kind: "answer", fieldPath: "postal.country", value: "Canada", source: "user" }, USER))
+			.toMatchObject({ ok: false, code: "field-not-found" });
+		const priced = execute(started(), runtime, { kind: "answer", fieldPath: "price", value: { amount: 10, currency: "USD" }, source: "user" }, USER);
+		if (!priced.ok) throw new Error(priced.reason);
+		expect(execute(priced.session, runtime, { kind: "revise", fieldPath: "price.amount", value: 20, source: "user" }, USER))
+			.toMatchObject({ ok: false, code: "field-not-found" });
+		expect(execute(priced.session, runtime, { kind: "answer", fieldPath: "price.amount", value: 20, source: "user" }, USER))
+			.toMatchObject({ ok: false, code: "field-not-found" });
+	});
+
+	it("revises the stored address with the member's code, in the address country", () => {
+		const result = execute(withHome(), runtime, { kind: "answer", fieldPath: "home.region", value: "Quebec", source: "user" }, USER);
+		expect(result.ok && result.emitted).toEqual([
+			expect.objectContaining({ t: "FieldRevised", fieldPath: "home", previous: toronto, value: { ...toronto, region: "QC" } }),
+		]);
+	});
+
+	it("refuses an ambiguous country member with its candidates and stores nothing", () => {
+		const session = withHome();
+		const result = execute(session, runtime, { kind: "revise", fieldPath: "home.country", value: "Georgia", source: "user" }, USER);
+		expect(result).toMatchObject({
+			ok: false,
+			code: "invalid-value",
+			issues: [{
+				fieldPath: "fields.home.country",
+				code: "ambiguous_country",
+				candidates: [{ code: "GE", name: "Georgia" }, { code: "US-GA", name: "Georgia, United States" }],
+			}],
+		});
+	});
+
+	it("refuses a country member that does not hold the stored region", () => {
+		const result = execute(withHome(), runtime, { kind: "answer", fieldPath: "home.country", value: "United States", source: "user" }, USER);
+		expect(result).toMatchObject({ ok: false, code: "invalid-value", issues: [{ fieldPath: "fields.home.region", code: "unknown_region" }] });
+	});
+
+	it("refuses a member of an unanswered address, which leaves the other members missing", () => {
+		const session = started();
+		const result = execute(session, runtime, { kind: "answer", fieldPath: "home.country", value: "Canada", source: "user" }, USER);
+		expect(result).toMatchObject({ ok: false, code: "invalid-value" });
+		expect(result.ok ? [] : result.issues?.map((issue) => issue.fieldPath)).toContain("fields.home.line1");
+	});
+
+	it("keeps rejecting a path that is neither a field nor a member", () => {
+		const result = execute(withHome(), runtime, { kind: "answer", fieldPath: "home.planet", value: "Mars", source: "user" }, USER);
+		expect(result).toMatchObject({ ok: false, code: "field-not-found" });
 	});
 });

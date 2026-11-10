@@ -1,4 +1,3 @@
-import { describeMask, isValidMask } from '@asterdoc/format'
 import type { AsterdocToolsConfig } from '../config'
 import { InspectArtifactInputSchema, type InspectArtifactInput, type InspectArtifactOutput } from '../contracts'
 import { artifactKind, isRecord } from '../artifact'
@@ -28,37 +27,25 @@ function entries(value: unknown, max: number): { value: unknown[]; truncated: bo
 	return { value: [], truncated: false }
 }
 
-const COUNTRY_INPUT = 'A country name or an ISO 3166-1 code (Canada, CA or CAN). Pass what the person said; it is stored as the alpha-2 code, and a name that matches more than one place is refused with candidates to ask about.'
-const REGION_INPUT = 'A state or province name, or its ISO 3166-2 code (Ontario or CA-ON, or ON when the field sets country). Pass what the person said; it is stored as the full code, and a name that matches more than one place is refused with candidates to ask about.'
-const ADDRESS_CODES_INPUT = 'country and region take names or codes (Canada or CA, Ontario or ON). Pass what the person said; they are stored as codes, and a name that matches more than one place is refused with candidates to ask about.'
+type InputGuidance = (field: unknown) => string | undefined
 
-function inputHint(definition: Record<string, unknown>): string | undefined {
-	if (definition.type === 'country') return COUNTRY_INPUT
-	if (definition.type === 'region') return REGION_INPUT
-	if (definition.type === 'address' && definition.codes === true) return ADDRESS_CODES_INPUT
-	if (definition.type === 'text' && typeof definition.mask === 'string' && isValidMask(definition.mask)) {
-		return `Accepts the value with or without its separators (${describeMask(definition.mask)}); it is stored without them`
-	}
-	return undefined
-}
-
-function fieldSummary(definition: unknown, max: number, depth = 0): unknown {
+function fieldSummary(definition: unknown, max: number, guidance: InputGuidance, depth = 0): unknown {
 	if (!isRecord(definition)) return definition
 	const summary: Record<string, unknown> = {}
 	for (const key of ['type', 'label', 'description', 'required', 'default', 'min', 'max', 'minLength', 'maxLength', 'mask', 'enum', 'format', 'items', 'country', 'codes']) {
 		if (definition[key] !== undefined) summary[key] = boundedValue(definition[key], max, depth)
 	}
-	const hint = inputHint(definition)
-	if (hint !== undefined) summary.input = hint
+	const input = guidance(definition)
+	if (input !== undefined) summary.input = input
 	if (depth < 4 && isRecord(definition.fields)) {
 		const fieldEntries = Object.entries(definition.fields).slice(0, max)
-		summary.fields = Object.fromEntries(fieldEntries.map(([id, value]) => [id, fieldSummary(value, max, depth + 1)]))
+		summary.fields = Object.fromEntries(fieldEntries.map(([id, value]) => [id, fieldSummary(value, max, guidance, depth + 1)]))
 		if (Object.keys(definition.fields).length > max) summary.fields_truncated = true
 	}
 	return summary
 }
 
-function inspectSections(artifact: Record<string, unknown>, requested: SectionName[], max: number): { sections: Record<string, unknown>; truncated: boolean } {
+function inspectSections(artifact: Record<string, unknown>, requested: SectionName[], max: number, guidance: InputGuidance): { sections: Record<string, unknown>; truncated: boolean } {
 	let truncated = false
 	const sections: Record<string, unknown> = {}
 	for (const section of requested) {
@@ -76,7 +63,7 @@ function inspectSections(artifact: Record<string, unknown>, requested: SectionNa
 			continue
 		}
 		if (section === 'fields') {
-			const fields = isRecord(artifact.fields) ? Object.fromEntries(Object.entries(artifact.fields).slice(0, max).map(([id, value]) => [id, fieldSummary(value, max)])) : {}
+			const fields = isRecord(artifact.fields) ? Object.fromEntries(Object.entries(artifact.fields).slice(0, max).map(([id, value]) => [id, fieldSummary(value, max, guidance)])) : {}
 			sections.fields = fields
 			truncated ||= isRecord(artifact.fields) && Object.keys(artifact.fields).length > max
 			continue
@@ -111,9 +98,10 @@ export async function executeInspectArtifact(
 ): Promise<InspectArtifactOutput> {
 	try {
 		const normalized = InspectArtifactInputSchema.parse(input)
+		const { fieldInputGuidance } = await import('@asterdoc/core')
 		const { artifact } = await resolveSource(normalized, config)
 		const sections = (normalized.sections ?? ['metadata', 'fields', 'parties', 'annexes', 'items', 'layers']) as SectionName[]
-		const projection = inspectSections(artifact, sections, normalized.max_items ?? 100)
+		const projection = inspectSections(artifact, sections, normalized.max_items ?? 100, fieldInputGuidance)
 		return {
 			artifact_kind: artifactKind(artifact),
 			name: typeof artifact.name === 'string' ? artifact.name : undefined,

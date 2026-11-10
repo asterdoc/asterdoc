@@ -65,7 +65,6 @@
   },
   "dependencies": {
     "@asterdoc/core": "workspace:*",
-    "@asterdoc/format": "workspace:*",
     "@asterdoc/render": "workspace:*",
     "@asterdoc/resolvers": "workspace:*",
     "@asterdoc/schemas": "workspace:*",

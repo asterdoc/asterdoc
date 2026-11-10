@@ -186,6 +186,14 @@ export interface ArtifactRuntime {
 	/** Validate a value against the field's per-field schema. */
 	validateField(fieldPath: string, value: unknown): FieldValidation;
 	/**
+	 * For a member of an address field with `codes: true` (`home.region`):
+	 * the field that holds it and the member's name. `undefined` for any other
+	 * path, including members of other composite fields. `execute` writes an
+	 * `answer` or `revise` of such a member as a write of the whole address,
+	 * the member merged over its stored value.
+	 */
+	memberOf?(fieldPath: string): { fieldPath: string; member: string } | undefined;
+	/**
 	 * Validate a value against the party role's schema at `index` (0 for a
 	 * single-party role); returns the normalized party.
 	 */
