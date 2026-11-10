@@ -15,7 +15,7 @@ import { NULL, Values, truthy, valueEquals, valueToString, type Value } from './
 import type { EvaluationContext } from './context'
 import { arityMismatch, DEFAULT_REGISTRY, type FnSignature } from '../registry/registry'
 import { staticPath } from '../ast/paths'
-import type { ExprType } from '../types'
+import { formatChoices, type ExprType } from '../types'
 import { datetimeEpoch, validateDate, validateDateDuration, validateDatetime } from './temporal'
 import { missingReferences } from '../analyze/missing'
 
@@ -295,6 +295,9 @@ function applyFunction(node: Extract<Expr, { kind: 'Call' }>, sig: FnSignature, 
 		const param = sig.params[Math.min(index, sig.params.length - 1)]
 		if (param && !valueMatchesType(value, param.type)) {
 			throw new EvaluationError('type-error', `${node.callee}: argument ${index + 1} expects ${param.type.kind}, got ${value.kind}`, node.args[index]!.span)
+		}
+		if (param?.oneOf && value.kind === 'string' && !param.oneOf.includes(value.value)) {
+			throw new EvaluationError('type-error', `${node.callee}: argument ${index + 1} must be ${formatChoices(param.oneOf)}, got ${JSON.stringify(value.value)}`, node.args[index]!.span)
 		}
 	})
 	const host = ctx.hostFunctions && Object.prototype.hasOwnProperty.call(ctx.hostFunctions, node.callee)

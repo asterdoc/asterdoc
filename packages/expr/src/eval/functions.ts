@@ -8,6 +8,7 @@
  */
 
 import { Decimal, MAX_DECIMAL_SCALE } from '../decimal/decimal'
+import { isCheckDigitAlgorithm, validCheckDigits, weightedDigitSum } from './check-digits'
 import { EvaluationError } from './errors'
 import { addDays, addDuration, dateDiff, validateDatetime, yearsBetween } from './temporal'
 import { NULL, Values, valueEquals, valueToString, type Value } from './values'
@@ -27,6 +28,18 @@ function asString(v: Value, fn: string): string {
 function asNumber(v: Value, fn: string): Decimal {
 	if (v.kind === 'number') return v.value
 	throw new EvaluationError('type-error', `${fn} expects a number, got ${v.kind}`)
+}
+
+function asWholeNumber(v: Value, fn: string, name: string): bigint {
+	const number = asNumber(v, fn)
+	if (!number.floor().eq(number)) {
+		throw new EvaluationError('type-error', `${fn} ${name} must be a whole number, got ${number.toString()}`)
+	}
+	return BigInt(number.toString())
+}
+
+function asIndex(v: Value, fn: string, name: string): number {
+	return Number(asWholeNumber(v, fn, name))
 }
 
 function isEmptyValue(v: Value): boolean {
@@ -97,6 +110,33 @@ export const BUILTIN_IMPLS: Readonly<Record<string, Impl>> = {
 		if (v.kind === 'string') return Values.num(String(v.value.length))
 		if (v.kind === 'array') return Values.num(String(v.value.length))
 		throw new EvaluationError('type-error', `length expects a string or array, got ${v.kind}`)
+	},
+	substring: (args) => {
+		const value = asString(arg(args, 0), 'substring')
+		const start = asIndex(arg(args, 1), 'substring', 'start')
+		const end = args[2] === undefined ? value.length : asIndex(args[2], 'substring', 'end')
+		return Values.string(value.substring(start, end))
+	},
+	charAt: (args) => Values.string(asString(arg(args, 0), 'charAt').charAt(asIndex(arg(args, 1), 'charAt', 'index'))),
+	split: (args) => Values.array(asString(arg(args, 0), 'split').split(asString(arg(args, 1), 'split')).map(Values.string)),
+	checkDigit: (args) => {
+		const value = asString(arg(args, 0), 'checkDigit')
+		const algorithm = asString(arg(args, 1), 'checkDigit')
+		if (!isCheckDigitAlgorithm(algorithm)) {
+			throw new EvaluationError('type-error', `checkDigit does not know the algorithm ${JSON.stringify(algorithm)}`)
+		}
+		return Values.boolean(validCheckDigits(value, algorithm))
+	},
+	weightedMod: (args) => {
+		const value = asString(arg(args, 0), 'weightedMod')
+		const weightsArg = arg(args, 1)
+		if (weightsArg.kind !== 'array') throw new EvaluationError('type-error', `weightedMod expects an array of weights, got ${weightsArg.kind}`)
+		if (weightsArg.value.length === 0) throw new EvaluationError('type-error', 'weightedMod needs at least one weight')
+		const weights = weightsArg.value.map((weight) => asWholeNumber(weight, 'weightedMod', 'weights'))
+		const modulus = asWholeNumber(arg(args, 2), 'weightedMod', 'modulus')
+		if (modulus < 1n) throw new EvaluationError('type-error', `weightedMod modulus must be positive, got ${modulus}`)
+		const result = weightedDigitSum(value, weights, modulus)
+		return result === undefined ? NULL : Values.number(Decimal.fromInt(result))
 	},
 	coalesce: (args) => {
 		for (const a of args) if (a.kind !== 'null') return a

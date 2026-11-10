@@ -630,6 +630,27 @@ describe('Expression Type Checking', () => {
 			)
 		})
 
+		test('accepts check-digit rules and refuses an unknown check-digit algorithm', () => {
+			const form: Form = {
+				kind: 'form',
+				name: 'check-digits',
+				fields: {
+					routingNumber: { type: 'text' },
+					cardNumber: { type: 'text' },
+				},
+				rules: {
+					routingChecksum: { expr: 'weightedMod(fields.routingNumber, [3, 7, 1], 10) == 0', message: 'Invalid routing number' },
+					cardChecksum: { expr: "checkDigit(fields.cardNumber, 'luhn')", message: 'Invalid card number' },
+					prefix: { expr: "substring(fields.cardNumber, 0, 1) == '4' or charAt(fields.cardNumber, 0) == '5'", message: 'Unsupported card' },
+					unknownAlgorithm: { expr: "checkDigit(fields.cardNumber, 'mod10')", message: 'Invalid card number' },
+				},
+			}
+
+			const issues = validateFormDefs(form).issues ?? []
+			expect(issues.map((issue) => issue.path)).toEqual([['rules', 'unknownAlgorithm', 'expr']])
+			expect(issues[0]?.message).toContain("must be one of 'luhn'")
+		})
+
 		test('derives enum types and preserves nested object definition paths', () => {
 			const form: Form = {
 				kind: 'form',

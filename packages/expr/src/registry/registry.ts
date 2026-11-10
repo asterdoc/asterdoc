@@ -9,6 +9,7 @@
  * conformance test asserts the two sets are identical.
  */
 
+import { CHECK_DIGIT_ALGORITHMS } from '../eval/check-digits'
 import { T, type ExprType } from '../types'
 
 /**
@@ -26,6 +27,12 @@ export interface ParamSpec {
 	/** Expected type; `unknown` accepts any argument. */
 	readonly type: ExprType
 	readonly optional?: boolean
+	/**
+	 * The only strings the argument may be, a literal union such as an
+	 * algorithm name. The checker refuses any other string literal, and
+	 * evaluation refuses any other value.
+	 */
+	readonly oneOf?: readonly string[]
 }
 
 export type FnCategory = 'string' | 'number' | 'date' | 'collection' | 'aggregate' | 'domain' | 'logical'
@@ -154,6 +161,58 @@ export const DEFAULT_SIGNATURES: readonly FnSignature[] = [
 		name: 'length',
 		category: 'string',
 		params: [{ name: 'value', type: T.unknown }],
+		returns: fixed(T.number),
+		deterministic: true,
+	},
+	{
+		name: 'substring',
+		category: 'string',
+		params: [
+			{ name: 'value', type: T.string },
+			{ name: 'start', type: T.number },
+			{ name: 'end', type: T.number, optional: true },
+		],
+		returns: fixed(T.string),
+		deterministic: true,
+	},
+	{
+		name: 'charAt',
+		category: 'string',
+		params: [
+			{ name: 'value', type: T.string },
+			{ name: 'index', type: T.number },
+		],
+		returns: fixed(T.string),
+		deterministic: true,
+	},
+	{
+		name: 'split',
+		category: 'string',
+		params: [
+			{ name: 'value', type: T.string },
+			{ name: 'separator', type: T.string },
+		],
+		returns: fixed(T.array(T.string)),
+		deterministic: true,
+	},
+	{
+		name: 'checkDigit',
+		category: 'string',
+		params: [
+			{ name: 'value', type: T.string },
+			{ name: 'algorithm', type: T.string, oneOf: CHECK_DIGIT_ALGORITHMS },
+		],
+		returns: fixed(T.boolean),
+		deterministic: true,
+	},
+	{
+		name: 'weightedMod',
+		category: 'string',
+		params: [
+			{ name: 'value', type: T.string },
+			{ name: 'weights', type: T.array(T.number) },
+			{ name: 'modulus', type: T.number },
+		],
 		returns: fixed(T.number),
 		deterministic: true,
 	},

@@ -137,9 +137,40 @@ Strings:
 | `matches(value, pattern)` | boolean | bounded regular-expression subset: literals, classes, anchors, and wildcards; no repetition, alternation, assertions, or backreferences |
 | `trim(value)` | string | |
 | `lower(value)` / `upper(value)` | string | |
-| `length(value)` | number | |
+| `length(value)` | number | counts UTF-16 code units |
+| `substring(value, start, end?)` | string | `end` is exclusive and defaults to the end; indexes are clamped to the string, and a `start` after `end` swaps them, as in JavaScript |
+| `charAt(value, index)` | string | `''` when `index` is out of range |
+| `split(value, separator)` | array of strings | keeps empty pieces; an empty separator splits into code units |
 | `isEmpty(value)` / `isNotEmpty(value)` | boolean | |
 | `coalesce(a, b, …)` | first non-null | evaluates left to right and skips unused alternatives |
+
+Indexes count UTF-16 code units, the unit `length` counts, so `substring(s, 0, length(s))` is the whole string. As in JavaScript, `substring` and `charAt` can split a surrogate pair (half an emoji). Indexes must be whole numbers.
+
+Check digits:
+
+| Function | Returns | Notes |
+|----------|---------|-------|
+| `checkDigit(value, algorithm)` | boolean | validates the whole string, check characters included |
+| `weightedMod(value, weights, modulus)` | number | the sum of each digit times its weight, modulo `modulus`; `null` when `value` is empty or has a non-digit |
+
+`algorithm` is one of `'luhn'`, `'mod97-10'`, `'mod11-2'`, `'verhoeff'`, or `'damm'`; any other name is a type error at design time and fails at evaluation. Each algorithm accepts only these characters, and anything else is `false`:
+
+| Algorithm | Characters |
+|-----------|------------|
+| `luhn`, `verhoeff`, `damm` | digits |
+| `mod11-2` (ISO 7064) | digits, with `X` allowed only as the last character |
+| `mod97-10` (ISO 7064) | digits and `A`-`Z`, letters counting `A` = 10 to `Z` = 35; the last two characters (the check digits) must be digits; lowercase is `false`, so call `upper()` first |
+
+Nothing is stripped or rearranged: spaces and dashes make the result `false`, and a value needs at least one character besides its check characters. To check the check digits of an IBAN, move its first four characters to the end: `checkDigit(substring(x, 4) + substring(x, 0, 4), 'mod97-10')`. This does not check the country's length or format.
+
+`weightedMod` applies `weights` from the leftmost digit and repeats them when the value is longer. Weights and `modulus` must be whole numbers, with at least one weight and a positive modulus. Arithmetic on a `null` result is an expression error, and `!= 0` is then `true`; test the digits first (for example with `matches` or `length`) or wrap the call in `coalesce`.
+
+```ts
+rules: {
+  routingNumber: { expr: "length(fields.routingNumber) == 9 and weightedMod(fields.routingNumber, [3, 7, 1], 10) == 0", message: "Enter a valid routing number" },
+  cardNumber: { expr: "checkDigit(fields.cardNumber, 'luhn')", message: "Enter a valid card number" },
+}
+```
 
 Numbers (decimal-aware):
 

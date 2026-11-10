@@ -106,6 +106,63 @@ describe('Logic Concept', () => {
   })
 
   // ============================================================================
+  // Check Digits
+  // ============================================================================
+
+  describe('check digits', () => {
+    const payment = a
+      .form()
+      .name('payment')
+      .fields({
+        routingNumber: { type: 'text' },
+        cardNumber: { type: 'text' },
+      })
+      .rules({
+        routingNumber: { expr: 'length(fields.routingNumber) == 9 and weightedMod(fields.routingNumber, [3, 7, 1], 10) == 0', message: 'Enter a valid routing number' },
+        cardNumber: { expr: "checkDigit(fields.cardNumber, 'luhn')", message: 'Enter a valid card number' },
+      })
+      .build()
+
+    const failedRules = (fields: Record<string, string>) =>
+      payment.fill({ fields }).validateRules().errors.map((error) => error.ruleId)
+
+    test('passes the documented rules for valid numbers', () => {
+      expect(validate(payment.toJSON())).not.toHaveProperty('issues')
+      expect(failedRules({ routingNumber: '021000021', cardNumber: '4111111111111111' })).toEqual([])
+    })
+
+    test('fails them for wrong check digits and for separators', () => {
+      expect(failedRules({ routingNumber: '123456789', cardNumber: '4111111111111112' })).toEqual(['routingNumber', 'cardNumber'])
+      expect(failedRules({ routingNumber: '021-000-021', cardNumber: '4111 1111 1111 1111' })).toEqual(['routingNumber', 'cardNumber'])
+      expect(failedRules({ routingNumber: '0', cardNumber: '4111111111111111' })).toEqual(['routingNumber'])
+      expect(failedRules({ routingNumber: '11', cardNumber: '4111111111111111' })).toEqual(['routingNumber'])
+    })
+
+    test('checks IBAN check digits with the documented rearrangement', () => {
+      const iban = a
+        .form()
+        .name('iban')
+        .fields({ iban: { type: 'text' } })
+        .rules({ iban: { expr: "checkDigit(substring(fields.iban, 4) + substring(fields.iban, 0, 4), 'mod97-10')", message: 'Check the IBAN' } })
+        .build()
+      expect(iban.fill({ fields: { iban: 'GB82WEST12345698765432' } }).validateRules().errors).toEqual([])
+      expect(iban.fill({ fields: { iban: 'GB82WEST12345698765431' } }).validateRules().errors.map((error) => error.ruleId)).toEqual(['iban'])
+    })
+
+    test('refuses an unknown algorithm name at authoring time', () => {
+      const form = a
+        .form()
+        .name('card')
+        .fields({ cardNumber: { type: 'text' } })
+        .rules({ cardNumber: { expr: "checkDigit(fields.cardNumber, 'mod10')", message: 'Enter a valid card number' } })
+        .build()
+      const result = validate(form.toJSON())
+      const messages = 'issues' in result && result.issues ? result.issues.map((issue) => issue.message) : []
+      expect(messages.join('\n')).toMatch(/must be one of 'luhn', 'mod97-10', 'mod11-2', 'verhoeff', 'damm'/)
+    })
+  })
+
+  // ============================================================================
   // Aggregating Lists
   // ============================================================================
 

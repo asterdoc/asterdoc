@@ -14,7 +14,7 @@ import { extractReferences } from '../analyze/references'
 import { isAggregateName, type AggregateName } from '../eval/aggregate'
 import { parse } from '../parser/parser'
 import { arityMismatch, DEFAULT_REGISTRY, type FnSignature, type Registry, type ReturnSpec } from '../registry/registry'
-import { formatType, typesEqual, T, type Diagnostic, type ExprType, type Span } from '../types'
+import { formatChoices, formatType, typesEqual, T, type Diagnostic, type ExprType, type Span } from '../types'
 import { validateDate, validateDateDuration, validateDatetime } from '../eval/temporal'
 
 export interface TypeEnv {
@@ -323,6 +323,9 @@ class Checker {
 				this.error('type-mismatch', `${node.callee}: argument ${i + 1} expects ${formatType(param.type)}, got ${formatType(at)}`, node.args[i]!.span)
 			}
 			const argNode = node.args[i]
+			if (param?.oneOf && argNode?.kind === 'StringLiteral' && !param.oneOf.includes(argNode.value)) {
+				this.error('type-mismatch', `${node.callee}: argument ${i + 1} must be ${formatChoices(param.oneOf)}, got ${JSON.stringify(argNode.value)}`, argNode.span)
+			}
 			if (param && argNode?.kind === 'StringLiteral') {
 				try {
 					if (param.type.kind === 'date') validateDate(argNode.value)

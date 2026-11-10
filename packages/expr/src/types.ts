@@ -56,6 +56,12 @@ export function formatType(t: ExprType): string {
 	return t.kind === 'array' ? `array<${formatType(t.element)}>` : t.kind
 }
 
+/** Human-readable rendering of a literal union, e.g. `one of 'luhn', 'damm'`. */
+export function formatChoices(choices: readonly string[]): string {
+	const quoted = choices.map((choice) => `'${choice}'`)
+	return quoted.length > 1 ? `one of ${quoted.join(', ')}` : quoted.join('')
+}
+
 /** Structural type equality. */
 export function typesEqual(a: ExprType, b: ExprType): boolean {
 	if (a.kind === 'array' && b.kind === 'array') {

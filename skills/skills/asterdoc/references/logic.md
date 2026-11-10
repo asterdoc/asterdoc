@@ -148,10 +148,33 @@ The complete builtin set (`DEFAULT_SIGNATURES` in `@asterdoc/expr`). Any other n
 | `matches(value, pattern)` | boolean | Regex test over a bounded subset: literals, classes `[A-Z]`, anchors `^ $`, `.`, escapes `\d`. Repetition `+ * ? {n}`, alternation `\|`, groups starting `(?`, and backreferences fail with `limit-exceeded`. `validate` does not catch them; the fill does. Pattern at most 512 chars, input at most 10,000. |
 | `isEmpty(value)` | boolean | `true` for `null`, `''`, or `[]`. |
 | `isNotEmpty(value)` | boolean | The negation of `isEmpty`. |
-| `length(value)` | number | Characters of a string, or elements of an array (list rows, multiselect choices). `0` for `null`. |
+| `length(value)` | number | UTF-16 code units of a string, or elements of an array (list rows, multiselect choices). `0` for `null`. |
+| `substring(value, start, end?)` | string | JavaScript `substring`: `end` exclusive, defaults to the end; indexes clamped to the string; a `start` after `end` swaps them. `substring(s, 0, length(s))` is `s`. |
+| `charAt(value, index)` | string | The code unit at `index`; `''` out of range. |
+| `split(value, separator)` | array of strings | Keeps empty pieces. `''` splits into code units. |
+| `checkDigit(value, algorithm)` | boolean | Validates the whole string, check characters included. See [Check digits](#check-digits). |
+| `weightedMod(value, weights, modulus)` | number | Sum of each digit times its weight, modulo `modulus`. See [Check digits](#check-digits). |
 | `coalesce(a, b, …)` | common type of the arguments | The first argument that is not `null`, left to right. |
 
-`startsWith`, `endsWith`, `trim`, `lower`, `upper`, and `matches` need a string. With an unanswered field they make the expression missing, not failed.
+`startsWith`, `endsWith`, `trim`, `lower`, `upper`, `matches`, `substring`, `charAt`, `split`, `checkDigit`, and `weightedMod` need a string. With an unanswered field they make the expression missing, not failed.
+
+Indexes of `substring` and `charAt` count UTF-16 code units and must be whole numbers. They can split a surrogate pair (half an emoji).
+
+### Check digits
+
+`checkDigit(value, algorithm)` takes `algorithm` as one of these literals. Any other name is a `validate` type error, and fails the fill. A character outside the algorithm's set is `false`; nothing is stripped or folded, and the value needs at least one character besides its check characters.
+
+| Algorithm | Allowed characters |
+|-----------|--------------------|
+| `'luhn'` | digits |
+| `'verhoeff'` | digits |
+| `'damm'` | digits |
+| `'mod11-2'` | ISO 7064 MOD 11-2: digits, `X` (ten) only as the last character |
+| `'mod97-10'` | ISO 7064 MOD 97-10: digits and `A`-`Z` (`A` = 10 … `Z` = 35); the last two characters must be digits. Lowercase is `false`; call `upper()` first. LEIs pass as written. |
+
+`checkDigit` does no rearrangement. IBAN check digits (not the country's length or format): `checkDigit(substring(x, 4) + substring(x, 0, 4), 'mod97-10')`.
+
+`weightedMod(value, weights, modulus)` multiplies each digit by a weight, from the leftmost digit, repeating `weights` when shorter than the value, and returns the sum modulo `modulus` (never negative). It is `null` when `value` is empty or has any non-digit, so `== 0` is then `false`; arithmetic on `null` is an expression error and `!= 0` is `true`, so test the digits first (`matches`, `length`) or use `coalesce`. Weights and `modulus` are whole numbers; it fails with no weights or a modulus below 1. ABA routing number: `length(x) == 9 and weightedMod(x, [3, 7, 1], 10) == 0`.
 
 ### Number functions
 
@@ -520,7 +543,7 @@ expr.checkBooleanGate("fields.age", env).diagnostics;
 | `check(source, env)` / `checkBooleanGate(source, env)` | Type-check against a `createTypeEnv({ path: T.<type> })` environment. |
 | `parse(source)` | `{ ast, errors }`. |
 | `extractReferences(ast)` / `missingReferences(ast, ctx)` | The paths an expression reads, and which have no value. |
-| `DEFAULT_SIGNATURES`, `buildRegistry(extra, { explicitOverrides })` | The builtin set, and a registry with host functions added. A host function must be deterministic, and its name may not collide with a builtin unless listed in `explicitOverrides`. |
+| `DEFAULT_SIGNATURES`, `CHECK_DIGIT_ALGORITHMS`, `buildRegistry(extra, { explicitOverrides })` | The builtin set, the `checkDigit` algorithm names, and a registry with host functions added. A host function must be deterministic, and its name may not collide with a builtin unless listed in `explicitOverrides`. |
 | `Decimal`, `MAX_EXPRESSION_LENGTH`, `MAX_EXPRESSION_DEPTH`, `MAX_DECIMAL_DIGITS`, `MAX_DECIMAL_SCALE` | Exact arithmetic and engine limits. |
 
 Failure codes: `missing-input`, `syntax` (the source does not parse), `type-error`, `division-by-zero`, `currency-mismatch`, `unknown-function`, `arity`, `missing-clock`, `missing-capability` (a party function with no party context), `limit-exceeded`, `host-error`.

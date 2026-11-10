@@ -97,6 +97,8 @@ export {
 	evaluateExpression,
 	evaluateBoolean,
 } from './eval/index'
+export { CHECK_DIGIT_ALGORITHMS } from './eval/check-digits'
+export type { CheckDigitAlgorithm } from './eval/check-digits'
 export type {
 	EvalErrorCode,
 	EvaluationContext,
