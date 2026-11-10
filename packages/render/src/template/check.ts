@@ -13,6 +13,7 @@ import { checkAst, formatType, T, type Diagnostic, type Expr, type ExprType, typ
 import { removedSyntaxHint, TemplateError, type TemplateDiagnostic, type TemplatePosition } from './errors'
 import { blockSlot, parseTemplate, type ExpressionSlot, type TemplateNode } from './markers'
 import { frameFor, LOOP_FUNCTION_NAMES, referenceSegments, withLoopFunctions } from './scope'
+import { loopAliasProblem } from './paths'
 import { inapplicableModifier, type ModifierTarget } from './format-modifiers'
 import { contextTarget, pathContexts, printedBranches, sourceRows, staticKind, type RowContext } from './targets'
 import type { TemplateValueResolver } from './values'
@@ -272,6 +273,8 @@ export function checkDocxTemplate(template: Uint8Array, env: TypeEnv, options: D
           const slot = blockSlot(forMatch[2]!, { line: 1, column: 1 })
           const { diagnostics, frame } = checkSlot(slot, scope, 'loop')
           found.push(...locateCommand(diagnostics))
+          const shadow = loopAliasProblem(forMatch[1]!, (name) => env.resolve(name) !== undefined)
+          if (shadow) found.push({ code: 'loop-alias', message: shadow, location })
           scope = scope.push({ ...(frame ?? { element: T.unknown, rows: UNKNOWN_ROWS }), kind: 'named', name: forMatch[1]! })
           open.push('FOR')
           return

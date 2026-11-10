@@ -1,5 +1,5 @@
 import { resolveMessage, type MessageContext } from './messages'
-import { issue, type Validation, type ValidationFailure } from './shared'
+import { aboutInput, issue, type Validation, type ValidationFailure } from './shared'
 import type {
 	DateFormatOptions,
 	DatetimeFormatOptions,
@@ -154,8 +154,9 @@ function missing(kind: string): ValidationFailure {
 	return { ok: false, status: 'missing', issues: [issue(kind, 'missing_value', `${kind} value is missing.`)] }
 }
 
-function invalid(kind: string, message: string, path?: string, code = 'invalid_value'): ValidationFailure {
-	return { ok: false, status: 'invalid', issues: [issue(kind, code, message, path)] }
+function invalid(kind: string, texts: string | { message: string; redactedMessage: string }, path?: string, code = 'invalid_value'): ValidationFailure {
+	if (typeof texts === 'string') return { ok: false, status: 'invalid', issues: [issue(kind, code, texts, path)] }
+	return { ok: false, status: 'invalid', issues: [issue(kind, code, texts.message, path, undefined, texts.redactedMessage)] }
 }
 
 function daysInMonth(year: number, month: number): number {
@@ -262,12 +263,12 @@ export function validateDate(value: unknown): Validation<ParsedDateValue> {
 		const day = Number(dateMatch[3])
 		return validDateParts(year, month, day)
 			? { ok: true, value: { date: makeUtcDate(year, month, day), mode: 'calendar' } }
-			: invalid('date', `Date ${JSON.stringify(value)} names an impossible calendar day.`)
+			: invalid('date', aboutInput(value, (shown) => `Date ${shown} names an impossible calendar day.`))
 	}
 	const parts = parseDateTimeString(value)
-	if (hasInvalidOffset(value)) return invalid('date', `Datetime offset in ${JSON.stringify(value)} is invalid.`, 'offset', 'invalid_offset')
+	if (hasInvalidOffset(value)) return invalid('date', aboutInput(value, (shown) => `Datetime offset in ${shown} is invalid.`), 'offset', 'invalid_offset')
 	if (parts === undefined || !validDateParts(parts.year, parts.month, parts.day) || !validClock(parts.hour, parts.minute, parts.second)) {
-		return invalid('date', `Date ${JSON.stringify(value)} is not a valid ISO calendar value.`)
+		return invalid('date', aboutInput(value, (shown) => `Date ${shown} is not a valid ISO calendar value.`))
 	}
 	const date = parts.offsetMinutes === undefined
 		? makeUtcDate(parts.year, parts.month, parts.day, parts.hour, parts.minute, parts.second, parts.millisecond)
@@ -284,9 +285,9 @@ export function validateDatetime(value: unknown): Validation<ParsedDatetimeValue
 	}
 	if (typeof value !== 'string' || value.length === 0) return invalid('datetime', 'Datetime must be an ISO datetime string or valid Date object.')
 	const parts = parseDateTimeString(value)
-	if (hasInvalidOffset(value)) return invalid('datetime', `Datetime offset in ${JSON.stringify(value)} is invalid.`, 'offset', 'invalid_offset')
+	if (hasInvalidOffset(value)) return invalid('datetime', aboutInput(value, (shown) => `Datetime offset in ${shown} is invalid.`), 'offset', 'invalid_offset')
 	if (parts === undefined || !validDateParts(parts.year, parts.month, parts.day) || !validClock(parts.hour, parts.minute, parts.second)) {
-		return invalid('datetime', `Datetime ${JSON.stringify(value)} is not a valid ISO datetime value.`)
+		return invalid('datetime', aboutInput(value, (shown) => `Datetime ${shown} is not a valid ISO datetime value.`))
 	}
 	const date = parts.offsetMinutes === undefined
 		? makeUtcDate(parts.year, parts.month, parts.day, parts.hour, parts.minute, parts.second, parts.millisecond)
@@ -298,11 +299,11 @@ export function validateTime(value: unknown): Validation<ParsedTimeValue> {
 	if (value === null || value === undefined) return missing('time')
 	if (typeof value !== 'string' || value.length === 0) return invalid('time', 'Time must be an ISO time string.')
 	const match = TIME_PATTERN.exec(value)
-	if (match === null) return invalid('time', `Time ${JSON.stringify(value)} is not a valid 24-hour clock value.`)
+	if (match === null) return invalid('time', aboutInput(value, (shown) => `Time ${shown} is not a valid 24-hour clock value.`))
 	const hour = Number(match[1])
 	const minute = Number(match[2])
 	const second = Number(match[3] ?? 0)
-	if (!validClock(hour, minute, second)) return invalid('time', `Time ${JSON.stringify(value)} is not a valid 24-hour clock value.`)
+	if (!validClock(hour, minute, second)) return invalid('time', aboutInput(value, (shown) => `Time ${shown} is not a valid 24-hour clock value.`))
 	return {
 		ok: true,
 		value: {
@@ -315,7 +316,7 @@ export function validateDuration(value: unknown): Validation<ParsedDurationValue
 	if (value === null || value === undefined) return missing('duration')
 	if (typeof value !== 'string' || value.length === 0) return invalid('duration', 'Duration must be an ISO 8601 duration string.')
 	const match = DURATION_PATTERN.exec(value)
-	if (match === null) return invalid('duration', `Duration ${JSON.stringify(value)} is not a valid ISO 8601 duration.`)
+	if (match === null) return invalid('duration', aboutInput(value, (shown) => `Duration ${shown} is not a valid ISO 8601 duration.`))
 	const parsed: ParsedDurationValue = {
 		years: Number.parseInt(match[1]?.slice(0, -1) ?? '0', 10),
 		months: Number.parseInt(match[2]?.slice(0, -1) ?? '0', 10),
@@ -327,7 +328,7 @@ export function validateDuration(value: unknown): Validation<ParsedDurationValue
 	}
 	for (const [component, amount] of Object.entries(parsed)) {
 		if (!Number.isFinite(amount)) {
-			return invalid('duration', `Duration ${JSON.stringify(value)} contains an out-of-range ${component} component.`, component, 'invalid_number')
+			return invalid('duration', aboutInput(value, (shown) => `Duration ${shown} contains an out-of-range ${component} component.`), component, 'invalid_number')
 		}
 	}
 	return {

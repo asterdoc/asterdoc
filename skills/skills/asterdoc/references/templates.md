@@ -150,6 +150,7 @@ No pets.
 {{END-FOR line}}
 ```
 
+- A row name cannot be `fields`, `parties` or a computed value's name: validation and render refuse it.
 - To repeat table rows, put `{{FOR x IN list}}` and `{{END-FOR x}}` each alone in its own table row. The rows between them repeat, and the two marker rows are removed.
 - Templates work in the body, headers, footers, footnotes and endnotes.
 - `renderDocx({ options: { cmdDelimiter: ["<<", ">>"] } })` changes the delimiters when a template cannot use `{{ }}`.

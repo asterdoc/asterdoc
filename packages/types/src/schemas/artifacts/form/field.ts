@@ -32,6 +32,15 @@ export interface BaseField {
   visible?: CondExpr;
   /** Long-form description or helper text displayed in the UI. */
   description?: string;
+  /**
+   * Whether the value is sensitive: rule explanations, validation and render
+   * errors, and AI tool errors print it as `[redacted]` with its kind and
+   * length. A value under a sensitive
+   * fieldset or list is sensitive too. Identification fields are sensitive
+   * unless this is `false`, and so are the `taxId` and `entityId` of an
+   * organization field.
+   */
+  sensitive?: boolean;
 }
 
 /** Primitive value used by enum-style form fields. */

@@ -161,7 +161,41 @@ It can be used to create a simple consent form with a few fields to complex form
     description: 'Party role definitions keyed by role identifier, with constraints and signature requirements',
     isOptional: true,
   },
+  {
+    name: 'tests',
+    type: 'FormTestCase[]',
+    description: 'Test cases that asterdoc validate and FormInstance.runTests() run. See Test cases below',
+    isOptional: true,
+  },
 ]} />
+
+## Test cases
+
+Each test case applies its `input` to an empty draft through `update()`, so masks, countries and regions are canonicalized as for any input. It then validates the draft and compares the outcome with `expect`.
+
+<PropertiesTable properties={[
+  { name: 'name', type: 'string', description: 'Name of the test case, unique within the form' },
+  { name: 'input', type: '{ fields?, parties?, annexes? }', description: 'The values applied to an empty draft through update()' },
+  { name: 'context', type: '{ asOf?: string }', description: 'asOf is the instant today() and now() read, an ISO 8601 instant with an explicit timezone. Without it, they read the current instant', isOptional: true },
+  { name: 'expect.valid', type: 'boolean', description: 'Whether the draft is valid: the input is accepted, no value is missing or invalid, and every error-severity rule passes. An input update() refuses makes the draft invalid with no rule failures' },
+  { name: 'expect.failures', type: 'string[]', description: 'The ids of every rule that fails, warnings included, in any order. Each must name a rule. Omitted, failed rules are not compared', isOptional: true },
+]} />
+
+Test cases ship inside the published artifact. Use synthetic values only. `asterdoc validate` warns when a test case sets a `sensitive` field.
+
+```yaml
+tests:
+  - name: a short account number fails
+    input:
+      fields:
+        startDate: '2026-12-01'
+        account: '000000000001'
+    context:
+      asOf: '2026-11-10T00:00:00Z'
+    expect:
+      valid: false
+      failures: [accountLength]
+```
 
 ## Form Components
 

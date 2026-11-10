@@ -14,6 +14,7 @@ import { validatePlaceDefinitions, validatePlaceFormats } from './place-definiti
 import { validateMaskDefaults, validateValueFormats } from './value-formats'
 import { validateFileReferences } from './file-references'
 import { validateLayerReferences } from './layer-references'
+import { validateFormReferences } from './form-references'
 import {
   validateForm,
   validateDocument,
@@ -241,6 +242,14 @@ function checkDefinition<T>(
     if (placeIssues.length > 0) {
       if (!collectAllErrors) return { issues: placeIssues.slice(0, 1) }
       allIssues.push(...placeIssues)
+    }
+  }
+
+  if (validateSchemaOption && allIssues.length === 0 && isFormDefinition(artifact)) {
+    const referenceIssues = validateFormReferences(artifact)
+    if (referenceIssues.length > 0) {
+      if (!collectAllErrors) return { issues: referenceIssues.slice(0, 1) }
+      allIssues.push(...referenceIssues)
     }
   }
 

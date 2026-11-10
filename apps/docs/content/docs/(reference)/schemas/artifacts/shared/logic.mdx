@@ -51,11 +51,14 @@ A mapping of form-level validation rules keyed by camelCase identifier. Rules ar
           { name: 'expr', type: 'string', description: 'Boolean expression that must evaluate to true for the form to be valid. Has access to field values directly and defs values' },
           { name: 'message', type: 'string', description: 'Error message displayed when the rule fails' },
           { name: 'severity', type: "'error' | 'warning'", description: 'Severity level: error (default) blocks submission, warning allows but warns', isOptional: true },
+          { name: 'paths', type: 'string[]', description: 'Field paths the failure attaches to, such as fields.ssn or fields.applicant.ssn. Each must name a field, or validation fails. Without paths the failure is form level; paths are never inferred from the expression', isOptional: true },
         ],
       },
     ],
   },
 ]} />
+
+A rule's id (its key) is the stable code of its failure in results. A failed rule also explains the values its expression reads; values of `sensitive` fields print as `[redacted]` with their kind and length.
 
 ## CondExpr
 

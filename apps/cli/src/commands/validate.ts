@@ -1,9 +1,12 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
 import {
+  loadFromObject,
   validate as validateArtifact,
   validateLayers,
   type Artifact,
+  type Form,
+  type FormTestResult,
   type Layer,
 } from '@asterdoc/core'
 import { createFsResolver } from '@asterdoc/resolvers/fs'
@@ -37,6 +40,12 @@ interface LayerCheckResult {
   fileExists?: boolean
   checksumExpected?: string
   checksumMatch?: boolean
+  issues: ValidationIssue[]
+}
+
+interface TestCheckResult {
+  name: string
+  passed: boolean
   issues: ValidationIssue[]
 }
 
@@ -337,11 +346,16 @@ async function validateOneFile(artifactTarget: string, options: ValidateOptions)
     }
   }
 
+  const testChecks = !options.schemaOnly && !options.checksumOnly && artifact?.kind === 'form' && schemaIssues.length === 0
+    ? runFormTests(artifact as Form)
+    : []
+
   // Aggregate
   const allIssues = [
     ...schemaIssues,
     ...layerChecks.flatMap((c) => c.issues),
     ...contentRefChecks.flatMap((c) => c.issues),
+    ...testChecks.flatMap((c) => c.issues),
   ]
   const hasErrors = allIssues.some((i) => i.severity === 'error')
   const ok = !hasErrors
@@ -352,6 +366,7 @@ async function validateOneFile(artifactTarget: string, options: ValidateOptions)
     schemaIssues,
     layerChecks,
     contentRefChecks,
+    testChecks,
     layersSkipped,
     layersSkipReason,
     artifact: ok ? artifact : undefined,
@@ -359,11 +374,46 @@ async function validateOneFile(artifactTarget: string, options: ValidateOptions)
   }
 }
 
+function listed(ids: readonly string[]): string {
+  return ids.length === 0 ? 'none' : ids.join(', ')
+}
+
+function testFailure(result: FormTestResult): string {
+  const problems: string[] = []
+  if (result.valid !== result.expected.valid) {
+    const failed = result.expected.failures === undefined && result.failures.length > 0 ? ` (failed rules: ${listed(result.failures)})` : ''
+    problems.push(`expected valid ${result.expected.valid}, got ${result.valid}${failed}`)
+  }
+  if (result.expected.failures !== undefined) {
+    const expected = [...result.expected.failures].sort()
+    if (expected.join() !== result.failures.join()) problems.push(`expected failures ${listed(expected)}, got ${listed(result.failures)}`)
+  }
+  const errors = result.errors.map((error) => `${error.field}: ${error.message}`)
+  return `Test "${result.name}" failed: ${problems.join('; ')}${errors.length > 0 ? ` (${errors.join('; ')})` : ''}`
+}
+
+function runFormTests(form: Form): TestCheckResult[] {
+  const report = loadFromObject<'form'>(form).runTests()
+  return report.results.map((result, index) => ({
+    name: result.name,
+    passed: result.passed,
+    issues: [
+      ...(result.passed ? [] : [{ message: testFailure(result), path: ['tests', String(index)], severity: 'error' as const }]),
+      ...result.sensitiveInputs.map((path) => ({
+        message: `Test "${result.name}" sets the sensitive field ${path}. Tests ship inside the artifact: use synthetic values only.`,
+        path: ['tests', String(index), 'input', path],
+        severity: 'warning' as const,
+      })),
+    ],
+  }))
+}
+
 interface ResultContext {
   ok: boolean
   schemaIssues: ValidationIssue[]
   layerChecks: LayerCheckResult[]
   contentRefChecks: ContentRefCheckResult[]
+  testChecks: TestCheckResult[]
   layersSkipped: boolean
   layersSkipReason?: string
   artifact?: Artifact
@@ -381,7 +431,8 @@ function toJsonPayload(result: FileResult): Record<string, unknown> {
 function buildJsonPayload(context: ResultContext): Record<string, unknown> {
   const layerIssues = context.layerChecks.flatMap((c) => c.issues)
   const contentRefIssues = context.contentRefChecks.flatMap((c) => c.issues)
-  const allIssues = [...context.schemaIssues, ...layerIssues, ...contentRefIssues]
+  const testIssues = context.testChecks.flatMap((c) => c.issues)
+  const allIssues = [...context.schemaIssues, ...layerIssues, ...contentRefIssues, ...testIssues]
 
   const payload = {
     ok: context.ok,
@@ -422,6 +473,9 @@ function buildJsonPayload(context: ResultContext): Record<string, unknown> {
           ...(c.checksumMatch !== undefined && { checksumMatch: c.checksumMatch }),
           ok: c.issues.every((i) => i.severity !== 'error'),
         }))
+      : undefined,
+    tests: context.testChecks.length > 0
+      ? context.testChecks.map((c) => ({ name: c.name, ok: c.passed }))
       : undefined,
     ...(context.layersSkipped && { layersSkipped: true, layersSkipReason: context.layersSkipReason }),
   }
@@ -547,6 +601,21 @@ function printHumanResult(context: ResultContext): void {
     }
   }
 
+  if (context.testChecks.length > 0) {
+    console.log('')
+    console.log(kleur.bold('Tests:'))
+    for (const check of context.testChecks) {
+      const hasWarning = check.issues.some((i) => i.severity === 'warning')
+      const icon = !check.passed ? kleur.red('✗') : hasWarning ? kleur.yellow('⚠') : kleur.green('✓')
+      const label = !check.passed ? kleur.red(check.name) : hasWarning ? kleur.yellow(check.name) : kleur.green(check.name)
+      console.log(`  ${icon} ${label}`)
+      for (const issue of check.issues) {
+        const line = `      ${issue.severity === 'error' ? '✗' : '⚠'} ${issue.message}`
+        console.log(issue.severity === 'error' ? kleur.red(line) : kleur.yellow(line))
+      }
+    }
+  }
+
   // Final verdict
   console.log('')
   if (context.ok) {
@@ -554,6 +623,7 @@ function printHumanResult(context: ResultContext): void {
       ...context.schemaIssues,
       ...context.layerChecks.flatMap((c) => c.issues),
       ...context.contentRefChecks.flatMap((c) => c.issues),
+      ...context.testChecks.flatMap((c) => c.issues),
     ].filter((i) => i.severity === 'warning').length
 
     if (warningCount > 0) {

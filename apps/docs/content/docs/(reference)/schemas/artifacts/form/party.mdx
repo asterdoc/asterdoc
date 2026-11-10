@@ -11,6 +11,8 @@ Party data format is determined by the `max` property:
 
 ID convention: `{role}-{index}` (e.g., "tenant-0", "landlord-1")
 
+A party's `taxId` and `entityId` are sensitive: rule explanations, validation and render errors, and AI tool errors print them as `[redacted]` with their kind and length.
+
 ## Properties
 
 <PropertiesTable properties={[

@@ -25,6 +25,8 @@ import type {
 import { evaluateFormContext, type FormDataPayload } from './context-builder'
 import { evaluateGate, markEvaluationContextReusable, withRowReferences } from './expression-evaluator'
 import { rowOriginOf, type RowFrame } from '../../shared/list-paths'
+import { formSensitivity, type FormSensitivity } from '../../shared/sensitive-values'
+import { ROW_ORIGINS } from './types'
 
 /**
  * Default values for expression evaluation failures.
@@ -50,6 +52,7 @@ interface EvaluationState {
   conditionFailed: boolean
   /** The form-level context every row context derives from. */
   formContext: EvaluationContext
+  sensitivity: FormSensitivity
 }
 
 /**
@@ -86,11 +89,12 @@ function evaluateCondition(
   if (outcome.status === 'missing') return false
   if (outcome.status === 'failed') {
     state.conditionFailed = true
+    const hidden = state.sensitivity.reveals(condition, context[ROW_ORIGINS])
     state.issues.push({
-      message: `Failed to resolve form expression: ${outcome.error}`,
+      message: hidden ? 'Failed to resolve form expression' : `Failed to resolve form expression: ${outcome.error}`,
       path,
       expression: condition,
-      originalError: outcome.error,
+      ...(!hidden && { originalError: outcome.error }),
     })
     return fallback
   }
@@ -344,6 +348,7 @@ export function evaluateFormDefs(
       issues: [...definitionIssues],
       conditionFailed: false,
       formContext: context,
+      sensitivity: formSensitivity(form),
     }
 
     // Extract defs values from context

@@ -41,6 +41,7 @@ export {
 export { FieldsetFieldSchema, FORM_FIELD_TYPES } from './artifacts/form/field';
 export type { FormFieldType } from './artifacts/form/field';
 export { ListFieldSchema } from './artifacts/form/list';
+export { FormTestCaseSchema } from './artifacts/form/test-case';
 export {
 	FieldPatternSchema,
 	MAX_PATTERN_LENGTH,

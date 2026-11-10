@@ -1,3 +1,4 @@
+import { isSensitivePath } from '../sensitive'
 import type {
 	FormatIssue,
 	FormatResult,
@@ -150,6 +151,20 @@ export class ArtifactFieldFormatError extends Error {
 	}
 }
 
+/**
+ * A format error with no sensitive value in it. An error at a path
+ * {@link isSensitivePath} names, or with an issue at one, is rebuilt from each
+ * issue's `redactedMessage`, which names the value only by kind and length,
+ * and without its causes; any other error is returned as it is.
+ */
+export function withoutSensitiveValues(form: Form | undefined, error: unknown): unknown {
+	if (!(error instanceof ArtifactFieldFormatError) || !form) return error
+	const sensitive = isSensitivePath(form, error.path) || error.issues.some((issue) => issue.path !== undefined && isSensitivePath(form, issue.path))
+	if (!sensitive) return error
+	const issues = error.issues.map(({ cause: _cause, redactedMessage, ...issue }) => ({ ...issue, message: redactedMessage ?? `The value could not be formatted (${issue.code}).` }))
+	return new ArtifactFieldFormatError(error.path, error.fieldType, error.status, issues)
+}
+
 function isRecord(value: unknown): value is RecordValue {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
@@ -162,8 +177,8 @@ function childPath(path: string, segment: string | number): string {
 	return typeof segment === 'number' ? `${path}[${segment}]` : `${path}.${segment}`
 }
 
-function formatIssue(path: string, fieldType: string, code: string, message: string): ArtifactFieldFormatError {
-	return new ArtifactFieldFormatError(path, fieldType, 'invalid', [{ code, message, path, kind: fieldType }])
+function formatIssue(path: string, fieldType: string, code: string, message: string, redactedMessage?: string): ArtifactFieldFormatError {
+	return new ArtifactFieldFormatError(path, fieldType, 'invalid', [{ code, message, ...(redactedMessage !== undefined && { redactedMessage }), path, kind: fieldType }])
 }
 
 function progressiveText(options: FieldFormattingOptions | undefined, status: 'missing' | 'incomplete'): string | undefined {
@@ -321,7 +336,7 @@ function patternDate(
 
 function placeValue(outcome: PlaceOutcome, path: string, fieldType: string): string {
 	if (outcome.ok) return outcome.value
-	throw new ArtifactFieldFormatError(path, fieldType, 'invalid', [{ code: outcome.code, message: outcome.message, path, kind: fieldType }])
+	throw new ArtifactFieldFormatError(path, fieldType, 'invalid', [{ code: outcome.code, message: outcome.message, ...(outcome.redactedMessage !== undefined && { redactedMessage: outcome.redactedMessage }), path, kind: fieldType }])
 }
 
 function countryCode(value: unknown, formatter: Formatter, path: string, fieldType: string): string {
@@ -441,7 +456,7 @@ function maskedText(field: FormField, value: unknown, path: string, options?: Fi
 	if (options?.progressive && canonicalizeMasked(mask, text, { mode: 'progressive' }).success) {
 		return placeholder(value, progressiveText(options, 'incomplete')!)
 	}
-	throw formatIssue(path, field.type, MASK_MISMATCH, printed.message)
+	throw formatIssue(path, field.type, MASK_MISMATCH, printed.message, printed.redactedMessage)
 }
 
 function numberInput(value: unknown, path: string, fieldType: string): number {

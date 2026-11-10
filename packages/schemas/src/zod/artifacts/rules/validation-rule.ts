@@ -34,6 +34,11 @@ export const ValidationRuleSchema = z.object({
 	severity: RuleSeveritySchema
 		.describe('Severity level: error (default) blocks submission, warning allows but warns')
 		.optional(),
+	paths: z.array(z.string().min(1).max(500))
+		.min(1)
+		.max(50)
+		.describe('Field paths the failure attaches to, such as fields.ssn or fields.applicant.ssn. Each must name a field. Without paths the failure is form level; paths are never inferred from the expression')
+		.optional(),
 }).strict().meta({
 	title: 'ValidationRule',
 	description: 'A form-level validation rule with a boolean expression and error message',

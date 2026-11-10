@@ -26,19 +26,19 @@ asterdoc validate <artifacts...> [options]
 | `--json` | Output machine-readable JSON result |
 | `--silent` | Suppress console output (exit code only) |
 | `--expect-kind <kind>` | Assert artifact kind: `form`, `document`, `checklist`, `bundle` |
-| `--schema-only` | Only validate artifact schema (skip layer and content reference checks) |
-| `--layers-only` | Validate the schema and referenced files (paths + checksums) |
-| `--checksum-only` | Validate the schema and verify checksums for files that exist |
+| `--schema-only` | Only validate artifact schema (skip layer, content reference and test case checks) |
+| `--checksum-only` | Validate the schema and verify checksums for files that exist (skip test cases) |
 
-The scope flags (`--schema-only`, `--layers-only`, `--checksum-only`) are mutually exclusive. Every scope first requires a schema-valid artifact.
+The scope flags (`--schema-only`, `--checksum-only`) are mutually exclusive. Every scope first requires a schema-valid artifact.
 
 ## Description
 
-The `validate` command takes one or more artifact files. Each one is parsed and run through up to three validation phases, and its own result is reported, in argument order. First, each file's `$schema` must name a [schema version](/schemas#loading-rules) the CLI can read, as every command that reads an artifact file does: an earlier version is upgraded in memory and validated as the current one, and a newer or unknown version fails.
+The `validate` command takes one or more artifact files. Each one is parsed and run through up to four validation phases, and its own result is reported, in argument order. First, each file's `$schema` must name a [schema version](/schemas#loading-rules) the CLI can read, as every command that reads an artifact file does: an earlier version is upgraded in memory and validated as the current one, and a newer or unknown version fails.
 
 1. **Schema** — checks the artifact structure against the Asterdoc schema, its logic expressions, the template expressions of inline layers, that each PDF binding value is a known Asterdoc path, and what the layers refer to (see [Layer references](#layer-references))
 2. **Layers** — for file-backed layers, checks file existence and verifies checksums, checks the template expressions of text and DOCX layers and that each text layer places its `'flow'` signature slots, checks that each PDF binding key is an AcroForm field of the template, and checks that bound values can fill a form's PDF text fields
 3. **Content references** — for file-backed `instructions` and `agentInstructions`, checks file existence and verifies checksums
+4. **Tests** — for a form, runs its [test cases](/schemas/artifacts/form#test-cases), as `FormInstance.runTests()` does. A test case whose outcome differs from its `expect` is an error naming the difference. A test case that sets a `sensitive` field is a warning: test cases ship inside the artifact, so use synthetic values only
 
 A layer file or content reference file that does not exist is an error.
 
@@ -148,7 +148,7 @@ When invalid:
 
 With a single artifact, `--json` prints one result object. With more than one artifact, it prints a JSON array of result objects, in argument order; a file that fails to read reports `{ "ok": false, "source": "...", "error": "..." }`.
 
-The result object includes `layers` and `contentRefs` arrays when present:
+The result object includes `layers`, `contentRefs` and `tests` arrays when present. Each `tests` entry is `{ "name": "...", "ok": true }`:
 
 ```json
 {

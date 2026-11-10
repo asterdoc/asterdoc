@@ -172,6 +172,8 @@ export type {
 	FormValidationResult,
 	ExtractOptions,
 	FormExtraction,
+	FormTestReport,
+	FormTestResult,
 } from './form'
 
 // Bundle artifact

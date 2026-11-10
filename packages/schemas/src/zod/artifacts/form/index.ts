@@ -7,6 +7,7 @@ import { RulesSectionSchema } from '../rules/rules-section';
 import { FormFieldSchema } from './field';
 import { FormAnnexSchema } from './annex';
 import { FormPartySchema } from './party';
+import { FormTestCaseSchema } from './test-case';
 
 // Re-export all form-related schemas
 export { FormFieldSchema, FieldsetFieldSchema, FORM_FIELD_TYPES } from './field';
@@ -14,6 +15,7 @@ export type { FormFieldType } from './field';
 export { ListFieldSchema } from './list';
 export { FormAnnexSchema } from './annex';
 export { FormPartySchema } from './party';
+export { FormTestCaseSchema } from './test-case';
 
 export const FormSchema = ArtifactSchema.extend({
 	kind: z.literal('form'),
@@ -64,6 +66,9 @@ export const FormSchema = ArtifactSchema.extend({
 			.describe('Party role identifier (e.g., buyer, seller, landlord, buyerRepresentative)'),
 		FormPartySchema,
 	).describe('Party role definitions keyed by role identifier. Each role specifies constraints on who can fill it (person/organization) and signature requirements.')
+		.optional(),
+	tests: z.array(FormTestCaseSchema)
+		.describe('Test cases run by asterdoc validate and FormInstance.runTests(): each applies its input to an empty draft and compares the validation outcome')
 		.optional(),
 }).strict().meta({
 	title: 'Form',

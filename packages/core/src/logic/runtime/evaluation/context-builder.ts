@@ -21,6 +21,7 @@ import type { RuntimeContext } from '@/artifacts/shared/runtime-context'
 import { topologicalSortDefsKeys } from '../../design-time/type-checking/build-type-environment'
 import { isRowVisible } from '../../shared/list-paths'
 import { defsDependencyExpressions } from '../../shared/defs-dependencies'
+import { formSensitivity } from '../../shared/sensitive-values'
 import { isScalarExpressionType } from '../../shared/expression-types'
 import { evaluateGate, evaluateExpressionValue, withRowReferences, fromExpressionValue, markEvaluationContextReusable, toExpressionContext, wrapExpressionValue } from './expression-evaluator'
 import { Values, type Value } from '@asterdoc/expr'
@@ -198,12 +199,13 @@ function evaluateDefinitionMembers(members: Record<string, unknown>, context: Ev
  * @returns Each key's evaluated value, and the keys that failed
  */
 function evaluateDefsKeys(
-	defs: DefsSection | undefined,
-	fields: Form['fields'],
+	form: Form,
 	baseContext: EvaluationContext
 ): { values: Map<string, Value>; issues: EvaluationIssue[] } {
+	const { defs, fields } = form
 	const values = new Map<string, Value>()
 	const issues: EvaluationIssue[] = []
+	let sensitivity: ReturnType<typeof formSensitivity> | undefined
 
 	if (!defs || Object.keys(defs).length === 0) {
 		return { values, issues }
@@ -225,11 +227,13 @@ function evaluateDefsKeys(
 		const outcome = evaluateDefsExpression(expr, context)
 		let value: Value
 		if ('failure' in outcome) {
+			sensitivity ??= formSensitivity(form)
+			const hidden = sensitivity.isDerived(key)
 			issues.push({
-				message: `Failed to evaluate computed value "${key}": ${outcome.failure.error}`,
+				message: hidden ? `Failed to evaluate computed value "${key}"` : `Failed to evaluate computed value "${key}": ${outcome.failure.error}`,
 				path: ['defs', key],
 				expression: outcome.failure.expression,
-				originalError: outcome.failure.error,
+				...(!hidden && { originalError: outcome.failure.error }),
 			})
 			value = Values.null
 		} else {
@@ -382,7 +386,7 @@ export function evaluateFormContext(
 	data: FormDataPayload,
 ): { context: EvaluationContext; issues: EvaluationIssue[] } {
 	const context = buildFormBaseContext(form, data)
-	const { values, issues } = evaluateDefsKeys(form.defs, form.fields, context)
+	const { values, issues } = evaluateDefsKeys(form, context)
 
 	// Merge public defs values into the same complete context used by downstream gates.
 	for (const [key, value] of values) {

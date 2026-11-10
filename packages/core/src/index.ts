@@ -76,6 +76,8 @@ export type {
   FormValidationResult,
   ExtractOptions,
   FormExtraction,
+  FormTestReport,
+  FormTestResult,
   SignableForm,
   ExecutedForm,
   FormInput,
@@ -548,6 +550,7 @@ export { DefinitionNotJsonError } from "./artifacts/shared/definition-origin";
 export { validateArtifact as validate, validateLayers } from "./validation";
 export type { LayerValidationIssue, ValidateLayersOptions, ValidateLayersResult } from "./validation";
 export { buildTemplateTypeEnvironment } from "./logic/design-time/validation/validate-templates";
+export { isSensitiveField, redactDefsValues, redactedValue } from "./logic/shared/sensitive-values";
 export { parse } from "./serialization";
 
 // ============================================================================

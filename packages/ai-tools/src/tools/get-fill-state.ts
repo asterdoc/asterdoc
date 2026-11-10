@@ -8,7 +8,12 @@ import { resolveSource } from '../resolve-source'
 type CoreRules = { valid: boolean; errors: RuleValidationResult[]; warnings: RuleValidationResult[] }
 
 function ruleViolation(result: RuleValidationResult, fallback: string): RuleViolation {
-	return { rule_id: result.ruleId, message: result.message ?? `Rule ${result.ruleId} ${fallback}` }
+	return {
+		rule_id: result.ruleId,
+		message: result.message ?? `Rule ${result.ruleId} ${fallback}`,
+		...(result.paths && { paths: [...result.paths] }),
+		...(result.explanation && { values: result.explanation.values.map(({ path, value }) => ({ path, value })) }),
+	}
 }
 
 function rulesOutput(rules: CoreRules): FillStateOutput['rules'] {
@@ -29,7 +34,7 @@ function stateOutput(kind: 'form' | 'checklist', state: {
 	done: FillItemState[]
 	candidates: FillTarget[]
 	next: FillTarget | null
-}, rules: CoreRules, context: unknown, errors?: ToolError[]): FillStateOutput {
+}, rules: CoreRules, context: unknown, errors?: ToolError[], redact: (values: Record<string, unknown>) => Record<string, unknown> = (values) => values): FillStateOutput {
 	return {
 		artifact_kind: kind,
 		phase: state.phase,
@@ -39,7 +44,7 @@ function stateOutput(kind: 'form' | 'checklist', state: {
 			required_remaining: state.summary.requiredRemaining,
 			completion_percent: state.summary.completionPercent,
 		},
-		...(state.defsValues ? { defs_values: structuredClone(state.defsValues) } : {}),
+		...(state.defsValues ? { defs_values: redact(structuredClone(state.defsValues)) } : {}),
 		rules: rulesOutput(rules),
 		open_required: structuredClone(state.openRequired),
 		open_optional: structuredClone(state.openOptional),
@@ -58,7 +63,7 @@ export async function executeGetFillState(
 ): Promise<FillStateOutput> {
 	try {
 		const normalized = FillStateInputSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject } = await import('@asterdoc/core')
+		const { isChecklist, isForm, loadFromObject, redactDefsValues } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		if (isForm(artifact)) {
 			const instance = loadFromObject<'form'>(artifact, { resolver: makeResolver(base_url, config) })
@@ -66,13 +71,14 @@ export async function executeGetFillState(
 			if (!result.success) return { artifact_kind: 'form', phase: 'draft', summary: { required_total: 0, required_done: 0, required_remaining: 0, completion_percent: 0 }, rules: { valid: false, errors: [], warnings: [] }, open_required: [], open_optional: [], blocked: [], done: [], candidates: [], next: null, errors: validationErrors(result.error) }
 			const draft = result.data
 			const state = draft.getFillState({ includeOptional: normalized.include_optional })
+			const redact = (values: Record<string, unknown>) => redactDefsValues(draft.form, values)
 			// An unresolved runtime means the logic could not be evaluated, so the
 			// rules were not run. Report the evaluation issues as tool errors.
 			if (!draft.runtimeState.resolved) {
 				const issues: ToolError[] = state.issues.map((issue) => ({ code: 'logic_unresolved', message: issue.message, ...(issue.path.length > 0 ? { path: [...issue.path] } : {}) }))
-				return stateOutput('form', state, state.rules, draft.context, issues)
+				return stateOutput('form', state, state.rules, draft.context, issues, redact)
 			}
-			return stateOutput('form', state, state.rules, draft.context)
+			return stateOutput('form', state, state.rules, draft.context, undefined, redact)
 		}
 		if (isChecklist(artifact)) {
 			const instance = loadFromObject<'checklist'>(artifact, { resolver: makeResolver(base_url, config) })

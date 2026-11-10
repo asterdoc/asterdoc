@@ -1,13 +1,14 @@
 import { defaultFormatter } from '../default-formatter'
 import type { Form, Formatter, LayerFormat } from '@asterdoc/types'
 import { unzipSync, zipSync } from 'fflate'
-import { formatFieldData } from '../text/field-formatter'
+import { formatFieldData, withoutSensitiveValues } from '../text/field-formatter'
 import { formatFieldOptions, formatterFor } from '../presentation'
 import { loopFrames, loopRows, renderTemplateNodes, templateEnvironment, type SigningDirective, type TemplateRenderOptions } from '../text/template'
 import { templateData, type TemplateExpressionOptions } from '../template/context'
 import { TemplateError } from '../template/errors'
 import { blockSlot, parseTemplate } from '../template/markers'
 import { TemplateScope } from '../template/scope'
+import { loopAliasProblem } from '../template/paths'
 import { formValueResolver } from '../template/values'
 import { createDocxSignatureDirectives, type DocxSignatureOptions } from './signatures'
 
@@ -247,6 +248,8 @@ function expandControls(xml: string, run: DocxRun): string {
     if (isFor) {
       const match = opening.command.match(/^FOR\s+(\S+)\s+IN\s+(.+)$/)!
       const alias = match[1]!
+      const shadow = loopAliasProblem(alias, (name) => run.scope.root.lookup(name) !== undefined)
+      if (shadow) throw new TemplateError({ code: 'loop-alias', message: shadow }, run.options.layer)
       const slot = blockSlot(match[2]!, { line: 1, column: 1 })
       if (!slot.ast) throw new TemplateError(slot.problem!, run.options.layer)
       const rows = loopRows(run.scope.evaluate(slot.ast, slot.source, slot.position), slot, run.options.layer)
@@ -309,7 +312,15 @@ function renderLeafXml(xml: string, run: DocxRun): string {
   }))
 }
 
-export async function renderDocx({
+export async function renderDocx(options: RenderDocxOptions): Promise<Uint8Array> {
+  try {
+    return await renderDocxWithValues(options)
+  } catch (error) {
+    throw withoutSensitiveValues(options.form, error)
+  }
+}
+
+async function renderDocxWithValues({
   template,
   data,
   form,

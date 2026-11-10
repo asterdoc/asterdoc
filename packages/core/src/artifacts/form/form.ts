@@ -33,6 +33,7 @@ import type {
 	SignatureSlot,
 	DefsSection,
 	RulesSection,
+	FormTestCase,
 	Expression,
 	ContentRef,
 	Resolver,
@@ -79,6 +80,9 @@ import {
 	type NormalizedPartyInput,
 } from '@/validation'
 import { evaluatePartyRequiredness } from '@/validation/party'
+import { runFormTests, type FormTestReport } from './form-tests'
+import { formSensitivity } from '@/logic/shared/sensitive-values'
+import { TemplateError } from '@asterdoc/render/text'
 import { canonicalizationError, canonicalizeFieldValue, canonicalizeFieldValues } from '@/validation/canonicalize'
 import { toYAML } from '@/serialization/serialization'
 import { deepClone, deepReadonlyClone } from '@/utils/clone'
@@ -96,12 +100,12 @@ import type {
 	InferFormPayload as InferredFormPayload,
 	ProgressiveFormPayload as InferredProgressiveFormPayload,
 } from '@/inference'
-import type { FormRuntimeState, FieldRuntimeState, AnnexRuntimeState, FormRulesValidationResult } from '@/logic'
+import type { FormRuntimeState, FieldRuntimeState, AnnexRuntimeState, FormRulesValidationResult, RuleEvaluationOptions } from '@/logic'
 import { buildFormContext, evaluateFormDefs, evaluateFormRules } from '@/logic'
 import { buildTemplateExpressionContext } from '@/logic/runtime/evaluation/context-builder'
 import { signingStateOf } from '@/logic/runtime/evaluation/signing-state'
 import type { RuntimeFormRenderOptions, RenderOptions, RendererLayer } from '@/types'
-import { buildRendererLayer, renderBindings, selectLayerRenderer } from '../shared/render-layer'
+import { buildRendererLayer, refuseRequire, renderBindings, selectLayerRenderer } from '../shared/render-layer'
 import type { ArtifactInstanceOptions } from '../shared/render-layer'
 import type { RendererRegistry } from '@/rendering/renderer-registry'
 import {
@@ -553,6 +557,17 @@ interface CompleteFormData {
  * runtime concern for forms: visibility and required expressions are resolved
  * against the current payload before missing values are reported.
  */
+const STRUCTURAL_TEMPLATE_CODES = new Set(['syntax', 'removed-syntax', 'markers', 'format-modifier'])
+
+function templateErrorWithoutValues(form: Form, error: unknown): unknown {
+	if (!(error instanceof TemplateError)) return error
+	const { diagnostic } = error
+	if (diagnostic.expression === undefined || STRUCTURAL_TEMPLATE_CODES.has(diagnostic.code)) return error
+	const roots = new Set(Object.keys(buildFormContext(form, { fields: {} })))
+	if (!formSensitivity(form).revealsInTemplate(diagnostic.expression, roots)) return error
+	return new TemplateError({ ...diagnostic, message: 'The expression could not be evaluated.' }, error.layer)
+}
+
 function makeRuntimeOptionalField(field: FormField): FormField {
 	if (field.type === 'fieldset') {
 		const fieldset = field as FieldsetField
@@ -867,6 +882,14 @@ export interface FormInstance<F extends Form> extends ArtifactMethods<F> {
 	safeFill(seed?: ProgressiveFormPayload<F>, options?: FillOptions): SafeFillResult<F>
 
 	/**
+	 * Run the form's `tests`. Each test case fills an empty draft with its
+	 * `context`, applies its `input` through `update()`, validates, and compares
+	 * the outcome with its `expect`. An input `update()` refuses makes the draft
+	 * invalid with no rule failures.
+	 */
+	runTests(): FormTestReport
+
+	/**
 	 * Render form content directly.
 	 */
 	render<Output = string | Uint8Array>(options?: RenderOptions<Output>): Promise<Output>
@@ -982,7 +1005,11 @@ interface RuntimeFormBase<F extends Form> {
 	getLogicValue(key: string): unknown
 
 	// Rules Validation
-	validateRules(): FormRulesValidationResult
+	/**
+	 * Evaluates the form's rules. A failed rule explains the values it read,
+	 * with sensitive values redacted unless `explain.raw` is set.
+	 */
+	validateRules(options?: RuleEvaluationOptions): FormRulesValidationResult
 
 	// Validation
 	/**
@@ -990,8 +1017,12 @@ interface RuntimeFormBase<F extends Form> {
 	 * error-severity rule passes. The same as `validate().valid`.
 	 */
 	isValid(): boolean
-	/** Returns comprehensive validation result including rule details. */
-	validate(): FormValidationResult
+	/**
+	 * Returns comprehensive validation result including rule details. A failed
+	 * rule explains the values it read, with sensitive values redacted unless
+	 * `explain.raw` is set.
+	 */
+	validate(options?: RuleEvaluationOptions): FormValidationResult
 
 	// Serialization
 	render<Output = string | Uint8Array>(options?: RuntimeFormRenderOptions<Output>): Promise<Output>
@@ -1686,6 +1717,12 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		async (content: string | Uint8Array): Promise<Uint8Array> =>
 			(await options.adapter!.convert({ ...request, document: { content, mimeType: layerSpec.mimeType } })).pdf
 
+	const assertComplete = (): void => {
+		const validation = runtime.validate()
+		if (validation.errors.length > 0) throw new FormValidationError(validation.errors)
+		if (!validation.rules.valid) throw new FormRuleViolationError(validation.rules)
+	}
+
 	/**
 	 * What both seal entry points check first: the form is complete and the
 	 * target layer exists.
@@ -1695,9 +1732,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 	 * @throws {SealConfigError} when the target layer is missing.
 	 */
 	const sealTarget = (options: SealOptions, verb: string): { layerSpec: Layer; sealRenderer: SealRenderer | undefined } => {
-		const validation = runtime.validate()
-		if (validation.errors.length > 0) throw new FormValidationError(validation.errors)
-		if (!validation.rules.valid) throw new FormRuleViolationError(validation.rules)
+		assertComplete()
 		const layerSpec = formDef.layers?.[targetLayer]
 		if (!layerSpec) {
 			const problem = `target layer "${targetLayer}" was not found`
@@ -2530,7 +2565,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			return value === undefined ? undefined : deepReadonlyClone(value)
 		},
 
-		validateRules(): FormRulesValidationResult {
+		validateRules(options?: RuleEvaluationOptions): FormRulesValidationResult {
 			const state = getRuntimeState()
 			const evaluationContext = buildFormContext(formDef, {
 				fields: fieldValues,
@@ -2539,7 +2574,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 				signing: signingStateOf(captures, attestations),
 				context,
 			})
-			return evaluateFormRules(formDef, fieldValues, state.defsValues, evaluationContext)
+			return evaluateFormRules(formDef, fieldValues, state.defsValues, evaluationContext, options)
 		},
 
 		getVisibleFields(): FieldRuntimeState[] {
@@ -2584,8 +2619,8 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			return runtime.validate().valid
 		},
 
-		validate(): FormValidationResult {
-			const rules = runtime.validateRules()
+		validate(options?: RuleEvaluationOptions): FormValidationResult {
+			const rules = runtime.validateRules(options)
 			const errors = collectRuntimeValidationErrors(formDef, {
 				fields: fieldValues,
 				parties: partyValues,
@@ -2627,9 +2662,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 
 		prepareForSigning(): RuntimeForm<F> {
 			ensureDraft('prepareForSigning')
-			const validation = runtime.validate()
-			if (validation.errors.length > 0) throw new FormValidationError(validation.errors)
-			if (!validation.rules.valid) throw new FormRuleViolationError(validation.rules)
+			assertComplete()
 			return createRuntimeForm({
 				...config,
 				phase: 'signable',
@@ -2766,7 +2799,13 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 				progressive,
 				layer: layerKey,
 				bindings: optionsBindings,
+				require,
 			} = options
+
+			if (require !== undefined && require !== 'complete') {
+				throw new TypeError(`Unknown render option require: ${JSON.stringify(require)}; the one value is 'complete'.`)
+			}
+			if (require === 'complete') assertComplete()
 
 			if (!formDef.layers) {
 				throw new Error('Form has no layers defined')
@@ -2821,13 +2860,17 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 				}, augmentedParties),
 			}
 
-			return await renderer.render({
-				kind: 'form',
-				template,
-				artifact: formDef,
-				data,
-				ctx: { expressions, ...(formatter && { formatter }), ...(progressive && { progressive }) },
-			}) as Output
+			try {
+				return await renderer.render({
+					kind: 'form',
+					template,
+					artifact: formDef,
+					data,
+					ctx: { expressions, ...(formatter && { formatter }), ...(progressive && { progressive }) },
+				}) as Output
+			} catch (error) {
+				throw templateErrorWithoutValues(formDef, error)
+			}
 		},
 
 		// ============================================================================
@@ -3089,8 +3132,13 @@ function createFormInstance<F extends Form>(
 			}
 		},
 
+		runTests(): FormTestReport {
+			return runFormTests(formDef, instance as unknown as FormInstance<Form>)
+		},
+
 		async render<Output = string | Uint8Array>(options: RenderOptions<Output> = {}): Promise<Output> {
 			assertValidArtifactDefinition(formDef)
+			refuseRequire(options, 'A form definition')
 			const {
 				renderer: rendererOverride,
 				renderers,
@@ -3131,13 +3179,17 @@ function createFormInstance<F extends Form>(
 				),
 			}
 
-			return await renderer.render({
-				kind: 'form',
-				template,
-				artifact: formDef,
-				data: formData,
-				ctx: { expressions, ...(formatter && { formatter }), ...(progressive && { progressive }) },
-			}) as Output
+			try {
+				return await renderer.render({
+					kind: 'form',
+					template,
+					artifact: formDef,
+					data: formData,
+					ctx: { expressions, ...(formatter && { formatter }), ...(progressive && { progressive }) },
+				}) as Output
+			} catch (error) {
+				throw templateErrorWithoutValues(formDef, error)
+			}
 		},
 
 		async extract(pdf: Uint8Array, extractOptions: ExtractOptions = {}): Promise<FormExtraction> {
@@ -3182,6 +3234,8 @@ export interface FormBuilderInterface<
 	def(name: string, expression: string | Expression): FormBuilderInterface<TFields, TParties, TAnnexes, TAllowAdditionalAnnexes>
 	/** Set the form-level validation rules, keyed by rule id */
 	rules(value: RulesSection): FormBuilderInterface<TFields, TParties, TAnnexes, TAllowAdditionalAnnexes>
+	/** Set the form's test cases, which `runTests()` and `asterdoc validate` run. Use synthetic values only. */
+	tests(value: FormTestCase[]): FormBuilderInterface<TFields, TParties, TAnnexes, TAllowAdditionalAnnexes>
 	field<const K extends string, const D extends Buildable<FormField>>(
 		id: K,
 		fieldDef: D,
@@ -3325,6 +3379,7 @@ function createFormBuilder<
 			_def.parties = parsed.parties
 				? Object.fromEntries(Object.entries(parsed.parties).map(([roleId, p]) => [roleId, parseFormParty(p)]))
 				: undefined
+			_def.tests = parsed.tests ? structuredClone(parsed.tests) : undefined
 			return builder
 		},
 
@@ -3401,6 +3456,11 @@ function createFormBuilder<
 
 		rules(value: RulesSection) {
 			_def.rules = value
+			return builder
+		},
+
+		tests(value: FormTestCase[]) {
+			_def.tests = value
 			return builder
 		},
 

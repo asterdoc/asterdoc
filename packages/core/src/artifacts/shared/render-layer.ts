@@ -285,6 +285,19 @@ async function readLayerContent(
 }
 
 /**
+ * Refuses the `require` render option where it cannot apply. Only a filled
+ * form's `render()` checks completeness; elsewhere the option would be
+ * ignored, so a caller relying on it is told.
+ *
+ * @throws {TypeError} when `options.require` is set.
+ */
+export function refuseRequire(options: unknown, subject: string): void {
+	const value = options !== null && typeof options === 'object' ? (options as { require?: unknown }).require : undefined
+	if (value === undefined) return
+	throw new TypeError(`${subject} cannot render with require: ${JSON.stringify(value)}; only a filled form's render() checks completeness.`)
+}
+
+/**
  * Resolves the layer key and renders it, for an artifact rendering its own layer.
  *
  * Not part of the package's public surface: it exists because a `Document`
@@ -300,6 +313,7 @@ export async function resolveAndRenderArtifactLayer(
 	options?: LayerRenderOptions,
 	context?: LayerRenderContext,
 ): Promise<string | Uint8Array> {
+	refuseRequire(options, 'A document')
 	const key = resolveLayerKey(layers, targetLayer, defaultLayer, options)
 	return renderLayerAt(layers, key, 'artifact', options, context)
 }

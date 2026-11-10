@@ -55,7 +55,7 @@ import {
 	restoreRuntimeContext,
 	type RuntimeCreationOptions,
 } from '../shared/runtime-context'
-import type { ArtifactInstanceOptions } from '../shared/render-layer'
+import { refuseRequire, type ArtifactInstanceOptions } from '../shared/render-layer'
 
 // Import artifacts runtime types for content
 import { runtimeDocumentFromJSON, type RuntimeDocument, type DraftDocument } from '../document'
@@ -655,6 +655,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 		// ============================================================================
 
 		async render(options: RuntimeBundleRenderOptions = {}): Promise<RuntimeBundleRendered<B>> {
+			refuseRequire(options, 'A bundle')
 			const { renderers, formatter, progressive } = options
 			const outputs: Record<string, RuntimeBundleRenderedOutput> = {}
 			const included = runtime.getIncludedContents()

@@ -1,12 +1,17 @@
-import { INVALID_PHONE, MISSING_FORMAT_PROVIDER, PHONE_PROVIDER_ENTRY_POINT, PHONE_REGION_MISMATCH } from '@asterdoc/format'
+import { INVALID_PHONE, MISSING_FORMAT_PROVIDER, PHONE_PROVIDER_ENTRY_POINT, PHONE_REGION_MISMATCH, redactedValue } from '@asterdoc/format'
 import type { FormatResult, Formatter, LayerPhoneFormat, ValuePart } from '@asterdoc/types'
 import { ArtifactFieldFormatError } from '../text/field-formatter'
 import { UNSUPPORTED_PART } from './rules'
 
 const CALENDAR_DATE = /^(\d{4})-(\d{2})-(\d{2})$/
 
-function refuse(path: string, kind: string, status: string, code: string, message: string): never {
-  throw new ArtifactFieldFormatError(path, kind, status, [{ code, message, path, kind }])
+function refuse(path: string, kind: string, status: string, code: string, message: string | { message: string; redactedMessage: string }): never {
+  const texts = typeof message === 'string' ? { message } : message
+  throw new ArtifactFieldFormatError(path, kind, status, [{ code, ...texts, path, kind }])
+}
+
+function aboutValue(value: string | number, write: (shown: string) => string): { message: string; redactedMessage: string } {
+  return { message: write(String(value)), redactedMessage: write(redactedValue(value)) }
 }
 
 function checked(result: FormatResult, path: string, kind: string): boolean {
@@ -33,19 +38,19 @@ function phonePart(formatter: Formatter, value: unknown, part: ValuePart, path: 
       `The phone part "${part}" needs the phone provider: create the formatter with providers: { phone: phoneProvider } from ${PHONE_PROVIDER_ENTRY_POINT}.`)
   }
   const parsed = provider.parse(record.number)
-  if (!parsed) refuse(path, 'phone', 'invalid', INVALID_PHONE, `${record.number} is not a valid phone number in any numbering plan, so its part "${part}" cannot be printed.`)
+  if (!parsed) refuse(path, 'phone', 'invalid', INVALID_PHONE, aboutValue(record.number, (shown) => `${shown} is not a valid phone number in any numbering plan, so its part "${part}" cannot be printed.`))
   if (phone?.region !== undefined) {
     const expected = provider.callingCode(phone.region)
     if (expected !== parsed.countryCallingCode) {
-      refuse(path, 'phone', 'invalid', PHONE_REGION_MISMATCH,
-        `${record.number} has country calling code +${parsed.countryCallingCode}, but the box expects a number of region ${phone.region}${expected === undefined ? '' : ` (+${expected})`}, so its part "${part}" cannot be printed.`)
+      refuse(path, 'phone', 'invalid', PHONE_REGION_MISMATCH, aboutValue(record.number, (shown) =>
+        `${shown} has country calling code +${parsed.countryCallingCode}, but the box expects a number of region ${phone.region}${expected === undefined ? '' : ` (+${expected})`}, so its part "${part}" cannot be printed.`))
     }
   }
   if (part === 'countryCode') return parsed.countryCallingCode
   if (part === 'nationalNumber') return parsed.nationalNumber
   if (parsed.countryCallingCode !== '1' || parsed.nationalNumber.length !== 10) {
-    refuse(path, 'phone', 'unsupported', UNSUPPORTED_PART,
-      `The phone part "${part}" exists only for +1 numbers, and ${record.number} has country calling code +${parsed.countryCallingCode}.`)
+    refuse(path, 'phone', 'unsupported', UNSUPPORTED_PART, aboutValue(record.number, (shown) =>
+      `The phone part "${part}" exists only for +1 numbers, and ${shown} has country calling code +${parsed.countryCallingCode}.`))
   }
   return part === 'areaCode' ? parsed.nationalNumber.slice(0, 3) : parsed.nationalNumber.slice(3)
 }
@@ -73,11 +78,11 @@ function moneyPart(formatter: Formatter, value: unknown, part: ValuePart, path: 
   if (!checked(formatter.safeFormatMoney(value as { amount: number; currency: string }), path, 'money')) return undefined
   const { amount, currency } = value as { amount: number; currency: string }
   if (minorDigits(currency) !== 2) {
-    refuse(path, 'money', 'unsupported', UNSUPPORTED_PART,
-      `The money part "${part}" needs a currency with two minor digits, and ${currency} has ${minorDigits(currency)}.`)
+    refuse(path, 'money', 'unsupported', UNSUPPORTED_PART, aboutValue(currency, (shown) =>
+      `The money part "${part}" needs a currency with two minor digits, and ${shown} has ${minorDigits(currency)}.`))
   }
   if (amount < 0) {
-    refuse(path, 'money', 'unsupported', UNSUPPORTED_PART, `The money part "${part}" prints only amounts of zero or more, not ${amount}.`)
+    refuse(path, 'money', 'unsupported', UNSUPPORTED_PART, aboutValue(amount, (shown) => `The money part "${part}" prints only amounts of zero or more, not ${shown}.`))
   }
   const { units, cents } = splitAmount(amount)
   return part === 'units' ? units : cents

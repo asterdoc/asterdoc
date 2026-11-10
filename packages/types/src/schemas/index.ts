@@ -114,6 +114,7 @@ export type {
   Bundle,
   // Form
   Form,
+  FormTestCase,
   BaseField,
   EnumOption,
   EnumOptionValue,

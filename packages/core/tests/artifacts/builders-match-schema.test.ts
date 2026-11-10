@@ -361,13 +361,14 @@ describe('form builder from()', () => {
 		instructions: { kind: 'inline', text: 'Fill every box.' },
 		agentInstructions: { kind: 'inline', text: 'Ask for the amount first.' },
 		defs: { large: { type: 'boolean', value: 'amount > 100' } },
-		rules: { positive: { expr: 'amount > 0', message: 'Amount must be positive' } },
-		fields: { amount: { type: 'number', label: 'Amount' } },
+		rules: { positive: { expr: 'amount > 0', message: 'Amount must be positive', paths: ['fields.amount'] } },
+		fields: { amount: { type: 'number', label: 'Amount', sensitive: false } },
 		layers: { main: { kind: 'inline', mimeType: 'text/plain', text: 'Amount: {{fields.amount}}' } },
 		defaultLayer: 'main',
 		allowAdditionalAnnexes: true,
 		annexes: { receipt: { title: 'Receipt' } },
 		parties: { payer: { label: 'Payer' } },
+		tests: [{ name: 'a positive amount passes', input: { fields: { amount: 5 } }, expect: { valid: true, failures: [] } }],
 	}
 
 	test('the fixture sets every schema key an author sets', () => {

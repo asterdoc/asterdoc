@@ -17,6 +17,7 @@ import { topologicalSortDefsKeys } from '@/logic/design-time/type-checking/build
 import { isScalarExpressionType } from '@/logic/shared/expression-types'
 import { defsDependencyExpressions, definitionExpressionLeaves } from '@/logic/shared/defs-dependencies'
 import type { RuntimeContext } from '../shared/runtime-context'
+import { formSensitivity, revealingReads, type FormSensitivity } from '@/logic/shared/sensitive-values'
 
 /** A member's resolved membership in a bundle. */
 export type BundleInclusionStatus = 'included' | 'excluded' | 'unresolved'
@@ -85,6 +86,71 @@ export type BundleEvaluationMember = BundleRuntimeMember | BundleBytesMember | u
 interface BundleContextBuild {
 	readonly context: EvaluationContext
 	readonly errors: string[]
+	readonly reveals: (expression: string) => boolean
+}
+
+interface BundleSensitivity {
+	pathReveals(path: string): boolean
+	isList(path: string): boolean
+	reveals(expression: string): boolean
+}
+
+function scalarOrLeaves(expression: Expression): string[] {
+	return isScalarExpression(expression)
+		? [String(expression.value)]
+		: definitionExpressionLeaves(expression.value).map((leaf) => leaf.expression)
+}
+
+function bundleSensitivity(bundle: Bundle, contents: Record<string, BundleEvaluationMember>): BundleSensitivity {
+	const forms = new Map<string, FormSensitivity>()
+	const bundles = new Map<string, BundleSensitivity>()
+	const derived = new Map<string, boolean>()
+	const memberOf = (key: string): BundleRuntimeMember | undefined => {
+		const member = Object.prototype.hasOwnProperty.call(contents, key) ? contents[key] : undefined
+		return member && !('kind' in member) ? member : undefined
+	}
+	const formOf = (key: string): FormSensitivity | undefined => {
+		const member = memberOf(key)
+		if (!member?.form) return undefined
+		if (!forms.has(key)) forms.set(key, formSensitivity(member.form))
+		return forms.get(key)
+	}
+	const bundleOf = (key: string): BundleSensitivity | undefined => {
+		const member = memberOf(key)
+		if (!member?.bundle || !member.getAllContents) return undefined
+		if (!bundles.has(key)) bundles.set(key, bundleSensitivity(member.bundle, member.getAllContents()))
+		return bundles.get(key)
+	}
+	const anyMemberSensitive = (): boolean => Object.keys(contents).some((key) => formOf(key)?.holdsSensitive() === true || bundleOf(key) !== undefined)
+	const route = (path: string): { reveals: boolean; list: boolean } => {
+		const [root = '', key = '', ...rest] = path.split('.')
+		const inner = rest.join('.')
+		if ((root === 'forms' || root === 'bundles') && key === '') return { reveals: anyMemberSensitive(), list: false }
+		if (root === 'forms') {
+			const form = formOf(key)
+			if (!form) return { reveals: false, list: false }
+			return inner === '' ? { reveals: form.holdsSensitive(), list: false } : { reveals: form.pathReveals(inner), list: form.isList(inner) }
+		}
+		if (root === 'bundles') {
+			const nested = bundleOf(key)
+			if (!nested) return { reveals: false, list: false }
+			return inner === '' ? { reveals: true, list: false } : { reveals: nested.pathReveals(inner), list: nested.isList(inner) }
+		}
+		return { reveals: defDerived(root), list: false }
+	}
+	const isList = (path: string): boolean => route(path).list
+	const reveals = (expression: string): boolean => revealingReads(expression, isList).some((read) => route(read).reveals)
+	const defDerived = (key: string): boolean => {
+		const definition = bundle.defs && Object.prototype.hasOwnProperty.call(bundle.defs, key) ? bundle.defs[key] : undefined
+		if (!definition) return false
+		const known = derived.get(key)
+		if (known !== undefined) return known
+		derived.set(key, false)
+		const result = scalarOrLeaves(definition).some(reveals)
+		derived.set(key, result)
+		return result
+	}
+	return { pathReveals: (path) => route(path).reveals, isList, reveals }
 }
 
 function isScalarExpression(expr: Expression): boolean {
@@ -97,6 +163,7 @@ function valueAtPath(root: unknown, path: string): { present: boolean; value: un
 		if (value === null || value === undefined || (typeof value !== 'object' && typeof value !== 'function')) {
 			return { present: false, value: undefined }
 		}
+		if (Array.isArray(value) && !/^\d+$/.test(segment)) return { present: true, value }
 		if (!Object.prototype.hasOwnProperty.call(value, segment)) {
 			return { present: false, value: undefined }
 		}
@@ -105,7 +172,7 @@ function valueAtPath(root: unknown, path: string): { present: boolean; value: un
 	return { present: value !== undefined, value }
 }
 
-function expressionValue(expression: string, context: EvaluationContext):
+function expressionValue(expression: string, context: EvaluationContext, reveals: (expression: string) => boolean):
 	| { status: 'value'; value: unknown }
 	| { status: 'unresolved'; reason: string }
 	| { status: 'error'; reason: string } {
@@ -147,6 +214,7 @@ function expressionValue(expression: string, context: EvaluationContext):
 
 	const result = evaluateExpression(expression, context)
 	if (!result.success) {
+		if (reveals(expression)) return { status: 'error', reason: `Invalid include expression "${expression}"` }
 		return { status: 'error', reason: `Invalid include expression "${expression}": ${result.error ?? 'evaluation failed'}` }
 	}
 	return { status: 'value', value: result.value }
@@ -183,6 +251,7 @@ function buildBundleContext(
 	const forms: Record<string, unknown> = {}
 	const bundles: Record<string, unknown> = {}
 	const errors: string[] = []
+	const { reveals } = bundleSensitivity(bundle, contents)
 
 	for (const item of bundle.contents) {
 		const member = contents[item.key]
@@ -200,7 +269,7 @@ function buildBundleContext(
 		...(bundleContext && { [EVALUATION_CLOCK]: bundleContext.asOf }),
 	}
 
-	if (!bundle.defs || Object.keys(bundle.defs).length === 0) return { context, errors }
+	if (!bundle.defs || Object.keys(bundle.defs).length === 0) return { context, errors, reveals }
 
 	const { sorted } = topologicalSortDefsKeys(defsDependencyExpressions(bundle.defs))
 
@@ -208,7 +277,7 @@ function buildBundleContext(
 		const expression = bundle.defs[key]
 		if (!expression) continue
 		if (isScalarExpression(expression)) {
-			const result = expressionValue(String(expression.value), context)
+			const result = expressionValue(String(expression.value), context, reveals)
 			if (result.status === 'value') {
 				;(context as Record<string, unknown>)[key] = result.value
 			} else {
@@ -223,7 +292,7 @@ function buildBundleContext(
 		const values: Record<string, unknown> = {}
 		let unresolved = false
 		for (const leaf of definitionExpressionLeaves(expression.value)) {
-			const result = expressionValue(leaf.expression, context)
+			const result = expressionValue(leaf.expression, context, reveals)
 			if (result.status === 'value') setAtPath(values, leaf.path, result.value)
 			else {
 				unresolved = true
@@ -233,7 +302,7 @@ function buildBundleContext(
 		;(context as Record<string, unknown>)[key] = unresolved ? undefined : values
 	}
 
-	return { context, errors }
+	return { context, errors, reveals }
 }
 
 function setAtPath(target: Record<string, unknown>, path: readonly string[], value: unknown): void {
@@ -265,7 +334,7 @@ export function evaluateBundleInclusion(
 	contents: Record<string, BundleEvaluationMember> = {},
 	context?: RuntimeContext,
 ): BundleInclusionState {
-	const { context: evaluationContext, errors } = buildBundleContext(bundle, contents, context)
+	const { context: evaluationContext, errors, reveals } = buildBundleContext(bundle, contents, context)
 	const decisions: BundleInclusionDecision[] = []
 
 	for (const item of bundle.contents) {
@@ -276,7 +345,7 @@ export function evaluateBundleInclusion(
 		} else if (include === false) {
 			decision = { key: item.key, include, status: 'excluded', value: false }
 		} else {
-			const result = expressionValue(include, evaluationContext)
+			const result = expressionValue(include, evaluationContext, reveals)
 			if (result.status === 'value') {
 				if (typeof result.value !== 'boolean') {
 					decision = {

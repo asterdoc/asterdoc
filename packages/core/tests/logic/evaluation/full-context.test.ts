@@ -33,7 +33,13 @@ describe('rule context', () => {
 		const future = def.fill({ fields: { startDate: '2026-10-01' } } as any, context).validateRules()
 		const past = def.fill({ fields: { startDate: '2026-09-01' } } as any, context).validateRules()
 		expect(future.rules[0]).toEqual({ ruleId: 'notPast', passed: true, severity: 'error' })
-		expect(past.rules[0]).toEqual({ ruleId: 'notPast', passed: false, message: 'Start date is in the past', severity: 'error' })
+		expect(past.rules[0]).toEqual({
+			ruleId: 'notPast',
+			passed: false,
+			message: 'Start date is in the past',
+			severity: 'error',
+			explanation: { values: [{ path: 'fields.startDate', value: '"2026-09-01"' }] },
+		})
 	})
 
 	test('a rule can call a configured host function', () => {
@@ -53,7 +59,7 @@ describe('rule context', () => {
 			return evaluateFormRules(f, data.fields, new Map(), buildFormContext(f, data)).rules[0]
 		}
 		expect(run(true)).toEqual({ ruleId: 'approved', passed: true, severity: 'error' })
-		expect(run(false)).toEqual({ ruleId: 'approved', passed: false, message: 'Not approved', severity: 'error' })
+		expect(run(false)).toEqual({ ruleId: 'approved', passed: false, message: 'Not approved', severity: 'error', explanation: { values: [] } })
 	})
 
 	test('a rule reads a field by its bare id and through fields', () => {

@@ -105,6 +105,7 @@ export type {
 export type {
   // Form type
   Form,
+  FormTestCase,
   // Field types
   BaseField,
   EnumOption,

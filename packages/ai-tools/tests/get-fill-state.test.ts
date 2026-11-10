@@ -23,11 +23,48 @@ describe('get_fill_state rule results', () => {
 
 		expect(state.rules).toEqual({
 			valid: false,
-			errors: [{ rule_id: 'amountPositive', message: 'Amount must be positive' }],
-			warnings: [{ rule_id: 'termReasonable', message: 'Term is unusually long' }],
+			errors: [{ rule_id: 'amountPositive', message: 'Amount must be positive', values: [{ path: 'amount', value: '-5' }] }],
+			warnings: [{ rule_id: 'termReasonable', message: 'Term is unusually long', values: [{ path: 'term', value: '480' }] }],
 		})
 		expect(state.errors).toBeUndefined()
 		expect(FillStateOutputSchema.parse(state).rules.errors[0]?.rule_id).toBe('amountPositive')
+	})
+
+	it('attaches a violation to its rule paths and redacts sensitive values it read', async () => {
+		const artifact = {
+			kind: 'form' as const,
+			name: 'payee',
+			fields: {
+				account: { type: 'text' as const, sensitive: true },
+				taxId: { type: 'identification' as const },
+			},
+			rules: {
+				accountLength: { expr: 'length(account) == 12', message: 'Account numbers have 12 digits', paths: ['fields.account'] },
+				taxIdLength: { expr: 'length(fields.taxId.number) == 9', message: 'Tax IDs have 9 digits' },
+			},
+		}
+		const state = await executeGetFillState({
+			source: 'artifact',
+			artifact,
+			data: { fields: { account: '000123', taxId: { type: 'ein', number: '12345' } } },
+		})
+
+		expect(state.rules.errors).toEqual([
+			{
+				rule_id: 'accountLength',
+				message: 'Account numbers have 12 digits',
+				paths: ['fields.account'],
+				values: [{ path: 'account', value: '[redacted] (string, length 6)' }],
+			},
+			{
+				rule_id: 'taxIdLength',
+				message: 'Tax IDs have 9 digits',
+				values: [{ path: 'fields.taxId.number', value: '[redacted] (string, length 5)' }],
+			},
+		])
+		expect(JSON.stringify(state)).not.toContain('000123')
+		expect(JSON.stringify(state.rules)).not.toContain('12345')
+		expect(FillStateOutputSchema.safeParse(state).success).toBe(true)
 	})
 
 	it('reports no violations when every rule passes', async () => {

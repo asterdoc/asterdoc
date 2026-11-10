@@ -2,7 +2,7 @@ import type { Address, Organization, Person } from '@asterdoc/types'
 
 import { FormatError } from './errors'
 import { resolveMessage, type MessageContext } from './messages'
-import { isMissing, isRecord, issue, statusForIssues, type Validation } from './shared'
+import { aboutInput, isMissing, isRecord, issue, statusForIssues, type Validation } from './shared'
 import type {
 	AddressFormatOptions,
 	AddressLayoutContext,
@@ -377,17 +377,18 @@ function styledNumber(number: string, options: PhoneFormatOptions, provider: Pho
 	}
 	const parsed = provider.parse(number)
 	if (!parsed) {
-		throw new FormatError('invalid', 'phone', [issue('phone', INVALID_PHONE, `${number} is not a valid phone number in any numbering plan, so it cannot print as ${style}.`, 'number')])
+		const about = aboutInput(number, (shown) => `${shown} is not a valid phone number in any numbering plan, so it cannot print as ${style}.`, false)
+		throw new FormatError('invalid', 'phone', [issue('phone', INVALID_PHONE, about.message, 'number', undefined, about.redactedMessage)])
 	}
 	if (options.region !== undefined && (style === 'national' || style === 'digits')) {
 		const expected = provider.callingCode(options.region)
 		if (expected !== parsed.countryCallingCode) {
-			throw new FormatError('invalid', 'phone', [issue(
-				'phone',
-				PHONE_REGION_MISMATCH,
-				`${number} has country calling code +${parsed.countryCallingCode}, but the box expects a number of region ${options.region}${expected === undefined ? '' : ` (+${expected})`}; printed as ${style} it would lose its calling code.`,
-				'number',
-			)])
+			const about = aboutInput(
+				number,
+				(shown) => `${shown} has country calling code +${parsed.countryCallingCode}, but the box expects a number of region ${options.region}${expected === undefined ? '' : ` (+${expected})`}; printed as ${style} it would lose its calling code.`,
+				false,
+			)
+			throw new FormatError('invalid', 'phone', [issue('phone', PHONE_REGION_MISMATCH, about.message, 'number', undefined, about.redactedMessage)])
 		}
 	}
 	if (style === 'international') return parsed.international

@@ -9,6 +9,7 @@
  * evaluated against the form's evaluation context (`fields.*`, defs keys, etc.).
  */
 
+import { formSensitivity } from '../../shared/sensitive-values'
 import type { Form, FormPayment, Money, MoneyExpression } from '@asterdoc/types'
 import { buildFormContext, type FormDataPayload } from './context-builder'
 import { evaluateExpression } from './expression-evaluator'
@@ -56,11 +57,13 @@ export function resolvePartyPayment(
 
   const context = buildFormContext(form, data)
   const expr = payment.amount
+  const sensitivity = formSensitivity(form)
+  const detail = (expression: string, text: string): string => (sensitivity.reveals(expression) ? '' : text)
 
   const amountResult = evaluateExpression<unknown>(expr.value.amount, context)
   if (!amountResult.success) {
     throw new Error(
-      `Could not resolve the payment amount expression "${expr.value.amount}": ${amountResult.error}`
+      `Could not resolve the payment amount expression "${expr.value.amount}"${detail(expr.value.amount, `: ${amountResult.error}`)}`
     )
   }
   // A missing/unresolved amount is null under the engine's null-safe semantics;
@@ -74,20 +77,20 @@ export function resolvePartyPayment(
   const amount = Number(amountResult.value)
   if (!Number.isFinite(amount)) {
     throw new Error(
-      `The payment amount expression "${expr.value.amount}" did not resolve to a finite number (got ${String(amountResult.value)}).`
+      `The payment amount expression "${expr.value.amount}" did not resolve to a finite number${detail(expr.value.amount, ` (got ${String(amountResult.value)})`)}.`
     )
   }
 
   const currencyResult = evaluateExpression<unknown>(expr.value.currency, context)
   if (!currencyResult.success) {
     throw new Error(
-      `Could not resolve the payment currency expression "${expr.value.currency}": ${currencyResult.error}`
+      `Could not resolve the payment currency expression "${expr.value.currency}"${detail(expr.value.currency, `: ${currencyResult.error}`)}`
     )
   }
   const currency = String(currencyResult.value)
   if (!/^[A-Z]{3}$/.test(currency)) {
     throw new Error(
-      `The payment currency expression "${expr.value.currency}" did not resolve to an ISO 4217 alpha-3 code (got "${currency}").`
+      `The payment currency expression "${expr.value.currency}" did not resolve to an ISO 4217 alpha-3 code${detail(expr.value.currency, ` (got "${currency}")`)}.`
     )
   }
 

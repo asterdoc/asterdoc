@@ -121,6 +121,7 @@ export interface TextFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required(value: undefined): TextFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): TextFieldBuilder<V>;
 	visible(value?: CondExpr): TextFieldBuilder<R>;
+	sensitive(value?: boolean): TextFieldBuilder<R>;
 	minLength(value: number): TextFieldBuilder<R>;
 	maxLength(value: number): TextFieldBuilder<R>;
 	pattern(value: string): TextFieldBuilder<R>;
@@ -136,6 +137,7 @@ export interface BooleanFieldBuilder<R extends CondExpr | undefined = undefined>
 	required(value: undefined): BooleanFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): BooleanFieldBuilder<V>;
 	visible(value?: CondExpr): BooleanFieldBuilder<R>;
+	sensitive(value?: boolean): BooleanFieldBuilder<R>;
 	default(value: boolean): BooleanFieldBuilder<R>;
 	build(): BuiltField<BooleanField, R>;
 }
@@ -147,6 +149,7 @@ export interface NumberFieldBuilder<R extends CondExpr | undefined = undefined> 
 	required(value: undefined): NumberFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): NumberFieldBuilder<V>;
 	visible(value?: CondExpr): NumberFieldBuilder<R>;
+	sensitive(value?: boolean): NumberFieldBuilder<R>;
 	min(value: number): NumberFieldBuilder<R>;
 	max(value: number): NumberFieldBuilder<R>;
 	/** Set the allowed increment: a value must be a multiple of `step` (for example 0.01 for cents). */
@@ -162,6 +165,7 @@ export interface CoordinateFieldBuilder<R extends CondExpr | undefined = undefin
 	required(value: undefined): CoordinateFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): CoordinateFieldBuilder<V>;
 	visible(value?: CondExpr): CoordinateFieldBuilder<R>;
+	sensitive(value?: boolean): CoordinateFieldBuilder<R>;
 	default(value: Coordinate): CoordinateFieldBuilder<R>;
 	build(): BuiltField<CoordinateField, R>;
 }
@@ -173,6 +177,7 @@ export interface BboxFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required(value: undefined): BboxFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): BboxFieldBuilder<V>;
 	visible(value?: CondExpr): BboxFieldBuilder<R>;
+	sensitive(value?: boolean): BboxFieldBuilder<R>;
 	default(value: Bbox): BboxFieldBuilder<R>;
 	build(): BuiltField<BboxField, R>;
 }
@@ -184,6 +189,7 @@ export interface MoneyFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required(value: undefined): MoneyFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): MoneyFieldBuilder<V>;
 	visible(value?: CondExpr): MoneyFieldBuilder<R>;
+	sensitive(value?: boolean): MoneyFieldBuilder<R>;
 	min(value: number): MoneyFieldBuilder<R>;
 	max(value: number): MoneyFieldBuilder<R>;
 	/** Set the ISO 4217 alpha-3 currency code a value must use (for example USD). */
@@ -199,6 +205,7 @@ export interface AddressFieldBuilder<R extends CondExpr | undefined = undefined>
 	required(value: undefined): AddressFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): AddressFieldBuilder<V>;
 	visible(value?: CondExpr): AddressFieldBuilder<R>;
+	sensitive(value?: boolean): AddressFieldBuilder<R>;
 	codes(value?: boolean): AddressFieldBuilder<R>;
 	default(value: Address): AddressFieldBuilder<R>;
 	build(): BuiltField<AddressField, R>;
@@ -211,6 +218,7 @@ export interface CountryFieldBuilder<R extends CondExpr | undefined = undefined>
 	required(value: undefined): CountryFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): CountryFieldBuilder<V>;
 	visible(value?: CondExpr): CountryFieldBuilder<R>;
+	sensitive(value?: boolean): CountryFieldBuilder<R>;
 	default(value: string): CountryFieldBuilder<R>;
 	build(): BuiltField<CountryField, R>;
 }
@@ -222,6 +230,7 @@ export interface RegionFieldBuilder<R extends CondExpr | undefined = undefined> 
 	required(value: undefined): RegionFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): RegionFieldBuilder<V>;
 	visible(value?: CondExpr): RegionFieldBuilder<R>;
+	sensitive(value?: boolean): RegionFieldBuilder<R>;
 	country(code: string): RegionFieldBuilder<R>;
 	default(value: string): RegionFieldBuilder<R>;
 	build(): BuiltField<RegionField, R>;
@@ -234,6 +243,7 @@ export interface PhoneFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required(value: undefined): PhoneFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): PhoneFieldBuilder<V>;
 	visible(value?: CondExpr): PhoneFieldBuilder<R>;
+	sensitive(value?: boolean): PhoneFieldBuilder<R>;
 	default(value: Phone): PhoneFieldBuilder<R>;
 	build(): BuiltField<PhoneField, R>;
 }
@@ -245,6 +255,7 @@ export interface DurationFieldBuilder<R extends CondExpr | undefined = undefined
 	required(value: undefined): DurationFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): DurationFieldBuilder<V>;
 	visible(value?: CondExpr): DurationFieldBuilder<R>;
+	sensitive(value?: boolean): DurationFieldBuilder<R>;
 	default(value: Duration): DurationFieldBuilder<R>;
 	build(): BuiltField<DurationField, R>;
 }
@@ -256,6 +267,7 @@ export interface EmailFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required(value: undefined): EmailFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): EmailFieldBuilder<V>;
 	visible(value?: CondExpr): EmailFieldBuilder<R>;
+	sensitive(value?: boolean): EmailFieldBuilder<R>;
 	minLength(value: number): EmailFieldBuilder<R>;
 	maxLength(value: number): EmailFieldBuilder<R>;
 	default(value: string): EmailFieldBuilder<R>;
@@ -269,6 +281,7 @@ export interface UuidFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required(value: undefined): UuidFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): UuidFieldBuilder<V>;
 	visible(value?: CondExpr): UuidFieldBuilder<R>;
+	sensitive(value?: boolean): UuidFieldBuilder<R>;
 	minLength(value: number): UuidFieldBuilder<R>;
 	maxLength(value: number): UuidFieldBuilder<R>;
 	pattern(value: string): UuidFieldBuilder<R>;
@@ -283,6 +296,7 @@ export interface UriFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required(value: undefined): UriFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): UriFieldBuilder<V>;
 	visible(value?: CondExpr): UriFieldBuilder<R>;
+	sensitive(value?: boolean): UriFieldBuilder<R>;
 	minLength(value: number): UriFieldBuilder<R>;
 	maxLength(value: number): UriFieldBuilder<R>;
 	pattern(value: string): UriFieldBuilder<R>;
@@ -297,6 +311,7 @@ export interface EnumFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required(value: undefined): EnumFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): EnumFieldBuilder<V>;
 	visible(value?: CondExpr): EnumFieldBuilder<R>;
+	sensitive(value?: boolean): EnumFieldBuilder<R>;
 	options(values: EnumOption[]): EnumFieldBuilder<R>;
 	default(value: EnumOptionValue): EnumFieldBuilder<R>;
 	build(): BuiltField<EnumField, R>;
@@ -309,6 +324,7 @@ export interface DateFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required(value: undefined): DateFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): DateFieldBuilder<V>;
 	visible(value?: CondExpr): DateFieldBuilder<R>;
+	sensitive(value?: boolean): DateFieldBuilder<R>;
 	min(value: string): DateFieldBuilder<R>;
 	max(value: string): DateFieldBuilder<R>;
 	default(value: string): DateFieldBuilder<R>;
@@ -322,6 +338,7 @@ export interface DatetimeFieldBuilder<R extends CondExpr | undefined = undefined
 	required(value: undefined): DatetimeFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): DatetimeFieldBuilder<V>;
 	visible(value?: CondExpr): DatetimeFieldBuilder<R>;
+	sensitive(value?: boolean): DatetimeFieldBuilder<R>;
 	min(value: string): DatetimeFieldBuilder<R>;
 	max(value: string): DatetimeFieldBuilder<R>;
 	default(value: string): DatetimeFieldBuilder<R>;
@@ -335,6 +352,7 @@ export interface TimeFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required(value: undefined): TimeFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): TimeFieldBuilder<V>;
 	visible(value?: CondExpr): TimeFieldBuilder<R>;
+	sensitive(value?: boolean): TimeFieldBuilder<R>;
 	min(value: string): TimeFieldBuilder<R>;
 	max(value: string): TimeFieldBuilder<R>;
 	default(value: string): TimeFieldBuilder<R>;
@@ -348,6 +366,7 @@ export interface PersonFieldBuilder<R extends CondExpr | undefined = undefined> 
 	required(value: undefined): PersonFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): PersonFieldBuilder<V>;
 	visible(value?: CondExpr): PersonFieldBuilder<R>;
+	sensitive(value?: boolean): PersonFieldBuilder<R>;
 	default(value: Person): PersonFieldBuilder<R>;
 	build(): BuiltField<PersonField, R>;
 }
@@ -359,6 +378,7 @@ export interface OrganizationFieldBuilder<R extends CondExpr | undefined = undef
 	required(value: undefined): OrganizationFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): OrganizationFieldBuilder<V>;
 	visible(value?: CondExpr): OrganizationFieldBuilder<R>;
+	sensitive(value?: boolean): OrganizationFieldBuilder<R>;
 	default(value: Organization): OrganizationFieldBuilder<R>;
 	build(): BuiltField<OrganizationField, R>;
 }
@@ -370,6 +390,7 @@ export interface IdentificationFieldBuilder<R extends CondExpr | undefined = und
 	required(value: undefined): IdentificationFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): IdentificationFieldBuilder<V>;
 	visible(value?: CondExpr): IdentificationFieldBuilder<R>;
+	sensitive(value?: boolean): IdentificationFieldBuilder<R>;
 	allowedTypes(...types: string[]): IdentificationFieldBuilder<R>;
 	default(value: Identification): IdentificationFieldBuilder<R>;
 	build(): BuiltField<IdentificationField, R>;
@@ -382,6 +403,7 @@ export interface MultiselectFieldBuilder<R extends CondExpr | undefined = undefi
 	required(value: undefined): MultiselectFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): MultiselectFieldBuilder<V>;
 	visible(value?: CondExpr): MultiselectFieldBuilder<R>;
+	sensitive(value?: boolean): MultiselectFieldBuilder<R>;
 	options(values: EnumOption[]): MultiselectFieldBuilder<R>;
 	min(value: number): MultiselectFieldBuilder<R>;
 	max(value: number): MultiselectFieldBuilder<R>;
@@ -396,6 +418,7 @@ export interface PercentageFieldBuilder<R extends CondExpr | undefined = undefin
 	required(value: undefined): PercentageFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): PercentageFieldBuilder<V>;
 	visible(value?: CondExpr): PercentageFieldBuilder<R>;
+	sensitive(value?: boolean): PercentageFieldBuilder<R>;
 	min(value: number): PercentageFieldBuilder<R>;
 	max(value: number): PercentageFieldBuilder<R>;
 	precision(value: number): PercentageFieldBuilder<R>;
@@ -410,6 +433,7 @@ export interface RatingFieldBuilder<R extends CondExpr | undefined = undefined> 
 	required(value: undefined): RatingFieldBuilder<true>;
 	required<const V extends CondExpr>(value: V): RatingFieldBuilder<V>;
 	visible(value?: CondExpr): RatingFieldBuilder<R>;
+	sensitive(value?: boolean): RatingFieldBuilder<R>;
 	min(value: number): RatingFieldBuilder<R>;
 	max(value: number): RatingFieldBuilder<R>;
 	step(value: number): RatingFieldBuilder<R>;
@@ -427,6 +451,7 @@ export interface FieldsetFieldBuilder<
 	required(value: undefined): FieldsetFieldBuilder<true, Fields>;
 	required<const V extends CondExpr>(value: V): FieldsetFieldBuilder<V, Fields>;
 	visible(value?: CondExpr): FieldsetFieldBuilder<R, Fields>;
+	sensitive(value?: boolean): FieldsetFieldBuilder<R, Fields>;
 	field<const K extends string, const D extends Buildable<FormField>>(
 		id: K,
 		fieldDef: D,
@@ -452,6 +477,7 @@ export interface ListFieldBuilder<
 	required(value: undefined): ListFieldBuilder<true, Item>;
 	required<const V extends CondExpr>(value: V): ListFieldBuilder<V, Item>;
 	visible(value?: CondExpr): ListFieldBuilder<R, Item>;
+	sensitive(value?: boolean): ListFieldBuilder<R, Item>;
 	item<const D extends Buildable<FormField>>(field: D): ListFieldBuilder<R, BuiltFieldDefinition<D>>;
 	minItems(value: number): ListFieldBuilder<R, Item>;
 	maxItems(value: number): ListFieldBuilder<R, Item>;
@@ -469,6 +495,7 @@ export function textField(): TextFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		minLength(value: number) { _def.minLength = value; return self; },
 		maxLength(value: number) { _def.maxLength = value; return self; },
 		pattern(value: string) { _def.pattern = value; return self; },
@@ -486,6 +513,7 @@ export function booleanField(): BooleanFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		default(value: boolean) { _def.default = value; return self; },
 		build() { return parseField(_def) as BooleanField; },
 	};
@@ -499,6 +527,7 @@ export function numberField(): NumberFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		min(value: number) { _def.min = value; return self; },
 		max(value: number) { _def.max = value; return self; },
 		step(value: number) { _def.step = value; return self; },
@@ -515,6 +544,7 @@ export function coordinateField(): CoordinateFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		default(value: Coordinate) { _def.default = value; return self; },
 		build() { return parseField(_def) as CoordinateField; },
 	};
@@ -528,6 +558,7 @@ export function bboxField(): BboxFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		default(value: Bbox) { _def.default = value; return self; },
 		build() { return parseField(_def) as BboxField; },
 	};
@@ -541,6 +572,7 @@ export function moneyField(): MoneyFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		min(value: number) { _def.min = value; return self; },
 		max(value: number) { _def.max = value; return self; },
 		currency(value: string) { _def.currency = value; return self; },
@@ -557,6 +589,7 @@ export function addressField(): AddressFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		codes(value = true) { _def.codes = value; return self; },
 		default(value: Address) { _def.default = value; return self; },
 		build() { return parseField(_def) as AddressField; },
@@ -571,6 +604,7 @@ export function countryField(): CountryFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		default(value: string) { _def.default = value; return self; },
 		build() { return parseField(_def) as CountryField; },
 	};
@@ -584,6 +618,7 @@ export function regionField(): RegionFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		country(code: string) { _def.country = code; return self; },
 		default(value: string) { _def.default = value; return self; },
 		build() { return parseField(_def) as RegionField; },
@@ -598,6 +633,7 @@ export function phoneField(): PhoneFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		default(value: Phone) { _def.default = value; return self; },
 		build() { return parseField(_def) as PhoneField; },
 	};
@@ -611,6 +647,7 @@ export function durationField(): DurationFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		default(value: Duration) { _def.default = value; return self; },
 		build() { return parseField(_def) as DurationField; },
 	};
@@ -624,6 +661,7 @@ export function emailField(): EmailFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		minLength(value: number) { _def.minLength = value; return self; },
 		maxLength(value: number) { _def.maxLength = value; return self; },
 		default(value: string) { _def.default = value; return self; },
@@ -639,6 +677,7 @@ export function uuidField(): UuidFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		minLength(value: number) { _def.minLength = value; return self; },
 		maxLength(value: number) { _def.maxLength = value; return self; },
 		pattern(value: string) { _def.pattern = value; return self; },
@@ -655,6 +694,7 @@ export function uriField(): UriFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		minLength(value: number) { _def.minLength = value; return self; },
 		maxLength(value: number) { _def.maxLength = value; return self; },
 		pattern(value: string) { _def.pattern = value; return self; },
@@ -671,6 +711,7 @@ export function enumField(): EnumFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		options(values: EnumOption[]) { _def.enum = values; return self; },
 		default(value: EnumOptionValue) { _def.default = value; return self; },
 		build() { return parseField(_def) as EnumField; },
@@ -685,6 +726,7 @@ export function dateField(): DateFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		min(value: string) { _def.min = value; return self; },
 		max(value: string) { _def.max = value; return self; },
 		default(value: string) { _def.default = value; return self; },
@@ -700,6 +742,7 @@ export function datetimeField(): DatetimeFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		min(value: string) { _def.min = value; return self; },
 		max(value: string) { _def.max = value; return self; },
 		default(value: string) { _def.default = value; return self; },
@@ -715,6 +758,7 @@ export function timeField(): TimeFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		min(value: string) { _def.min = value; return self; },
 		max(value: string) { _def.max = value; return self; },
 		default(value: string) { _def.default = value; return self; },
@@ -730,6 +774,7 @@ export function personField(): PersonFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		default(value: Person) { _def.default = value; return self; },
 		build() { return parseField(_def) as PersonField; },
 	};
@@ -743,6 +788,7 @@ export function organizationField(): OrganizationFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		default(value: Organization) { _def.default = value; return self; },
 		build() { return parseField(_def) as OrganizationField; },
 	};
@@ -756,6 +802,7 @@ export function identificationField(): IdentificationFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		allowedTypes(...types: string[]) { _def.allowedTypes = types; return self; },
 		default(value: Identification) { _def.default = value; return self; },
 		build() { return parseField(_def) as IdentificationField; },
@@ -770,6 +817,7 @@ export function multiselectField(): MultiselectFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		options(values: EnumOption[]) { _def.enum = values; return self; },
 		min(value: number) { _def.min = value; return self; },
 		max(value: number) { _def.max = value; return self; },
@@ -786,6 +834,7 @@ export function percentageField(): PercentageFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		min(value: number) { _def.min = value; return self; },
 		max(value: number) { _def.max = value; return self; },
 		precision(value: number) { _def.precision = value; return self; },
@@ -802,6 +851,7 @@ export function ratingField(): RatingFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		min(value: number) { _def.min = value; return self; },
 		max(value: number) { _def.max = value; return self; },
 		step(value: number) { _def.step = value; return self; },
@@ -818,6 +868,7 @@ export function fieldsetField(): FieldsetFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		field(fieldId: string, fieldDef: Buildable<FormField>) {
 			const fields = { ...((_def.fields as Record<string, Buildable<FormField>>) || {}) };
 			fields[fieldId] = fieldDef;
@@ -848,6 +899,7 @@ export function listField(): ListFieldBuilder {
 		description(value: string) { _def.description = value; return self; },
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
+		sensitive(value = true) { _def.sensitive = value; return self; },
 		item(value: Buildable<FormField>) { _def.item = value; return self; },
 		minItems(value: number) { _def.minItems = value; return self; },
 		maxItems(value: number) { _def.maxItems = value; return self; },

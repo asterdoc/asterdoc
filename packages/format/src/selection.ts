@@ -1,5 +1,5 @@
 import { resolveMessage, type MessageContext } from './messages'
-import { isMissing, issue, type Validation } from './shared'
+import { aboutInput, isMissing, issue, type Validation } from './shared'
 import type {
 	BooleanFormatOptions,
 	EnumFormatOptions,
@@ -62,6 +62,7 @@ export class SelectionFormatError extends Error {
 		readonly status: 'invalid' | 'unsupported',
 		readonly code: string,
 		message: string,
+		readonly redactedMessage?: string,
 	) {
 		super(message)
 		this.name = 'SelectionFormatError'
@@ -203,11 +204,8 @@ export function formatEnumValue(
 	const option = (options.options ?? []).find((candidate) => candidate.value === value)
 	if (option !== undefined) return option.label ?? String(value)
 	if ((options.unknownOption ?? 'error') === 'value') return String(value)
-	throw new SelectionFormatError(
-		'invalid',
-		'unknown_option',
-		`No declared ${kind} option carries the value ${JSON.stringify(value)}.`,
-	)
+	const about = aboutInput(value, (shown) => `No declared ${kind} option carries the value ${shown}.`)
+	throw new SelectionFormatError('invalid', 'unknown_option', about.message, about.redactedMessage)
 }
 
 export function formatMultiselectValue(

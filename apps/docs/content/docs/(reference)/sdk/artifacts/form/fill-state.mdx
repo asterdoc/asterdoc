@@ -133,6 +133,8 @@ One rule's result. `rules.errors` and `rules.warnings` hold only failed rules.
   { name: 'passed', type: 'boolean', description: 'Whether the rule passed' },
   { name: 'message', type: 'string | undefined', description: "The rule's message, present when the rule failed" },
   { name: 'severity', type: "'error' | 'warning'", description: 'Errors make `valid` false; warnings do not' },
+  { name: 'paths', type: 'string[] | undefined', description: "The field paths the rule declares in `paths`. Absent, the result is form level" },
+  { name: 'explanation', type: '{ values: { path: string; value: string }[] } | undefined', description: 'Present when the rule failed: each value its expression read, as printed. Sensitive values print as `[redacted]` with their kind and length; a list prints at most ten elements' },
 ]} />
 
 ### EvaluationIssue

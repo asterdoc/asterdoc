@@ -88,7 +88,8 @@ describe('resolveCountry', () => {
 		expect(outcome).toEqual({
 			ok: false,
 			code: 'ambiguous_country',
-			message: expect.any(String),
+			message: '"Georgia" names a country and a subdivision of another country.',
+			redactedMessage: '[redacted] (string, length 7) names a country and a subdivision of another country.',
 			candidates: [{ code: 'GE', name: 'Georgia' }, { code: 'US-GA', name: 'Georgia, United States' }],
 		})
 	})

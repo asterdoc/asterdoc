@@ -317,8 +317,13 @@ export const FillOutputSchema = z.object({
 export const UpdateFillOutputSchema = FillOutputSchema
 
 export const RuleViolationSchema = z.object({
-	rule_id: z.string().describe('Key of the violated rule in the artifact rules section'),
+	rule_id: z.string().describe('Key of the violated rule in the artifact rules section; a stable code for the failure'),
 	message: z.string().describe('The rule message'),
+	paths: z.array(z.string()).optional().describe('Field paths the failure attaches to; absent, it is about the whole form'),
+	values: z
+		.array(z.object({ path: z.string(), value: z.string() }))
+		.optional()
+		.describe('The values the rule read, as printed. A sensitive value shows as [redacted] with its kind and length: ask the person to check it, never to read it back'),
 })
 
 export const FillTargetSchema = z.object({

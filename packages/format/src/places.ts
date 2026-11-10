@@ -1,4 +1,5 @@
 import type { RegionsProvider, Subdivision } from '@asterdoc/types'
+import { aboutInput } from './shared'
 
 export type { RegionsProvider, Subdivision } from '@asterdoc/types'
 
@@ -122,6 +123,8 @@ export interface PlaceFailure {
 	readonly ok: false
 	readonly code: PlaceIssueCode
 	readonly message: string
+	/** The message with the input written as `[redacted]` with its kind and length. */
+	readonly redactedMessage: string
 	readonly candidates: readonly PlaceCandidate[]
 }
 
@@ -163,8 +166,9 @@ export function normalizePlaceName(value: string): string {
 		.replace(/^the /, '')
 }
 
-function failure(code: PlaceIssueCode, message: string, candidates: readonly PlaceCandidate[] = []): PlaceFailure {
-	return { ok: false, code, message, candidates }
+function failure(code: PlaceIssueCode, message: string | { message: string; redactedMessage: string }, candidates: readonly PlaceCandidate[] = []): PlaceFailure {
+	const texts = typeof message === 'string' ? { message, redactedMessage: message } : message
+	return { ok: false, code, ...texts, candidates }
 }
 
 function missingRegions(): PlaceFailure {
@@ -289,10 +293,10 @@ export function resolveCountry(input: string, options: CountryLookupOptions = {}
 	const codes = [...(index.get(key) ?? [])].sort()
 	if (codes.length === 0) {
 		const candidates = nearest(trimmed, [...index].flatMap(([name, set]) => [...set].map((code) => [name, code] as const)), (code) => code)
-		return failure('unknown_country', `No country matches ${JSON.stringify(trimmed)}.`, candidates.map((code) => countryCandidate(code, locale)))
+		return failure('unknown_country', aboutInput(trimmed, (shown) => `No country matches ${shown}.`), candidates.map((code) => countryCandidate(code, locale)))
 	}
 	if (codes.length > 1) {
-		return failure('ambiguous_country', `${JSON.stringify(trimmed)} names more than one country.`, codes.map((code) => countryCandidate(code, locale)))
+		return failure('ambiguous_country', aboutInput(trimmed, (shown) => `${shown} names more than one country.`), codes.map((code) => countryCandidate(code, locale)))
 	}
 	if (!options.regions) return missingRegions()
 	const [code] = codes as [string]
@@ -301,7 +305,7 @@ export function resolveCountry(input: string, options: CountryLookupOptions = {}
 	if (others.length > 0) {
 		return failure(
 			'ambiguous_country',
-			`${JSON.stringify(trimmed)} names a country and a subdivision of another country.`,
+			aboutInput(trimmed, (shown) => `${shown} names a country and a subdivision of another country.`),
 			[countryCandidate(code, locale), ...others.map((subdivision) => regionCandidate(subdivision, locale))],
 		)
 	}
@@ -387,7 +391,7 @@ export function resolveRegion(input: string, options: RegionLookupOptions = {}):
 		const subdivision = index.byCode.get(trimmed.toUpperCase())
 		if (subdivision && (country === undefined || subdivision.country === country)) return { ok: true, value: subdivision.code }
 		const where = country === undefined ? '' : ` in ${country}`
-		return failure('unknown_region', `No subdivision${where} has the code ${JSON.stringify(trimmed.toUpperCase())}.`, nearestRegions(full[2]!, pool))
+		return failure('unknown_region', aboutInput(trimmed.toUpperCase(), (shown) => `No subdivision${where} has the code ${shown}.`), nearestRegions(full[2]!, pool))
 	}
 	const key = normalizePlaceName(trimmed)
 	if (country !== undefined) {
@@ -396,19 +400,19 @@ export function resolveRegion(input: string, options: RegionLookupOptions = {}):
 		const matches = unique([...(byShortCode ? [byShortCode] : []), ...byName])
 		if (matches.length === 1) return { ok: true, value: matches[0]!.code }
 		if (matches.length > 1) {
-			return failure('ambiguous_region', `${JSON.stringify(trimmed)} names more than one subdivision of ${country}.`, matches.map((subdivision) => regionCandidate(subdivision)))
+			return failure('ambiguous_region', aboutInput(trimmed, (shown) => `${shown} names more than one subdivision of ${country}.`), matches.map((subdivision) => regionCandidate(subdivision)))
 		}
-		return failure('unknown_region', `No subdivision of ${country} matches ${JSON.stringify(trimmed)}.`, nearestRegions(trimmed, pool))
+		return failure('unknown_region', aboutInput(trimmed, (shown) => `No subdivision of ${country} matches ${shown}.`), nearestRegions(trimmed, pool))
 	}
 	const matches = unique(index.byName.get(key) ?? [])
 	if (matches.length === 1) return { ok: true, value: matches[0]!.code }
 	if (matches.length > 1) {
-		return failure('ambiguous_region', `${JSON.stringify(trimmed)} names subdivisions in more than one place.`, matches.map((subdivision) => regionCandidate(subdivision)))
+		return failure('ambiguous_region', aboutInput(trimmed, (shown) => `${shown} names subdivisions in more than one place.`), matches.map((subdivision) => regionCandidate(subdivision)))
 	}
 	if (SHORT_CODE.test(trimmed)) {
-		return failure('needs_country', `${JSON.stringify(trimmed)} reads as a subdivision code, which needs a country.`)
+		return failure('needs_country', aboutInput(trimmed, (shown) => `${shown} reads as a subdivision code, which needs a country.`))
 	}
-	return failure('unknown_region', `No subdivision matches ${JSON.stringify(trimmed)}.`, nearestRegions(trimmed, pool))
+	return failure('unknown_region', aboutInput(trimmed, (shown) => `No subdivision matches ${shown}.`), nearestRegions(trimmed, pool))
 }
 
 /**

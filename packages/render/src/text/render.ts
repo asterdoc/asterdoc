@@ -1,6 +1,6 @@
 import { defaultFormatter } from '../default-formatter'
 import type { Form, Formatter, LayerFormat } from '@asterdoc/types'
-import { formatFieldData, type FieldFormattingOptions } from './field-formatter'
+import { formatFieldData, withoutSensitiveValues, type FieldFormattingOptions } from './field-formatter'
 import { createTextSignatureDirectives, type TextSignatureOptions } from './signatures'
 import { escapeHtml, renderTemplate } from './template'
 import { templateData, type TemplateExpressionOptions } from '../template/context'
@@ -33,6 +33,14 @@ function escapeFor(mimeType: string | undefined): (value: string) => string {
 }
 
 export function renderText(options: RenderTextOptions): string {
+  try {
+    return renderTextWithValues(options)
+  } catch (error) {
+    throw withoutSensitiveValues(options.form, error)
+  }
+}
+
+function renderTextWithValues(options: RenderTextOptions): string {
   const callerFormatter = options.formatter ?? defaultFormatter
   const formatter = formatterFor(callerFormatter, options.format)
   const progressive: FieldFormattingOptions | undefined = options.progressive === undefined

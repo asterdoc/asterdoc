@@ -30,3 +30,4 @@ export type {
 	ExtractOptions,
 	FormExtraction,
 } from './form'
+export type { FormTestReport, FormTestResult } from './form-tests'

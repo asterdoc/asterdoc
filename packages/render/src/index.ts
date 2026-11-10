@@ -34,6 +34,7 @@ export { formatFieldOptions, formatterFor, hasNewFormatOptions, mergeFormats } f
 export { printValuePart } from './parts/print'
 export { ALL_VALUE_PARTS, UNSUPPORTED_PART, VALUE_PARTS } from './parts/rules'
 export { defaultFormatter } from './default-formatter'
+export { IDENTIFIER_MEMBERS, isSensitiveField, isSensitivePath, redactedValue } from './sensitive'
 export { FORMAT_MODIFIER_RULES, formatModifiers, formatProblem } from './template/format-modifiers'
 export type { FormatModifier, FormatModifierRule, ModifierLiteral, ModifierTarget } from './template/format-modifiers'
 

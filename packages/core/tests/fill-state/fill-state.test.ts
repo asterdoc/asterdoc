@@ -618,8 +618,20 @@ describe('fill-state', () => {
 			const state = failing.getFillState()
 			expect(state.rules).toEqual({
 				valid: false,
-				errors: [{ ruleId: 'amountPositive', passed: false, message: 'Amount must be positive', severity: 'error' }],
-				warnings: [{ ruleId: 'termReasonable', passed: false, message: 'Term is unusually long', severity: 'warning' }],
+				errors: [{
+					ruleId: 'amountPositive',
+					passed: false,
+					message: 'Amount must be positive',
+					severity: 'error',
+					explanation: { values: [{ path: 'amount', value: '-5' }] },
+				}],
+				warnings: [{
+					ruleId: 'termReasonable',
+					passed: false,
+					message: 'Term is unusually long',
+					severity: 'warning',
+					explanation: { values: [{ path: 'term', value: '480' }] },
+				}],
 			})
 			expect(state.issues).toEqual([])
 			// One shape for one result: fill state matches validateRules().
@@ -676,7 +688,13 @@ describe('fill-state', () => {
 
 				expect(state.rules.valid).toBe(false)
 				expect(state.rules.errors).toEqual([
-					{ ruleId: 'enough', passed: false, message: 'Order at least one item', severity: 'error' },
+					{
+						ruleId: 'enough',
+						passed: false,
+						message: 'Order at least one item',
+						severity: 'error',
+						explanation: { values: [{ path: 'doubled', value: 'null' }] },
+					},
 				])
 				expect(state.issues).toEqual([])
 			})

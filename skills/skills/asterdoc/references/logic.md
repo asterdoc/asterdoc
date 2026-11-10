@@ -328,6 +328,7 @@ A result **fails** when the operation that errors did not read a missing value: 
 - A failed def reads as missing, and `getFillState().issues` has an entry with path `["defs", "<key>"]`. The rest of the form still evaluates, and completion is blocked.
 - A failed condition uses the property's default and adds an issue.
 - A failed rule fails with `Rule expression error: <error>`.
+- When the expression reads a sensitive value (a `sensitive` field, an identification field, a party or organization `taxId` or `entityId`, or a def computed from one), the error text is dropped: the rule fails with `Rule expression error`, a condition's issue reads `Failed to resolve form expression`, a def's issue names the def only, and bundle include conditions, party payment expressions and template placeholders fail without the error text too. Counting rows (`count(fields.owners)`) does not count as reading a sensitive value.
 
 Form `fill()` and `update()` reject `NaN` and `Infinity` before expressions run. A low-level `evaluateExpression()` context containing either value returns a `type-error` when an expression reads its root.
 

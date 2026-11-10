@@ -31,3 +31,15 @@ export function frameFor<F extends { kind: string; name?: string }>(frames: read
   }
   return undefined
 }
+
+const CONTEXT_ROOTS = new Set(['fields', 'parties'])
+
+/**
+ * Why a DOCX loop cannot bind a row name: it would shadow a context root or a
+ * computed value, so expressions in the loop would read the row instead.
+ * `isDefined` says whether the artifact's expression context defines the name.
+ */
+export function loopAliasProblem(alias: string, isDefined: (name: string) => boolean): string | undefined {
+  if (!CONTEXT_ROOTS.has(alias) && !isDefined(alias)) return undefined
+  return `FOR ${alias} shadows ${alias}, which the artifact already defines; name the row something else.`
+}

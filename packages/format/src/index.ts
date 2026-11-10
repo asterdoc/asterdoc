@@ -110,6 +110,7 @@ export {
 	type MaskToken,
 	type ParsedMask,
 } from './mask'
+export { redactedValue } from './shared'
 
 export {
 	FORMAT_KINDS,

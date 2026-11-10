@@ -416,7 +416,18 @@ const all = draft.getAvailableFillTargets()
 
 ### Acceptance and readiness
 
-`fill()` and `update()` validate every supplied value. Omitted required values remain open so a caller can build a draft across turns. `safeFill()` succeeds when that supplied patch is accepted. Use `draft.isValid()` or `draft.validate()` to assess full readiness, including rules. Rendering a draft is allowed; signing, sealing, and final bundle operations require readiness.
+`fill()` and `update()` validate every supplied value. Omitted required values remain open so a caller can build a draft across turns. `safeFill()` succeeds when that supplied patch is accepted. Use `draft.isValid()` or `draft.validate()` to assess full readiness, including rules. Rendering a draft is allowed; `render({ require: 'complete' })` refuses one that is not ready, with the check `seal()` makes. Signing, sealing, and final bundle operations require readiness.
+
+A failed rule explains the values its expression read, in `explanation.values`. Values of `sensitive` fields, and of `identification` fields unless they set `sensitive: false`, print as `[redacted]` with their kind and length, and so do party and organization `taxId` and `entityId` values and computed values derived from any of these, unless boolean. Counting rows (`count(fields.owners)`) is not derived. When an expression that reads a sensitive value fails, the rule, condition, computed value, party payment expression, bundle include condition or template placeholder reports the failure without the error text or the value. `draft.validate({ explain: { raw: true } })` and `draft.validateRules({ explain: { raw: true } })` print them as they are; never pass it where the output is logged or shown to a model.
+
+### Test cases
+
+`form.runTests()` runs the form's [test cases](/schemas/artifacts/form#test-cases) and returns `{ passed, results }`. Each result has the case's `name`, whether it `passed`, the draft's `valid`, the sorted ids of the rules that failed (`failures`), the `expected` outcome, the `errors` that made the draft invalid (field and message; a message about a sensitive field shows its input only as `[redacted]` with kind and length, while other messages may quote the input), and `sensitiveInputs`, the paths of sensitive fields the input sets. `asterdoc validate` runs the same check.
+
+```ts
+const report = form(definition).runTests()
+if (!report.passed) console.log(report.results.filter((result) => !result.passed))
+```
 
 ## Extracting data from a filled PDF
 
@@ -564,6 +575,7 @@ Created by `signable.finalize()`. Fully frozen, ready for archival.
   { name: 'formatter', type: 'Formatter', description: 'Formatter used for every value in this render', isOptional: true },
   { name: 'progressive', type: 'FormatterProgressivePolicy', description: 'Text for missing and incomplete values in a preview', isOptional: true },
   { name: 'bindings', type: 'Record<string, string>', description: 'PDF layers only: AcroForm field name to Asterdoc path, merged over the layer\'s own bindings. Refused for any other layer', isOptional: true },
+  { name: 'require', type: "'complete'", description: 'Filled forms only: refuse to render unless no value is missing or invalid and every error-severity rule passes, the check `seal()` makes. Throws `FormValidationError` or `FormRuleViolationError`. Warnings never block. Omitted, the form renders as it is', isOptional: true },
   { name: 'data', type: 'FormData', description: 'Values to render with: field values under `fields`, with `parties`, `annexes` and `defs` beside them. `RenderOptions` only', isOptional: true },
 ]} />
 

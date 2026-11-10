@@ -1101,7 +1101,7 @@ class FormatterImpl implements Formatter {
  */
 function failure(kind: FormatKind, error: unknown): FormatResult {
 	if (error instanceof FormatError) return failed(error.status, error.issues)
-	if (error instanceof SelectionFormatError) return failed(error.status, [issue(kind, error.code, error.message)])
+	if (error instanceof SelectionFormatError) return failed(error.status, [issue(kind, error.code, error.message, undefined, undefined, error.redactedMessage)])
 	if (error instanceof MissingMessageError) return failed('unsupported', [issue(kind, 'missing_message', error.message, undefined, error)])
 	if (error instanceof UnsupportedAddressLayoutError) {
 		return failed('unsupported', [issue(kind, UNSUPPORTED_COUNTRY_LAYOUT, error.message, 'country', error)])

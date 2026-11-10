@@ -558,6 +558,12 @@ export type FormatStatus =
 export interface FormatIssue {
 	readonly code: string
 	readonly message: string
+	/**
+	 * The message with the input value written as `[redacted]` with its kind
+	 * and length, present when `message` names the value. A caller formatting
+	 * a sensitive value shows this one.
+	 */
+	readonly redactedMessage?: string
 	readonly path?: string
 	readonly kind?: FormatKind | string
 	readonly cause?: unknown

@@ -8,7 +8,7 @@
 import type { ArtifactEdition, Bindings, Checklist, ChecklistData, ChecklistItem, ChecklistPhase, Layer, LayerFormat, Metadata, ContentRef, Resolver, RuntimeChecklistJSON } from '@asterdoc/types'
 import { createContext } from '@asterdoc/expr'
 import { resolveLayerBindings } from '@asterdoc/render'
-import { buildRendererLayer, resolveLayerKey, selectLayerRenderer } from '../shared/render-layer'
+import { buildRendererLayer, refuseRequire, resolveLayerKey, selectLayerRenderer } from '../shared/render-layer'
 import type { ArtifactInstanceOptions } from '../shared/render-layer'
 import { parseChecklist, parseChecklistItem, parseLayer, readChecklist } from '@/validation/artifact-parsers'
 import type { SchemaVersion } from '@asterdoc/schemas'
@@ -945,6 +945,7 @@ async function renderChecklistLayer<Output>(
 	resolver: Resolver | undefined,
 	options: RuntimeChecklistRenderOptions<Output> | undefined,
 ): Promise<Output> {
+	refuseRequire(options, 'A checklist')
 	const layers = checklistDef.layers
 	if (!layers || Object.keys(layers).length === 0) {
 		throw new Error('Checklist has no layers defined')

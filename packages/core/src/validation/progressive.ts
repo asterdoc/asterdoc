@@ -1,3 +1,4 @@
+import { isSensitiveField } from '@/logic/shared/sensitive-values'
 import type { Attachment, Checklist, ChecklistItem, Form, FormField, FormParty, RuntimeParty } from '@asterdoc/types'
 import type { ValidationError } from '@/types'
 import { compile } from '@/inference'
@@ -113,32 +114,35 @@ function getFormFieldsSchema(form: Form): JsonSchemaObject | null {
 	return isRecord(fieldsSchema) ? fieldsSchema : null
 }
 
-type FieldTarget = { field: FormField; member?: undefined } | { field: FormField & { type: 'address' }; member: 'country' | 'region' }
+type FieldTarget = ({ field: FormField; member?: undefined } | { field: FormField & { type: 'address' }; member: 'country' | 'region' }) & { sensitive: boolean }
 
 function getFieldAtPath(fields: Record<string, FormField> | undefined, path: string[]): FieldTarget | undefined {
 	let field: FormField | undefined
 	let children = fields
+	let above = false
 	for (const [index, segment] of path.entries()) {
 		if (field?.type === 'list' && /^\d+$/.test(segment)) {
+			above ||= isSensitiveField(field)
 			field = field.item
 			children = field.type === 'fieldset' ? field.fields : undefined
 			continue
 		}
 		if (field?.type === 'address' && index === path.length - 1 && (segment === 'country' || segment === 'region')) {
-			return { field, member: segment }
+			return { field, member: segment, sensitive: above || isSensitiveField(field) }
 		}
+		if (field) above ||= isSensitiveField(field)
 		field = children && Object.hasOwn(children, segment) ? children[segment] : undefined
 		if (!field) return undefined
 		children = field.type === 'fieldset' ? field.fields : undefined
 	}
-	return field ? { field } : undefined
+	return field ? { field, sensitive: above } : undefined
 }
 
 function canonicalTarget(target: FieldTarget | undefined, input: FieldInputValidationInput, path: string): CanonicalizeResult {
 	if (!target) return { success: true, value: input.value }
-	if (target.member === undefined) return canonicalizeFieldValue(target.field, input.value, { locale: input.locale, mode: 'progressive', input: input.input, path })
+	if (target.member === undefined) return canonicalizeFieldValue(target.field, input.value, { locale: input.locale, mode: 'progressive', input: input.input, path, sensitive: target.sensitive })
 	if (target.field.codes !== true) return { success: true, value: input.value }
-	return canonicalizeAddressMember(target.member, input.value, { locale: input.locale, mode: 'progressive', path, owner: input.owner })
+	return canonicalizeAddressMember(target.member, input.value, { locale: input.locale, mode: 'progressive', path, owner: input.owner, sensitive: target.sensitive })
 }
 
 function getSchemaAtPath(rootSchema: JsonSchemaObject, path: string[]): JsonSchemaObject | null {

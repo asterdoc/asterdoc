@@ -23,6 +23,12 @@ export interface ValidationRule {
   message: string;
   /** Severity level: 'error' (default) blocks submission, 'warning' allows but warns. */
   severity?: RuleSeverity;
+  /**
+   * Field paths the failure attaches to, such as `fields.ssn`. Each names a
+   * field. Without paths the failure is form level; paths are never inferred
+   * from the expression.
+   */
+  paths?: string[];
 }
 
 /**

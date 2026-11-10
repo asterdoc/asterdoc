@@ -67,4 +67,8 @@ export {
   buildRuleContext,
   type RuleValidationResult,
   type FormRulesValidationResult,
+  type RuleExplanation,
+  type RuleValueReport,
+  type RuleExplainOptions,
+  type RuleEvaluationOptions,
 } from './rule-evaluator'

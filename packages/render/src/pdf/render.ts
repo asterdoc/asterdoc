@@ -8,6 +8,7 @@ import {
   formatValueAt,
   validateFieldBindings,
   unwrapFormattedValue,
+  withoutSensitiveValues,
 } from '../text/field-formatter'
 import { getPath, pathSegments } from '../path'
 import {
@@ -81,7 +82,7 @@ function readsMaskedField(
 function splitPart(field: FormField | undefined, value: unknown, index: number, path: string): string | undefined {
   if (field?.type !== 'text' || field.mask === undefined) return String(value).split('-')[index]
   const fits = formatMasked(field.mask, String(value))
-  if (!fits.success) throw new ArtifactFieldFormatError(path, 'text', 'invalid', [{ code: MASK_MISMATCH, message: fits.message, path, kind: 'text' }])
+  if (!fits.success) throw new ArtifactFieldFormatError(path, 'text', 'invalid', [{ code: MASK_MISMATCH, message: fits.message, redactedMessage: fits.redactedMessage, path, kind: 'text' }])
   const group = maskGroup(field.mask, String(value), index)
   return group.success ? group.value : undefined
 }
@@ -141,7 +142,15 @@ function assertListBindingCapacity(
   for (const [key, field] of Object.entries(form.fields)) visit(field, data[key], [key])
 }
 
-export async function renderPdf({
+export async function renderPdf(options: RenderPdfOptions): Promise<BinaryContent> {
+  try {
+    return await renderPdfWithValues(options)
+  } catch (error) {
+    throw withoutSensitiveValues(options.form, error)
+  }
+}
+
+async function renderPdfWithValues({
   template,
   form,
   data,
@@ -228,7 +237,7 @@ export async function renderPdf({
               const index = splitPartIndex(qualifier)
               if (index !== undefined && value !== null && value !== undefined) {
                 const definition = fieldDefinition(form, path)
-                const part = splitPart(definition, value, index, renderDataPath(data, parts[0]!.source))
+                const part = splitPart(definition, value, index, definition ? `fields.${path}` : renderDataPath(data, parts[0]!.source))
                 if (part) assign(field, layerCasedPart(part, definition), model, fonts)
               }
             }

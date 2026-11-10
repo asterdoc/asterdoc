@@ -241,6 +241,16 @@ export interface RuntimeFormRenderOptions<Output = string | Uint8Array> {
    * Refused for any other layer.
    */
   bindings?: Bindings
+
+  /**
+   * `'complete'` refuses to render unless the form passes the check `seal()`
+   * makes: no value is missing or invalid and every error-severity rule
+   * passes. Warnings never block. Omitted, the form renders as it is.
+   *
+   * @throws {FormValidationError} when a value is missing or invalid.
+   * @throws {FormRuleViolationError} when an error-severity rule fails.
+   */
+  require?: 'complete'
 }
 
 /**

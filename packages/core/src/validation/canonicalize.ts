@@ -16,6 +16,7 @@ import {
 import { regionsProvider as regions } from '@asterdoc/format/regions'
 import type { Form, FormField } from '@asterdoc/types'
 import type { ValidationError } from '@/types'
+import { isSensitiveField } from '@/logic/shared/sensitive-values'
 
 /** Whether input is a complete value or a value still being filled in. */
 export type CanonicalizationMode = 'progressive' | 'complete'
@@ -43,6 +44,12 @@ export interface CanonicalizeOptions {
 	 * region.
 	 */
 	current?: unknown
+	/**
+	 * Whether the value sits under a sensitive field. A refusal of a sensitive
+	 * input names it as `[redacted]` with its kind and length and offers no
+	 * candidates.
+	 */
+	sensitive?: boolean
 }
 
 /** Why an input could not be stored as a canonical value, with what to choose from instead. */
@@ -65,7 +72,8 @@ function join(path: string, segment: string | number): string {
 	return path === '' ? String(segment) : `${path}.${segment}`
 }
 
-function placeIssue(path: string, outcome: PlaceFailure): CanonicalizationIssue {
+function placeIssue(path: string, outcome: PlaceFailure, sensitive: boolean): CanonicalizationIssue {
+	if (sensitive) return { code: outcome.code, path, message: outcome.redactedMessage, candidates: [] }
 	return { code: outcome.code, path, message: outcome.message, candidates: [...outcome.candidates] }
 }
 
@@ -88,13 +96,13 @@ export function hasCanonicalValues(field: FormField): boolean {
 	}
 }
 
-function canonicalAddress(value: Record<string, unknown>, options: CanonicalizeOptions, path: string, issues: CanonicalizationIssue[]): Record<string, unknown> {
+function canonicalAddress(value: Record<string, unknown>, options: CanonicalizeOptions, path: string, issues: CanonicalizationIssue[], sensitive: boolean): Record<string, unknown> {
 	const next = { ...value }
 	let country: string | undefined
 	if (typeof value.country === 'string') {
 		const outcome = resolveCountry(value.country, { locale: options.locale, regions })
 		if (outcome.ok) next.country = country = outcome.value
-		else issues.push(placeIssue(join(path, 'country'), outcome))
+		else issues.push(placeIssue(join(path, 'country'), outcome, sensitive))
 	}
 	if (typeof value.region !== 'string') return next
 	if (country === undefined) {
@@ -105,7 +113,7 @@ function canonicalAddress(value: Record<string, unknown>, options: CanonicalizeO
 	}
 	const outcome = resolveAddressRegion(value.region, country, regions)
 	if (outcome.ok) next.region = outcome.value
-	else issues.push(placeIssue(join(path, 'region'), outcome))
+	else issues.push(placeIssue(join(path, 'region'), outcome, sensitive))
 	return next
 }
 
@@ -116,44 +124,46 @@ function mergedOver(current: unknown, value: Record<string, unknown>): Record<st
 	return merged
 }
 
-function canonicalize(field: FormField, value: unknown, options: CanonicalizeOptions, path: string, issues: CanonicalizationIssue[], current?: unknown): unknown {
+function canonicalize(field: FormField, value: unknown, options: CanonicalizeOptions, path: string, issues: CanonicalizationIssue[], inherited: boolean, current?: unknown): unknown {
 	if (value === null || value === undefined || !hasCanonicalValues(field)) return value
+	const sensitive = inherited || isSensitiveField(field)
 	switch (field.type) {
 		case 'text': {
 			if (typeof value !== 'string' || field.mask === undefined) return value
 			const read = canonicalizeMasked(field.mask, value, { mode: options.mode, input: options.input ?? 'canonical' })
 			if (read.success) return read.value
-			issues.push({ code: MASK_MISMATCH, path, message: read.message, candidates: [] })
+			const message = sensitive ? read.redactedMessage : read.message
+			issues.push({ code: MASK_MISMATCH, path, message, candidates: [] })
 			return value
 		}
 		case 'country': {
 			if (typeof value !== 'string') return value
 			const outcome = resolveCountry(value, { locale: options.locale, regions })
 			if (outcome.ok) return outcome.value
-			issues.push(placeIssue(path, outcome))
+			issues.push(placeIssue(path, outcome, sensitive))
 			return value
 		}
 		case 'region': {
 			if (typeof value !== 'string') return value
 			const outcome = resolveRegion(value, { country: field.country, regions })
 			if (outcome.ok) return outcome.value
-			issues.push(placeIssue(path, outcome))
+			issues.push(placeIssue(path, outcome, sensitive))
 			return value
 		}
 		case 'address':
-			return isRecord(value) ? canonicalAddress(mergedOver(current, value), options, path, issues) : value
+			return isRecord(value) ? canonicalAddress(mergedOver(current, value), options, path, issues, sensitive) : value
 		case 'fieldset': {
 			if (!isRecord(value)) return value
 			const next = { ...value }
 			const stored = isRecord(current) ? current : undefined
 			for (const [key, child] of Object.entries(field.fields)) {
-				if (Object.hasOwn(value, key)) next[key] = canonicalize(child, value[key], options, join(path, key), issues, stored?.[key])
+				if (Object.hasOwn(value, key)) next[key] = canonicalize(child, value[key], options, join(path, key), issues, sensitive, stored?.[key])
 			}
 			return next
 		}
 		case 'list':
 			return Array.isArray(value)
-				? value.map((item, index) => canonicalize(field.item, item, options, join(path, index), issues))
+				? value.map((item, index) => canonicalize(field.item, item, options, join(path, index), issues, sensitive))
 				: value
 		default:
 			return value
@@ -173,7 +183,7 @@ function canonicalize(field: FormField, value: unknown, options: CanonicalizeOpt
  */
 export function canonicalizeFieldValue(field: FormField, value: unknown, options: CanonicalizeOptions): CanonicalizeResult {
 	const issues: CanonicalizationIssue[] = []
-	const canonical = canonicalize(field, value, options, options.path ?? '', issues, options.current)
+	const canonical = canonicalize(field, value, options, options.path ?? '', issues, options.sensitive === true, options.current)
 	return issues.length > 0 ? { success: false, issues } : { success: true, value: canonical }
 }
 
@@ -192,14 +202,15 @@ export function canonicalizeAddressMember(
 	options: CanonicalizeOptions & { owner?: unknown },
 ): CanonicalizeResult {
 	const path = options.path ?? member
+	const sensitive = options.sensitive === true
 	if (typeof value !== 'string') return { success: true, value }
 	if (member === 'country') {
 		const outcome = resolveCountry(value, { locale: options.locale, regions })
-		if (!outcome.ok) return { success: false, issues: [placeIssue(path, outcome)] }
+		if (!outcome.ok) return { success: false, issues: [placeIssue(path, outcome, sensitive)] }
 		const storedRegion = isRecord(options.owner) && typeof options.owner.region === 'string' ? options.owner.region : undefined
 		if (storedRegion !== undefined) {
 			const region = resolveAddressRegion(storedRegion, outcome.value, regions)
-			if (!region.ok) return { success: false, issues: [placeIssue(path.endsWith('country') ? `${path.slice(0, -'country'.length)}region` : path, region)] }
+			if (!region.ok) return { success: false, issues: [placeIssue(path.endsWith('country') ? `${path.slice(0, -'country'.length)}region` : path, region, sensitive)] }
 		}
 		return { success: true, value: outcome.value }
 	}
@@ -209,7 +220,7 @@ export function canonicalizeAddressMember(
 		return { success: false, issues: [{ code: 'needs_country', path, message: 'A subdivision is stored as a code, which needs the address country.', candidates: [] }] }
 	}
 	const outcome = resolveAddressRegion(value, country.value, regions)
-	return outcome.ok ? { success: true, value: outcome.value } : { success: false, issues: [placeIssue(path, outcome)] }
+	return outcome.ok ? { success: true, value: outcome.value } : { success: false, issues: [placeIssue(path, outcome, sensitive)] }
 }
 
 /** {@link canonicalizeFieldValue} over a record of field values keyed like `fields`. */
@@ -223,7 +234,7 @@ export function canonicalizeFieldValues(
 	const next: Record<string, unknown> = { ...values }
 	const stored = isRecord(options.current) ? options.current : undefined
 	for (const [key, field] of Object.entries(fields)) {
-		if (Object.hasOwn(values, key)) next[key] = canonicalize(field, values[key], options, join(options.path ?? '', key), issues, stored?.[key])
+		if (Object.hasOwn(values, key)) next[key] = canonicalize(field, values[key], options, join(options.path ?? '', key), issues, options.sensitive === true, stored?.[key])
 	}
 	return issues.length > 0 ? { success: false, issues } : { success: true, value: next }
 }

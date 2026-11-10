@@ -39,7 +39,12 @@ describe('reading a masked value', () => {
 
 	it('refuses a wrong character and a wrong length, naming the expected shape', () => {
 		const wrong = canonicalizeMasked('###-##-####', '12345678X')
-		expect(wrong).toEqual({ success: false, code: MASK_MISMATCH, message: expect.stringContaining('Expected ###-##-####: 9 digits, written 123-45-6789 or 123456789') })
+		expect(wrong).toEqual({
+			success: false,
+			code: MASK_MISMATCH,
+			message: '"12345678X" does not fill the mask. Expected ###-##-####: 9 digits, written 123-45-6789 or 123456789.',
+			redactedMessage: '[redacted] (string, length 9) does not fill the mask. Expected ###-##-####: 9 digits, written 123-45-6789 or 123456789.',
+		})
 		expect(read('###-##-####', '12345678')).toBe(MASK_MISMATCH)
 		expect(read('###-##-####', '1234567890')).toBe(MASK_MISMATCH)
 		expect(read('@@', '1A')).toBe(MASK_MISMATCH)

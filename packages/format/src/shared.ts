@@ -30,8 +30,30 @@ export function issue(
 	message: string,
 	path?: string,
 	cause?: unknown,
+	redactedMessage?: string,
 ): FormatIssue {
-	return { code, message, kind, ...(path === undefined ? {} : { path }), ...(cause === undefined ? {} : { cause }) }
+	return {
+		code,
+		message,
+		...(redactedMessage === undefined ? {} : { redactedMessage }),
+		kind,
+		...(path === undefined ? {} : { path }),
+		...(cause === undefined ? {} : { cause }),
+	}
+}
+
+/** Kind and length of a value, in place of the value: `[redacted] (string, length 9)`. */
+export function redactedValue(value: unknown): string {
+	if (typeof value === 'string') return `[redacted] (string, length ${value.length})`
+	if (typeof value === 'number') return `[redacted] (number, length ${String(value).length})`
+	if (typeof value === 'boolean') return '[redacted] (boolean)'
+	if (Array.isArray(value)) return `[redacted] (list, length ${value.length})`
+	return `[redacted] (object, length ${Object.keys(value as object).length})`
+}
+
+/** A message about an input, written twice: naming the input, and naming only its kind and length. */
+export function aboutInput(input: unknown, write: (shown: string) => string, quote = true): { message: string; redactedMessage: string } {
+	return { message: write(quote ? JSON.stringify(input) : String(input)), redactedMessage: write(redactedValue(input)) }
 }
 
 /** `invalid` when any issue is a wrong member or object, otherwise `incomplete`. */

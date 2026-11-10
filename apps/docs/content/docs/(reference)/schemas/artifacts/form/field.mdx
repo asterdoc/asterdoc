@@ -64,6 +64,12 @@ All field types share these base properties:
     description: 'Whether this field is visible. Can be a boolean or logic expression. Defaults to true',
     isOptional: true,
   },
+  {
+    name: 'sensitive',
+    type: 'boolean',
+    description: 'Whether the value is sensitive, such as an account or tax number. Rule explanations, validation and render errors, and AI tool errors print it as [redacted] with its kind and length. A value under a sensitive fieldset or list is sensitive too. Identification fields are sensitive unless this is false, and so are the taxId and entityId of an organization field',
+    isOptional: true,
+  },
 ]} />
 
 ## Field Types
@@ -682,7 +688,7 @@ Person information input field.
 
 ### OrganizationField
 
-Organization information input field.
+Organization information input field. Its `taxId` and `entityId` are sensitive unless the field sets `sensitive: false`.
 
 <PropertiesTable properties={[
   {
@@ -700,7 +706,7 @@ Organization information input field.
 
 ### IdentificationField
 
-Identification document input field.
+Identification document input field. Its value is sensitive unless the field sets `sensitive: false`.
 
 <PropertiesTable properties={[
   {

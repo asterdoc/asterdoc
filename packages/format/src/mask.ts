@@ -1,4 +1,5 @@
 import { FormatConfigurationError } from './errors'
+import { aboutInput } from './shared'
 
 /** The outcome code for a value that does not fit its mask. */
 export const MASK_MISMATCH = 'mask_mismatch'
@@ -49,7 +50,7 @@ export interface MaskCanonicalizeOptions {
 /** A value read or printed through a mask, or why it does not fit. */
 export type MaskResult =
 	| { readonly success: true; readonly value: string; readonly complete: boolean }
-	| { readonly success: false; readonly code: typeof MASK_MISMATCH; readonly message: string }
+	| { readonly success: false; readonly code: typeof MASK_MISMATCH; readonly message: string; readonly redactedMessage: string }
 
 const TOKENS: Readonly<Record<string, MaskToken>> = { '#': '#', '@': '@', '*': '*' }
 
@@ -150,8 +151,9 @@ export function describeMask(mask: string | ParsedMask): string {
 	return `${parsed.source}: ${parsed.tokenCount} ${tokenKinds(parsed)}, written ${written}`
 }
 
-function mismatch(mask: ParsedMask, problem: string): MaskResult {
-	return { success: false, code: MASK_MISMATCH, message: `${problem} Expected ${describeMask(mask)}.` }
+function mismatch(mask: ParsedMask, input: string, problem: (shown: string) => string): MaskResult {
+	const about = aboutInput(input, (shown) => `${problem(shown)} Expected ${describeMask(mask)}.`)
+	return { success: false, code: MASK_MISMATCH, ...about }
 }
 
 function readCanonical(mask: ParsedMask, input: string, partial: boolean): string | undefined {
@@ -195,19 +197,19 @@ export function canonicalizeMasked(mask: string | ParsedMask, input: string, opt
 	const canonical = readCanonical(parsed, input, false)
 	if (canonical !== undefined) return { success: true, value: canonical, complete: true }
 	if (options.mode !== 'progressive') {
-		return mismatch(parsed, `${JSON.stringify(input)} does not fill the mask.`)
+		return mismatch(parsed, input, (shown) => `${shown} does not fill the mask.`)
 	}
 	const form = options.input ?? 'canonical'
 	const prefix = form === 'formatted' ? readFormatted(parsed, input, true) : readCanonical(parsed, input, true)
 	if (prefix !== undefined) return { success: true, value: prefix, complete: false }
-	return mismatch(parsed, `${JSON.stringify(input)} is not the start of a value written in ${form} form.`)
+	return mismatch(parsed, input, (shown) => `${shown} is not the start of a value written in ${form} form.`)
 }
 
 /** Print a complete canonical value with the mask's literals. */
 export function formatMasked(mask: string | ParsedMask, canonical: string): MaskResult {
 	const parsed = parseMask(mask)
 	if (readCanonical(parsed, canonical, false) === undefined) {
-		return mismatch(parsed, `${JSON.stringify(canonical)} does not fit the mask.`)
+		return mismatch(parsed, canonical, (shown) => `${shown} does not fit the mask.`)
 	}
 	let index = 0
 	const value = parsed.slots.map((slot) => slot.kind === 'literal' ? slot.char : canonical[index++]!).join('')
@@ -222,10 +224,11 @@ export function formatMasked(mask: string | ParsedMask, canonical: string): Mask
 export function maskGroup(mask: string | ParsedMask, canonical: string, group: number): MaskResult {
 	const parsed = parseMask(mask)
 	if (readCanonical(parsed, canonical, false) === undefined) {
-		return mismatch(parsed, `${JSON.stringify(canonical)} does not fit the mask.`)
+		return mismatch(parsed, canonical, (shown) => `${shown} does not fit the mask.`)
 	}
 	if (!Number.isInteger(group) || group < 0 || group >= parsed.groups.length) {
-		return { success: false, code: MASK_MISMATCH, message: `Mask ${parsed.source} has ${parsed.groups.length} groups; there is no group ${group + 1}.` }
+		const message = `Mask ${parsed.source} has ${parsed.groups.length} groups; there is no group ${group + 1}.`
+		return { success: false, code: MASK_MISMATCH, message, redactedMessage: message }
 	}
 	const start = parsed.groups.slice(0, group).reduce((total, count) => total + count, 0)
 	return { success: true, value: canonical.slice(start, start + parsed.groups[group]!), complete: true }
