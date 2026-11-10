@@ -117,6 +117,12 @@ export interface ValidateOptions {
   logic?: boolean
   /** Whether to collect all errors or stop at first. Default: true */
   collectAllErrors?: boolean
+  /**
+   * Accept only the current schema version. By default an artifact that
+   * declares an earlier version is upgraded in memory and validated as
+   * upgraded; with `strictSchema` it is reported as an issue at `$schema`.
+   */
+  strictSchema?: boolean
 }
 
 // ============================================================================

@@ -39,7 +39,7 @@ export function createTemplateCommand(): Command {
         // Read file
         const resolvedTarget = await resolveArtifactTarget(fileTarget)
         const { raw } = await readTextInput(resolvedTarget)
-        const artifact = loadValidatedArtifact(raw)
+        const { artifact } = loadValidatedArtifact(raw)
 
         // Check artifact kind is 'form'
         if (!isForm(artifact)) {

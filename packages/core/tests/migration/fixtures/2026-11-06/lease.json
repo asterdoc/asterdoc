@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "kind": "form",
+  "name": "lease",
+  "version": "1.0.0",
+  "title": "Lease",
+  "fields": {
+    "tenant": {
+      "type": "text",
+      "label": "Tenant",
+      "required": true
+    },
+    "signed": {
+      "type": "date",
+      "label": "Signed on"
+    }
+  },
+  "defaultLayer": "summary",
+  "layers": {
+    "summary": {
+      "kind": "inline",
+      "mimeType": "text/markdown",
+      "text": "Tenant {{fields.tenant}} signed on {{fields.signed}}."
+    },
+    "pdf": {
+      "kind": "file",
+      "mimeType": "application/pdf",
+      "path": "./lease.pdf",
+      "bindings": {
+        "name": "signed"
+      },
+      "format": {
+        "date": {
+          "pattern": "MM/DD/YYYY"
+        }
+      }
+    }
+  }
+}

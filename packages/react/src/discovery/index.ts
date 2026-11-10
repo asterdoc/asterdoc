@@ -40,7 +40,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { dirname, extname, relative, resolve, sep } from "node:path";
 
-import { assertCurrentSchemaVersion, parse, reactLayersOf, validate } from "@asterdoc/core";
+import { parse, reactLayersOf, upgradeArtifact, validate } from "@asterdoc/core";
 import type { Form } from "@asterdoc/types";
 import { isOutside } from "../lib/paths";
 
@@ -445,25 +445,26 @@ export const UNPAIRED_MESSAGE =
  * The paired artifact, once it has been validated.
  *
  * Pairing reads an artifact loosely so an unrelated JSON file cannot fail the
- * run. One that is actually going to be rendered is held to the current schema
- * version and the schema, and a failure is a problem on the composition rather
- * than a crash.
+ * run. One that is actually going to be rendered is held to the schema version
+ * rule for files and the schema, and is handed on upgraded to the current schema
+ * version. A failure is a problem on the composition rather than a crash.
  */
 function validated(paired: CompositionArtifact, problems: string[]): CompositionArtifact {
+  let artifact: Form;
   try {
-    assertCurrentSchemaVersion(paired.artifact, { required: true });
+    artifact = upgradeArtifact(paired.artifact, { required: true }).artifact;
   } catch (error) {
     problems.push(`The artifact ${paired.relative}: ${error instanceof Error ? error.message : String(error)}`);
     return paired;
   }
-  const result = validate(paired.artifact);
+  const result = validate(artifact);
   if (result.issues) {
     const issues = result.issues
       .map((issue) => `${issue.path?.map(String).join(".") || "root"}: ${issue.message}`)
       .join("; ");
     problems.push(`The artifact ${paired.relative} is not valid: ${issues}`);
   }
-  return paired;
+  return { ...paired, artifact };
 }
 
 /** One line per composition, for a listing or an error that names them. */

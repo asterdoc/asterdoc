@@ -18,6 +18,7 @@ import type {
 	Resolver,
 } from '@asterdoc/types'
 import { isPdfMimeType, PdfBindingObjectSchema } from '@asterdoc/schemas'
+import type { SchemaReadOptions } from '@/migration/upgrade'
 import { createLayerRenderer, resolveLayerBindings } from '@asterdoc/render'
 import {
 	findRegisteredRenderer,
@@ -37,7 +38,7 @@ import {
  * reconstruction: a mutator builds a fresh instance from the config, and a
  * resolver that arrived with a render call would not survive the next one.
  */
-export interface ArtifactInstanceOptions {
+export interface ArtifactInstanceOptions extends SchemaReadOptions {
 	/** Reads the bytes of this artifact's file-backed layers. */
 	resolver?: Resolver
 }

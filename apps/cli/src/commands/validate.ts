@@ -124,7 +124,7 @@ type FileResult = ResultContext | { ok: false; sourcePath: string; error: string
 async function validateOneFile(artifactTarget: string, options: ValidateOptions): Promise<ResultContext> {
   const resolvedTarget = await resolveArtifactTarget(artifactTarget)
   const { raw, baseDir, fromStdin } = await readTextInput(resolvedTarget)
-  const parsed = parseArtifactFile(raw)
+  const { artifact: parsed } = parseArtifactFile(raw)
 
   const result = validateArtifact(parsed)
   const hasValue = 'value' in result

@@ -59,8 +59,8 @@ export async function executeGetArtifact(
 			config?.fetch,
 			config,
 		)
-		const { assertCurrentSchemaVersion } = await import('@asterdoc/core')
-		assertCurrentSchemaVersion(artifact, { required: true })
+		const { upgradeArtifact } = await import('@asterdoc/core')
+		upgradeArtifact(artifact, { required: true })
 		const output: GetArtifactOutput = {
 			artifact,
 			artifact_name: normalized.artifact_name,

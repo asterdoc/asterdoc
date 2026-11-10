@@ -303,6 +303,6 @@ Load it back with `a.load()`:
 const loaded = a.load(jsonString) // works with JSON or YAML
 ```
 
-`load()` requires the `$schema` that `toJSON()` and `toYAML()` write. A file written for an earlier [schema version](/schemas#loading-rules) fails to load until [`asterdoc migrate`](/cli/commands/migrate) upgrades it.
+`load()` requires the `$schema` that `toJSON()` and `toYAML()` write. A file written for an earlier [schema version](/schemas#loading-rules) is upgraded in memory as it loads; [`asterdoc migrate`](/cli/commands/migrate) rewrites the file at the current version.
 </Step>
 </Steps>

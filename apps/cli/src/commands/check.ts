@@ -2,7 +2,7 @@ import { Command } from 'commander'
 import kleur from 'kleur'
 import { dirname, extname, relative, resolve } from 'node:path'
 
-import { assertCurrentSchemaVersion, isForm, reactLayersOf, validate, type Form } from '@asterdoc/core'
+import { isForm, reactLayersOf, upgradeArtifact, validate, type Form } from '@asterdoc/core'
 import type { LayerFormat } from '@asterdoc/types'
 import type { DocumentData } from '@asterdoc/react'
 import type * as Discovery from '@asterdoc/react/discovery'
@@ -256,30 +256,32 @@ async function findArtifactForComposition(
 }
 
 /**
- * Holds a matched artifact file to the current schema version and the schema,
- * which loose pairing deliberately does not. `asterdoc dev` applies the same rule.
+ * Holds a matched artifact file to the schema version rule for files and the
+ * schema, which loose pairing deliberately does not, and hands on the artifact
+ * upgraded to the current schema version. `asterdoc dev` applies the same rule.
  */
 function validatedLayer(resolved: ResolvedLayer): ResolvedLayer {
+  let artifact: Form
   try {
-    assertCurrentSchemaVersion(resolved.artifact, { required: true })
+    artifact = upgradeArtifact(resolved.artifact, { required: true }).artifact
   } catch (error) {
     throw new Error(`"${resolved.artifactPath}": ${error instanceof Error ? error.message : String(error)}`)
   }
-  const validation = validate(resolved.artifact)
+  const validation = validate(artifact)
   if (validation.issues) {
     const issues = validation.issues
       .map((issue) => `  - ${issue.path?.length ? issue.path.join('.') : 'root'}: ${issue.message}`)
       .join('\n')
     throw new Error(`"${resolved.artifactPath}" is not a valid artifact:\n${issues}`)
   }
-  return resolved
+  return { ...resolved, artifact }
 }
 
 /** Parses and validates an artifact, requiring a form that declares at least one React layer. */
 function parseFormArtifact(raw: string, label: string): Form {
   let artifact
   try {
-    artifact = loadValidatedArtifact(raw)
+    artifact = loadValidatedArtifact(raw).artifact
   } catch (error) {
     throw new Error(`"${label}": ${error instanceof Error ? error.message : String(error)}`)
   }

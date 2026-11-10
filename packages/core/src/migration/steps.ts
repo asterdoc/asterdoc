@@ -29,4 +29,10 @@ export const MIGRATION_STEPS: readonly MigrationStep[] = [
 		summary: 'Adds the optional format.date setting to PDF layers; an artifact needs no change.',
 		apply: (artifact) => artifact,
 	},
+	{
+		from: '2026-11-06',
+		to: '2026-11-10',
+		summary: 'Adds the optional value-formatting settings; an artifact needs no change.',
+		apply: (artifact) => artifact,
+	},
 ]

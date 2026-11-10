@@ -42,7 +42,7 @@ export function createVersionCommand(): Command {
           throw new Error(`Unsupported file type: ${ext}`)
         }
 
-        const artifact = parseArtifactFile(content) as Record<string, unknown>
+        const artifact = parseArtifactFile(content).stored as Record<string, unknown>
 
         // Validate artifact
         const result = validate(artifact)

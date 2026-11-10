@@ -49,7 +49,7 @@ export function createAttachCommand(): Command {
           process.exit(1)
         }
 
-        const parsed = parseArtifactFile(raw)
+        const { stored: parsed } = parseArtifactFile(raw)
 
         // Validate the artifact
         const validation = validate(parsed)
@@ -62,7 +62,7 @@ export function createAttachCommand(): Command {
           process.exit(1)
         }
 
-        const artifact = validation.value as Artifact
+        const artifact = parsed as Artifact
 
         // Validate the file to attach: it must exist, be a regular file,
         // and live inside the artifact's directory so the bundle stays portable

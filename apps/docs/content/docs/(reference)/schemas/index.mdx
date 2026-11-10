@@ -29,7 +29,7 @@ Every artifact file names the version it follows in `$schema`:
 
 Artifacts serialized with the SDK (`toJSON()` and `toYAML()`) always carry the current version's address. An artifact built with the SDK is always the current version.
 
-A new dated version is created only for a breaking change: a change that some existing valid artifact no longer satisfies. An additive change keeps the current version. Each new version ships with a migration step from the version before it, and [`asterdoc migrate`](/cli/commands/migrate) applies those steps to bring an older artifact file up to date. Nothing changes an artifact file's version without that command.
+Every change to the artifact schema gets a new date, and a published date never changes. Each new version ships with a migration step from the version before it. An additive change has a step that only rewrites `$schema`; a breaking change has a step that converts the artifact without loss, or refuses it.
 
 ### Loading rules
 
@@ -38,19 +38,23 @@ Every loading surface applies the same rules: the SDK, the CLI, the AI tools, an
 | `$schema` | Result |
 | --------- | ------ |
 | The current version | Loads and validates as usual. |
-| An earlier version | Fails with an outdated-version error. |
+| An earlier version | Upgrades in memory through the migration steps, then loads and validates as the current version. The file is not changed. |
+| A version newer than the SDK knows | Fails with a newer-version error: update `@asterdoc/core`. |
 | Missing | Fails with a missing-version error. |
-| An unpublished date, the undated `schema.json`, or a non-Asterdoc address | Fails with an unknown-version error. |
+| An unpublished earlier date, the undated `schema.json`, or a non-Asterdoc address | Fails with an unknown-version error. |
 
-Each error names what it found and the current version, and points to `asterdoc migrate`. Loading never migrates.
+An earlier version that a migration step cannot convert without loss fails with a not-upgradable error. Pass `strictSchema: true` to accept only the current version: an earlier one then fails with an outdated-version error. The registry publishes an artifact on an earlier version rewritten at the current one, so every new release is on the current version, while releases published earlier keep their own version. A bundle's inline parts each upgrade from the version they declare, earlier or later than the bundle's.
 
-In the SDK, `load()` and `safeLoad()` read file content and apply these rules; the error is a `SchemaVersionError` with a `code` of `missing-version`, `outdated-version`, or `unknown-version`. Every other way to create an artifact takes an object that may have been built in memory, so it accepts one without `$schema`, but a `$schema` it does carry must still be current: `loadFromObject()`, `a.form()`, `a.document()`, `a.checklist()` and `a.bundle()` with an object, their `.from()` and `.safeFrom()`, and the builder's `.from()`. `validate()` reports the same condition as an issue at `$schema`. A bundle holds each inline part to the rule too, and the error names the part. Only [`migrate`](/cli/commands/migrate) accepts another version.
+A later SDK can load, validate and extract an artifact written for an earlier version. Renders are not promised to be byte-identical across releases; the durable record of a filing is its sealed canonical PDF and hash.
+
+In the SDK, `load()` and `safeLoad()` read file content and apply these rules; an error is a `SchemaVersionError` with a `code` of `missing-version`, `newer-version`, `unknown-version`, `not-upgradable`, `no-migration-path`, or, with `strictSchema`, `outdated-version`. Every other way to create an artifact takes an object that may have been built in memory, so it accepts one without `$schema`, and applies the same rules to a `$schema` it does carry: `loadFromObject()`, `a.form()`, `a.document()`, `a.checklist()` and `a.bundle()` with an object, their `.from()` and `.safeFrom()`, and the builder's `.from()`. Each takes `strictSchema` in its options, a bundle's included. An instance loaded from an earlier version names it in `migratedFrom`, and so does each runtime filled or prepared from it: a runtime's `toJSON()` writes the definition as stored, so a restore upgrades it again. `validate()` validates the upgraded artifact, and reports a version error as an issue at `$schema`. A bundle applies the rules to each inline part too, and the error names the part. To rewrite a file at the current version, use [`migrate`](/cli/commands/migrate).
 
 ```ts
 import { load, SchemaVersionError } from '@asterdoc/sdk'
 
 try {
-  load(fileContents)
+  const artifact = load(fileContents)
+  if (artifact.migratedFrom) console.log(`upgraded from ${artifact.migratedFrom}`)
 } catch (error) {
   if (error instanceof SchemaVersionError) console.error(error.code, error.message)
 }
@@ -60,7 +64,9 @@ try {
 
 | Version | Changes |
 | ------- | ------- |
-| `2026-11-06` | First Asterdoc version. It has the same shape as Paradoc's `2026-10-02` at `schema.paradoc.dev`. To move a Paradoc artifact to it, bring the artifact to `2026-10-02` with Paradoc 0.8 if it is older, then run `asterdoc migrate <file> --from 2026-11-06`. Only `$schema` changes. |
+| `2026-10-28` | First Asterdoc version. It has the same shape as Paradoc's `2026-10-02` at `schema.paradoc.dev`. To move a Paradoc artifact to it, bring the artifact to `2026-10-02` with Paradoc 0.8 if it is older, then run `asterdoc migrate <file> --from 2026-10-28`. Only `$schema` changes. |
+| `2026-11-06` | Adds the optional `format.date` setting to PDF layers. Only `$schema` changes. |
+| `2026-11-10` | Adds the optional value-formatting settings on layers, bindings and fields. Only `$schema` changes. |
 
 ## Hosted server
 

@@ -10,7 +10,7 @@ import type { Artifact, ArtifactEdition, Metadata, ContentRef } from '@asterdoc/
 import { validate as validateArtifact, validateDefinition } from '@/validation/artifact'
 import { toYAML } from '@/serialization/serialization'
 import { assertCurrentSchemaVersion } from '@/serialization/schema-version'
-import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
+import { ASTERDOC_SCHEMA_URL, type SchemaVersion } from '@asterdoc/schemas'
 import type { ValidateOptions, SerializationOptions } from '@/types'
 import { deepClone } from '@/utils/clone'
 
@@ -56,6 +56,14 @@ export interface ArtifactMethods<T extends Artifact> {
 
 	/** LLM/agent prompts for presentation guidance */
 	readonly agentInstructions: ContentRef | undefined
+
+	/**
+	 * The earliest schema version the definition declared when it was
+	 * upgraded in memory on load, on its root or an inline bundle part.
+	 * `undefined` when it was already current. The stored definition is never
+	 * rewritten.
+	 */
+	readonly migratedFrom: SchemaVersion | undefined
 
 	/**
 	 * Validates the artifact schema definition.
@@ -118,8 +126,8 @@ export function snapshotArtifactDefinition<T extends Artifact>(data: T): T {
  * The artifact as it is written to a file.
  *
  * An instance always holds a current-version definition: every entry point
- * refuses another `$schema`, and only `migrate` upgrades one. So it serializes
- * with the current dated `$schema` first, and never restamps an unmigrated file.
+ * upgrades an earlier `$schema` in memory, or refuses it. So it serializes
+ * with the current dated `$schema` first.
  */
 function serializableArtifact<T extends Artifact>(data: T, includeSchema: boolean): T {
 	const definition: T = { ...data }
@@ -145,7 +153,7 @@ function serializableArtifact<T extends Artifact>(data: T, includeSchema: boolea
  * }
  * ```
  */
-export function withArtifactMethods<T extends Artifact>(data: T): ArtifactMethods<T> {
+export function withArtifactMethods<T extends Artifact>(data: T, migratedFrom?: SchemaVersion): ArtifactMethods<T> {
 	return {
 		_data: data,
 
@@ -162,6 +170,7 @@ export function withArtifactMethods<T extends Artifact>(data: T): ArtifactMethod
 		metadata: data.metadata,
 		instructions: data.instructions,
 		agentInstructions: data.agentInstructions,
+		migratedFrom,
 
 		// Validation
 		validate(options?: ValidateOptions): StandardSchemaV1.Result<T> {

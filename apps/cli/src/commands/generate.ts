@@ -68,7 +68,7 @@ export function createGenerateCommand(): Command {
             console.error(kleur.gray(`Expected one of: ${validKinds.join(', ')}`))
             process.exit(1)
           }
-          artifact = loadValidatedArtifact(content)
+          artifact = loadValidatedArtifact(content).artifact
         } catch (error) {
           console.error(kleur.red(`Could not load valid artifact: ${file}`))
           console.error(kleur.gray(error instanceof Error ? error.message : String(error)))

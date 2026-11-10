@@ -57,7 +57,8 @@ import type {
 	Signature,
 } from '@asterdoc/types'
 import type { ZodType } from 'zod'
-import { findSchemaVersionError } from '@/serialization/schema-version'
+import { SchemaVersionError } from '@/serialization/schema-version'
+import { upgradeArtifact } from '@/migration/upgrade'
 import { zodIssues } from './zod-parser'
 
 /** Checks a value against one schema. */
@@ -73,14 +74,30 @@ function createValidator<T>(schema: ZodType): Validator<T> {
 /**
  * A validator for a whole artifact. It applies the one schema version rule
  * every artifact entry point applies: a `$schema` the artifact declares, on
- * the root or on an inline bundle part, must be current.
+ * the root or on an inline bundle part, is upgraded in memory when it names an
+ * earlier version, and the upgraded artifact is checked.
  */
 function createArtifactValidator<T>(schema: ZodType): Validator<T> {
 	const validateStructure = createValidator<T>(schema)
 	return (data) => {
-		const versionError = findSchemaVersionError(data, { required: false })
-		if (versionError) return { issues: [{ message: versionError.message, path: [...versionError.path] }] }
-		return validateStructure(data)
+		const upgraded = upgradeForValidation(data, {})
+		return 'issues' in upgraded ? upgraded : validateStructure(upgraded.artifact)
+	}
+}
+
+/**
+ * Upgrade an artifact to the current schema version for validation, or
+ * report why it cannot be read as an issue at its `$schema`.
+ */
+export function upgradeForValidation(
+	data: unknown,
+	options: { strictSchema?: boolean },
+): { artifact: unknown } | { issues: StandardSchemaV1.Issue[] } {
+	try {
+		return { artifact: upgradeArtifact(data, options).artifact }
+	} catch (error) {
+		if (!(error instanceof SchemaVersionError)) throw error
+		return { issues: [{ message: error.message, path: [...error.path] }] }
 	}
 }
 

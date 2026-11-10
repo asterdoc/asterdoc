@@ -52,13 +52,13 @@ Each tool has an execute function. They take the tool's snake_case input and an 
 
 The execute functions do not throw for tool failures. They return a result with an `error` object (`code`, `message`, and optional `path` and `retryable`).
 
-An artifact read from a URL or a registry must carry the current dated `$schema`. An inline artifact may omit it, but one it declares must be current. Otherwise the error code is `missing-version`, `outdated-version`, or `unknown-version`, and the message names the current version and `asterdoc migrate`. See [loading rules](/schemas#loading-rules).
+An artifact read from a URL or a registry must carry a dated `$schema`. An inline artifact may omit it. An earlier version is upgraded in memory. Otherwise the error code is `missing-version`, `newer-version`, `unknown-version`, or `not-upgradable`, and the message says what to do. See [loading rules](/schemas#loading-rules).
 
 The execute functions parse their input with the tool's Zod schema. Pass the snake_case field names shown on each tool page. [Use another framework](/ai/other-frameworks#call-the-tools-from-your-code) has a full example.
 
 ## Resolving a source
 
-`resolveSource(input, config?)` loads the artifact for a [source](/ai-tools#sources). It returns a `ResolvedSource`: `{ artifact, base_url?, artifact_url? }`. The tools use it internally; use it when an adapter needs the artifact itself.
+`resolveSource(input, config?)` loads the artifact for a [source](/ai-tools#sources). It returns a `ResolvedSource`: `{ artifact, stored, base_url?, artifact_url? }`. `artifact` is upgraded in memory to the current schema version; `stored` is the artifact as given or served. The tools use it internally; use it when an adapter needs the artifact itself.
 
 ## Request context
 

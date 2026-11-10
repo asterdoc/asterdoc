@@ -1,7 +1,8 @@
 import type { Form, Document, Bundle, Checklist } from '@asterdoc/types'
 import { parse } from './serialization'
 import { LoadError } from './load-error'
-import { assertCurrentSchemaVersion } from './schema-version'
+import { findSchemaVersionError } from './schema-version'
+import type { SchemaReadOptions } from '@/migration/upgrade'
 import { form, type FormInstance } from '@/artifacts/form'
 import { document, type DocumentInstance } from '@/artifacts/document'
 import { bundle, type BundleInstance } from '@/artifacts/bundle'
@@ -27,7 +28,7 @@ export type AnyArtifactInstance =
  * A bundle binds none: its parts are artifact instances that each carry the
  * resolver they were constructed with, so one handed to the bundle would have
  * nothing to bind to and would be silently dropped. The typed `<'bundle'>`
- * overloads of the loaders take no options at all; this catches the untyped
+ * overloads of the loaders take no resolver; this catches the untyped
  * path, where the kind is only known once the object is parsed.
  */
 export class BundleResolverError extends LoadError {
@@ -88,10 +89,18 @@ export function isChecklistInstance(instance: AnyArtifactInstance): instance is 
  * You can optionally specify the expected kind as a generic parameter for
  * compile-time type inference, or omit it and use runtime type narrowing.
  *
+ * The content must carry `$schema`. One that names an earlier schema version
+ * is upgraded in memory to the current one, and the instance records it in
+ * `migratedFrom`; the content is never rewritten. Pass `strictSchema: true`
+ * to refuse an earlier version instead.
+ *
  * @param content - YAML or JSON string containing the artifact definition
+ * @param options - The resolver for file-backed layers (not for a bundle), and `strictSchema`
  * @returns An artifact instance (FormInstance, DocumentInstance, BundleInstance, or ChecklistInstance)
  * @throws LoadError if parsing fails or the artifact kind is unknown
- * @throws SchemaVersionError if `$schema` is missing or does not name the current schema version
+ * @throws SchemaVersionError if `$schema` is missing, names a version newer than this SDK
+ *   knows, names no published version, cannot be upgraded without loss, or, with
+ *   `strictSchema`, names an earlier version
  *
  * @example
  * ```typescript
@@ -110,7 +119,7 @@ export function isChecklistInstance(instance: AnyArtifactInstance): instance is 
  */
 export function load<_K extends 'form'>(content: string, options?: ArtifactInstanceOptions): FormInstance<Form>;
 export function load<_K extends 'document'>(content: string, options?: ArtifactInstanceOptions): DocumentInstance<Document>;
-export function load<_K extends 'bundle'>(content: string): BundleInstance<Bundle>;
+export function load<_K extends 'bundle'>(content: string, options?: SchemaReadOptions): BundleInstance<Bundle>;
 export function load<_K extends 'checklist'>(content: string, options?: ArtifactInstanceOptions): ChecklistInstance<Checklist>;
 export function load(content: string, options?: ArtifactInstanceOptions): AnyArtifactInstance;
 export function load(content: string, options?: ArtifactInstanceOptions): AnyArtifactInstance {
@@ -136,11 +145,17 @@ export function load(content: string, options?: ArtifactInstanceOptions): AnyArt
  * compile-time type inference, or rely on type inference from the object's
  * literal `kind` type, or use runtime type narrowing.
  *
+ * An object without `$schema` is accepted as one built in memory with the
+ * SDK. One that declares an earlier schema version is upgraded in memory, as
+ * with {@link load}; the object is never changed.
+ *
  * @param obj - A parsed object containing the artifact definition
+ * @param options - The resolver for file-backed layers (not for a bundle), and `strictSchema`
  * @returns An artifact instance (FormInstance, DocumentInstance, etc.)
  * @throws LoadError if the object is invalid or the artifact kind is unknown
- * @throws SchemaVersionError if the object declares a `$schema` that is not the current schema version.
- *   An object without `$schema` is accepted as one built in memory with the SDK.
+ * @throws SchemaVersionError if the object declares a `$schema` that names a version newer
+ *   than this SDK knows, names no published version, cannot be upgraded without loss, or,
+ *   with `strictSchema`, names an earlier version
  *
  * @example
  * ```typescript
@@ -158,11 +173,11 @@ export function load(content: string, options?: ArtifactInstanceOptions): AnyArt
  */
 export function loadFromObject<_K extends 'form'>(obj: unknown, options?: ArtifactInstanceOptions): FormInstance<Form>;
 export function loadFromObject<_K extends 'document'>(obj: unknown, options?: ArtifactInstanceOptions): DocumentInstance<Document>;
-export function loadFromObject<_K extends 'bundle'>(obj: unknown): BundleInstance<Bundle>;
+export function loadFromObject<_K extends 'bundle'>(obj: unknown, options?: SchemaReadOptions): BundleInstance<Bundle>;
 export function loadFromObject<_K extends 'checklist'>(obj: unknown, options?: ArtifactInstanceOptions): ChecklistInstance<Checklist>;
 export function loadFromObject<T extends { kind: 'form' }>(obj: T, options?: ArtifactInstanceOptions): FormInstance<Form>;
 export function loadFromObject<T extends { kind: 'document' }>(obj: T, options?: ArtifactInstanceOptions): DocumentInstance<Document>;
-export function loadFromObject<T extends { kind: 'bundle' }>(obj: T): BundleInstance<Bundle>;
+export function loadFromObject<T extends { kind: 'bundle' }>(obj: T, options?: SchemaReadOptions): BundleInstance<Bundle>;
 export function loadFromObject<T extends { kind: 'checklist' }>(obj: T, options?: ArtifactInstanceOptions): ChecklistInstance<Checklist>;
 export function loadFromObject(obj: unknown, options?: ArtifactInstanceOptions): AnyArtifactInstance;
 export function loadFromObject(obj: unknown, options?: ArtifactInstanceOptions): AnyArtifactInstance {
@@ -171,8 +186,9 @@ export function loadFromObject(obj: unknown, options?: ArtifactInstanceOptions):
 
 /**
  * Load a parsed artifact. `required` applies the rule for artifact files:
- * `$schema` must be present. Either way a `$schema` that is present must name
- * the current schema version; loading never migrates.
+ * `$schema` must be present. Each kind's `.from()` then applies the schema
+ * version rule: an earlier version is upgraded in memory unless
+ * `strictSchema` refuses it.
  */
 function loadArtifactObject(
   obj: unknown,
@@ -191,14 +207,15 @@ function loadArtifactObject(
 
   // Outside the try, so it surfaces as itself rather than as a LoadError about
   // a bundle that is in fact perfectly loadable. The typed bundle overloads
-  // take no options at all; this is the untyped path, where the kind is only
+  // take no resolver; this is the untyped path, where the kind is only
   // known once the object has been read.
   if (kind === 'bundle' && options?.resolver) throw new BundleResolverError()
 
   if (!ARTIFACT_KINDS.has(kind)) throw new LoadError(`Unknown artifact kind: "${kind}"`)
 
   // Outside the try as well: a version error is its own answer, not a failed load.
-  assertCurrentSchemaVersion(obj, version)
+  const missing = version.required ? findSchemaVersionError(obj, { required: true }) : undefined
+  if (missing?.code === 'missing-version') throw missing
 
   try {
     switch (kind) {
@@ -211,7 +228,7 @@ function loadArtifactObject(
       // A bundle binds no resolver: its parts are artifact instances that
       // each carry their own. Guarded above.
       case 'bundle':
-        return bundle.from(obj) as BundleInstance<Bundle>
+        return bundle.from(obj, { strictSchema: options?.strictSchema }) as BundleInstance<Bundle>
 
       case 'checklist':
         return checklist.from(obj, options) as ChecklistInstance<Checklist>
@@ -266,7 +283,8 @@ export function safeLoad<_K extends 'document'>(
   options?: ArtifactInstanceOptions
 ): { success: true; data: DocumentInstance<Document> } | { success: false; error: LoadError };
 export function safeLoad<_K extends 'bundle'>(
-  content: string
+  content: string,
+  options?: SchemaReadOptions
 ): { success: true; data: BundleInstance<Bundle> } | { success: false; error: LoadError };
 export function safeLoad<_K extends 'checklist'>(
   content: string,
@@ -328,7 +346,8 @@ export function safeLoadFromObject<_K extends 'document'>(
   options?: ArtifactInstanceOptions
 ): { success: true; data: DocumentInstance<Document> } | { success: false; error: LoadError };
 export function safeLoadFromObject<_K extends 'bundle'>(
-  obj: unknown
+  obj: unknown,
+  options?: SchemaReadOptions
 ): { success: true; data: BundleInstance<Bundle> } | { success: false; error: LoadError };
 export function safeLoadFromObject<_K extends 'checklist'>(
   obj: unknown,
@@ -343,7 +362,8 @@ export function safeLoadFromObject<T extends { kind: 'document' }>(
   options?: ArtifactInstanceOptions
 ): { success: true; data: DocumentInstance<Document> } | { success: false; error: LoadError };
 export function safeLoadFromObject<T extends { kind: 'bundle' }>(
-  obj: T
+  obj: T,
+  options?: SchemaReadOptions
 ): { success: true; data: BundleInstance<Bundle> } | { success: false; error: LoadError };
 export function safeLoadFromObject<T extends { kind: 'checklist' }>(
   obj: T,

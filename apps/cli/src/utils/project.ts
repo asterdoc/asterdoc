@@ -90,7 +90,7 @@ export async function parseAndValidateArtifact(filePath: string): Promise<Artifa
   const content = await storage.readFile(filePath)
 
   // Parse the content (auto-detects JSON/YAML)
-  const artifact = loadValidatedArtifact(content)
+  const { artifact } = loadValidatedArtifact(content)
 
   // Type guard to ensure we have a valid artifact
   if (

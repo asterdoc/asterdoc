@@ -2,7 +2,7 @@ import { Command } from 'commander'
 import kleur from 'kleur'
 import ora, { type Ora } from 'ora'
 import prompts from 'prompts'
-import { assertCurrentSchemaVersion, validate, type Artifact } from '@asterdoc/core'
+import { upgradeArtifact, validate, type Artifact } from '@asterdoc/core'
 import { describeRegistryReleaseFailure, formatRegistryReference, resolveRegistryRelease } from '@asterdoc/schemas'
 import { LocalFileSystem } from '../utils/local-fs.js'
 
@@ -156,11 +156,12 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
   spinner.succeed(`Found ${registryItem.name} ${installedLabel}`)
 
   // A registry serves artifact files, so the schema version rule for files applies.
+  // An earlier version is written as served; the SDK upgrades it on load.
   try {
-    assertCurrentSchemaVersion(registryItem, { required: true })
+    upgradeArtifact(registryItem, { required: true })
   } catch (error) {
     console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-    console.error(kleur.gray(`The registry serves ${artifactFull} for another schema version; its maintainer can upgrade it with asterdoc migrate.`))
+    console.error(kleur.gray(`Nothing was installed: this SDK cannot read the schema version the registry serves ${artifactFull} at.`))
     process.exit(1)
   }
 

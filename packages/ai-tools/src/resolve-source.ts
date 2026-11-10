@@ -9,7 +9,10 @@ import {
 } from './registry-client'
 
 export interface ResolvedSource {
+	/** The artifact upgraded in memory to the current schema version. */
 	artifact: Record<string, unknown>
+	/** The artifact as given or served, at the schema version it declares. */
+	stored: Record<string, unknown>
 	base_url?: string
 	artifact_url?: string
 }
@@ -34,25 +37,26 @@ function artifactBaseUrl(artifactUrl: string): string {
 
 /**
  * Resolve the artifact a tool works on, under the rules every loading surface
- * applies. An artifact read from a URL or a registry is a file, so its
- * `$schema` must name the current schema version. An inline artifact is an
- * object, as with `loadFromObject`: it may omit `$schema`, but one it declares
- * must be current. Loading never migrates; the error points to `asterdoc migrate`.
+ * applies. An artifact read from a URL or a registry is a file, so it must
+ * carry `$schema`. An inline artifact is an object, as with `loadFromObject`:
+ * it may omit `$schema`. An earlier version is upgraded in memory: tools read
+ * `artifact`, and `stored` keeps the artifact as given. A version newer than
+ * this SDK knows, or one that cannot be upgraded, is refused.
  */
 export async function resolveSource(
 	input: SourceInput | Record<string, unknown>,
 	config?: AsterdocToolsConfig,
 ): Promise<ResolvedSource> {
 	const resolved = await resolveUncheckedSource(input, config)
-	const { assertCurrentSchemaVersion } = await import('@asterdoc/core')
-	assertCurrentSchemaVersion(resolved.artifact, { required: resolved.artifact_url !== undefined })
-	return resolved
+	const { upgradeArtifact } = await import('@asterdoc/core')
+	const { artifact } = upgradeArtifact(resolved.artifact, { required: resolved.artifact_url !== undefined })
+	return { ...resolved, artifact, stored: resolved.artifact }
 }
 
 async function resolveUncheckedSource(
 	input: SourceInput | Record<string, unknown>,
 	config?: AsterdocToolsConfig,
-): Promise<ResolvedSource> {
+): Promise<Omit<ResolvedSource, 'stored'>> {
 	const source = SourceSchema.parse(input)
 	if (source.source === 'artifact') {
 		return { artifact: source.artifact, base_url: source.base_url }

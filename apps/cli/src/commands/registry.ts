@@ -1028,10 +1028,13 @@ export function createRegistryCommand(): Command {
         // Read the artifact file
         const storage = new LocalFileSystem(projectRoot)
         const artifactPath = storage.joinPath(lockedInfo.path)
+        let storedContent: Record<string, unknown>
         let artifactContent: Record<string, unknown>
         try {
           const content = await storage.readFile(artifactPath, 'utf-8')
-          artifactContent = loadValidatedArtifact(content) as unknown as Record<string, unknown>
+          const definition = loadValidatedArtifact(content)
+          storedContent = definition.stored as unknown as Record<string, unknown>
+          artifactContent = definition.artifact as unknown as Record<string, unknown>
         } catch {
           console.error(kleur.red(`Could not read artifact file: ${lockedInfo.path}`))
           process.exit(1)
@@ -1042,7 +1045,7 @@ export function createRegistryCommand(): Command {
           const output = {
             ref: artifactRef.full,
             installed: lockedInfo,
-            artifact: artifactContent,
+            artifact: storedContent,
           }
           console.log(JSON.stringify(output, null, 2))
         } else {

@@ -101,7 +101,7 @@ Use relative links: `[fields](./fields.md)` between references, `[references/fie
 
 The skill states these in `SKILL.md`; repeat one in a reference only where it applies directly:
 
-- Schema version `2026-11-06`: `$schema` is `https://schema.asterdoc.com/2026-11-06.json` for every artifact kind.
+- Schema version `2026-11-10`: `$schema` is `https://schema.asterdoc.com/2026-11-10.json` for every artifact kind.
 - Validate files with `npx asterdoc validate <file>`.
 - Artifact name pattern `^[A-Za-z0-9]([A-Za-z0-9]|-[A-Za-z0-9])*$`. Field, party, def and rule ids `^[a-z][a-zA-Z0-9_]*$`.
 - Use the most specific field type.

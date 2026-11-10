@@ -6,8 +6,6 @@ import { describe, expect, test } from 'vitest'
 import { a, form as formApi } from '@/artifacts'
 import { load } from '@/serialization'
 import { validate } from '@/validation/artifact'
-import { NEWER_RELEASE_HINT } from '@/validation/artifact-parsers'
-import { CORE_VERSION } from '@/version'
 import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 import { inspectAcroFormFields } from '@asterdoc/render/pdf'
 import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
@@ -151,26 +149,21 @@ describe('validating binding formats', () => {
 })
 
 describe('an unknown key in a current artifact', () => {
-	const artifact = (layer: Record<string, unknown>) => JSON.stringify({
-		$schema: ASTERDOC_SCHEMA_URL,
+	const artifact = (layer: Record<string, unknown>, $schema = ASTERDOC_SCHEMA_URL) => JSON.stringify({
+		$schema,
 		kind: 'form',
 		name: 'hint',
 		fields: { signed: { type: 'date', label: 'Signed' } },
 		layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: 'form.pdf', ...layer } },
 	})
 
-	test('says the key may come from a newer release than this core', () => {
-		expect(NEWER_RELEASE_HINT).toBe(`This key may come from a newer Asterdoc release than @asterdoc/core ${CORE_VERSION}. Update the SDK.`)
-		expect(CORE_VERSION).toMatch(/^\d+\.\d+\.\d+/)
-		expect(() => load(artifact({ format: { money: { futureOption: 0 } } }))).toThrow(NEWER_RELEASE_HINT)
+	test('is a schema error that asks for no SDK update', () => {
+		expect(() => load(artifact({ format: { money: { futureOption: 0 } } }))).toThrow(/Unrecognized key/)
+		expect(() => load(artifact({ format: { money: { futureOption: 0 } } }))).not.toThrow(/update/i)
 	})
 
-	test('carries no hint for another fault, or for an artifact without $schema', () => {
-		expect(() => load(artifact({ format: { date: { pattern: 'D/M/YY' } } }))).toThrow(/Invalid/)
-		expect(() => load(artifact({ format: { date: { pattern: 'D/M/YY' } } }))).not.toThrow(NEWER_RELEASE_HINT)
-		const unversioned = JSON.parse(artifact({ format: { money: { futureOption: 0 } } })) as Record<string, unknown>
-		delete unversioned.$schema
-		expect(() => a.form(unversioned as never)).toThrow(/Unrecognized key/)
-		expect(() => a.form(unversioned as never)).not.toThrow(NEWER_RELEASE_HINT)
+	test('a newer schema date asks for an SDK update before any key is read', () => {
+		const newer = artifact({ format: { money: { futureOption: 0 } } }, 'https://schema.asterdoc.com/2999-01-01.json')
+		expect(() => load(newer)).toThrow('newer than this SDK knows; update @asterdoc/core')
 	})
 })

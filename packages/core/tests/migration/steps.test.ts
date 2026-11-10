@@ -35,7 +35,7 @@ describe('the 2026-10-28 to 2026-11-06 step', () => {
 		expect(result.status).toBe('migrated')
 		if (result.status !== 'migrated') return
 		expect(result.from).toBe('2026-10-28')
-		expect(result.to).toBe('2026-11-06')
+		expect(result.to).toBe(SCHEMA_VERSION)
 		const { $schema, ...rest } = result.artifact
 		const { $schema: _old, ...before } = form
 		expect($schema).toBe(ASTERDOC_SCHEMA_URL)

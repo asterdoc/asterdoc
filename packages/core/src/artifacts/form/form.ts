@@ -42,6 +42,8 @@ import type {
 	ArtifactEdition,
 } from '@asterdoc/types'
 import { createLayerRenderer } from '@asterdoc/render'
+import type { SchemaVersion } from '@asterdoc/schemas'
+import { restoreDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
 import { flattenPdf, locate as locatePlacements } from '@asterdoc/render/pdf'
 import { extractPdfData, selectPdfExtractionLayer } from '@asterdoc/render/pdf'
 import type { PdfExtraction } from '@asterdoc/render/pdf'
@@ -50,6 +52,7 @@ import { partySignerIds } from '@/primitives/party'
 import type { PlacementProvenance, SealPreparation } from './seal-slots'
 import {
 	parseForm,
+	readForm,
 	parseFormField,
 	parseFormAnnex,
 	parseFormParty,
@@ -888,6 +891,12 @@ interface RuntimeFormBase<F extends Form> {
 	/** Embedded form definition */
 	readonly form: F
 
+	/**
+	 * The schema version the definition was written for, when it was upgraded
+	 * in memory. `toJSON()` writes the definition as stored, so a restore keeps it.
+	 */
+	readonly migratedFrom: SchemaVersion | undefined
+
 	/** Target layer key */
 	readonly targetLayer: string
 
@@ -1272,6 +1281,7 @@ interface RuntimeFormConfigBase<F extends Form> {
 	 * transition. See `ArtifactInstanceOptions`.
 	 */
 	resolver?: Resolver
+	origin?: DefinitionOrigin<F>
 	captures?: SignatureCapture[]
 	witnesses?: WitnessParty[]
 	attestations?: Attestation[]
@@ -1376,8 +1386,10 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		canonicalPdfHash,
 		canonicalPdfBytes: canonicalPdfBytesInput,
 		context,
+		origin,
 	} = config
 	assertValidArtifactDefinition(formDef)
+	const storedForm = origin?.stored ?? formDef
 
 	// Runtime state is owned by the instance. Guarded mutation methods create a
 	// new instance, so cloning at this boundary prevents aliases from the
@@ -1795,6 +1807,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		phase,
 		form: formDef,
 		targetLayer,
+		migratedFrom: origin?.migratedFrom,
 		get fields() {
 			return fieldsView
 		},
@@ -2790,7 +2803,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			if (phase === 'draft') {
 				return {
 					phase: 'draft',
-					form: formDef,
+					form: storedForm,
 					fields: deepClone(fieldValues),
 					parties: deepClone(partyValues),
 					annexes: deepClone(annexValues),
@@ -2803,7 +2816,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			if (phase === 'signable') {
 				return {
 					phase: 'signable',
-					form: formDef,
+					form: storedForm,
 					fields: deepClone(fieldValues),
 					parties: deepClone(partyValues),
 					annexes: deepClone(annexValues),
@@ -2820,7 +2833,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			}
 			return {
 				phase: 'executed',
-				form: formDef,
+				form: storedForm,
 				fields: deepClone(fieldValues),
 				parties: deepClone(partyValues),
 				annexes: deepClone(annexValues),
@@ -2889,17 +2902,19 @@ export function runtimeFormFromJSON<F extends Form>(
 	json: RuntimeFormJSON<F>,
 	options?: ArtifactInstanceOptions,
 ): RuntimeForm<F> {
+	const { definition, origin } = restoreDefinition(json.form, options)
 	// Type assertion needed because TypeScript can't narrow the config type based on json.phase alone
 	// The RuntimeFormJSON union already constrains the valid combinations
 	const config = {
-		form: snapshotArtifactDefinition(json.form),
-		fields: canonicalRehydratedFields(json.form, json.fields, json.phase),
-		parties: normalizeRehydratedParties(json.form, json.parties),
+		form: definition,
+		fields: canonicalRehydratedFields(definition, json.fields, json.phase),
+		parties: normalizeRehydratedParties(definition, json.parties),
 		annexes: json.annexes,
 		signers: json.signers,
 		signatories: json.signatories,
 		targetLayer: json.targetLayer,
 		resolver: options?.resolver,
+		origin,
 		phase: json.phase,
 		captures: 'captures' in json ? json.captures : [],
 		witnesses: 'witnesses' in json ? json.witnesses : [],
@@ -2919,8 +2934,12 @@ export function runtimeFormFromJSON<F extends Form>(
 /**
  * Creates a FormInstance object (replaces FormInstance class)
  */
-function createFormInstance<F extends Form>(formDef: F, options?: ArtifactInstanceOptions): FormInstance<F> {
-	const artifactMethods = withArtifactMethods(formDef)
+function createFormInstance<F extends Form>(
+	formDef: F,
+	options?: ArtifactInstanceOptions,
+	origin?: DefinitionOrigin<F>,
+): FormInstance<F> {
+	const artifactMethods = withArtifactMethods(formDef, origin?.migratedFrom)
 	const resolver = options?.resolver
 
 	const instance: FormInstance<F> = {
@@ -3011,6 +3030,7 @@ function createFormInstance<F extends Form>(formDef: F, options?: ArtifactInstan
 				signatories: {},
 				targetLayer,
 				resolver,
+				origin,
 				phase: 'draft',
 				context,
 			})
@@ -3086,7 +3106,7 @@ function createFormInstance<F extends Form>(formDef: F, options?: ArtifactInstan
 		},
 
 		clone(): FormInstance<F> {
-			return createFormInstance(structuredClone(formDef), options)
+			return createFormInstance(structuredClone(formDef), options, origin)
 		},
 	}
 
@@ -3528,24 +3548,24 @@ function formImpl<const T extends FormInput>(
 ): FormBuilderInterface | FormInstance<T & { kind: 'form' }> {
 	if (input !== undefined) {
 		const withKind = { ...input, kind: 'form' as const }
-		const parsed = parseForm(withKind) as T & { kind: 'form' }
-		return createFormInstance(parsed, options)
+		const { definition, origin } = readForm(withKind, options)
+		return createFormInstance(definition as T & { kind: 'form' }, options, origin as DefinitionOrigin<T & { kind: 'form' }> | undefined)
 	}
 	return createFormBuilder()
 }
 
 export const form: FormAPI = Object.assign(formImpl, {
 	from: (input: unknown, options?: ArtifactInstanceOptions): FormInstance<Form> => {
-		const parsed = parseForm(input) as Form
-		return createFormInstance(parsed, options)
+		const { definition, origin } = readForm(input, options)
+		return createFormInstance(definition, options, origin)
 	},
 	safeFrom: (
 		input: unknown,
 		options?: ArtifactInstanceOptions,
 	): { success: true; data: FormInstance<Form> } | { success: false; error: Error } => {
 		try {
-			const parsed = parseForm(input) as Form
-			return { success: true, data: createFormInstance(parsed, options) }
+			const { definition, origin } = readForm(input, options)
+			return { success: true, data: createFormInstance(definition, options, origin) }
 		} catch (err) {
 			return { success: false, error: err as Error }
 		}

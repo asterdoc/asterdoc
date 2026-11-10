@@ -1,0 +1,56 @@
+{
+  "$schema": "https://schema.asterdoc.com/2026-10-28.json",
+  "kind": "bundle",
+  "name": "move-in-packet",
+  "version": "1.0.0",
+  "title": "Move-in packet",
+  "contents": [
+    {
+      "type": "inline",
+      "key": "notice",
+      "artifact": {
+        "kind": "document",
+        "name": "notice",
+        "version": "1.0.0",
+        "title": "Notice",
+        "defaultLayer": "body",
+        "layers": {
+          "body": {
+            "kind": "inline",
+            "mimeType": "text/markdown",
+            "text": "# Notice\n\nThe office closes at noon."
+          }
+        }
+      }
+    },
+    {
+      "type": "inline",
+      "key": "move-in",
+      "artifact": {
+        "$schema": "https://schema.asterdoc.com/2026-10-28.json",
+        "kind": "checklist",
+        "name": "move-in",
+        "version": "1.0.0",
+        "title": "Move-in",
+        "items": [
+          {
+            "id": "keys",
+            "title": "Keys handed over"
+          },
+          {
+            "id": "meter",
+            "title": "Meter read"
+          }
+        ],
+        "defaultLayer": "list",
+        "layers": {
+          "list": {
+            "kind": "inline",
+            "mimeType": "text/markdown",
+            "text": "Move-in checklist"
+          }
+        }
+      }
+    }
+  ]
+}

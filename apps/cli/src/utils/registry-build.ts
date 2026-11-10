@@ -119,8 +119,8 @@ export async function loadSourceRelease(storage: LocalFileSystem, configDir: str
     throw new Error('artifact file not found')
   }
 
-  const artifact = loadValidatedArtifact(await storage.readFile(sourcePath))
-  const record = artifact as unknown as { name: string; version: string; edition?: SourceEdition }
+  const { stored: artifact, artifact: upgraded } = loadValidatedArtifact(await storage.readFile(sourcePath))
+  const record = upgraded as unknown as { name: string; version: string; edition?: SourceEdition }
   if (!REGISTRY_VERSION_PATTERN.test(record.version)) {
     throw new Error(
       `version "${record.version}" has build metadata (+...); a registry lists a release under a version with no build metadata, such as ${record.version.split('+')[0]}`,
@@ -132,7 +132,7 @@ export async function loadSourceRelease(storage: LocalFileSystem, configDir: str
     sourcePath,
     artifact,
     name: record.name,
-    kind: artifact.kind,
+    kind: upgraded.kind,
     version: record.version,
     edition: record.edition === undefined
       ? null

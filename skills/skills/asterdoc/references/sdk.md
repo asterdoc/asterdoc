@@ -83,11 +83,11 @@ const lease = a.form()
 The form builder has `.rules()`. Field builder methods are in [fields.md § Field builder methods](./fields.md#field-builder-methods).
 
 <!-- dep:C2 -->
-`a.form()`, `a.form.from()` and the other kinds' entry points enforce the current `$schema` and throw `SchemaVersionError` on any other version.
+`a.form()`, `a.form.from()` and the other kinds' entry points upgrade an earlier `$schema` in memory, take `strictSchema: true` to refuse it, and throw `SchemaVersionError` on a newer or unknown version.
 
 ## Load and migrate
 
-Load an artifact file with `load` (text) or `loadFromObject` (a parsed object). Both return the instance for the artifact's `kind` and enforce the schema version.
+Load an artifact file with `load` (text) or `loadFromObject` (a parsed object). Both return the instance for the artifact's `kind` and apply the schema version rules: an earlier version is upgraded in memory and named in `migratedFrom`.
 
 ```typescript
 import { readFileSync } from "node:fs";
@@ -104,14 +104,14 @@ if (!isFormInstance(artifact)) throw new Error("expected a form");
 
 | Function | Input | `$schema` rule | Failure |
 |----------|-------|----------------|---------|
-| `load(text, { resolver })` | JSON or YAML text | Required, must be current | Throws `LoadError` or `SchemaVersionError` |
-| `loadFromObject(obj, { resolver })` | Parsed object | Optional; if present, must be current | Same |
+| `load(text, { resolver, strictSchema })` | JSON or YAML text | Required; earlier upgraded, unless `strictSchema` | Throws `LoadError` or `SchemaVersionError` |
+| `loadFromObject(obj, { resolver, strictSchema })` | Parsed object | Optional; earlier upgraded, unless `strictSchema` | Same |
 | `safeLoad`, `safeLoadFromObject` | Same | Same | Returns `{ success, data \| error }` |
-| `a.form.from(obj, { resolver })`, `a.form.safeFrom(...)` | Parsed form object | Optional; if present, must be current | Throws `SchemaVersionError` or `Error("Invalid Form ...")` |
+| `a.form.from(obj, { resolver, strictSchema })`, `a.form.safeFrom(...)` | Parsed form object | Optional; earlier upgraded, unless `strictSchema` | Throws `SchemaVersionError` or `Error("Invalid Form ...")` |
 
 A bundle takes no resolver (its members carry their own); passing one throws `BundleResolverError`. Narrow the result with `isFormInstance`, `isDocumentInstance`, `isChecklistInstance` or `isBundleInstance`. Use `createMemoryResolver({ contents: { "lease.pdf": bytes } })` from `@asterdoc/resolvers/memory` in a browser or a test.
 
-Migrate an artifact whose `$schema` is not current before you load it. `migrateArtifact` returns a new object and validates it.
+To rewrite an artifact at the current version, migrate it. `migrateArtifact` returns a new object and validates it.
 
 ```typescript
 import { migrateArtifact } from "@asterdoc/sdk";
@@ -282,7 +282,8 @@ type LeasePatch = ProgressiveFormPayload<typeof lease>;     // what fill() and u
 
 | Message or class | Cause | Fix |
 |------------------|-------|-----|
-| `SchemaVersionError: The artifact was written for schema version <v>` | Old `$schema` | `migrateArtifact` or `asterdoc migrate` |
+| `SchemaVersionError: The artifact was written for schema version <v>` | Old `$schema` with `strictSchema: true` | `migrateArtifact` or `asterdoc migrate` |
+| `SchemaVersionError: ... newer than this SDK knows; update @asterdoc/core` | `$schema` from a later release | Update the Asterdoc packages |
 | `SchemaVersionError: The artifact has no $schema` | `load()` on a file with no `$schema` | Add the current `$schema`, or migrate with `--from` |
 | `Invalid Form at fields.<id>.type: Invalid discriminator value` | Unknown field type, or a builder inside `a.form({...})` | Use a schema type; call `.build()` on nested builders |
 | `Invalid form definition: Unknown variable: "defs.<name>"` | Defs are referenced by bare name | Write `<name>`, not `defs.<name>` ([logic.md](./logic.md)) |

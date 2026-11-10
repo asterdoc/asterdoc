@@ -1,16 +1,9 @@
 import { isMap, isScalar, parseDocument, type Document } from 'yaml'
-import {
-	ASTERDOC_SCHEMA_URL,
-	SCHEMA_VERSION,
-	SCHEMA_VERSIONS,
-	readSchemaAddress,
-	schemaVersionUrl,
-	type SchemaVersion,
-} from '@asterdoc/schemas'
+import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION, type SchemaVersion } from '@asterdoc/schemas'
 import { validate } from '@/validation/artifact'
 import { findSchemaVersionError } from '@/serialization/schema-version'
-import { deepClone } from '@/utils/clone'
-import { SchemaMigrationError, UnconvertibleValueError } from './errors'
+import { SchemaMigrationError } from './errors'
+import { convert, isObject, sourceVersion } from './convert'
 import { MIGRATION_STEPS, type ArtifactObject, type MigrationStep } from './steps'
 
 export interface MigrateOptions {
@@ -35,136 +28,6 @@ export type ArtifactMigration =
 			readonly artifact: ArtifactObject
 	  }
 
-function isObject(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/** Read the version an artifact declares, or the one the caller names for it. */
-function sourceVersion(artifact: ArtifactObject, from: SchemaVersion | undefined): { version: SchemaVersion; declared: boolean } {
-	const address = artifact.$schema
-	if (address === undefined) {
-		if (from) return { version: from, declared: false }
-		throw new SchemaMigrationError(
-			'missing-version',
-			`The artifact has no $schema. Name its version with asterdoc migrate --from <version>; the current version is ${SCHEMA_VERSION}.`,
-		)
-	}
-	const read = typeof address === 'string' ? readSchemaAddress(address) : ({ kind: 'foreign' } as const)
-	if (read.kind === 'known') {
-		const declared: string = read.version
-		if (from && from !== declared) {
-			throw new SchemaMigrationError(
-				'version-conflict',
-				`$schema declares ${declared}, but ${from} was named as the source version.`,
-			)
-		}
-		return { version: read.version, declared: true }
-	}
-	// Any other address names no published version, so the caller must.
-	if (from) return { version: from, declared: false }
-	switch (read.kind) {
-		case 'undated':
-			throw new SchemaMigrationError(
-				'missing-version',
-				`$schema ${String(address)} names no schema version. Name its version with asterdoc migrate --from <version>; the current version is ${SCHEMA_VERSION}.`,
-			)
-		case 'unknown-version':
-			throw new SchemaMigrationError(
-				'unknown-version',
-				`$schema names schema version ${read.version}, which does not exist. Known versions: ${SCHEMA_VERSIONS.join(', ')}; name the right one with asterdoc migrate --from <version>.`,
-			)
-		case 'foreign':
-			throw new SchemaMigrationError(
-				'unknown-version',
-				`$schema ${JSON.stringify(address)} is not an Asterdoc schema address. Name its version with asterdoc migrate --from <version>.`,
-			)
-	}
-}
-
-/** The ordered steps from one version to a later one, the current one by default. */
-function stepsFrom(
-	version: SchemaVersion,
-	steps: readonly MigrationStep[],
-	to: SchemaVersion = SCHEMA_VERSION,
-): MigrationStep[] {
-	const chain: MigrationStep[] = []
-	for (let index = SCHEMA_VERSIONS.indexOf(version); index < SCHEMA_VERSIONS.indexOf(to); index++) {
-		const from = SCHEMA_VERSIONS[index] as SchemaVersion
-		const to = SCHEMA_VERSIONS[index + 1] as SchemaVersion
-		const step = steps.find((candidate) => candidate.from === from && candidate.to === to)
-		if (!step) {
-			throw new SchemaMigrationError('no-migration-path', `No migration step leads from schema version ${from} to ${to}.`)
-		}
-		chain.push(step)
-	}
-	return chain
-}
-
-/** The inline parts of a bundle, one level down. */
-function inlineParts(artifact: ArtifactObject): { key: string; item: Record<string, unknown>; part: ArtifactObject }[] {
-	const contents = artifact.contents
-	if (artifact.kind !== 'bundle' || !Array.isArray(contents)) return []
-	return contents.flatMap((item, index) =>
-		isObject(item) && item.type === 'inline' && isObject(item.artifact)
-			? [{ key: typeof item.key === 'string' ? item.key : String(index), item, part: item.artifact }]
-			: [],
-	)
-}
-
-/**
- * Bring every inline part of a bundle to the version of the bundle that holds it.
- *
- * The steps walk a whole bundle, its parts included, from the version its root
- * declares. A part that declares an earlier version first takes the steps up to
- * its bundle's version, its own parts before it, so the bundle's chain then
- * converts it with the rest. A part without `$schema` follows its bundle. A part
- * that declares a later version, or no published version, cannot be placed and
- * is refused.
- */
-function alignInlineParts(artifact: ArtifactObject, version: SchemaVersion, steps: readonly MigrationStep[]): void {
-	for (const { key, item, part } of inlineParts(artifact)) {
-		const partVersion = inlinePartVersion(part, key, version)
-		alignInlineParts(part, partVersion, steps)
-		let aligned = part
-		for (const step of stepsFrom(partVersion, steps, version)) aligned = step.apply(aligned)
-		if (aligned.$schema !== undefined) aligned.$schema = schemaVersionUrl(version)
-		item.artifact = aligned
-	}
-}
-
-function inlinePartVersion(part: ArtifactObject, key: string, bundleVersion: SchemaVersion): SchemaVersion {
-	const address = part.$schema
-	if (address === undefined) return bundleVersion
-	const read = typeof address === 'string' ? readSchemaAddress(address) : ({ kind: 'foreign' } as const)
-	if (read.kind !== 'known') {
-		throw new SchemaMigrationError(
-			'unknown-version',
-			`The inline artifact "${key}" declares $schema ${JSON.stringify(address)}, which names no published schema version. Set it to the bundle's version, ${bundleVersion}, or remove it.`,
-		)
-	}
-	if (SCHEMA_VERSIONS.indexOf(read.version) > SCHEMA_VERSIONS.indexOf(bundleVersion)) {
-		throw new SchemaMigrationError(
-			'version-conflict',
-			`The inline artifact "${key}" declares schema version ${read.version}, later than the ${bundleVersion} of the bundle that holds it.`,
-		)
-	}
-	return read.version
-}
-
-/** Point `$schema` at the current version: first on the root, kept in place on inline parts at any depth. */
-function stampCurrentVersion(artifact: ArtifactObject): ArtifactObject {
-	stampInlineParts(artifact)
-	const { $schema: _previous, ...rest } = artifact
-	return { $schema: ASTERDOC_SCHEMA_URL, ...rest }
-}
-
-function stampInlineParts(artifact: ArtifactObject): void {
-	for (const { part } of inlineParts(artifact)) {
-		if (part.$schema !== undefined) part.$schema = ASTERDOC_SCHEMA_URL
-		stampInlineParts(part)
-	}
-}
-
 /**
  * Migrate a parsed artifact to the current schema version.
  *
@@ -182,17 +45,7 @@ export function migrateArtifact(input: unknown, options: MigrateOptions = {}): A
 		return { status: 'current', version, artifact: input }
 	}
 
-	const steps = options.steps ?? MIGRATION_STEPS
-	const chain = stepsFrom(version, steps)
-	let artifact = deepClone(input)
-	try {
-		alignInlineParts(artifact, version, steps)
-		for (const step of chain) artifact = step.apply(artifact)
-	} catch (error) {
-		if (error instanceof UnconvertibleValueError) throw new SchemaMigrationError('unconvertible-value', error.message)
-		throw error
-	}
-	artifact = stampCurrentVersion(artifact)
+	const { chain, artifact } = convert(input, version, options.steps ?? MIGRATION_STEPS)
 
 	const result = validate(artifact)
 	if (result.issues) {

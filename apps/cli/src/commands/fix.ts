@@ -33,7 +33,7 @@ export function createFixCommand(): Command {
       try {
         const resolvedTarget = await resolveArtifactTarget(artifactTarget)
         const { raw, baseDir, sourcePath } = await readTextInput(resolvedTarget)
-        const artifact = loadValidatedArtifact(raw)
+        const { stored: artifact } = loadValidatedArtifact(raw)
 
         // Check for kind attribute
         if (!artifact || !artifact.kind) {

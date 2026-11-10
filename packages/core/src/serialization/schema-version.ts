@@ -5,17 +5,31 @@ import { LoadError } from './load-error'
  * Why an artifact's schema version cannot be loaded.
  *
  * - `missing-version`: an artifact file has no `$schema`.
- * - `outdated-version`: `$schema` names an earlier published version.
- * - `unknown-version`: `$schema` names no published version, names no
- *   version at all (the undated `schema.json`), or is not an Asterdoc address.
+ * - `outdated-version`: `$schema` names an earlier published version where
+ *   only the current one is accepted: `upgradeArtifact` and every entry point
+ *   with `strictSchema: true`.
+ * - `newer-version`: `$schema` names a version later than any this SDK knows.
+ * - `unknown-version`: `$schema` names an unpublished version earlier than the
+ *   current one, names no version at all (the undated `schema.json`), or is
+ *   not an Asterdoc address.
+ * - `not-upgradable`: `$schema` names an earlier version, and the artifact
+ *   cannot be upgraded to the current one without loss.
+ * - `no-migration-path`: this SDK has no migration step from a version the
+ *   artifact declares to the next one.
  */
-export type SchemaVersionErrorCode = 'missing-version' | 'outdated-version' | 'unknown-version'
+export type SchemaVersionErrorCode =
+	| 'missing-version'
+	| 'outdated-version'
+	| 'newer-version'
+	| 'unknown-version'
+	| 'not-upgradable'
+	| 'no-migration-path'
 
 /**
- * An artifact does not follow the current schema version.
+ * An artifact's schema version cannot be read or upgraded.
  *
- * Nothing but `migrate` accepts another version: the message names what was
- * found, the current version, and the `asterdoc migrate` command that upgrades
+ * The message names what was found and the current version, and what to do:
+ * update `@asterdoc/core` for a newer version, or run `asterdoc migrate` on
  * the file.
  */
 export class SchemaVersionError extends LoadError {
@@ -55,7 +69,17 @@ export function findSchemaVersionError(
 	artifact: unknown,
 	options: { required: boolean },
 ): SchemaVersionError | undefined {
-	return checkArtifact(artifact, options.required, [], undefined)
+	return findSchemaVersionErrors(artifact, options)[0]
+}
+
+/**
+ * Every schema version problem of an artifact and its inline bundle parts, the
+ * root first. The rules are those of {@link findSchemaVersionError}.
+ */
+export function findSchemaVersionErrors(artifact: unknown, options: { required: boolean }): SchemaVersionError[] {
+	const errors: SchemaVersionError[] = []
+	checkArtifact(artifact, options.required, [], undefined, errors)
+	return errors
 }
 
 /**
@@ -73,21 +97,20 @@ function checkArtifact(
 	required: boolean,
 	at: readonly (string | number)[],
 	inlineKey: string | undefined,
-): SchemaVersionError | undefined {
-	if (typeof artifact !== 'object' || artifact === null) return undefined
+	errors: SchemaVersionError[],
+): void {
+	if (typeof artifact !== 'object' || artifact === null) return
 	const { $schema: address, kind, contents } = artifact as ArtifactShape
 	const own = checkAddress(address, required, [...at, '$schema'], inlineKey)
-	if (own) return own
-	if (kind !== 'bundle' || !Array.isArray(contents)) return undefined
+	if (own) errors.push(own)
+	if (kind !== 'bundle' || !Array.isArray(contents)) return
 	for (const [index, item] of contents.entries()) {
 		if (typeof item !== 'object' || item === null) continue
 		const { type, key, artifact: part } = item as { type?: unknown; key?: unknown; artifact?: unknown }
 		if (type !== 'inline') continue
 		const partKey = typeof key === 'string' ? key : String(index)
-		const nested = checkArtifact(part, false, [...at, 'contents', index, 'artifact'], partKey)
-		if (nested) return nested
+		checkArtifact(part, false, [...at, 'contents', index, 'artifact'], partKey, errors)
 	}
-	return undefined
 }
 
 function checkAddress(
@@ -127,6 +150,14 @@ function checkAddress(
 				path,
 			)
 		case 'unknown-version':
+			if (read.version > SCHEMA_VERSION) {
+				return new SchemaVersionError(
+					'newer-version',
+					address,
+					`${where}$schema names schema version ${read.version}, newer than this SDK knows; update @asterdoc/core. This SDK reads schema versions up to ${SCHEMA_VERSION}.`,
+					path,
+				)
+			}
 			return new SchemaVersionError(
 				'unknown-version',
 				address,

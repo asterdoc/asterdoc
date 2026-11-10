@@ -1,4 +1,4 @@
-import { assertCurrentSchemaVersion, parse, toYAML, validate, type Artifact } from '@asterdoc/core'
+import { parse, toYAML, upgradeArtifact, validate, type Artifact } from '@asterdoc/core'
 import { parseDocument } from 'yaml'
 import type { LocalFileSystem } from './local-fs.js'
 
@@ -11,19 +11,30 @@ export interface ArtifactFileReference {
 }
 
 /**
- * Parse an artifact file's content (JSON or YAML) and apply the schema
- * version rule for artifact files: `$schema` must name the current version.
- * An older file fails with an error that points to `asterdoc migrate`.
+ * An artifact file's definition as stored, and the same definition upgraded
+ * in memory to the current schema version. Readers use `artifact`; a command
+ * that edits the file or serves it uses `stored`, so the file keeps its
+ * `$schema`.
  */
-export function parseArtifactFile(raw: string): unknown {
-  const parsed = parse(raw)
-  assertCurrentSchemaVersion(parsed, { required: true })
-  return parsed
+export interface ArtifactFileDefinition<T = unknown> {
+  stored: T
+  artifact: T
+}
+
+/**
+ * Parse an artifact file's content (JSON or YAML) and apply the schema
+ * version rule for artifact files: `$schema` must be present and readable by
+ * this SDK.
+ */
+export function parseArtifactFile(raw: string): ArtifactFileDefinition {
+  const stored = parse(raw)
+  return { stored, artifact: upgradeArtifact(stored, { required: true }).artifact }
 }
 
 /** Parse and structurally validate one artifact source. */
-export function loadValidatedArtifact(raw: string): Artifact {
-  const result = validate(parseArtifactFile(raw))
+export function loadValidatedArtifact(raw: string): ArtifactFileDefinition<Artifact> {
+  const { stored, artifact } = parseArtifactFile(raw)
+  const result = validate(artifact)
   if (result.issues) {
     const details = result.issues.map((issue) => {
       const location = issue.path?.length ? issue.path.map(String).join('.') : 'root'
@@ -31,7 +42,7 @@ export function loadValidatedArtifact(raw: string): Artifact {
     }).join(', ')
     throw new Error(`Invalid artifact: ${details}`)
   }
-  return result.value as Artifact
+  return { stored: stored as Artifact, artifact: artifact as Artifact }
 }
 
 /** Infer the serialized artifact format from its file name. */

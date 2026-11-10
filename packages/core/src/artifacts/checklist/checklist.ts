@@ -10,7 +10,9 @@ import { createContext } from '@asterdoc/expr'
 import { resolveLayerBindings } from '@asterdoc/render'
 import { buildRendererLayer, resolveLayerKey, selectLayerRenderer } from '../shared/render-layer'
 import type { ArtifactInstanceOptions } from '../shared/render-layer'
-import { parseChecklist, parseChecklistItem, parseLayer } from '@/validation/artifact-parsers'
+import { parseChecklist, parseChecklistItem, parseLayer, readChecklist } from '@/validation/artifact-parsers'
+import type { SchemaVersion } from '@asterdoc/schemas'
+import { restoreDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
 import {
 	validateChecklistItemInput,
 	validateChecklistItemsPatch,
@@ -221,6 +223,12 @@ interface RuntimeChecklistBase<C extends Checklist> {
 	/** Embedded checklist definition */
 	readonly checklist: C
 
+	/**
+	 * The schema version the definition was written for, when it was upgraded
+	 * in memory. `toJSON()` writes the definition as stored, so a restore keeps it.
+	 */
+	readonly migratedFrom: SchemaVersion | undefined
+
 	/** Fixed evaluation context captured when this instance was created. */
 	readonly context: RuntimeContext
 
@@ -394,6 +402,7 @@ interface RuntimeChecklistConfigDraft<C extends Checklist> {
 	context: RuntimeContext
 	/** Reads the bytes of file-backed layers. Bound at construction. */
 	resolver?: Resolver
+	origin?: DefinitionOrigin<C>
 	/** Skip re-validating item values already known to be valid (used internally when deriving a draft from validated state). */
 	validateItems?: boolean
 	completedAt?: undefined
@@ -406,6 +415,7 @@ interface RuntimeChecklistConfigCompleted<C extends Checklist> {
 	context: RuntimeContext
 	/** Reads the bytes of file-backed layers. Bound at construction. */
 	resolver?: Resolver
+	origin?: DefinitionOrigin<C>
 	validateItems?: boolean
 	completedAt: string
 }
@@ -426,10 +436,12 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 		targetLayer,
 		context,
 		resolver,
+		origin,
 		validateItems = true,
 		completedAt,
 	} = config
 	assertValidArtifactDefinition(checklistDef)
+	const migratedFrom = origin?.migratedFrom
 
 	// Build item lookup map and validate
 	const itemDefs = new Map<string, ChecklistItem>()
@@ -544,6 +556,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 			checklist: checklistDef,
 			context: contextView,
 			targetLayer,
+			migratedFrom,
 			phase: 'draft',
 			completedAt: undefined,
 
@@ -581,6 +594,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 				const newItems = { ...getAllItems(), [itemId]: value }
 				return createRuntimeChecklist({
 					checklist: checklistDef,
+					origin,
 					items: newItems,
 					targetLayer,
 					context,
@@ -597,6 +611,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 
 				return createRuntimeChecklist({
 					checklist: checklistDef,
+					origin,
 					items: nextItems,
 					targetLayer,
 					context,
@@ -621,6 +636,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 				delete nextItems[itemId]
 				return createRuntimeChecklist({
 					checklist: checklistDef,
+					origin,
 					items: nextItems,
 					targetLayer,
 					context,
@@ -640,6 +656,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 				}
 				return createRuntimeChecklist({
 					checklist: checklistDef,
+					origin,
 					items: nextItems,
 					targetLayer,
 					context,
@@ -667,6 +684,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 				}
 				return createRuntimeChecklist({
 					checklist: checklistDef,
+					origin,
 					items: getAllItems(),
 					targetLayer: layer,
 					context,
@@ -680,6 +698,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 				if (!result.valid) throw checklistValidationError(result.errors)
 				return createRuntimeChecklist({
 					checklist: checklistDef,
+					origin,
 					items: getAllItems(),
 					targetLayer,
 					context,
@@ -691,7 +710,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 			toJSON(): RuntimeChecklistJSON<C> {
 				return {
 					phase: 'draft',
-					checklist: checklistDef,
+					checklist: origin?.stored ?? checklistDef,
 					items: getAllItems() as Record<string, boolean | string>,
 					context: structuredClone(context),
 					targetLayer,
@@ -705,6 +724,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 			clone(): DraftChecklist<C> {
 				return createRuntimeChecklist({
 					checklist: structuredClone(checklistDef),
+					origin: structuredClone(origin),
 					items: structuredClone(getAllItems()),
 					targetLayer,
 					context,
@@ -721,6 +741,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 		checklist: checklistDef,
 		context: contextView,
 		targetLayer,
+		migratedFrom,
 		phase: 'completed',
 		completedAt,
 
@@ -749,7 +770,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 		toJSON(): RuntimeChecklistJSON<C> {
 			return {
 				phase: 'completed',
-				checklist: checklistDef,
+				checklist: origin?.stored ?? checklistDef,
 				items: getAllItems() as Record<string, boolean | string>,
 				context: structuredClone(context),
 				targetLayer,
@@ -764,6 +785,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 		clone(): CompletedChecklist<C> {
 			return createRuntimeChecklist({
 				checklist: structuredClone(checklistDef),
+				origin: structuredClone(origin),
 				items: structuredClone(getAllItems()),
 				targetLayer,
 				context,
@@ -791,8 +813,10 @@ export function runtimeChecklistFromJSON<C extends Checklist>(
 	if (json.phase === 'completed' && typeof json.completedAt !== 'string') {
 		throw new TypeError('Invalid checklist JSON: a completed checklist needs completedAt')
 	}
+	const { definition, origin } = restoreDefinition(json.checklist, options)
 	return createRuntimeChecklist({
-		checklist: snapshotArtifactDefinition(json.checklist),
+		checklist: definition,
+		origin,
 		items: json.items,
 		targetLayer: json.targetLayer,
 		context: restoreRuntimeContext(json.context),
@@ -811,8 +835,9 @@ export function runtimeChecklistFromJSON<C extends Checklist>(
 function createChecklistInstance<C extends Checklist>(
 	checklistDef: C,
 	options?: ArtifactInstanceOptions,
+	origin?: DefinitionOrigin<C>,
 ): ChecklistInstance<C> {
-	const artifactMethods = withArtifactMethods(checklistDef)
+	const artifactMethods = withArtifactMethods(checklistDef, origin?.migratedFrom)
 	const resolver = options?.resolver
 
 	const instance: ChecklistInstance<C> = {
@@ -849,6 +874,7 @@ function createChecklistInstance<C extends Checklist>(
 
 				return createRuntimeChecklist({
 					checklist: snapshot,
+					origin,
 					items,
 					targetLayer,
 					context,
@@ -880,7 +906,7 @@ function createChecklistInstance<C extends Checklist>(
 		},
 
 		clone(): ChecklistInstance<C> {
-			return createChecklistInstance(structuredClone(checklistDef), options)
+			return createChecklistInstance(structuredClone(checklistDef), options, origin)
 		},
 	}
 
@@ -1224,26 +1250,26 @@ function checklistImpl<const T extends ChecklistInput>(
 ): ChecklistBuilderInterface | ChecklistInstance<MutableChecklist<T>> {
 	if (input !== undefined) {
 		const withKind = { ...input, kind: 'checklist' as const }
-		const parsed = parseChecklist(withKind) as MutableChecklist<T>
-		return createChecklistInstance(parsed, options)
+		const { definition, origin } = readChecklist(withKind, options)
+		return createChecklistInstance(definition as MutableChecklist<T>, options, origin as DefinitionOrigin<MutableChecklist<T>> | undefined)
 	}
 	return createChecklistBuilder()
 }
 
 export const checklist: ChecklistAPI = Object.assign(checklistImpl, {
 	from: (input: unknown, options?: ArtifactInstanceOptions): ChecklistInstance<Checklist> => {
-		const parsed = parseChecklist(input) as Checklist
-		return createChecklistInstance(parsed, options)
+		const { definition, origin } = readChecklist(input, options)
+		return createChecklistInstance(definition, options, origin)
 	},
 	safeFrom: (
 		input: unknown,
 		options?: ArtifactInstanceOptions,
 	): { success: true; data: ChecklistInstance<Checklist> } | { success: false; error: Error } => {
 		try {
-			const parsed = parseChecklist(input) as Checklist
+			const { definition, origin } = readChecklist(input, options)
 			return {
 				success: true,
-				data: createChecklistInstance(parsed, options),
+				data: createChecklistInstance(definition, options, origin),
 			}
 		} catch (err) {
 			return { success: false, error: err as Error }

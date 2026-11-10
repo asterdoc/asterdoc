@@ -22,7 +22,7 @@ function errorOf(error: unknown): { code: string; message: string } {
 
 async function loadForm(target: string): Promise<Form> {
   const { raw } = await readTextInput(await resolveArtifactTarget(target))
-  const artifact = loadValidatedArtifact(raw)
+  const { artifact } = loadValidatedArtifact(raw)
   if (!isForm(artifact)) {
     const kind = artifact.kind
     throw new Error(`Expected form artifact, but received kind "${kind}".`)

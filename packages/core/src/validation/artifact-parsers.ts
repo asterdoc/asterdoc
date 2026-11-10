@@ -30,56 +30,55 @@ import {
 	ChecklistItemSchema,
 } from '@asterdoc/schemas'
 import type { ZodType } from 'zod'
-import { readSchemaAddress, SCHEMA_VERSION } from '@asterdoc/schemas'
-import { assertCurrentSchemaVersion } from '@/serialization/schema-version'
-import { CORE_VERSION } from '@/version'
+import { originOf, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import { upgradeArtifact, type SchemaReadOptions } from '@/migration/upgrade'
 import { createParser, formatZodError } from './zod-parser'
 
-/**
- * The hint an unknown key gets in an artifact that declares the current
- * schema version. Additive options join the current version in place, so such
- * a key may be one a newer release added.
- */
-export const NEWER_RELEASE_HINT = `This key may come from a newer Asterdoc release than @asterdoc/core ${CORE_VERSION}. Update the SDK.`
-
-function declaresCurrentVersion(input: unknown): boolean {
-	if (typeof input !== 'object' || input === null) return false
-	const address = (input as { $schema?: unknown }).$schema
-	if (typeof address !== 'string') return false
-	const read = readSchemaAddress(address)
-	return read.kind === 'known' && read.version === SCHEMA_VERSION
+/** A definition read at the current schema version, and where it came from when reading upgraded it. */
+export interface ReadDefinition<T> {
+	readonly definition: T
+	readonly origin: DefinitionOrigin<T> | undefined
 }
 
 /**
- * Factory for a whole-artifact parser. Every artifact entry point parses
- * through one of these, so each holds the input to the current schema version
- * before the schema: an object may leave out `$schema`, as one built in memory
- * does, but one it declares must be current, on the root and on every inline
- * bundle part. Only `migrate` accepts another version. An unknown key in an
- * artifact that declares the current version carries {@link NEWER_RELEASE_HINT}.
+ * Factory for a whole-artifact reader. Every artifact entry point reads
+ * through one of these, so each applies the same schema version rule before
+ * the schema: an object may leave out `$schema`, as one built in memory does;
+ * one that declares an earlier version, on the root or on an inline bundle
+ * part, is upgraded in memory unless `strictSchema` refuses it.
  */
-function createWholeArtifactParser<T>(schemaName: string, schema: ZodType<T>): (input: unknown) => T {
-	return (input: unknown): T => {
-		assertCurrentSchemaVersion(input, { required: false })
-		const result = schema.safeParse(input)
-		if (result.success) return result.data
-		const message = formatZodError(result.error, schemaName)
-		const unknownKey = result.error.issues[0]?.code === 'unrecognized_keys'
-		throw new Error(unknownKey && declaresCurrentVersion(input) ? `${message}. ${NEWER_RELEASE_HINT}` : message)
+function createWholeArtifactReader<T>(
+	schemaName: string,
+	schema: ZodType<T>,
+): (input: unknown, options?: SchemaReadOptions) => ReadDefinition<T> {
+	return (input, options) => {
+		const { artifact, migratedFrom } = upgradeArtifact(input, { strictSchema: options?.strictSchema })
+		const result = schema.safeParse(artifact)
+		if (result.success) return { definition: result.data, origin: originOf<T>(input, migratedFrom) }
+		throw new Error(formatZodError(result.error, schemaName))
 	}
 }
+
+function parserOf<T>(read: (input: unknown, options?: SchemaReadOptions) => ReadDefinition<T>) {
+	return (input: unknown, options?: SchemaReadOptions): T => read(input, options).definition
+}
+
+export const readForm = createWholeArtifactReader<Form>('Form', FormSchema)
+export const readBundle = createWholeArtifactReader<Bundle>('Bundle', BundleSchema)
+export const readDocument = createWholeArtifactReader<Document>('Document', DocumentSchema)
+export const readChecklist = createWholeArtifactReader<Checklist>('Checklist', ChecklistSchema)
 
 // ─────────────────────────────────────────────────────────────
 // Artifact Parsers
 // ─────────────────────────────────────────────────────────────
 
-export const parseForm = createWholeArtifactParser<Form>('Form', FormSchema)
+export const parseForm = parserOf(readForm)
 
-export const parseBundle = createWholeArtifactParser<Bundle>('Bundle', BundleSchema)
+export const parseBundle = parserOf(readBundle)
 
-export const parseDocument = createWholeArtifactParser<Document>('Document', DocumentSchema)
+export const parseDocument = parserOf(readDocument)
 
-export const parseChecklist = createWholeArtifactParser<Checklist>('Checklist', ChecklistSchema)
+export const parseChecklist = parserOf(readChecklist)
 
 // ─────────────────────────────────────────────────────────────
 // Block Parsers (Form components)

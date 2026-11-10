@@ -16,7 +16,9 @@ import type {
 	ArtifactEdition,
 } from '@asterdoc/types'
 import type { RuntimeDocumentJSON } from '@asterdoc/types'
-import { parseDocument, parseLayer } from '@/validation/artifact-parsers'
+import { parseDocument, parseLayer, readDocument } from '@/validation/artifact-parsers'
+import type { SchemaVersion } from '@asterdoc/schemas'
+import { restoreDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
 import { toYAML } from '@/serialization/serialization'
 import {
 	assertValidArtifactDefinition,
@@ -102,6 +104,12 @@ interface RuntimeDocumentBase<D extends Document> {
 	/** Embedded document definition */
 	readonly document: D
 
+	/**
+	 * The schema version the definition was written for, when it was upgraded
+	 * in memory. `toJSON()` writes the definition as stored, so a restore keeps it.
+	 */
+	readonly migratedFrom: SchemaVersion | undefined
+
 	/** Target layer key */
 	readonly targetLayer: string
 
@@ -183,6 +191,7 @@ interface RuntimeDocumentConfigDraft<D extends Document> {
 	targetLayer: string
 	/** Reads the bytes of file-backed layers. Bound at construction. */
 	resolver?: Resolver
+	origin?: DefinitionOrigin<D>
 	finalizedAt?: undefined
 }
 
@@ -191,6 +200,7 @@ interface RuntimeDocumentConfigFinal<D extends Document> {
 	targetLayer: string
 	/** Reads the bytes of file-backed layers. Bound at construction. */
 	resolver?: Resolver
+	origin?: DefinitionOrigin<D>
 	finalizedAt: string
 }
 
@@ -204,8 +214,9 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfigFinal<D>): FinalDocument<D>
 function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig<D>): RuntimeDocument<D>
 function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig<D>): RuntimeDocument<D> {
-	const { document: doc, targetLayer, resolver, finalizedAt } = config
+	const { document: doc, targetLayer, resolver, origin, finalizedAt } = config
 	assertValidArtifactDefinition(doc)
+	const migratedFrom = origin?.migratedFrom
 
 	// Shared render function
 	const render = (options?: ArtifactLayerRenderOptions): Promise<string | Uint8Array> => {
@@ -223,6 +234,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 		const draft: DraftDocument<D> = {
 			document: doc,
 			targetLayer,
+			migratedFrom,
 			phase: 'draft',
 			finalizedAt: undefined,
 
@@ -248,7 +260,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 						`Layer "${layer}" not found in document. Available layers: ${Object.keys(layers).join(', ') || 'none'}`,
 					)
 				}
-				return createRuntimeDocument({ document: doc, targetLayer: layer, resolver })
+				return createRuntimeDocument({ document: doc, targetLayer: layer, resolver, origin })
 			},
 
 			finalize(): FinalDocument<D> {
@@ -256,6 +268,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 					document: doc,
 					targetLayer,
 					resolver,
+					origin,
 					finalizedAt: new Date().toISOString(),
 				})
 			},
@@ -263,7 +276,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 			toJSON(): RuntimeDocumentJSON<D> {
 				return {
 					phase: 'draft',
-					document: doc,
+					document: origin?.stored ?? doc,
 					targetLayer,
 				}
 			},
@@ -277,6 +290,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 					document: structuredClone(doc),
 					targetLayer,
 					resolver,
+					origin: structuredClone(origin),
 				})
 			},
 		}
@@ -287,6 +301,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 	const final: FinalDocument<D> = {
 		document: doc,
 		targetLayer,
+		migratedFrom,
 		phase: 'final',
 		finalizedAt,
 
@@ -308,7 +323,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 		toJSON(): RuntimeDocumentJSON<D> {
 			return {
 				phase: 'final',
-				document: doc,
+				document: origin?.stored ?? doc,
 				targetLayer,
 				finalizedAt,
 			}
@@ -323,6 +338,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 				document: structuredClone(doc),
 				targetLayer,
 				resolver,
+				origin: structuredClone(origin),
 				finalizedAt,
 			})
 		},
@@ -346,10 +362,12 @@ export function runtimeDocumentFromJSON<D extends Document>(
 	if (json.phase === 'final' && typeof json.finalizedAt !== 'string') {
 		throw new TypeError('Invalid document JSON: a final document needs finalizedAt')
 	}
+	const { definition, origin } = restoreDefinition(json.document, options)
 	return createRuntimeDocument({
-		document: snapshotArtifactDefinition(json.document),
+		document: definition,
 		targetLayer: json.targetLayer,
 		resolver: options?.resolver,
+		origin,
 		finalizedAt: json.phase === 'final' ? json.finalizedAt : undefined,
 	})
 }
@@ -364,8 +382,9 @@ export function runtimeDocumentFromJSON<D extends Document>(
 function createDocumentInstance<D extends Document>(
 	doc: D,
 	options?: ArtifactInstanceOptions,
+	origin?: DefinitionOrigin<D>,
 ): DocumentInstance<D> {
-	const artifactMethods = withArtifactMethods(doc)
+	const artifactMethods = withArtifactMethods(doc, origin?.migratedFrom)
 	const resolver = options?.resolver
 
 	const instance: DocumentInstance<D> = {
@@ -397,6 +416,7 @@ function createDocumentInstance<D extends Document>(
 				document: snapshotArtifactDefinition(doc),
 				targetLayer: resolvedTargetLayer,
 				resolver,
+				origin,
 			})
 		},
 
@@ -412,7 +432,7 @@ function createDocumentInstance<D extends Document>(
 		},
 
 		clone(): DocumentInstance<D> {
-			return createDocumentInstance(structuredClone(doc), options)
+			return createDocumentInstance(structuredClone(doc), options, origin)
 		},
 	}
 
@@ -623,26 +643,26 @@ function documentImpl<const T extends DocumentInput>(
 ): DocumentBuilderInterface | DocumentInstance<T & { kind: 'document' }> {
 	if (input !== undefined) {
 		const withKind = { ...input, kind: 'document' as const }
-		const parsed = parseDocument(withKind) as T & { kind: 'document' }
-		return createDocumentInstance(parsed, options)
+		const { definition, origin } = readDocument(withKind, options)
+		return createDocumentInstance(definition as T & { kind: 'document' }, options, origin as DefinitionOrigin<T & { kind: 'document' }> | undefined)
 	}
 	return createDocumentBuilder()
 }
 
 export const document: DocumentAPI = Object.assign(documentImpl, {
 	from: (input: unknown, options?: ArtifactInstanceOptions): DocumentInstance<Document> => {
-		const parsed = parseDocument(input) as Document
-		return createDocumentInstance(parsed, options)
+		const { definition, origin } = readDocument(input, options)
+		return createDocumentInstance(definition, options, origin)
 	},
 	safeFrom: (
 		input: unknown,
 		options?: ArtifactInstanceOptions,
 	): { success: true; data: DocumentInstance<Document> } | { success: false; error: Error } => {
 		try {
-			const parsed = parseDocument(input) as Document
+			const { definition, origin } = readDocument(input, options)
 			return {
 				success: true,
-				data: createDocumentInstance(parsed, options),
+				data: createDocumentInstance(definition, options, origin),
 			}
 		} catch (err) {
 			return { success: false, error: err as Error }

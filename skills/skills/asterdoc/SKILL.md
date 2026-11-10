@@ -23,7 +23,7 @@ Asterdoc is a documents-as-code framework. An **artifact** is a typed JSON/YAML 
 
 ## Global rules
 
-- **Schema version.** Every artifact sets `$schema` to `https://schema.asterdoc.com/2026-11-06.json`. Migrate an older file with `npx asterdoc migrate <file>`.
+- **Schema version.** Every new artifact sets `$schema` to `https://schema.asterdoc.com/2026-11-10.json`. An older file loads upgraded in memory; rewrite it with `npx asterdoc migrate <file>`.
 - **Validate** files after every change with `npx asterdoc validate <files...>`. Run the CLI as `npx asterdoc`; the npm package `asterdoc` is unrelated.
 - **Identifiers.** Artifact names match `^[A-Za-z0-9]([A-Za-z0-9]|-[A-Za-z0-9])*$`. Field, party, def and rule ids match `^[a-z][a-zA-Z0-9_]*$`. Details per key: [schemas.md § Identifier patterns](./references/schemas.md#identifier-patterns).
 - **Field types.** Use the most specific type: `money`, `date`, `email`, `phone`, `address` and so on, not `text`. See [fields.md § Type selection table](./references/fields.md#type-selection-table).

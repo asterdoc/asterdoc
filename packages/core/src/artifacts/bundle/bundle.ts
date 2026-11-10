@@ -28,8 +28,11 @@ import type {
 	ArtifactEdition,
 	RegistryBundleItem,
 } from '@asterdoc/types'
-import { parseArtifactCoordinate } from '@asterdoc/schemas'
+import { parseArtifactCoordinate, type SchemaVersion } from '@asterdoc/schemas'
+import { restoreDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import type { SchemaReadOptions } from '@/migration/upgrade'
 import {
+	readBundle,
 	parseBundle as parseBundleSchema,
 	parseBundleContentItem,
 } from '@/validation/artifact-parsers'
@@ -182,6 +185,12 @@ export interface BundleInstance<B extends Bundle> extends ArtifactMethods<B> {
 interface RuntimeBundleBase<B extends Bundle> {
 	/** Embedded bundle definition */
 	readonly bundle: B
+
+	/**
+	 * The schema version the definition was written for, when it was upgraded
+	 * in memory. `toJSON()` writes the definition as stored, so a restore keeps it.
+	 */
+	readonly migratedFrom: SchemaVersion | undefined
 
 	/** The clock captured when the bundle was prepared, which inclusion reads. */
 	readonly context: RuntimeContext
@@ -377,6 +386,7 @@ interface RuntimeBundleConfig<B extends Bundle> {
 	contents: RuntimeBundleContents
 	phase: BundlePhase
 	context: RuntimeContext
+	origin?: DefinitionOrigin<B>
 	executedAt?: string
 }
 
@@ -384,8 +394,9 @@ interface RuntimeBundleConfig<B extends Bundle> {
  * Creates a RuntimeBundle object (replaces DraftBundle, SignableBundle, ExecutedBundle classes)
  */
 function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): RuntimeBundle<B> {
-	const { bundle: bundleDef, contents: contentValues, phase, context, executedAt } = config
+	const { bundle: bundleDef, contents: contentValues, phase, context, origin, executedAt } = config
 	assertValidArtifactDefinition(bundleDef)
+	const storedBundle = origin?.stored ?? bundleDef
 
 	// Build content keys set from bundle definition
 	const bundleContentKeys = new Set(bundleDef.contents.map((c) => c.key))
@@ -458,6 +469,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 		phase,
 		bundle: bundleDef,
 		context,
+		migratedFrom: origin?.migratedFrom,
 		executedAt,
 
 		// Convenience getters
@@ -597,6 +609,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 
 			return createRuntimeBundle({
 				bundle: bundleDef,
+				origin,
 				contents: signableContents,
 				phase: 'signable',
 				context,
@@ -616,6 +629,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 
 			return createRuntimeBundle({
 				bundle: bundleDef,
+				origin,
 				contents: executedContents,
 				phase: 'executed',
 				context,
@@ -653,7 +667,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 			if (phase === 'draft') {
 				return {
 					phase: 'draft',
-					bundle: bundleDef,
+					bundle: storedBundle,
 					context,
 					contents: serializedContents,
 				}
@@ -662,7 +676,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 			if (phase === 'signable') {
 				return {
 					phase: 'signable',
-					bundle: bundleDef,
+					bundle: storedBundle,
 					context,
 					contents: serializedContents,
 				}
@@ -670,7 +684,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 
 			return {
 				phase: 'executed',
-				bundle: bundleDef,
+				bundle: storedBundle,
 				context,
 				contents: serializedContents,
 				executedAt: executedAt!,
@@ -684,6 +698,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 		clone() {
 			return createRuntimeBundle({
 				bundle: structuredClone(bundleDef),
+				origin: structuredClone(origin),
 				contents: cloneContents(contentValues),
 				phase,
 				context: structuredClone(context),
@@ -898,6 +913,7 @@ export function runtimeContentFromJSON(content: RuntimeContentJSON, options?: Ar
 					...(executed && { executedAt: data.executedAt }),
 				} as RuntimeBundleJSON<Bundle>,
 				(member) => runtimeContentFromJSON(member, options),
+				{ strictSchema: options?.strictSchema },
 			)
 		}
 		default:
@@ -911,19 +927,23 @@ export function runtimeContentFromJSON(content: RuntimeContentJSON, options?: Ar
  * Every member passes the same key, kind, and phase checks as a prepared
  * bundle, so a signable bundle cannot load with a draft included member or an
  * undeclared key. `deserializeContent` defaults to
- * {@link runtimeContentFromJSON}; pass one to bind a resolver.
+ * {@link runtimeContentFromJSON}; pass one to bind a resolver. `options.strictSchema`
+ * refuses a bundle definition written for an earlier schema version.
  */
 export function runtimeBundleFromJSON<B extends Bundle>(
 	json: RuntimeBundleJSON<B>,
 	deserializeContent: (content: RuntimeContentJSON) => RuntimeInstance = (content) => runtimeContentFromJSON(content),
+	options?: SchemaReadOptions,
 ): RuntimeBundle<B> {
 	const contents: RuntimeBundleContents = {}
 	for (const [key, contentJson] of Object.entries(json.contents)) {
 		contents[key] = deserializeContent(contentJson)
 	}
 
+	const { definition, origin } = restoreDefinition(json.bundle, options)
 	return createRuntimeBundle({
-		bundle: snapshotArtifactDefinition(json.bundle),
+		bundle: definition,
+		origin,
 		contents,
 		phase: json.phase,
 		context: restoreRuntimeContext(json.context),
@@ -938,8 +958,8 @@ export function runtimeBundleFromJSON<B extends Bundle>(
 /**
  * Creates a BundleInstance object (replaces BundleInstance class)
  */
-function createBundleInstance<B extends Bundle>(bundleDef: B): BundleInstance<B> {
-	const artifactMethods = withArtifactMethods(bundleDef)
+function createBundleInstance<B extends Bundle>(bundleDef: B, origin?: DefinitionOrigin<B>): BundleInstance<B> {
+	const artifactMethods = withArtifactMethods(bundleDef, origin?.migratedFrom)
 
 	const instance: BundleInstance<B> = {
 		...artifactMethods,
@@ -957,6 +977,7 @@ function createBundleInstance<B extends Bundle>(bundleDef: B): BundleInstance<B>
 			assertValidArtifactDefinition(bundleDef)
 			const empty = createRuntimeBundle({
 				bundle: snapshotArtifactDefinition(bundleDef),
+				origin,
 				contents: {},
 				phase: 'draft',
 				context: captureRuntimeContext(options),
@@ -966,7 +987,7 @@ function createBundleInstance<B extends Bundle>(bundleDef: B): BundleInstance<B>
 		},
 
 		clone(): BundleInstance<B> {
-			return createBundleInstance(structuredClone(bundleDef))
+			return createBundleInstance(structuredClone(bundleDef), origin)
 		},
 	}
 
@@ -1205,31 +1226,40 @@ function createBundleBuilder(): BundleBuilderInterface {
 
 type BundleAPI = {
 	(): BundleBuilderInterface
-	<const T extends BundleInput>(input: T): BundleInstance<MutableBundle<T>>
-	from(input: unknown): BundleInstance<Bundle>
-	safeFrom(input: unknown): { success: true; data: BundleInstance<Bundle> } | { success: false; error: Error }
+	<const T extends BundleInput>(input: T, options?: SchemaReadOptions): BundleInstance<MutableBundle<T>>
+	from(input: unknown, options?: SchemaReadOptions): BundleInstance<Bundle>
+	safeFrom(
+		input: unknown,
+		options?: SchemaReadOptions,
+	): { success: true; data: BundleInstance<Bundle> } | { success: false; error: Error }
 }
 
 function bundleImpl(): BundleBuilderInterface
-function bundleImpl<const T extends BundleInput>(input: T): BundleInstance<MutableBundle<T>>
-function bundleImpl<const T extends BundleInput>(input?: T): BundleBuilderInterface | BundleInstance<MutableBundle<T>> {
+function bundleImpl<const T extends BundleInput>(input: T, options?: SchemaReadOptions): BundleInstance<MutableBundle<T>>
+function bundleImpl<const T extends BundleInput>(
+	input?: T,
+	options?: SchemaReadOptions,
+): BundleBuilderInterface | BundleInstance<MutableBundle<T>> {
 	if (input !== undefined) {
 		const withKind = { ...input, kind: 'bundle' as const }
-		const parsed = parseBundleSchema(withKind) as MutableBundle<T>
-		return createBundleInstance(parsed)
+		const { definition, origin } = readBundle(withKind, options)
+		return createBundleInstance(definition as MutableBundle<T>, origin as DefinitionOrigin<MutableBundle<T>> | undefined)
 	}
 	return createBundleBuilder()
 }
 
 export const bundle: BundleAPI = Object.assign(bundleImpl, {
-	from: (input: unknown): BundleInstance<Bundle> => {
-		const parsed = parseBundleSchema(input) as Bundle
-		return createBundleInstance(parsed)
+	from: (input: unknown, options?: SchemaReadOptions): BundleInstance<Bundle> => {
+		const { definition, origin } = readBundle(input, options)
+		return createBundleInstance(definition, origin)
 	},
-	safeFrom: (input: unknown): { success: true; data: BundleInstance<Bundle> } | { success: false; error: Error } => {
+	safeFrom: (
+		input: unknown,
+		options?: SchemaReadOptions,
+	): { success: true; data: BundleInstance<Bundle> } | { success: false; error: Error } => {
 		try {
-			const parsed = parseBundleSchema(input) as Bundle
-			return { success: true, data: createBundleInstance(parsed) }
+			const { definition, origin } = readBundle(input, options)
+			return { success: true, data: createBundleInstance(definition, origin) }
 		} catch (err) {
 			return { success: false, error: err as Error }
 		}

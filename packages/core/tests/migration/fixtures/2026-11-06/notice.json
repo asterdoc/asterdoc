@@ -1,0 +1,15 @@
+{
+  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "kind": "document",
+  "name": "notice",
+  "version": "1.0.0",
+  "title": "Notice",
+  "defaultLayer": "body",
+  "layers": {
+    "body": {
+      "kind": "inline",
+      "mimeType": "text/markdown",
+      "text": "# Notice\n\nThe office closes at noon."
+    }
+  }
+}

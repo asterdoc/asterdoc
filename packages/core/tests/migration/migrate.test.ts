@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { parse as parseYaml } from 'yaml'
-import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION } from '@asterdoc/schemas'
+import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION, type SchemaVersion } from '@asterdoc/schemas'
 import {
 	SchemaMigrationError,
 	UnconvertibleValueError,
@@ -172,13 +172,57 @@ describe('inline parts of a bundle', () => {
 		expect(migrateArtifact(source, { steps })).toEqual({ status: 'current', version: SCHEMA_VERSION, artifact: source })
 	})
 
-	test.each([
-		['later than its bundle', ASTERDOC_SCHEMA_URL, earlierUrl(EARLIER), 'version-conflict'],
-		['with no published version', 'https://schema.asterdoc.com/schema.json', ASTERDOC_SCHEMA_URL, 'unknown-version'],
-	])('a part %s is refused, naming it', (_label, partSchema, bundleSchema, code) => {
-		const error = migrationError(() => migrateArtifact(holding(bundleSchema, { ...current, $schema: partSchema }), { steps }))
-		expect(error.code).toBe(code)
+	test('a part later than its bundle migrates from its own version', () => {
+		const result = migrateArtifact(holding(earlierUrl(EARLIER), { ...current }), { steps })
+		expect(result.status).toBe('migrated')
+		expect(partOf(result.artifact, 'order').$schema).toBe(ASTERDOC_SCHEMA_URL)
+		expect(validate(result.artifact).issues).toBeUndefined()
+	})
+
+	test('each part takes only the steps from its own version, once', () => {
+		const marked = (from: SchemaVersion, to: SchemaVersion): MigrationStep => ({
+			from,
+			to,
+			summary: 'Marks each title it meets.',
+			apply(artifact) {
+				eachArtifact(artifact, (part) => {
+					if (typeof part.title === 'string') part.title = `${part.title}!`
+				})
+				return artifact
+			},
+		})
+		const source = {
+			$schema: earlierUrl(EARLIEST),
+			kind: 'bundle',
+			name: 'packet',
+			title: 'Packet',
+			contents: [
+				{ type: 'inline', key: 'later', artifact: { $schema: earlierUrl(EARLIER), kind: 'document', name: 'later', title: 'Later' } },
+				{ type: 'inline', key: 'inherits', artifact: { kind: 'document', name: 'inherits', title: 'Inherits' } },
+				{ type: 'inline', key: 'current', artifact: { $schema: ASTERDOC_SCHEMA_URL, kind: 'document', name: 'current', title: 'Current' } },
+			],
+		}
+		const result = migrateArtifact(source, { steps: [marked(EARLIEST, EARLIER), marked(EARLIER, SCHEMA_VERSION)] })
+		expect(result.artifact.title).toBe('Packet!!')
+		expect(partOf(result.artifact, 'later').title).toBe('Later!')
+		expect(partOf(result.artifact, 'inherits').title).toBe('Inherits!!')
+		expect(partOf(result.artifact, 'current').title).toBe('Current')
+	})
+
+	test('a part with no published version is refused, naming it', () => {
+		const error = migrationError(() =>
+			migrateArtifact(holding(earlierUrl(EARLIER), { ...current, $schema: 'https://schema.asterdoc.com/schema.json' }), { steps }),
+		)
+		expect(error.code).toBe('unknown-version')
 		expect(error.message).toContain('"order"')
+	})
+
+	test('a step that cannot convert a part refuses the whole bundle, naming the value', () => {
+		const error = migrationError(() =>
+			migrateArtifact(holding(earlierUrl(EARLIER), { ...earliest, heading: 42, name: 'order' }), { steps }),
+		)
+		expect(error.code).toBe('unconvertible-value')
+		expect(error.message).toContain('heading = 42')
 	})
 })
 

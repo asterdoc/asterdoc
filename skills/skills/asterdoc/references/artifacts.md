@@ -28,7 +28,7 @@ Every kind accepts these keys.
 
 | Key | Type | Rule |
 |-----|------|------|
-| `$schema` | string | `https://schema.asterdoc.com/2026-11-06.json` for every kind ([schemas.md § Schema version](./schemas.md#schema-version)) |
+| `$schema` | string | `https://schema.asterdoc.com/2026-11-10.json` for every kind ([schemas.md § Schema version](./schemas.md#schema-version)) |
 | `name` | string | Kebab-case, 1 to 128 characters ([schemas.md § Identifier patterns](./schemas.md#identifier-patterns)) |
 | `kind` | enum | `form`, `document`, `checklist`, `bundle` |
 | `version` | string | SemVer 2.0.0: `1.2.3`, `1.3.0-beta.1`, `1.0.0+build.5` |
@@ -80,7 +80,7 @@ Bump `version` by SemVer: major for a removed or renamed field, a changed type, 
 
 ```json schema=artifact
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "name": "rental-application",
   "kind": "form",
   "version": "1.0.0",
@@ -110,7 +110,7 @@ A document takes `layers` and `defaultLayer` and nothing else beyond the base. I
 
 ```json schema=artifact
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "name": "privacy-policy",
   "kind": "document",
   "version": "2.1.0",
@@ -139,7 +139,7 @@ A checklist takes `items` (required, may be empty), `layers` and `defaultLayer`.
 
 ```json schema=artifact
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "name": "closing-checklist",
   "kind": "checklist",
   "items": [
@@ -186,7 +186,7 @@ A bundle has no fields of its own, so `fields.x` is an unknown reference. An `in
 
 ```json schema=artifact
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "name": "loan-package",
   "kind": "bundle",
   "version": "1.0.0",

@@ -18,6 +18,7 @@ import {
   validateDocument,
   validateChecklist,
   validateBundle,
+  upgradeForValidation,
   type Validator,
 } from './validators'
 
@@ -38,11 +39,8 @@ const validatorMap: Record<ArtifactKind, Validator<unknown>> = {
 }
 
 /**
- * Validates an artifact's schema version and schema structure only.
- *
- * A `$schema` the artifact declares, on the root or on an inline bundle part,
- * must name the current schema version; an artifact without one is taken as
- * built in memory. Use `migrate` to upgrade an older artifact.
+ * Validates an artifact's schema structure. The caller has brought it to the
+ * current schema version.
  */
 function validateSchema<T = unknown>(artifact: unknown): StandardSchemaV1.Result<T> {
   // Check if artifact has a kind property
@@ -73,7 +71,6 @@ function validateSchema<T = unknown>(artifact: unknown): StandardSchemaV1.Result
     }
   }
 
-  // The artifact validator applies the schema version rule, then the schema
   const result = validatorMap[kind as ArtifactKind](artifact)
   return result.issues ? { issues: result.issues } : { value: artifact as T }
 }
@@ -91,6 +88,13 @@ function isLogicValidatable(kind: string): kind is LogicKind {
 /**
  * Validates an artifact's structure and logic expressions.
  * Returns Standard Schema compliant result.
+ *
+ * An artifact that declares an earlier schema version, on its root or on an
+ * inline bundle part, is upgraded in memory first, and the upgraded artifact
+ * is validated and returned as `value`; the input is never changed. With
+ * `strictSchema`, an earlier version is an issue at `$schema` instead. A
+ * version newer than this SDK knows, or one that cannot be upgraded without
+ * loss, is always an issue at `$schema`.
  *
  * By default, validates both schema structure and logic expressions. With
  * schema validation, an artifact that passes those checks is also checked
@@ -129,10 +133,13 @@ function isLogicValidatable(kind: string): kind is LogicKind {
  * ```
  */
 export function validate<T = unknown>(
-  artifact: unknown,
+  input: unknown,
   options: ValidateOptions = {}
 ): StandardSchemaV1.Result<T> {
-  const result = validateDefinition<T>(artifact, options)
+  const upgraded = upgradeToValidate(input, options)
+  if ('issues' in upgraded) return upgraded
+  const artifact = upgraded.artifact
+  const result = checkDefinition<T>(artifact, options)
   if (result.issues || options.schema === false || !hasTemplateLayers(artifact)) return result
   const referenceIssues = validateLayerReferences(artifact)
   if (referenceIssues.length === 0) return result
@@ -140,15 +147,38 @@ export function validate<T = unknown>(
 }
 
 /**
+ * Bring an artifact to the current schema version before it is validated. A
+ * version problem is an issue at `$schema`; with schema validation off it is
+ * not checked, and the artifact is validated as it is.
+ */
+function upgradeToValidate(
+  input: unknown,
+  options: ValidateOptions
+): { artifact: unknown } | { issues: StandardSchemaV1.Issue[] } {
+  const upgraded = upgradeForValidation(input, { strictSchema: options.strictSchema })
+  if (!('issues' in upgraded)) return upgraded
+  if (options.schema === false) return { artifact: input }
+  return { issues: options.collectAllErrors === false ? upgraded.issues.slice(0, 1) : upgraded.issues }
+}
+
+/**
  * The checks every runtime instance's definition must pass: schema
  * structure, logic expressions, and inline template expressions.
  * `validate()` adds the layer-reference checks, which seal (and render, for
  * `defaultLayer`) enforce again for the layer they use, so a definition with
- * such a problem still fills.
+ * such a problem still fills. The schema version rule is that of `validate()`.
  */
 export function validateDefinition<T = unknown>(
-  artifact: unknown,
+  input: unknown,
   options: ValidateOptions = {}
+): StandardSchemaV1.Result<T> {
+  const upgraded = upgradeToValidate(input, options)
+  return 'issues' in upgraded ? upgraded : checkDefinition<T>(upgraded.artifact, options)
+}
+
+function checkDefinition<T>(
+  artifact: unknown,
+  options: ValidateOptions
 ): StandardSchemaV1.Result<T> {
   const { schema: validateSchemaOption = true, logic = true, collectAllErrors = true } = options
 
@@ -301,12 +331,13 @@ function readOnce(resolver: Resolver): Resolver {
  * ```
  */
 export async function validateLayers<T = unknown>(
-  artifact: unknown,
+  input: unknown,
   options: ValidateLayersOptions,
 ): Promise<ValidateLayersResult<T>> {
   const { resolver, ...validateOptions } = options
-  const result = validate<T>(artifact, validateOptions)
+  const result = validate<T>(input, validateOptions)
   if (result.issues) return result
+  const artifact: unknown = result.value
   const reader = readOnce(resolver)
   const fileIssues = await validateFileReferences(artifact, reader)
   const templateIssues = validateOptions.logic === false || !hasTemplateLayers(artifact) ? [] : await validateFileTemplates(artifact, reader)

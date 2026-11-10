@@ -17,7 +17,7 @@ Every file starts with `$schema`, `kind` and `name`:
 
 ```json schema=artifact
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "pet-registration",
   "version": "1.0.0",
@@ -32,8 +32,8 @@ Every file starts with `$schema`, `kind` and `name`:
 The same file in YAML. `.yaml` and `.yml` both load. The comment line gives editors completion against the schema:
 
 ```yaml
-# yaml-language-server: $schema=https://schema.asterdoc.com/2026-11-06.json
-$schema: https://schema.asterdoc.com/2026-11-06.json
+# yaml-language-server: $schema=https://schema.asterdoc.com/2026-11-10.json
+$schema: https://schema.asterdoc.com/2026-11-10.json
 kind: form
 name: pet-registration
 version: 1.0.0
@@ -50,17 +50,17 @@ Every object in the schema is strict, so an unknown key is an error. Name the fi
 
 ## Schema version
 
-The current schema version is `2026-11-06`. Write `$schema` as its dated address, the same for every kind:
+The current schema version is `2026-11-10`. Write `$schema` as its dated address, the same for every kind:
 
 ```text
-https://schema.asterdoc.com/2026-11-06.json
+https://schema.asterdoc.com/2026-11-10.json
 ```
 
-A dated per-kind address such as `https://schema.asterdoc.com/2026-11-06/form.json` names the same version. The SDK writes the dated address on `toJSON()` and `toYAML()`. Each new dated version ships with a migration step.
+A dated per-kind address such as `https://schema.asterdoc.com/2026-11-10/form.json` names the same version. The SDK writes the dated address on `toJSON()` and `toYAML()`. Every schema change gets a new date, and each new date ships with a migration step.
 
 ### Loading rules
 
-These surfaces refuse an artifact whose `$schema` is not current: `load()` and `loadFromObject()` in the SDK, every CLI command that reads an artifact file, `@asterdoc/ai-tools`, and `asterdoc add`.
+These surfaces apply the same rules: `load()` and `loadFromObject()` in the SDK, every CLI command that reads an artifact file, `@asterdoc/ai-tools`, and `asterdoc add`. An earlier version is upgraded in memory; the file is not changed.
 
 <!-- dep:C2 -->
 `a.form()` and each kind's `.from()` apply the same rules.
@@ -68,16 +68,20 @@ These surfaces refuse an artifact whose `$schema` is not current: `load()` and `
 | `$schema` | Error code | Message starts with |
 |-----------|------------|---------------------|
 | Current dated address | none | loads |
-| Earlier dated address | `outdated-version` | `The artifact was written for schema version <v>; ...` |
+| Earlier dated address | none | loads upgraded; the instance's `migratedFrom` names `<v>` |
+| Earlier dated address, with `strictSchema: true` | `outdated-version` | `The artifact was written for schema version <v>; ...` |
+| Later date than the SDK knows | `newer-version` | `$schema names schema version <v>, newer than this SDK knows; update @asterdoc/core. ...` |
+| Earlier dated address that a step cannot convert | `not-upgradable` | `The artifact was written for schema version <v> and cannot be upgraded to ... without loss: ...` |
+| Earlier dated address this SDK has no step for | `no-migration-path` | `This SDK cannot upgrade schema version <v> to ...` |
 | Missing | `missing-version` | `The artifact has no $schema; ...` |
 | Undated (`schema.json`) | `unknown-version` | `$schema ... names no schema version; ...` |
-| Unpublished date, or not an Asterdoc address | `unknown-version` | `$schema names schema version <v>, which does not exist` or `... is not an Asterdoc schema address` |
+| Unpublished earlier date, or not an Asterdoc address | `unknown-version` | `$schema names schema version <v>, which does not exist` or `... is not an Asterdoc schema address` |
 
-The SDK throws `SchemaVersionError` with that `code`. Run [migrate](#migrate) to upgrade; loading does not. An object passed to `loadFromObject()`, `p.<kind>()`, `.from()`, `.safeFrom()` or a builder's `.from()`, or an inline `artifact` given to the AI tools, may leave out `$schema`; one it declares must be current, and so must one on each inline part of a bundle. SDK `validate()` reports an outdated or unknown `$schema` as an issue at `$schema`.
+The SDK throws `SchemaVersionError` with that `code`. Run [migrate](#migrate) to rewrite the file at the current version. An object passed to `loadFromObject()`, `a.<kind>()`, `.from()`, `.safeFrom()` or a builder's `.from()`, or an inline `artifact` given to the AI tools, may leave out `$schema`; one it declares follows the rules above, and so does one on each inline part of a bundle. SDK `validate()` validates the upgraded artifact and reports a version error as an issue at `$schema`.
 
 ### Migrate
 
-Upgrade `$schema` with `migrate`, which also converts the values the new version reads differently. A hand edit of `$schema` skips those steps.
+Rewrite `$schema` with `migrate`, which also converts the values the new version reads differently. A hand edit of `$schema` skips those steps.
 
 ```bash
 asterdoc migrate pet-registration.yaml --dry-run      # print the diff, then run without --dry-run

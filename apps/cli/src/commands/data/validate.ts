@@ -34,7 +34,7 @@ export function createValidateCommand(): Command {
         // Read form file
         const resolvedFormTarget = await resolveArtifactTarget(formTarget)
         const { raw: formRaw } = await readTextInput(resolvedFormTarget)
-        const artifact = loadValidatedArtifact(formRaw)
+        const { artifact } = loadValidatedArtifact(formRaw)
 
         // Check artifact kind is 'form'
         if (!isForm(artifact)) {

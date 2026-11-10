@@ -4,6 +4,12 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 
 ## [Unreleased]
 
+### Breaking changes
+
+#### Core
+
+- `assertCurrentSchemaVersion` is removed. An artifact on an earlier schema version now upgrades in memory on load. To refuse every version but the current one, call `upgradeArtifact(artifact, { required, strictSchema: true })`, which throws the same `SchemaVersionError`.
+
 ## [0.11.0] - 2026-11-07
 
 0.11 makes filled PDFs more faithful to the form: dates print in the box's own pattern, foreign addresses print, and XFA forms show their filled fields. It adds schema version 2026-11-06, and the CLI now needs Node 24.14 or later.

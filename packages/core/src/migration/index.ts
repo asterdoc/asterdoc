@@ -16,6 +16,9 @@ export type {
 	ArtifactSourceFormat,
 } from './migrate'
 
+export { upgradeArtifact } from './upgrade'
+export type { SchemaReadOptions, UpgradeArtifactOptions, UpgradedArtifact } from './upgrade'
+
 export { MIGRATION_STEPS } from './steps'
 export type { MigrationStep, ArtifactObject } from './steps'
 

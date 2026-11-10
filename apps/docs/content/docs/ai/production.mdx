@@ -75,10 +75,11 @@ In your own code, check `error.code` before you use a result:
 | `identity_mismatch` | The artifact file states another name, version, or edition than `registry.json` lists for it |
 | `invalid_artifact` | The artifact file could not be parsed, or is not an object. `render` and `extract` also return it for an artifact that fails schema validation. |
 | `artifact_fetch_error`, `registry_fetch_error` | A fetch failed, or the origin is not approved. Other tools report the same failure with their own code, such as `fill_error` or `render_error`, and the message says why. |
-| `outdated-version`, `missing-version`, `unknown-version` | The artifact's `$schema` is not the current schema version. Run `asterdoc migrate` on the artifact and publish it again. |
+| `newer-version` | The artifact's `$schema` is newer than the installed SDK knows. Update the Asterdoc packages. |
+| `missing-version`, `unknown-version`, `not-upgradable` | The artifact's `$schema` is missing or names no published version, or the artifact cannot be upgraded without loss. The message says which. |
 | `validation_error` | A value does not match the form |
 | `unsupported_artifact` | The tool does not support this kind of artifact, for example `fill` on a document |
 
-## Publish artifacts on the current schema
+## Schema versions of published artifacts
 
-An artifact that the tools load from a registry or a URL must declare the current schema version in `$schema`. When you upgrade the Asterdoc packages, run [`asterdoc migrate`](/cli/commands/migrate) on your artifacts and publish them again. See [loading rules](/schemas#loading-rules). An artifact written for Paradoc also needs `--from`; the [version history](/schemas#version-history) names its version.
+An artifact that the tools load from a registry or a URL must declare a schema version in `$schema`. An earlier version is upgraded in memory, so artifacts you published before upgrading the Asterdoc packages keep working without a new publish. An artifact on a version newer than the installed packages fails until you update them. See [loading rules](/schemas#loading-rules). An artifact written for Paradoc has no Asterdoc version: run [`asterdoc migrate`](/cli/commands/migrate) with `--from` first; the [version history](/schemas#version-history) names its version.

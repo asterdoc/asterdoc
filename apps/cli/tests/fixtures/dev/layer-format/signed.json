@@ -1,5 +1,5 @@
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "signed",
   "version": "1.0.0",

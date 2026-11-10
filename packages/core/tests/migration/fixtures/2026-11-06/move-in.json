@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "kind": "checklist",
+  "name": "move-in",
+  "version": "1.0.0",
+  "title": "Move-in",
+  "items": [
+    {
+      "id": "keys",
+      "title": "Keys handed over"
+    },
+    {
+      "id": "meter",
+      "title": "Meter read"
+    }
+  ],
+  "defaultLayer": "list",
+  "layers": {
+    "list": {
+      "kind": "inline",
+      "mimeType": "text/markdown",
+      "text": "Move-in checklist"
+    }
+  }
+}

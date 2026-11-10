@@ -244,7 +244,7 @@ export function createFillCommand(): Command {
         // Read form file
         const resolvedTarget = await resolveArtifactTarget(fileTarget)
         const { raw, sourcePath: _sourcePath } = await readTextInput(resolvedTarget)
-        const artifact = loadValidatedArtifact(raw)
+        const { artifact } = loadValidatedArtifact(raw)
 
         // Check artifact kind is 'form'
         if (!isForm(artifact)) {

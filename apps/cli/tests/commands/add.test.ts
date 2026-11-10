@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { unreachableNetworkEnv } from '../setup/unreachable-network.js'
+import { SCHEMA_VERSIONS, schemaVersionUrl, type SchemaVersion } from '@asterdoc/schemas'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -354,6 +355,30 @@ describe('asterdoc add (files the artifact references)', () => {
     expect((installed.layers as { pdf: Record<string, unknown> }).pdf).not.toHaveProperty('url')
     const validated = await executeCliCommand(['validate', 'artifacts/@fixture/packet.json'], { cwd: tempDir })
     expect(validated.exitCode).toBe(0)
+  }, 30000)
+
+  it('installs an artifact on an earlier schema version as served, and it validates', async () => {
+    const item = JSON.parse(serve['/packet/1.0.0/packet.json']!.body.toString()) as Record<string, unknown>
+    const earlier = schemaVersionUrl(SCHEMA_VERSIONS.at(-2) as SchemaVersion)
+    servePacket({ ...item, $schema: earlier })
+
+    const result = await executeCliCommand(['add', '@fixture/packet', '--output', 'json', '--layers', 'all', '--no-cache'], { cwd: tempDir })
+
+    expect(result.exitCode).toBe(0)
+    expect((await installedArtifact()).$schema).toBe(earlier)
+    const validated = await executeCliCommand(['validate', 'artifacts/@fixture/packet.json'], { cwd: tempDir })
+    expect(validated.exitCode).toBe(0)
+  }, 30000)
+
+  it('installs nothing from an artifact on a schema version newer than the CLI knows', async () => {
+    const item = JSON.parse(serve['/packet/1.0.0/packet.json']!.body.toString()) as Record<string, unknown>
+    servePacket({ ...item, $schema: 'https://schema.asterdoc.com/2999-01-01.json' })
+
+    const result = await executeCliCommand(['add', '@fixture/packet', '--output', 'json', '--layers', 'all', '--no-cache'], { cwd: tempDir })
+
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr).toContain('newer than this SDK knows; update @asterdoc/core')
+    await expect(fs.access(join(tempDir, 'artifacts/@fixture/packet.json'))).rejects.toThrow()
   }, 30000)
 
   it('records the version, the release URL and no edition in the lock file', async () => {

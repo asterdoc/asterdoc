@@ -33,7 +33,7 @@ export function createDetachCommand(): Command {
           process.exit(1)
         }
 
-        const parsed = parseArtifactFile(raw)
+        const { stored: parsed } = parseArtifactFile(raw)
 
         // Validate the artifact
         const validation = validate(parsed)
@@ -46,7 +46,7 @@ export function createDetachCommand(): Command {
           process.exit(1)
         }
 
-        const artifact = validation.value as Artifact
+        const artifact = parsed as Artifact
         const artifactRecord = artifact as unknown as Record<string, unknown>
 
         // Build list of detachable items: layers + ContentRef fields

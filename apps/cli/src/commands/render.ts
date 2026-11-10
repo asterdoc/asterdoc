@@ -47,7 +47,7 @@ export function createRenderCommand(): Command {
         const format = normalizeFormatOption(options.format ?? 'pretty')
         const resolvedTarget = await resolveArtifactTarget(artifactTarget)
         const { raw, sourcePath, baseDir } = await readTextInput(resolvedTarget, '<artifact>')
-        const artifact = loadValidatedArtifact(raw)
+        const { artifact } = loadValidatedArtifact(raw)
 
         // Check if artifact has layers
         if (!('layers' in artifact) || !artifact.layers || Object.keys(artifact.layers).length === 0) {

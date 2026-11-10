@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION } from '@asterdoc/core'
+import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION, SCHEMA_VERSIONS, schemaVersionUrl, type SchemaVersion } from '@asterdoc/core'
 import { executeFill } from '../src/tools/fill'
 import { executeGetArtifact } from '../src/tools/get-artifact'
+import { resolveSource } from '../src/resolve-source'
 import { registryFetch as serveRegistry } from './helpers/registry'
 
 const form = (schema?: string) => ({
@@ -13,6 +14,8 @@ const form = (schema?: string) => ({
 })
 
 const UNPUBLISHED = 'https://schema.asterdoc.com/2025-01-01.json'
+const EARLIER = schemaVersionUrl(SCHEMA_VERSIONS.at(-2) as SchemaVersion)
+const NEWER = 'https://schema.asterdoc.com/2999-01-01.json'
 
 const registryFetch = (artifact: Record<string, unknown>) => vi.fn(serveRegistry('https://registry.example', [{ artifact }]))
 
@@ -37,6 +40,34 @@ describe('AI tools apply the schema version rules', () => {
 		expect(result.error?.code).toBe(code)
 		expect(result.error?.message).toContain(SCHEMA_VERSION)
 		expect(result.error?.message).toContain('asterdoc migrate')
+	})
+
+	it('fills an earlier artifact read from a URL, upgraded in memory', async () => {
+		expect((await fillFromUrl(form(EARLIER))).accepted).toBe(true)
+	})
+
+	it('resolves an earlier artifact upgraded for reading, and keeps it as given', async () => {
+		const given = form(EARLIER)
+		const resolved = await resolveSource({ source: 'artifact', artifact: given })
+		expect(resolved.artifact.$schema).toBe(ASTERDOC_SCHEMA_URL)
+		expect(resolved.stored).toEqual(given)
+		expect(given.$schema).toBe(EARLIER)
+	})
+
+	it('refuses a newer artifact read from a URL and asks for an update', async () => {
+		const result = await fillFromUrl(form(NEWER))
+		expect(result.accepted).toBe(false)
+		expect(result.error?.code).toBe('newer-version')
+		expect(result.error?.message).toContain('newer than this SDK knows; update @asterdoc/core')
+	})
+
+	it('returns an earlier artifact from a registry as served', async () => {
+		const result = await executeGetArtifact(
+			{ registry_url: 'https://registry.example', artifact_name: 'intake' },
+			{ fetch: registryFetch(form(EARLIER)) },
+		)
+		expect(result.error).toBeUndefined()
+		expect(result.artifact).toMatchObject({ $schema: EARLIER, name: 'intake' })
 	})
 
 	it('refuses an artifact of another version from a registry', async () => {

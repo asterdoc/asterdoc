@@ -64,9 +64,9 @@ manager.
 
 Whichever way the artifact is found, from the target, from a layer that
 points at the composition, or as a sibling of the same name, it must carry
-the current [schema version](/schemas#loading-rules) in `$schema`, as for
-`asterdoc dev`. A missing, outdated, or unknown `$schema` exits 1 and points
-to [`asterdoc migrate`](/cli/commands/migrate).
+a [schema version](/schemas#loading-rules) in `$schema` that the CLI can
+read, as for `asterdoc dev`. An earlier version is upgraded in memory. A
+missing, newer, or unknown `$schema` exits 1 and says what to do.
 
 Sample data, when `--data` is not given, is discovered **sibling-first** and may be partial: a
 `<composition>.sample.{ts,tsx,js,mjs,jsx}` file next to the composition wins
