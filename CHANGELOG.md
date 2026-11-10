@@ -21,6 +21,7 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 #### Core
 
 - `contentHash()` on every artifact instance and runtime: the `sha256:` digest of the RFC 8785 canonical JSON of the definition as stored, at the schema version it declares. `canonicalJson` and `contentHashOf` are exported.
+- `verifyLayerChecksum` is exported: it checks bytes against a layer's or font's declared checksum the way render and seal do, and throws `LayerChecksumError` on a mismatch.
 - A form seal records `integrity`: `contentHash`, `sdkVersion`, `migratedFrom`, and `uncovered`, the content the hash leaves out (a layer file or font with no checksum, a React module, a renderer or adapter supplied at seal time). `sealBundle` records the bundle's and each artifact part's, lists every annex supplied as bytes, and reads the bundle at the current schema version.
 
 #### CLI

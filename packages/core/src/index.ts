@@ -540,7 +540,7 @@ export type {
 } from "@asterdoc/types";
 
 // Content hash and template integrity
-export { canonicalJson, contentHashOf, LayerChecksumError, type ChecksumTarget } from "./integrity";
+export { canonicalJson, contentHashOf, LayerChecksumError, verifyLayerChecksum, type ChecksumTarget } from "./integrity";
 export { DefinitionNotJsonError } from "./artifacts/shared/definition-origin";
 
 // ============================================================================
