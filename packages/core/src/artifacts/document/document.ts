@@ -18,10 +18,13 @@ import type {
 import type { RuntimeDocumentJSON } from '@asterdoc/types'
 import { parseDocument, parseLayer, readDocument } from '@/validation/artifact-parsers'
 import type { SchemaVersion } from '@asterdoc/schemas'
-import { restoreDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import { migratedFromOf, originFor, restoreDefinition, storedDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import { contentHashOf } from '@/integrity/seal-integrity'
+import { deepClone } from '@/utils/clone'
 import { toYAML } from '@/serialization/serialization'
 import {
 	assertValidArtifactDefinition,
+	freezeRuntimeDefinition,
 	snapshotArtifactDefinition,
 	withArtifactMethods,
 	type ArtifactMethods,
@@ -109,6 +112,12 @@ interface RuntimeDocumentBase<D extends Document> {
 	 * in memory. `toJSON()` writes the definition as stored, so a restore keeps it.
 	 */
 	readonly migratedFrom: SchemaVersion | undefined
+
+	/**
+	 * The `sha256:` digest of the RFC 8785 canonical JSON of the definition as
+	 * stored, at the schema version it declares; the one `toJSON()` writes.
+	 */
+	contentHash(): Promise<string>
 
 	/** Target layer key */
 	readonly targetLayer: string
@@ -216,7 +225,10 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig<D>): RuntimeDocument<D> {
 	const { document: doc, targetLayer, resolver, origin, finalizedAt } = config
 	assertValidArtifactDefinition(doc)
+	freezeRuntimeDefinition(doc)
 	const migratedFrom = origin?.migratedFrom
+	const storedDocument = (): D => storedDefinition(origin, doc)
+	const contentHash = (): Promise<string> => contentHashOf(storedDocument())
 
 	// Shared render function
 	const render = (options?: ArtifactLayerRenderOptions): Promise<string | Uint8Array> => {
@@ -235,6 +247,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 			document: doc,
 			targetLayer,
 			migratedFrom,
+			contentHash,
 			phase: 'draft',
 			finalizedAt: undefined,
 
@@ -276,7 +289,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 			toJSON(): RuntimeDocumentJSON<D> {
 				return {
 					phase: 'draft',
-					document: origin?.stored ?? doc,
+					document: deepClone(storedDocument()),
 					targetLayer,
 				}
 			},
@@ -302,6 +315,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 		document: doc,
 		targetLayer,
 		migratedFrom,
+		contentHash,
 		phase: 'final',
 		finalizedAt,
 
@@ -323,7 +337,7 @@ function createRuntimeDocument<D extends Document>(config: RuntimeDocumentConfig
 		toJSON(): RuntimeDocumentJSON<D> {
 			return {
 				phase: 'final',
-				document: origin?.stored ?? doc,
+				document: deepClone(storedDocument()),
 				targetLayer,
 				finalizedAt,
 			}
@@ -384,11 +398,14 @@ function createDocumentInstance<D extends Document>(
 	options?: ArtifactInstanceOptions,
 	origin?: DefinitionOrigin<D>,
 ): DocumentInstance<D> {
-	const artifactMethods = withArtifactMethods(doc, origin?.migratedFrom)
+	const artifactMethods = withArtifactMethods(doc, origin)
 	const resolver = options?.resolver
 
 	const instance: DocumentInstance<D> = {
 		...artifactMethods,
+		get migratedFrom() {
+			return migratedFromOf(origin, doc)
+		},
 
 		// Document-specific properties (type assertions needed for conditional types)
 		layers: doc.layers as DocumentInstance<D>['layers'],
@@ -412,11 +429,12 @@ function createDocumentInstance<D extends Document>(
 				resolvedTargetLayer = doc.defaultLayer ?? layerKeys[0] ?? ''
 			}
 
+			const snapshot = snapshotArtifactDefinition(doc)
 			return createRuntimeDocument({
-				document: snapshotArtifactDefinition(doc),
+				document: snapshot,
 				targetLayer: resolvedTargetLayer,
 				resolver,
-				origin,
+				origin: originFor(origin, snapshot),
 			})
 		},
 
@@ -432,7 +450,8 @@ function createDocumentInstance<D extends Document>(
 		},
 
 		clone(): DocumentInstance<D> {
-			return createDocumentInstance(structuredClone(doc), options, origin)
+			const current = originFor(origin, doc)
+			return createDocumentInstance(structuredClone(doc), options, current)
 		},
 	}
 

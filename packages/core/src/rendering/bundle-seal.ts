@@ -35,7 +35,7 @@
  */
 
 import { flattenPdf, inspectPdf, mergePdfs } from '@asterdoc/render/pdf'
-import { parseArtifactCoordinate } from '@asterdoc/schemas'
+import { parseArtifactCoordinate, type SchemaVersion } from '@asterdoc/schemas'
 import type {
   BinaryContent,
   Bundle,
@@ -43,9 +43,12 @@ import type {
   Checklist,
   Document,
   Form,
+  Layer,
   SealAdapter,
+  SealIntegrity,
   SealLocator,
   SigningField,
+  UncoveredContent,
 } from '@asterdoc/types'
 import type { DraftForm } from '@/artifacts/form'
 import { SealConfigError, hasSignatureSlots } from '@/artifacts/form/seal-slots'
@@ -57,6 +60,12 @@ import { normalizeMimeType } from './part-mime'
 import type { RendererRegistry } from './renderer-registry'
 import { evaluateBundleInclusion, type BundleEvaluationMember } from '@/artifacts/bundle/inclusion'
 import { captureRuntimeContext, type RuntimeCreationOptions } from '@/artifacts/shared/runtime-context'
+import { digestOf } from '@/integrity/digest'
+import { contentHashOf, sealIntegrity, uncoveredByLayer } from '@/integrity/seal-integrity'
+import { sealDrawing } from '@/artifacts/form/seal-renderer'
+import { findRegisteredRenderer } from './renderer-registry'
+import { upgradeArtifact } from '@/migration/upgrade'
+import { originOf, storedDefinition } from '@/artifacts/shared/definition-origin'
 
 /** What a part turned out to be once the packet was assembled. */
 export type PacketPartKind =
@@ -87,6 +96,8 @@ export interface PacketPart {
   attached: boolean
   /** The part's own bytes. */
   content: BinaryContent
+  /** What the seal recorded about the part's definition. Absent for an annex, which has none. */
+  integrity?: SealIntegrity
 }
 
 /**
@@ -150,6 +161,14 @@ export interface SealedBundle {
   parts: PacketPart[]
   /** Everything the seal reported without failing, including every part carried rather than merged. */
   warnings: string[]
+  /**
+   * What the seal recorded about the bundle definition: its content hash
+   * (that of the bundle as passed when it declares `$schema`, else what
+   * `toJSON()` writes for it, as `contentHash()` on its instance), the SDK
+   * version, `migratedFrom`, and everything in the packet the hashes do not
+   * cover, across every part, each naming its part: every annex is listed.
+   */
+  integrity: SealIntegrity
 }
 
 /** What `sealBundle` needs. */
@@ -210,17 +229,33 @@ export class BundleSealError extends Error {
 
 const encoder = new TextEncoder()
 
-/** `sha256:<hex>` over the bytes. */
-async function digestOf(bytes: BinaryContent): Promise<string> {
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', Uint8Array.from(bytes).buffer)
-  return `sha256:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`
-}
-
 /** A draft entry, which is anything that is not bytes. */
 type DraftEntry = DraftForm<Form> | DraftChecklist<Checklist> | DraftDocument<Document>
 
+/** What the seal records about a part's definition, for the layer it drew and what drew it. */
+async function partIntegrity(entry: DraftEntry, drawing: { renderer: boolean; adapter: boolean }): Promise<SealIntegrity> {
+  const layer = entryArtifact(entry)?.layers?.[entry.targetLayer]
+  return sealIntegrity(
+    await entry.contentHash(),
+    entry.migratedFrom,
+    layer ? uncoveredByLayer(entry.targetLayer, layer, drawing) : [],
+  )
+}
+
+async function bundleContentHash(stored: Bundle, bundle: Bundle, migratedFrom: SchemaVersion | undefined): Promise<string> {
+  try {
+    return await contentHashOf(storedDefinition(originOf(stored, bundle, migratedFrom), bundle))
+  } catch (error) {
+    if (!(error instanceof TypeError)) throw error
+    const problem = `the bundle definition has no canonical JSON form: ${error.message}`
+    throw new SealConfigError(`Cannot seal bundle: ${problem}`, [problem])
+  }
+}
+
 /** The artifact a draft entry carries, whatever kind it is. */
-function entryArtifact(entry: DraftEntry): { name?: string; edition?: { key: string }; version?: string } | undefined {
+function entryArtifact(
+  entry: DraftEntry,
+): { name?: string; edition?: { key: string }; version?: string; layers?: Record<string, Layer> } | undefined {
   if ('form' in entry) return (entry as DraftForm<Form>).form
   if ('checklist' in entry) return (entry as DraftChecklist<Checklist>).checklist
   if ('document' in entry) return (entry as DraftDocument<Document>).document
@@ -329,10 +364,13 @@ function partFailure(key: string, action: string, error: unknown): BundleSealErr
  * `cause` preserves the underlying error. An unreadable supplied annex is
  * carried as an attachment and reported in `warnings` instead of failing.
  * @throws {SealConfigError} when a rendered part's renderer returns something
- * that is not a PDF, which no packet can hold.
+ * that is not a PDF, which no packet can hold, or, before any part is sealed,
+ * when the bundle has no canonical JSON form (an unpaired surrogate).
  */
-export async function sealBundle(bundle: Bundle, options: BundleSealOptions): Promise<SealedBundle> {
+export async function sealBundle(stored: Bundle, options: BundleSealOptions): Promise<SealedBundle> {
   const { contents, renderers, adapter, locate } = options
+  const { artifact: bundle, migratedFrom } = upgradeArtifact(stored)
+  const contentHash = await bundleContentHash(stored, bundle, migratedFrom)
 
   const problems: string[] = []
   const inclusion = evaluateBundleInclusion(
@@ -400,6 +438,7 @@ export async function sealBundle(bundle: Bundle, options: BundleSealOptions): Pr
   // seal, everything else through ordinary assembly. Each is asked separately
   // so a failure names the part it belongs to.
   const sealedParts = new Map<string, { pdf: Uint8Array; map: SigningField[] }>()
+  const integrities = new Map<string, SealIntegrity>()
   const warnings: string[] = []
   const renderedParts = new Map<string, { content: BinaryContent; mimeType: string; filename: string }>()
 
@@ -410,6 +449,7 @@ export async function sealBundle(bundle: Bundle, options: BundleSealOptions): Pr
       try {
         const preparation = await form.prepareSeal({ renderers, adapter, locate })
         sealedParts.set(key, { pdf: preparation.pdf, map: preparation.signatureMap })
+        integrities.set(key, await partIntegrity(form, sealDrawing(form.form.layers![form.targetLayer]!, { renderers })))
         warnings.push(...preparation.warnings.map((warning) => `${key}: ${warning}`))
       } catch (error) {
         throw partFailure(key, 'sealing', error)
@@ -419,6 +459,10 @@ export async function sealBundle(bundle: Bundle, options: BundleSealOptions): Pr
     try {
       const rendered = await renderBundlePart(key, entry, { renderers })
       renderedParts.set(key, rendered[key]!)
+      if (!isAssemblyBytesEntry(entry)) {
+        const mimeType = entryArtifact(entry)?.layers?.[entry.targetLayer]?.mimeType
+        integrities.set(key, await partIntegrity(entry, { renderer: findRegisteredRenderer(renderers, mimeType) !== undefined, adapter: false }))
+      }
     } catch (error) {
       throw partFailure(key, 'rendering', error)
     }
@@ -486,6 +530,7 @@ export async function sealBundle(bundle: Bundle, options: BundleSealOptions): Pr
         firstPage: 0,
         attached: true,
         content,
+        ...(integrities.has(key) && { integrity: integrities.get(key)! }),
       })
       continue
     }
@@ -500,6 +545,7 @@ export async function sealBundle(bundle: Bundle, options: BundleSealOptions): Pr
       firstPage: packetPages + 1,
       attached: false,
       content: flat,
+      ...(integrities.has(key) && { integrity: integrities.get(key)! }),
     })
 
     for (const field of sealed?.map ?? []) {
@@ -572,8 +618,14 @@ export async function sealBundle(bundle: Bundle, options: BundleSealOptions): Pr
     ),
   ].join('\n')
 
+  const uncovered: UncoveredContent[] = parts.flatMap((part): UncoveredContent[] =>
+    part.kind === 'annex'
+      ? [{ kind: 'annex', part: part.key }]
+      : (part.integrity?.uncovered ?? []).map((entry) => ({ ...entry, part: part.key })),
+  )
+
   return {
-    bundle,
+    bundle: stored,
     pdf,
     canonicalPdfHash,
     packetHash: await digestOf(encoder.encode(manifest)),
@@ -581,5 +633,6 @@ export async function sealBundle(bundle: Bundle, options: BundleSealOptions): Pr
     signatureMap,
     parts,
     warnings,
+    integrity: sealIntegrity(contentHash, migratedFrom, uncovered),
   }
 }

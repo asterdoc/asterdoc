@@ -29,6 +29,7 @@ import type {
 	SealAdapter,
 	SealLocator,
 	SealingRequest,
+	SealIntegrity,
 	SignatureSlot,
 	DefsSection,
 	RulesSection,
@@ -43,7 +44,9 @@ import type {
 } from '@asterdoc/types'
 import { createLayerRenderer } from '@asterdoc/render'
 import type { SchemaVersion } from '@asterdoc/schemas'
-import { restoreDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import { migratedFromOf, originFor, restoreDefinition, storedDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import { digestOf } from '@/integrity/digest'
+import { contentHashOf, sealIntegrity, uncoveredByLayer } from '@/integrity/seal-integrity'
 import { flattenPdf, locate as locatePlacements } from '@asterdoc/render/pdf'
 import { extractPdfData, selectPdfExtractionLayer } from '@asterdoc/render/pdf'
 import type { PdfExtraction } from '@asterdoc/render/pdf'
@@ -81,6 +84,7 @@ import { toYAML } from '@/serialization/serialization'
 import { deepClone, deepReadonlyClone } from '@/utils/clone'
 import {
 	assertValidArtifactDefinition,
+	freezeRuntimeDefinition,
 	snapshotArtifactDefinition,
 	withArtifactMethods,
 	type ArtifactMethods,
@@ -104,6 +108,7 @@ import {
 	createSealPass,
 	flowTextSignatureOptions,
 	resolveFlowPlacements,
+	sealDrawing,
 	selectSealRenderer,
 	signingMarkersFor,
 	type SealRenderer,
@@ -897,6 +902,12 @@ interface RuntimeFormBase<F extends Form> {
 	 */
 	readonly migratedFrom: SchemaVersion | undefined
 
+	/**
+	 * The `sha256:` digest of the RFC 8785 canonical JSON of the definition as
+	 * stored, at the schema version it declares; the one `toJSON()` writes.
+	 */
+	contentHash(): Promise<string>
+
 	/** Target layer key */
 	readonly targetLayer: string
 
@@ -1018,6 +1029,8 @@ export interface DraftForm<F extends Form> extends RuntimeFormBase<F> {
 	/** No canonical hash in draft */
 	readonly canonicalPdfHash: undefined
 	readonly canonicalPdfBytes: undefined
+	/** No seal record in draft */
+	readonly integrity: undefined
 
 	// Party Mutation
 	/**
@@ -1140,6 +1153,12 @@ export interface SignableForm<F extends Form> extends RuntimeFormBase<F> {
 	readonly canonicalPdfHash: string | undefined
 	/** Exact flattened PDF bytes covered by canonicalPdfHash. */
 	readonly canonicalPdfBytes: Uint8Array | undefined
+	/**
+	 * What the seal recorded about the definition it sealed (when sealed): its
+	 * content hash, the SDK version, `migratedFrom`, and what the hash does not
+	 * cover.
+	 */
+	readonly integrity: SealIntegrity | undefined
 
 	// Capture Methods
 	captureSignature(role: string, partyId: string, signerId: string, locationId: string, options?: CaptureOptions): SignableForm<F>
@@ -1208,6 +1227,8 @@ export interface ExecutedForm<F extends Form> extends RuntimeFormBase<F> {
 	/** SHA-256 hash of canonical PDF (when formal) */
 	readonly canonicalPdfHash: string | undefined
 	readonly canonicalPdfBytes: Uint8Array | undefined
+	/** What the seal recorded about the definition it sealed (when sealed). */
+	readonly integrity: SealIntegrity | undefined
 
 	// Capture read-only access
 	getCapture(role: string, partyId: string, signerId: string, locationId: string, type: 'signature' | 'initials' | 'capacity' | 'printed_name'): SignatureCapture | undefined
@@ -1288,6 +1309,7 @@ interface RuntimeFormConfigBase<F extends Form> {
 	signatureMap?: SigningField[]
 	canonicalPdfHash?: string
 	canonicalPdfBytes?: Uint8Array
+	integrity?: SealIntegrity
 	context: RuntimeContext
 }
 
@@ -1320,9 +1342,7 @@ interface CanonicalPdf {
 /** Flattens a converted PDF into the canonical document and hashes it. */
 async function canonicalizePdf(pdf: Uint8Array): Promise<CanonicalPdf> {
 	const canonicalPdfBytes = await flattenPdf(pdf)
-	const digest = await globalThis.crypto.subtle.digest('SHA-256', Uint8Array.from(canonicalPdfBytes).buffer)
-	const canonicalPdfHash = `sha256:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`
-	return { canonicalPdfBytes, canonicalPdfHash }
+	return { canonicalPdfBytes, canonicalPdfHash: await digestOf(canonicalPdfBytes) }
 }
 
 /**
@@ -1385,11 +1405,13 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		signatureMap: signatureMapInput,
 		canonicalPdfHash,
 		canonicalPdfBytes: canonicalPdfBytesInput,
+		integrity: integrityInput,
 		context,
 		origin,
 	} = config
 	assertValidArtifactDefinition(formDef)
-	const storedForm = origin?.stored ?? formDef
+	freezeRuntimeDefinition(formDef)
+	const storedForm = (): F => storedDefinition(origin, formDef)
 
 	// Runtime state is owned by the instance. Guarded mutation methods create a
 	// new instance, so cloning at this boundary prevents aliases from the
@@ -1405,6 +1427,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 	const signatureMap = signatureMapInput === undefined ? undefined : deepClone(signatureMapInput)
 	const canonicalPdfBytes =
 		canonicalPdfBytesInput === undefined ? undefined : ownCanonicalPdfBytes(canonicalPdfBytesInput)
+	const integrity = integrityInput === undefined ? undefined : deepClone(integrityInput)
 	config = {
 		...config,
 		fields: fieldValues,
@@ -1417,6 +1440,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		attestations,
 		signatureMap,
 		canonicalPdfBytes,
+		integrity,
 	} as RuntimeFormConfig<F>
 
 	// These views are detached from the closure state and frozen deeply where
@@ -1431,6 +1455,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 	const witnessesView = deepReadonlyClone(witnesses)
 	const attestationsView = deepReadonlyClone(attestations)
 	const signatureMapView = signatureMap === undefined ? undefined : deepReadonlyClone(signatureMap)
+	const integrityView = integrity === undefined ? undefined : deepReadonlyClone(integrity)
 	// Made on first read, so a clone or transition copies no bytes until a
 	// caller asks for them.
 	let canonicalPdfBytesView: Uint8Array | undefined
@@ -1808,6 +1833,9 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		form: formDef,
 		targetLayer,
 		migratedFrom: origin?.migratedFrom,
+		contentHash(): Promise<string> {
+			return contentHashOf(storedForm())
+		},
 		get fields() {
 			return fieldsView
 		},
@@ -1840,6 +1868,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			return signatureMapView
 		},
 		canonicalPdfHash,
+		integrity: integrityView,
 		get canonicalPdfBytes() {
 			if (canonicalPdfBytes === undefined) return undefined
 			canonicalPdfBytesView ??= deepReadonlyClone(canonicalPdfBytes)
@@ -2624,6 +2653,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		async seal(options: SealOptions = {}): Promise<RuntimeForm<F>> {
 			ensureDraft('seal')
 			const { layerSpec, sealRenderer } = sealTarget(options, 'seal')
+			const contentHash = await contentHashOf(storedForm())
 
 			const sealed = (signatureMap: SigningField[], canonical: CanonicalPdf) =>
 				createRuntimeForm({
@@ -2635,6 +2665,11 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 					signatureMap,
 					canonicalPdfHash: canonical.canonicalPdfHash,
 					canonicalPdfBytes: canonical.canonicalPdfBytes,
+					integrity: sealIntegrity(
+						contentHash,
+						origin?.migratedFrom,
+						uncoveredByLayer(targetLayer, layerSpec, sealDrawing(layerSpec, options)),
+					),
 					executedAt: undefined,
 				})
 
@@ -2803,7 +2838,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			if (phase === 'draft') {
 				return {
 					phase: 'draft',
-					form: storedForm,
+					form: deepClone(storedForm()),
 					fields: deepClone(fieldValues),
 					parties: deepClone(partyValues),
 					annexes: deepClone(annexValues),
@@ -2816,7 +2851,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			if (phase === 'signable') {
 				return {
 					phase: 'signable',
-					form: storedForm,
+					form: deepClone(storedForm()),
 					fields: deepClone(fieldValues),
 					parties: deepClone(partyValues),
 					annexes: deepClone(annexValues),
@@ -2829,11 +2864,12 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 					targetLayer,
 					...(signatureMap && { signatureMap: deepClone(signatureMap) }),
 					...(canonicalPdfHash && { canonicalPdfHash }),
+					...(integrity && { integrity: deepClone(integrity) }),
 				}
 			}
 			return {
 				phase: 'executed',
-				form: storedForm,
+				form: deepClone(storedForm()),
 				fields: deepClone(fieldValues),
 				parties: deepClone(partyValues),
 				annexes: deepClone(annexValues),
@@ -2847,6 +2883,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 				executedAt: executedAt!,
 				...(signatureMap && { signatureMap: deepClone(signatureMap) }),
 				...(canonicalPdfHash && { canonicalPdfHash }),
+				...(integrity && { integrity: deepClone(integrity) }),
 			}
 		},
 
@@ -2922,6 +2959,7 @@ export function runtimeFormFromJSON<F extends Form>(
 		executedAt: 'executedAt' in json ? json.executedAt : undefined,
 		signatureMap: 'signatureMap' in json ? json.signatureMap : undefined,
 		canonicalPdfHash: 'canonicalPdfHash' in json ? json.canonicalPdfHash : undefined,
+		integrity: 'integrity' in json ? json.integrity : undefined,
 		context: restoreRuntimeContext(json.context),
 	} as RuntimeFormConfig<F>
 	return createRuntimeForm(config)
@@ -2939,11 +2977,14 @@ function createFormInstance<F extends Form>(
 	options?: ArtifactInstanceOptions,
 	origin?: DefinitionOrigin<F>,
 ): FormInstance<F> {
-	const artifactMethods = withArtifactMethods(formDef, origin?.migratedFrom)
+	const artifactMethods = withArtifactMethods(formDef, origin)
 	const resolver = options?.resolver
 
 	const instance: FormInstance<F> = {
 		...artifactMethods,
+		get migratedFrom() {
+			return migratedFromOf(origin, formDef)
+		},
 
 		// Form-specific properties (type assertions needed for conditional types)
 		defs: formDef.defs as FormInstance<F>['defs'],
@@ -3021,8 +3062,9 @@ function createFormInstance<F extends Form>(
 
 			const targetLayer = formDef.defaultLayer || (formDef.layers ? Object.keys(formDef.layers)[0] : '') || ''
 
+			const snapshot = snapshotArtifactDefinition(formDef)
 			const draft = createRuntimeForm({
-				form: snapshotArtifactDefinition(formDef),
+				form: snapshot,
 				fields: validatedFields,
 				parties: validatedParties,
 				annexes: validatedAnnexes,
@@ -3030,7 +3072,7 @@ function createFormInstance<F extends Form>(
 				signatories: {},
 				targetLayer,
 				resolver,
-				origin,
+				origin: originFor(origin, snapshot),
 				phase: 'draft',
 				context,
 			})
@@ -3106,7 +3148,8 @@ function createFormInstance<F extends Form>(
 		},
 
 		clone(): FormInstance<F> {
-			return createFormInstance(structuredClone(formDef), options, origin)
+			const current = originFor(origin, formDef)
+			return createFormInstance(structuredClone(formDef), options, current)
 		},
 	}
 

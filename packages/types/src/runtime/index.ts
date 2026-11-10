@@ -4,7 +4,7 @@
  */
 
 import type { Person, Organization, Attachment, Signature, SignatureMethod } from "../schemas/primitives";
-import type { SigningField } from "./signing.js";
+import type { SealIntegrity, SigningField } from "./signing.js";
 
 /**
  * Party
@@ -368,6 +368,8 @@ export interface SignableFormJSON<F = unknown> {
 	 * The canonical PDF bytes are not serialized: persist them out of band, keyed by this hash.
 	 */
 	canonicalPdfHash?: string;
+	/** What the seal recorded about the definition it sealed. Present when the form was sealed. */
+	integrity?: SealIntegrity;
 }
 
 /**
@@ -413,6 +415,8 @@ export interface ExecutedFormJSON<F = unknown> {
 	 * The canonical PDF bytes are not serialized: persist them out of band, keyed by this hash.
 	 */
 	canonicalPdfHash?: string;
+	/** What the seal recorded about the definition it sealed. Present when the form was sealed. */
+	integrity?: SealIntegrity;
 }
 
 /**
@@ -671,4 +675,6 @@ export type {
 	AnchorLocateQuery,
 	LocateHit,
 	SealLocator,
+	SealIntegrity,
+	UncoveredContent,
 } from './signing.js';

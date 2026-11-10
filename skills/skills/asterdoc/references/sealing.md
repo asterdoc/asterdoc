@@ -131,7 +131,10 @@ signable.phase             // 'signable'
 signable.canonicalPdfBytes // Uint8Array: the flattened PDF the signer sees
 signable.canonicalPdfHash  // 'sha256:59f0…'
 signable.signatureMap      // [{ id: 'tenant-sig', signerId: 'jane', type: 'signature', page: 1, x: 72, y: 300, width: 200, height: 30, … }, …]
+signable.integrity         // { contentHash: 'sha256:…', sdkVersion: '0.12.0', uncovered: [] }
 ```
+
+`integrity` records the definition the seal used. `contentHash` is the RFC 8785 canonical hash of the definition as stored, at its own `$schema`; `draft.contentHash()` returns the same value. A definition edited after it was read, or made in memory, hashes what `toJSON()` writes for it. Keys are sorted, so the order of `layers` is not part of the hash: set `defaultLayer` when the first layer matters. A runtime's definition is a frozen snapshot taken at fill; edit the authoring definition and fill again. `sdkVersion` and `migratedFrom` sit beside it and are not hashed. `uncovered` lists what the hash leaves out: a layer file or font with no `checksum`, a React module, and a renderer or adapter supplied at seal time. A declared `checksum` is checked against the bytes the resolver returns, at render and at seal; a mismatch throws `LayerChecksumError`.
 
 `signatureMap` entries are `SigningField` values: `id` (the slot id), `signerId`, `signerIndex`, `type`, `page` (1-based), `x`, `y` (points from the top-left), `width`, `height`, and optional `required` and `label`.
 
@@ -326,8 +329,9 @@ const packet = await sealBundle(bundle, {
 | `packetHash` | Hash over the merged PDF and every part, including parts carried as attachments. It is the packet's record, not what a signer signs. |
 | `signers` | `[{ id: 'jane', index: 0, parts: ['addendum/jane', 'w9/jane'] }]` |
 | `signatureMap` | Slot ids prefixed with the part key (`w9/sb1`), `page` on packet pages. Each entry also has `part`, `slot`, `partPage`, `partSignerId`. |
-| `parts` | Per part: `kind` (`sealed`, `rendered`, `annex`), `firstPage`, `pageCount`, `digest`, `attached`. |
+| `parts` | Per part: `kind` (`sealed`, `rendered`, `annex`), `firstPage`, `pageCount`, `digest`, `attached`, and `integrity` for an artifact part. |
 | `warnings` | Everything reported without failing. |
+| `integrity` | The content hash of the bundle (as `contentHash()` on its instance gives it), `sdkVersion`, `migratedFrom`, and `uncovered` across every part, each entry with its `part`; every annex supplied as bytes is listed as `{ kind: 'annex', part }`. |
 
 `sealBundle()` throws `BundleSealError` when the packet cannot be built. `error.problems` lists each issue (for example `bundle content "w9" has no entry`), `error.part` names the content key when one part failed, and `error.cause` preserves an underlying PDF or renderer error. It also refuses a bytes entry whose content signature does not match its declared `mimeType`. A part whose renderer does not produce PDF throws `SealConfigError`.
 

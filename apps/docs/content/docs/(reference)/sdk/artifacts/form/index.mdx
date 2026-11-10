@@ -139,6 +139,11 @@ declares. It's bound once here, at construction, and every instance derived
 from the form — every `fill`, mutator, and `clone` — carries it; `render()`
 itself takes no resolver. See [ArtifactInstanceOptions](/sdk/resolvers#artifactinstanceoptions).
 
+When a file layer or its font declares a `checksum`, render and seal check it
+against the bytes the resolver returns and throw `LayerChecksumError`, naming
+the layer, the path and both digests, when they differ. A layer with no
+checksum renders whatever bytes the resolver returns.
+
 #### Parameters
 
 <PropertiesTable properties={[
@@ -201,6 +206,7 @@ Returns a `FormInstance` with the following properties and methods:
   { name: 'clone', type: '() => FormInstance', description: 'Deep clone the instance', isMethod: true },
   { name: 'validate', type: '(options?: ValidateOptions) => StandardSchemaV1.Result', description: 'Validate the form definition', isMethod: true },
   { name: 'isValid', type: '(options?: ValidateOptions) => boolean', description: 'Check if form is valid', isMethod: true },
+  { name: 'contentHash', type: '() => Promise<string>', description: '`sha256:` digest of the RFC 8785 canonical JSON of the definition as stored, at the schema version it declares. A form made in memory, or edited after it was read, hashes what `toJSON()` writes for it. A runtime keeps the hash of the definition it was filled from. Keys are sorted, so the order of `layers` is not part of the hash: set `defaultLayer` when it matters', isMethod: true },
   { name: 'toJSON', type: '(options?: SerializationOptions) => object', description: 'Serialize to JSON', isMethod: true },
   { name: 'toYAML', type: '(options?: SerializationOptions) => string', description: 'Serialize to YAML', isMethod: true },
 ]} />
@@ -471,7 +477,7 @@ Created by `form.fill()`. Mutable data and signer configuration.
 
 <PropertiesTable properties={[
   { name: 'phase', type: "'draft'", description: 'Phase discriminator' },
-  { name: 'form', type: 'Form', description: 'The embedded form definition' },
+  { name: 'form', type: 'Form', description: 'The embedded form definition: a frozen snapshot taken at `fill()`. Edit the authoring form and fill again to change it' },
   { name: 'data', type: 'InferFormPayload', description: 'The validated data payload' },
   { name: 'parties', type: 'Record<string, Party | Party[]>', description: 'Party data by role ID' },
   { name: 'signers', type: 'Record<string, Signer>', description: 'Global signer registry' },
@@ -514,6 +520,7 @@ Created by `draft.prepareForSigning()` or `draft.seal()`. Frozen data, signature
   { name: 'isFormal', type: 'boolean', description: 'True if created via seal()' },
   { name: 'signatureMap', type: 'SigningField[] | undefined', description: 'Signature field coordinates (formal only)' },
   { name: 'canonicalPdfHash', type: 'string | undefined', description: 'PDF hash (formal only)' },
+  { name: 'integrity', type: 'SealIntegrity | undefined', description: 'What the seal recorded about the definition (formal only): `contentHash`, `sdkVersion`, `migratedFrom` when it was upgraded, and `uncovered`, the content outside the hash (a layer file or font with no checksum, a React module, a renderer or adapter supplied at seal time). Kept through `toJSON()` and `finalize()`' },
   { name: 'captures', type: 'SignatureCapture[]', description: 'Captured signatures' },
   { name: 'witnesses', type: 'WitnessParty[]', description: 'Declared witnesses' },
   { name: 'attestations', type: 'Attestation[]', description: 'Witness attestations' },
@@ -597,6 +604,7 @@ const signable = await draft
 
 signable.signatureMap      // signature field coordinates
 signable.canonicalPdfHash  // 'sha256:...'
+signable.integrity         // { contentHash: 'sha256:...', sdkVersion: '0.12.0', uncovered: [] }
 ```
 
 ## Related

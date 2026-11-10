@@ -9,6 +9,23 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 #### Core
 
 - `assertCurrentSchemaVersion` is removed. An artifact on an earlier schema version now upgrades in memory on load. To refuse every version but the current one, call `upgradeArtifact(artifact, { required, strictSchema: true })`, which throws the same `SchemaVersionError`.
+- Render and seal check a file layer's `checksum`, and its font's, against the bytes the resolver returns, and throw `LayerChecksumError` (layer, path, expected and actual digest) when they differ. A layer with no checksum renders as before.
+- A runtime's `toJSON()` writes a copy of the definition as it was read, at its own `$schema`, while the definition it was filled from is unedited; otherwise, and for a definition made in memory, it writes the definition with the current `$schema`. A restore keeps the content hash.
+- A definition string or property name with an unpaired UTF-16 surrogate is a validation issue at its path, and reading such a definition fails.
+- A runtime's definition (`form`, `document`, `checklist`, `bundle`) is a frozen snapshot taken at fill or prepare: writing to it throws. Edit the authoring definition and fill again.
+- An instance's `migratedFrom` is `undefined` once its definition is edited after it was read. A definition read from a file and edited to hold a value with no JSON form throws `DefinitionNotJsonError` from `clone()` and `contentHash()`.
+- Every framework package needs Node 20 or later (`engines.node` was `>=18`): render and seal use `globalThis.crypto`. The AI integration packages (`ai-sdk`, `ai-tools`, `tanstack-ai`, `mastra`) keep their Node 22 requirement.
+
+### Other changes
+
+#### Core
+
+- `contentHash()` on every artifact instance and runtime: the `sha256:` digest of the RFC 8785 canonical JSON of the definition as stored, at the schema version it declares. `canonicalJson` and `contentHashOf` are exported.
+- A form seal records `integrity`: `contentHash`, `sdkVersion`, `migratedFrom`, and `uncovered`, the content the hash leaves out (a layer file or font with no checksum, a React module, a renderer or adapter supplied at seal time). `sealBundle` records the bundle's and each artifact part's, lists every annex supplied as bytes, and reads the bundle at the current schema version.
+
+#### CLI
+
+- `asterdoc validate` says what a missing checksum on a layer file or font costs: render and seal cannot verify it, and the content hash does not cover it.
 
 ## [0.11.0] - 2026-11-07
 

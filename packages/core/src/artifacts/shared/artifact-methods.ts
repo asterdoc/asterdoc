@@ -10,9 +10,11 @@ import type { Artifact, ArtifactEdition, Metadata, ContentRef } from '@asterdoc/
 import { validate as validateArtifact, validateDefinition } from '@/validation/artifact'
 import { toYAML } from '@/serialization/serialization'
 import { assertCurrentSchemaVersion } from '@/serialization/schema-version'
-import { ASTERDOC_SCHEMA_URL, type SchemaVersion } from '@asterdoc/schemas'
+import type { SchemaVersion } from '@asterdoc/schemas'
+import { originFor, serializableArtifact, storedDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import { contentHashOf } from '@/integrity/seal-integrity'
 import type { ValidateOptions, SerializationOptions } from '@/types'
-import { deepClone } from '@/utils/clone'
+import { deepClone, deepFreeze } from '@/utils/clone'
 
 /**
  * Common artifact methods interface
@@ -60,10 +62,26 @@ export interface ArtifactMethods<T extends Artifact> {
 	/**
 	 * The earliest schema version the definition declared when it was
 	 * upgraded in memory on load, on its root or an inline bundle part.
-	 * `undefined` when it was already current. The stored definition is never
-	 * rewritten.
+	 * `undefined` when it was already current, or once the definition was
+	 * edited after it was read. The stored definition is never rewritten.
 	 */
 	readonly migratedFrom: SchemaVersion | undefined
+
+	/**
+	 * The `sha256:` digest of the RFC 8785 canonical JSON of the definition as
+	 * stored: the parsed input before migration, defaults or normalization, at
+	 * the schema version it declares. An input reading upgraded (one with no
+	 * root `$schema` but an earlier inline part) is stored as it was given.
+	 * A definition with no `$schema` that reading did not upgrade, or one
+	 * edited after it was read, hashes what `toJSON()` writes for it now.
+	 * Template and font bytes are covered through the checksums their layers
+	 * declare. Object keys are sorted, so key order (such as the order of
+	 * `layers`) is not part of the hash: set `defaultLayer` when it matters.
+	 *
+	 * @throws {DefinitionNotJsonError} when a definition read from a file was
+	 * edited to hold a value with no JSON form.
+	 */
+	contentHash(): Promise<string>
 
 	/**
 	 * Validates the artifact schema definition.
@@ -123,16 +141,12 @@ export function snapshotArtifactDefinition<T extends Artifact>(data: T): T {
 }
 
 /**
- * The artifact as it is written to a file.
- *
- * An instance always holds a current-version definition: every entry point
- * upgrades an earlier `$schema` in memory, or refuses it. So it serializes
- * with the current dated `$schema` first.
+ * Freeze the definition a runtime instance runs on, in place. A runtime is
+ * immutable: its definition is a snapshot taken at fill or prepare, and an
+ * edit goes through the authoring definition and a new runtime.
  */
-function serializableArtifact<T extends Artifact>(data: T, includeSchema: boolean): T {
-	const definition: T = { ...data }
-	delete definition.$schema
-	return includeSchema ? { $schema: ASTERDOC_SCHEMA_URL, ...definition } : definition
+export function freezeRuntimeDefinition<T extends Artifact>(data: T): T {
+	return Object.isFrozen(data) ? data : deepFreeze(data)
 }
 
 /**
@@ -153,7 +167,10 @@ function serializableArtifact<T extends Artifact>(data: T, includeSchema: boolea
  * }
  * ```
  */
-export function withArtifactMethods<T extends Artifact>(data: T, migratedFrom?: SchemaVersion): ArtifactMethods<T> {
+export function withArtifactMethods<T extends Artifact>(
+	data: T,
+	origin?: DefinitionOrigin<T>,
+): Omit<ArtifactMethods<T>, 'migratedFrom'> {
 	return {
 		_data: data,
 
@@ -170,7 +187,10 @@ export function withArtifactMethods<T extends Artifact>(data: T, migratedFrom?: 
 		metadata: data.metadata,
 		instructions: data.instructions,
 		agentInstructions: data.agentInstructions,
-		migratedFrom,
+
+		async contentHash(): Promise<string> {
+			return contentHashOf(storedDefinition(originFor(origin, data), data))
+		},
 
 		// Validation
 		validate(options?: ValidateOptions): StandardSchemaV1.Result<T> {

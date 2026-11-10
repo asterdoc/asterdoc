@@ -7,6 +7,7 @@ import {
   type TemplateArtifact,
 } from '@/logic/design-time/validation/validate-templates'
 import { parse } from '@/serialization/serialization'
+import { findLoneSurrogates, LONE_SURROGATE_MESSAGE } from '@/integrity/canonical-json'
 import { validatePdfLayers, type LayerValidationIssue } from './pdf-layers'
 import { validatePdfBindingPaths } from './pdf-bindings'
 import { validatePlaceDefinitions, validatePlaceFormats } from './place-definitions'
@@ -72,7 +73,10 @@ function validateSchema<T = unknown>(artifact: unknown): StandardSchemaV1.Result
   }
 
   const result = validatorMap[kind as ArtifactKind](artifact)
-  return result.issues ? { issues: result.issues } : { value: artifact as T }
+  if (result.issues) return { issues: result.issues }
+  const lone = findLoneSurrogates(artifact)
+  if (lone.length > 0) return { issues: lone.map((path) => ({ message: LONE_SURROGATE_MESSAGE, path })) }
+  return { value: artifact as T }
 }
 
 /** Artifact kinds that support logic validation */

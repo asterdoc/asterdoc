@@ -3,7 +3,7 @@
  *
  * Provides a consistent deep cloning function across the codebase, using the
  * global `structuredClone` (available in every runtime this package supports:
- * Node >=18, and every current browser).
+ * Node 20 or later, and every current browser).
  */
 
 /**

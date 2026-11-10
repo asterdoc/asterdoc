@@ -52,6 +52,9 @@ interface ContentRefCheckResult {
   issues: ValidationIssue[]
 }
 
+const UNVERIFIED_FILE =
+  'No checksum set, so render and seal cannot verify the file and the content hash does not cover it. Run `asterdoc fix` to add one.'
+
 export function createValidateCommand(): Command {
   const validate = new Command('validate')
 
@@ -215,7 +218,7 @@ async function validateOneFile(artifactTarget: string, options: ValidateOptions)
           }
         } else if (fileExists && !layer.checksum) {
           check.issues.push({
-            message: `No checksum set. Run \`asterdoc fix\` to add one.`,
+            message: UNVERIFIED_FILE,
             path: ['layers', layerKey, 'checksum'],
             severity: 'warning',
           })
@@ -308,7 +311,8 @@ async function validateOneFile(artifactTarget: string, options: ValidateOptions)
         check.checksumMatch = matches
         if (!matches) check.issues.push({ message: 'Checksum mismatch. Run `asterdoc fix` to update.', path: [...reference.propertyPath, 'checksum'], severity: 'error' })
       } else if (exists && reference.propertyPath[0] !== 'contents') {
-        check.issues.push({ message: 'No checksum set. Run `asterdoc fix` to add one.', path: [...reference.propertyPath, 'checksum'], severity: 'warning' })
+        const message = reference.propertyPath.at(-1) === 'font' ? UNVERIFIED_FILE : 'No checksum set. Run `asterdoc fix` to add one.'
+        check.issues.push({ message, path: [...reference.propertyPath, 'checksum'], severity: 'warning' })
       }
       contentRefChecks.push(check)
     }

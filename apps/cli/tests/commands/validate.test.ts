@@ -3,12 +3,14 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import path from 'node:path'
 import fs from 'node:fs/promises'
 import os from 'node:os'
+import { createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const fixturesDir = path.resolve(__dirname, '../fixtures')
+const coreFixturesDir = path.resolve(__dirname, '../../../../packages/core/tests/artifacts/form/fixtures')
 
 /**
  * Execute a CLI command and return the result
@@ -273,17 +275,60 @@ describe('CLI Validate Command', () => {
       expect(human.stdout).toContain('✗ Validation failed')
     })
 
-    it('should report missing checksum as warning', async () => {
-      const formPath = path.join(fixturesDir, 'pet-addendum-pdf.yaml')
-      const result = await executeCliCommand(['validate', formPath, '--json'])
+    const writeFontLayer = async (checksums: { layer?: string; font?: string }) => {
+      const artifactPath = path.join(tempDir, 'font-layer.json')
+      await fs.copyFile(path.join(fixturesDir, 'pet-addendum.pdf'), path.join(tempDir, 'form.pdf'))
+      await fs.copyFile(path.join(coreFixturesDir, 'cyrillic-boxes.ttf'), path.join(tempDir, 'font.ttf'))
+      await fs.writeFile(artifactPath, JSON.stringify({
+        $schema: ASTERDOC_SCHEMA_URL,
+        kind: 'form',
+        name: 'font-layer',
+        fields: {},
+        layers: {
+          pdf: {
+            kind: 'file',
+            mimeType: 'application/pdf',
+            path: 'form.pdf',
+            ...(checksums.layer && { checksum: checksums.layer }),
+            font: { path: 'font.ttf', ...(checksums.font && { checksum: checksums.font }) },
+          },
+        },
+      }))
+      return artifactPath
+    }
+    const checksumOf = async (file: string) =>
+      `sha256:${createHash('sha256').update(await fs.readFile(path.join(tempDir, file))).digest('hex')}`
 
-      // The pet-addendum-pdf.yaml has file layer without checksum
+    it('warns for a layer file and a font with no checksum, which render and seal cannot verify', async () => {
+      const result = await executeCliCommand(['validate', await writeFontLayer({}), '--json'])
+
       expect(result.exitCode).toBe(0)
-      const parsed = JSON.parse(result.stdout)
-      // Should have warnings about missing checksums
-      if (parsed.warnings && parsed.warnings.length > 0) {
-        expect(parsed.warnings.some((w: { message: string }) => w.message.toLowerCase().includes('checksum'))).toBe(true)
-      }
+      const unverified = 'No checksum set, so render and seal cannot verify the file and the content hash does not cover it. Run `asterdoc fix` to add one.'
+      expect(JSON.parse(result.stdout).warnings).toEqual(expect.arrayContaining([
+        { message: unverified, path: ['layers', 'pdf', 'checksum'] },
+        { message: unverified, path: ['layers', 'pdf', 'font', 'checksum'] },
+      ]))
+    })
+
+    it('does not warn when the layer file and its font have checksums', async () => {
+      await writeFontLayer({})
+      const covered = await writeFontLayer({ layer: await checksumOf('form.pdf'), font: await checksumOf('font.ttf') })
+      const result = await executeCliCommand(['validate', covered, '--json'])
+
+      expect(result.exitCode).toBe(0)
+      const warnings = (JSON.parse(result.stdout).warnings ?? []) as { path: string[] }[]
+      expect(warnings.filter((warning) => warning.path.at(-1) === 'checksum')).toEqual([])
+    })
+
+    it('fails for a font whose bytes do not match its checksum', async () => {
+      const artifactPath = await writeFontLayer({ font: `sha256:${'0'.repeat(64)}` })
+      const result = await executeCliCommand(['validate', artifactPath, '--json'])
+
+      expect(result.exitCode).toBe(1)
+      expect(JSON.parse(result.stdout).errors).toContainEqual({
+        message: 'Checksum mismatch. Run `asterdoc fix` to update.',
+        path: ['layers', 'pdf', 'font', 'checksum'],
+      })
     })
   })
 

@@ -33,8 +33,9 @@ import type { ZodType } from 'zod'
 import { originOf, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
 import { upgradeArtifact, type SchemaReadOptions } from '@/migration/upgrade'
 import { createParser, formatZodError } from './zod-parser'
+import { findLoneSurrogates, LONE_SURROGATE_MESSAGE } from '@/integrity/canonical-json'
 
-/** A definition read at the current schema version, and where it came from when reading upgraded it. */
+/** A definition read at the current schema version, and where it came from. */
 export interface ReadDefinition<T> {
 	readonly definition: T
 	readonly origin: DefinitionOrigin<T> | undefined
@@ -47,15 +48,17 @@ export interface ReadDefinition<T> {
  * one that declares an earlier version, on the root or on an inline bundle
  * part, is upgraded in memory unless `strictSchema` refuses it.
  */
-function createWholeArtifactReader<T>(
+function createWholeArtifactReader<T extends object>(
 	schemaName: string,
 	schema: ZodType<T>,
 ): (input: unknown, options?: SchemaReadOptions) => ReadDefinition<T> {
 	return (input, options) => {
 		const { artifact, migratedFrom } = upgradeArtifact(input, { strictSchema: options?.strictSchema })
 		const result = schema.safeParse(artifact)
-		if (result.success) return { definition: result.data, origin: originOf<T>(input, migratedFrom) }
-		throw new Error(formatZodError(result.error, schemaName))
+		if (!result.success) throw new Error(formatZodError(result.error, schemaName))
+		const [lone] = findLoneSurrogates(result.data)
+		if (lone) throw new Error(`Invalid ${schemaName}${lone.length > 0 ? ` at ${lone.join('.')}` : ''}: ${LONE_SURROGATE_MESSAGE}`)
+		return { definition: result.data, origin: originOf(input, result.data, migratedFrom) }
 	}
 }
 

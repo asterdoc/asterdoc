@@ -27,6 +27,7 @@ import {
 	UnregisteredLayerRendererError,
 	type RendererRegistry,
 } from '@/rendering/renderer-registry'
+import { verifyLayerChecksum } from '@/integrity/checksum'
 
 /**
  * Runtime wiring bound to an artifact instance when it is constructed.
@@ -258,9 +259,11 @@ async function renderLayerAt(
 
 /**
  * A text or binary layer's payload: an inline layer's text, or the bytes a
- * resolver reads for a file layer, decoded for text-based types.
+ * resolver reads for a file layer, checked against the layer's checksum and
+ * decoded for text-based types.
  *
  * @throws {UnboundResolverError} when a file layer has no resolver to read it.
+ * @throws {LayerChecksumError} when the bytes do not match the layer's checksum.
  */
 async function readLayerContent(
 	layerKey: string,
@@ -274,6 +277,7 @@ async function readLayerContent(
 			throw new UnboundResolverError(layerKey, layerSpec.path, site)
 		}
 		const bytes = await resolver.read(layerSpec.path)
+		await verifyLayerChecksum(bytes, layerSpec.checksum, layerKey, layerSpec.path, 'layer')
 		const mimeType = layerSpec.mimeType.toLowerCase()
 		return mimeType.startsWith('text/') || mimeType === 'application/json' ? new TextDecoder().decode(bytes) : bytes
 	}
@@ -374,8 +378,10 @@ export function renderBindings(
  *
  * Text and binary layers carry their payload: an inline layer's text, or the
  * bytes a resolver reads for a file layer. A file layer that declares a font
- * carries it too, read through the same resolver, so a missing font fails the
- * way a missing layer file does. A React layer carries none. Its path
+ * carries it too, read through the same resolver, so a missing font, or one
+ * that does not match its checksum, fails the way the layer file does. Each
+ * declared checksum is checked against the bytes the resolver returns. A
+ * React layer carries none. Its path
  * is a pointer to a composition module, which the renderer binds; core neither
  * reads nor executes it, so no resolver is needed and none is asked for.
  *
@@ -385,6 +391,7 @@ export function renderBindings(
  *
  * @throws {InlineReactLayerError} when a React MIME type is declared inline.
  * @throws {UnboundResolverError} when a file layer has no resolver to read it.
+ * @throws {LayerChecksumError} when the layer's file or font does not match its checksum.
  */
 export async function buildRendererLayer(
 	layerKey: string,
@@ -408,7 +415,7 @@ export async function buildRendererLayer(
 	const content = await readLayerContent(layerKey, layerSpec, resolver, site)
 
 	const font = layerSpec.kind === 'file' && layerSpec.font && resolver
-		? { content: await resolver.read(layerSpec.font.path), path: layerSpec.font.path }
+		? await readLayerFont(layerKey, layerSpec.font, resolver)
 		: undefined
 
 	return {
@@ -421,4 +428,14 @@ export async function buildRendererLayer(
 		...(font && { font }),
 		...(layerSpec.format && { format: layerSpec.format }),
 	}
+}
+
+async function readLayerFont(
+	layerKey: string,
+	font: { path: string; checksum?: string },
+	resolver: Resolver,
+): Promise<{ content: Uint8Array; path: string }> {
+	const content = await resolver.read(font.path)
+	await verifyLayerChecksum(content, font.checksum, layerKey, font.path, 'font')
+	return { content, path: font.path }
 }

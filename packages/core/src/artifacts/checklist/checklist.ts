@@ -12,7 +12,9 @@ import { buildRendererLayer, resolveLayerKey, selectLayerRenderer } from '../sha
 import type { ArtifactInstanceOptions } from '../shared/render-layer'
 import { parseChecklist, parseChecklistItem, parseLayer, readChecklist } from '@/validation/artifact-parsers'
 import type { SchemaVersion } from '@asterdoc/schemas'
-import { restoreDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import { migratedFromOf, originFor, restoreDefinition, storedDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import { contentHashOf } from '@/integrity/seal-integrity'
+import { deepClone } from '@/utils/clone'
 import {
 	validateChecklistItemInput,
 	validateChecklistItemsPatch,
@@ -24,6 +26,7 @@ import { toYAML } from '@/serialization/serialization'
 import { deepReadonlyClone } from '@/utils/clone'
 import {
 	assertValidArtifactDefinition,
+	freezeRuntimeDefinition,
 	snapshotArtifactDefinition,
 	withArtifactMethods,
 	type ArtifactMethods,
@@ -228,6 +231,12 @@ interface RuntimeChecklistBase<C extends Checklist> {
 	 * in memory. `toJSON()` writes the definition as stored, so a restore keeps it.
 	 */
 	readonly migratedFrom: SchemaVersion | undefined
+
+	/**
+	 * The `sha256:` digest of the RFC 8785 canonical JSON of the definition as
+	 * stored, at the schema version it declares; the one `toJSON()` writes.
+	 */
+	contentHash(): Promise<string>
 
 	/** Fixed evaluation context captured when this instance was created. */
 	readonly context: RuntimeContext
@@ -441,7 +450,10 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 		completedAt,
 	} = config
 	assertValidArtifactDefinition(checklistDef)
+	freezeRuntimeDefinition(checklistDef)
 	const migratedFrom = origin?.migratedFrom
+	const storedChecklist = (): C => storedDefinition(origin, checklistDef)
+	const contentHash = (): Promise<string> => contentHashOf(storedChecklist())
 
 	// Build item lookup map and validate
 	const itemDefs = new Map<string, ChecklistItem>()
@@ -557,6 +569,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 			context: contextView,
 			targetLayer,
 			migratedFrom,
+			contentHash,
 			phase: 'draft',
 			completedAt: undefined,
 
@@ -710,7 +723,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 			toJSON(): RuntimeChecklistJSON<C> {
 				return {
 					phase: 'draft',
-					checklist: origin?.stored ?? checklistDef,
+					checklist: deepClone(storedChecklist()),
 					items: getAllItems() as Record<string, boolean | string>,
 					context: structuredClone(context),
 					targetLayer,
@@ -742,6 +755,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 		context: contextView,
 		targetLayer,
 		migratedFrom,
+		contentHash,
 		phase: 'completed',
 		completedAt,
 
@@ -770,7 +784,7 @@ function createRuntimeChecklist<C extends Checklist>(config: RuntimeChecklistCon
 		toJSON(): RuntimeChecklistJSON<C> {
 			return {
 				phase: 'completed',
-				checklist: origin?.stored ?? checklistDef,
+				checklist: deepClone(storedChecklist()),
 				items: getAllItems() as Record<string, boolean | string>,
 				context: structuredClone(context),
 				targetLayer,
@@ -837,11 +851,14 @@ function createChecklistInstance<C extends Checklist>(
 	options?: ArtifactInstanceOptions,
 	origin?: DefinitionOrigin<C>,
 ): ChecklistInstance<C> {
-	const artifactMethods = withArtifactMethods(checklistDef, origin?.migratedFrom)
+	const artifactMethods = withArtifactMethods(checklistDef, origin)
 	const resolver = options?.resolver
 
 	const instance: ChecklistInstance<C> = {
 		...artifactMethods,
+		get migratedFrom() {
+			return migratedFromOf(origin, checklistDef)
+		},
 
 		// Checklist-specific properties (type assertions needed for conditional types)
 		items: checklistDef.items as ChecklistInstance<C>['items'],
@@ -874,7 +891,7 @@ function createChecklistInstance<C extends Checklist>(
 
 				return createRuntimeChecklist({
 					checklist: snapshot,
-					origin,
+					origin: originFor(origin, snapshot),
 					items,
 					targetLayer,
 					context,
@@ -906,7 +923,8 @@ function createChecklistInstance<C extends Checklist>(
 		},
 
 		clone(): ChecklistInstance<C> {
-			return createChecklistInstance(structuredClone(checklistDef), options, origin)
+			const current = originFor(origin, checklistDef)
+			return createChecklistInstance(structuredClone(checklistDef), options, current)
 		},
 	}
 

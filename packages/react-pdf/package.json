@@ -42,7 +42,7 @@
     "url": "https://github.com/asterdoc/asterdoc/issues"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "publishConfig": {
     "access": "public"

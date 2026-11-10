@@ -115,7 +115,8 @@ What it checks, unless `--schema-only`:
 | PDF `bindings` keys are PDF field names in the file | error |
 | Template expressions in text and DOCX layers | error |
 | Checksum matches the file | error: `` Checksum mismatch. Run `asterdoc fix` to update. `` |
-| Checksum is set | warning: `` No checksum set. Run `asterdoc fix` to add one. `` |
+| Layer file or font has a checksum | warning: `` No checksum set, so render and seal cannot verify the file and the content hash does not cover it. Run `asterdoc fix` to add one. `` |
+| Other file references have a checksum | warning: `` No checksum set. Run `asterdoc fix` to add one. `` |
 | Bound values fit PDF text fields | warning |
 
 <!-- dep:C7 -->

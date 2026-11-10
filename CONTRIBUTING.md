@@ -15,8 +15,8 @@ We are committed to providing a welcoming and inclusive environment for all cont
 
 ### Prerequisites
 
-- Node.js >= 18
-- pnpm 9.15.0 or later
+- Node.js 24.14 or later (the CLI needs it; the published packages run on Node 20 or later, the AI integration packages on Node 22 or later)
+- pnpm 10.5.2 or later
 
 ### Development Setup
 

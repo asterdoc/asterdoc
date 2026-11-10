@@ -71,6 +71,22 @@ export function selectSealRenderer(
 }
 
 /**
+ * What a seal draws the layer with besides its own bytes: a renderer the
+ * caller supplied (the `renderer` override or a `renderers` entry), and the
+ * adapter that converts a layer that is neither a PDF nor drawn to one by its
+ * registered renderer. Either brings fonts the content hash cannot cover.
+ */
+export function sealDrawing(
+	layerSpec: Layer,
+	options: { renderer?: unknown; renderers?: RendererRegistry },
+): { renderer: boolean; adapter: boolean } {
+	return {
+		renderer: options.renderer !== undefined || findRegisteredRenderer(options.renderers, layerSpec.mimeType) !== undefined,
+		adapter: layerSpec.mimeType !== 'application/pdf' && selectSealRenderer(layerSpec, options.renderers) === undefined,
+	}
+}
+
+/**
  * The markers a renderer needs to draw, one per flow slot.
  *
  * Keyed by slot id, because a slot is the thing being placed: one party can

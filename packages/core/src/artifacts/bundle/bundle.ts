@@ -29,7 +29,9 @@ import type {
 	RegistryBundleItem,
 } from '@asterdoc/types'
 import { parseArtifactCoordinate, type SchemaVersion } from '@asterdoc/schemas'
-import { restoreDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import { migratedFromOf, originFor, restoreDefinition, storedDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
+import { contentHashOf } from '@/integrity/seal-integrity'
+import { deepClone } from '@/utils/clone'
 import type { SchemaReadOptions } from '@/migration/upgrade'
 import {
 	readBundle,
@@ -39,6 +41,7 @@ import {
 import { toYAML } from '@/serialization/serialization'
 import {
 	assertValidArtifactDefinition,
+	freezeRuntimeDefinition,
 	snapshotArtifactDefinition,
 	withArtifactMethods,
 	type ArtifactMethods,
@@ -191,6 +194,12 @@ interface RuntimeBundleBase<B extends Bundle> {
 	 * in memory. `toJSON()` writes the definition as stored, so a restore keeps it.
 	 */
 	readonly migratedFrom: SchemaVersion | undefined
+
+	/**
+	 * The `sha256:` digest of the RFC 8785 canonical JSON of the definition as
+	 * stored, at the schema version it declares; the one `toJSON()` writes.
+	 */
+	contentHash(): Promise<string>
 
 	/** The clock captured when the bundle was prepared, which inclusion reads. */
 	readonly context: RuntimeContext
@@ -396,7 +405,8 @@ interface RuntimeBundleConfig<B extends Bundle> {
 function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): RuntimeBundle<B> {
 	const { bundle: bundleDef, contents: contentValues, phase, context, origin, executedAt } = config
 	assertValidArtifactDefinition(bundleDef)
-	const storedBundle = origin?.stored ?? bundleDef
+	freezeRuntimeDefinition(bundleDef)
+	const storedBundle = (): B => storedDefinition(origin, bundleDef)
 
 	// Build content keys set from bundle definition
 	const bundleContentKeys = new Set(bundleDef.contents.map((c) => c.key))
@@ -470,6 +480,9 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 		bundle: bundleDef,
 		context,
 		migratedFrom: origin?.migratedFrom,
+		contentHash(): Promise<string> {
+			return contentHashOf(storedBundle())
+		},
 		executedAt,
 
 		// Convenience getters
@@ -667,7 +680,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 			if (phase === 'draft') {
 				return {
 					phase: 'draft',
-					bundle: storedBundle,
+					bundle: deepClone(storedBundle()),
 					context,
 					contents: serializedContents,
 				}
@@ -676,7 +689,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 			if (phase === 'signable') {
 				return {
 					phase: 'signable',
-					bundle: storedBundle,
+					bundle: deepClone(storedBundle()),
 					context,
 					contents: serializedContents,
 				}
@@ -684,7 +697,7 @@ function createRuntimeBundle<B extends Bundle>(config: RuntimeBundleConfig<B>): 
 
 			return {
 				phase: 'executed',
-				bundle: storedBundle,
+				bundle: deepClone(storedBundle()),
 				context,
 				contents: serializedContents,
 				executedAt: executedAt!,
@@ -959,10 +972,13 @@ export function runtimeBundleFromJSON<B extends Bundle>(
  * Creates a BundleInstance object (replaces BundleInstance class)
  */
 function createBundleInstance<B extends Bundle>(bundleDef: B, origin?: DefinitionOrigin<B>): BundleInstance<B> {
-	const artifactMethods = withArtifactMethods(bundleDef, origin?.migratedFrom)
+	const artifactMethods = withArtifactMethods(bundleDef, origin)
 
 	const instance: BundleInstance<B> = {
 		...artifactMethods,
+		get migratedFrom() {
+			return migratedFromOf(origin, bundleDef)
+		},
 
 		// Bundle-specific properties (type assertions needed for conditional types)
 		defs: bundleDef.defs as BundleInstance<B>['defs'],
@@ -975,9 +991,10 @@ function createBundleInstance<B extends Bundle>(bundleDef: B, origin?: Definitio
 
 		prepare(contents: RuntimeBundleContents = {}, options?: RuntimeCreationOptions): DraftBundle<B> {
 			assertValidArtifactDefinition(bundleDef)
+			const snapshot = snapshotArtifactDefinition(bundleDef)
 			const empty = createRuntimeBundle({
-				bundle: snapshotArtifactDefinition(bundleDef),
-				origin,
+				bundle: snapshot,
+				origin: originFor(origin, snapshot),
 				contents: {},
 				phase: 'draft',
 				context: captureRuntimeContext(options),
@@ -987,7 +1004,8 @@ function createBundleInstance<B extends Bundle>(bundleDef: B, origin?: Definitio
 		},
 
 		clone(): BundleInstance<B> {
-			return createBundleInstance(structuredClone(bundleDef), origin)
+			const current = originFor(origin, bundleDef)
+			return createBundleInstance(structuredClone(bundleDef), current)
 		},
 	}
 

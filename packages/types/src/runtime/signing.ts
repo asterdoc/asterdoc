@@ -122,6 +122,44 @@ export interface SealingResult {
 	canonicalPdfBytes?: Uint8Array
 }
 
+/**
+ * Content whose bytes a seal's content hash does not cover.
+ *
+ * - `layer`: a file layer with no `checksum`, or a React layer, whose module
+ *   core never reads.
+ * - `font`: a layer font with no `checksum`.
+ * - `render-font`: the layer was drawn by a renderer or converted by an
+ *   adapter supplied at render time, which brings its own fonts.
+ * - `annex`: a packet part supplied as bytes, which no definition declares;
+ *   only the packet's `packetHash` and the part's own `digest` cover it.
+ *
+ * `part` names the bundle part the content belongs to, in a packet's record.
+ */
+export type UncoveredContent =
+	| { kind: 'layer'; layer: string; path: string; part?: string }
+	| { kind: 'font'; layer: string; path: string; part?: string }
+	| { kind: 'render-font'; layer: string; via: 'renderer' | 'adapter'; part?: string }
+	| { kind: 'annex'; part: string }
+
+/**
+ * What a seal records about the definition it sealed.
+ *
+ * `contentHash` is the RFC 8785 canonical hash of the definition as stored,
+ * at the schema version it declares. `sdkVersion` and `migratedFrom` sit
+ * beside it and are not hashed, so an unchanged artifact keeps its hash
+ * across SDK releases.
+ */
+export interface SealIntegrity {
+	/** `sha256:` digest of the stored definition's RFC 8785 canonical JSON. */
+	contentHash: string
+	/** The `@asterdoc/core` version that sealed. */
+	sdkVersion: string
+	/** The schema version the stored definition declared, when it was upgraded in memory to seal. */
+	migratedFrom?: string
+	/** What the hash does not cover; empty when it covers everything. */
+	uncovered: UncoveredContent[]
+}
+
 /** A rendered native layer supplied to a non-PDF sealing adapter. */
 export interface SealAdapterDocument {
 	content: string | Uint8Array
