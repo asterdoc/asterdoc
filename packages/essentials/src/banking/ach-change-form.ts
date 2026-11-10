@@ -1,14 +1,14 @@
-// Generated from Asterdoc's forms library (Fab release 85ffeaf1-9fb2-42bf-85d3-62b261508d40). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release ad959d26-5859-4ab8-9d91-8a82c7dde79b). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
 import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "ach-change-form",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "ACH Change Form",
   "description": "Standalone form by which an account holder requests a change to an existing ACH arrangement (direct deposit, ACH credit, or ACH debit) already authorized with an originator. Captures change type, identification of the existing arrangement, new account or amount/frequency information, and an effective date. Governed by NACHA Operating Rules and the legal framework of the underlying authorization.",
   "code": "ACH-CHANGE",
@@ -197,7 +197,8 @@ const schema = {
       "minLength": 4,
       "maxLength": 17,
       "required": "fields.changeType == 'update_account_info' or fields.changeType == 'add_secondary_account'",
-      "visible": "fields.changeType == 'update_account_info' or fields.changeType == 'add_secondary_account'"
+      "visible": "fields.changeType == 'update_account_info' or fields.changeType == 'add_secondary_account'",
+      "sensitive": true
     },
     "newAccountType": {
       "type": "enum",
@@ -283,6 +284,15 @@ const schema = {
       "order": 0,
       "required": "fields.changeType == 'update_account_info' or fields.changeType == 'add_secondary_account'",
       "visible": "fields.changeType == 'update_account_info' or fields.changeType == 'add_secondary_account'"
+    }
+  },
+  "rules": {
+    "newRoutingNumberChecksum": {
+      "expr": "newRoutingNumber == null or (length(newRoutingNumber) == 9 and weightedMod(newRoutingNumber, [3, 7, 1], 10) == 0)",
+      "message": "New routing number must pass the ABA routing number checksum.",
+      "paths": [
+        "fields.newRoutingNumber"
+      ]
     }
   },
   "layers": {
@@ -406,7 +416,68 @@ const schema = {
       "checksum": "sha256:56d3fcb8aa305125e74b013999ce8f24221ede48372c990977757f51ba5bdd13"
     }
   },
-  "defaultLayer": "pdf"
+  "defaultLayer": "pdf",
+  "tests": [
+    {
+      "name": "account update to routing number 011000015 is valid",
+      "input": {
+        "parties": {
+          "originator": {
+            "id": "originator-0",
+            "name": "Example Lender LLC",
+            "entityType": "llc"
+          },
+          "accountHolder": {
+            "id": "accountHolder-0",
+            "name": "Jane Doe",
+            "firstName": "Jane",
+            "lastName": "Doe"
+          }
+        },
+        "fields": {
+          "accountHolderType": "individual",
+          "accountHolderAddress": {
+            "line1": "5 Main St",
+            "locality": "Boston",
+            "region": "MA",
+            "postalCode": "02101",
+            "country": "US"
+          },
+          "oldAccountLast4": "1111",
+          "changeType": "update_account_info",
+          "newBankName": "Example Bank",
+          "newRoutingNumber": "011000015",
+          "newAccountNumber": "000123456789",
+          "newAccountType": "checking",
+          "effectiveDate": "2026-12-01"
+        },
+        "annexes": {
+          "voidedCheck": {
+            "name": "voided-check.pdf",
+            "mimeType": "application/pdf"
+          }
+        }
+      },
+      "expect": {
+        "valid": true,
+        "failures": []
+      }
+    },
+    {
+      "name": "routing number 123456789 in newRoutingNumber fails the ABA checksum",
+      "input": {
+        "fields": {
+          "newRoutingNumber": "123456789"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "newRoutingNumberChecksum"
+        ]
+      }
+    }
+  ]
 } as const;
 
 const __c_ach_change_form_instructions_md: string = `---

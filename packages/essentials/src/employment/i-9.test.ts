@@ -59,6 +59,12 @@ describe("i-9", () => {
     expect(result.success).toBe(true);
   });
 
+  it("passes its own test cases", () => {
+    const report = i9.runTests();
+    expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
+    expect(report.results).toHaveLength(1);
+  });
+
   it("renders the markdown layer on the bound resolver", async () => {
     const result = i9.safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");

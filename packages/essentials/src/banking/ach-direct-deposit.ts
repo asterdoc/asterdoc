@@ -1,14 +1,14 @@
-// Generated from Asterdoc's forms library (Fab release 9e4c3ddc-3390-4ceb-a443-be167cf7dc19). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release 6f90bd72-bd4d-47f7-8408-58b73dacc605). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
 import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "ach-direct-deposit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "ACH Direct Deposit Authorization",
   "description": "Authorization by which an employee authorizes their employer (directly or through a payroll service provider) to deposit net pay—in whole or split across up to four deposit accounts—via ACH credit entries to the named depository institution(s). Governed by NACHA Operating Rules and (for non-exempt employee protections) FLSA and state wage law.",
   "code": "ACH-DD-AUTH",
@@ -88,7 +88,8 @@ const schema = {
       "description": "Employee's nine-digit U.S. Social Security Number, formatted XXX-XX-XXXX (hyphens optional). Used by payroll to confirm identity against the employee's tax record.",
       "pattern": "^\\d{3}-?\\d{2}-?\\d{4}$",
       "required": false,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "employeeAddress": {
       "type": "address",
@@ -156,7 +157,8 @@ const schema = {
       "maxLength": 17,
       "pattern": "^[A-Za-z0-9]+$",
       "required": true,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "account1AccountType": {
       "type": "enum",
@@ -252,7 +254,8 @@ const schema = {
       "maxLength": 17,
       "pattern": "^[A-Za-z0-9]+$",
       "required": "fields.account2Enabled",
-      "visible": "fields.account2Enabled"
+      "visible": "fields.account2Enabled",
+      "sensitive": true
     },
     "account2AccountType": {
       "type": "enum",
@@ -348,7 +351,8 @@ const schema = {
       "maxLength": 17,
       "pattern": "^[A-Za-z0-9]+$",
       "required": "fields.account3Enabled",
-      "visible": "fields.account3Enabled"
+      "visible": "fields.account3Enabled",
+      "sensitive": true
     },
     "account3AccountType": {
       "type": "enum",
@@ -444,7 +448,8 @@ const schema = {
       "maxLength": 17,
       "pattern": "^[A-Za-z0-9]+$",
       "required": "fields.account4Enabled",
-      "visible": "fields.account4Enabled"
+      "visible": "fields.account4Enabled",
+      "sensitive": true
     },
     "account4AccountType": {
       "type": "enum",
@@ -530,6 +535,34 @@ const schema = {
       "expr": "not account4Enabled or account3Enabled",
       "message": "Enable account 3 before adding account 4.",
       "severity": "error"
+    },
+    "account1RoutingNumberChecksum": {
+      "expr": "account1RoutingNumber == null or (length(account1RoutingNumber) == 9 and weightedMod(account1RoutingNumber, [3, 7, 1], 10) == 0)",
+      "message": "Account 1 routing number must pass the ABA routing number checksum.",
+      "paths": [
+        "fields.account1RoutingNumber"
+      ]
+    },
+    "account2RoutingNumberChecksum": {
+      "expr": "account2RoutingNumber == null or (length(account2RoutingNumber) == 9 and weightedMod(account2RoutingNumber, [3, 7, 1], 10) == 0)",
+      "message": "Account 2 routing number must pass the ABA routing number checksum.",
+      "paths": [
+        "fields.account2RoutingNumber"
+      ]
+    },
+    "account3RoutingNumberChecksum": {
+      "expr": "account3RoutingNumber == null or (length(account3RoutingNumber) == 9 and weightedMod(account3RoutingNumber, [3, 7, 1], 10) == 0)",
+      "message": "Account 3 routing number must pass the ABA routing number checksum.",
+      "paths": [
+        "fields.account3RoutingNumber"
+      ]
+    },
+    "account4RoutingNumberChecksum": {
+      "expr": "account4RoutingNumber == null or (length(account4RoutingNumber) == 9 and weightedMod(account4RoutingNumber, [3, 7, 1], 10) == 0)",
+      "message": "Account 4 routing number must pass the ABA routing number checksum.",
+      "paths": [
+        "fields.account4RoutingNumber"
+      ]
     }
   },
   "layers": {
@@ -664,7 +697,112 @@ const schema = {
       "checksum": "sha256:517219b030c5c3587688307ac10ca49ee996efbc6a8d293a7960b301f23caa0f"
     }
   },
-  "defaultLayer": "pdf"
+  "defaultLayer": "pdf",
+  "tests": [
+    {
+      "name": "new single-account deposit to routing number 011000015 is valid",
+      "input": {
+        "parties": {
+          "employer": {
+            "id": "employer-0",
+            "name": "Example Employer LLC",
+            "legalName": "Example Employer LLC"
+          },
+          "employee": {
+            "id": "employee-0",
+            "name": "Jane Doe",
+            "firstName": "Jane",
+            "lastName": "Doe"
+          }
+        },
+        "fields": {
+          "employeeAddress": {
+            "line1": "5 Main St",
+            "locality": "Boston",
+            "region": "MA",
+            "postalCode": "02101",
+            "country": "US"
+          },
+          "actionType": "new",
+          "account1BankName": "Example Bank",
+          "account1RoutingNumber": "011000015",
+          "account1AccountNumber": "000123456789",
+          "account1AccountType": "checking",
+          "account1AllotmentType": "net_remainder"
+        }
+      },
+      "expect": {
+        "valid": true,
+        "failures": []
+      }
+    },
+    {
+      "name": "routing number 123456789 in account1RoutingNumber fails the ABA checksum",
+      "input": {
+        "fields": {
+          "account1AllotmentType": "net_remainder",
+          "account1RoutingNumber": "123456789"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "account1RoutingNumberChecksum"
+        ]
+      }
+    },
+    {
+      "name": "routing number 123456789 in account2RoutingNumber fails the ABA checksum",
+      "input": {
+        "fields": {
+          "account1AllotmentType": "net_remainder",
+          "account2Enabled": true,
+          "account2RoutingNumber": "123456789"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "account2RoutingNumberChecksum"
+        ]
+      }
+    },
+    {
+      "name": "routing number 123456789 in account3RoutingNumber fails the ABA checksum",
+      "input": {
+        "fields": {
+          "account1AllotmentType": "net_remainder",
+          "account2Enabled": true,
+          "account3Enabled": true,
+          "account3RoutingNumber": "123456789"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "account3RoutingNumberChecksum"
+        ]
+      }
+    },
+    {
+      "name": "routing number 123456789 in account4RoutingNumber fails the ABA checksum",
+      "input": {
+        "fields": {
+          "account1AllotmentType": "net_remainder",
+          "account2Enabled": true,
+          "account3Enabled": true,
+          "account4Enabled": true,
+          "account4RoutingNumber": "123456789"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "account4RoutingNumberChecksum"
+        ]
+      }
+    }
+  ]
 } as const;
 
 const __c_ach_direct_deposit_instructions_md: string = `---

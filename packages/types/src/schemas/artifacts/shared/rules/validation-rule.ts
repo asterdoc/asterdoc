@@ -28,7 +28,7 @@ export interface ValidationRule {
    * field. Without paths the failure is form level; paths are never inferred
    * from the expression.
    */
-  paths?: string[];
+  paths?: readonly string[];
 }
 
 /**

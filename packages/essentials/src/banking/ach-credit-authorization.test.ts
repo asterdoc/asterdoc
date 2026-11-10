@@ -39,7 +39,7 @@ const happyPathInputs = {
     "payeeEmail": "test@example.com",
     "payeeBankName": "x",
     "accountType": "checking",
-    "payeeRoutingNumber": "111111111",
+    "payeeRoutingNumber": "011000015",
     "payeeAccountNumber": "xxxx",
     "paymentMode": "one_time",
     "amount": {
@@ -74,6 +74,12 @@ describe("ach-credit-authorization", () => {
   it("accepts the bundled passing vector (synth.required.payeephone.present-payeetype-organization)", () => {
     const result = achCreditAuthorization.safeFill(happyPathInputs as any);
     expect(result.success).toBe(true);
+  });
+
+  it("passes its own test cases", () => {
+    const report = achCreditAuthorization.runTests();
+    expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
+    expect(report.results).toHaveLength(2);
   });
 
   it("renders the markdown layer on the bound resolver", async () => {

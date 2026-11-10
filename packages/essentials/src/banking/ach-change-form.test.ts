@@ -34,7 +34,7 @@ const happyPathInputs = {
     "changeType": "update_account_info",
     "changeOtherDescription": "x",
     "newBankName": "x",
-    "newRoutingNumber": "111111111",
+    "newRoutingNumber": "011000015",
     "newAccountNumber": "xxxx",
     "newAccountType": "checking",
     "newAmount": {
@@ -54,6 +54,12 @@ describe("ach-change-form", () => {
   it("accepts the bundled passing vector (synth.required.accountholderphone.present-accountholdertype-organization)", () => {
     const result = achChangeForm.safeFill(happyPathInputs as any);
     expect(result.success).toBe(true);
+  });
+
+  it("passes its own test cases", () => {
+    const report = achChangeForm.runTests();
+    expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
+    expect(report.results).toHaveLength(2);
   });
 
   it("renders the markdown layer on the bound resolver", async () => {

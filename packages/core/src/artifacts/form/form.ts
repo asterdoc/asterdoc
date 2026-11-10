@@ -3235,7 +3235,7 @@ export interface FormBuilderInterface<
 	/** Set the form-level validation rules, keyed by rule id */
 	rules(value: RulesSection): FormBuilderInterface<TFields, TParties, TAnnexes, TAllowAdditionalAnnexes>
 	/** Set the form's test cases, which `runTests()` and `asterdoc validate` run. Use synthetic values only. */
-	tests(value: FormTestCase[]): FormBuilderInterface<TFields, TParties, TAnnexes, TAllowAdditionalAnnexes>
+	tests(value: readonly FormTestCase[]): FormBuilderInterface<TFields, TParties, TAnnexes, TAllowAdditionalAnnexes>
 	field<const K extends string, const D extends Buildable<FormField>>(
 		id: K,
 		fieldDef: D,
@@ -3459,7 +3459,7 @@ function createFormBuilder<
 			return builder
 		},
 
-		tests(value: FormTestCase[]) {
+		tests(value: readonly FormTestCase[]) {
 			_def.tests = value
 			return builder
 		},

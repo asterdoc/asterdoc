@@ -1,14 +1,14 @@
-// Generated from Asterdoc's forms library (Fab release a53ef863-f03c-4397-8a17-69d08bf680b2). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release 4415957b-4921-4645-b0f2-79c484d41fbf). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
 import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "w-9",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "Request for Taxpayer Identification Number and Certification",
   "description": "A U.S. person gives this form to a requester to certify their legal name, federal tax classification, and Taxpayer Identification Number (SSN or EIN). The completed form is retained by the requester for information-return reporting and is not sent to the IRS.",
   "code": "W-9",
@@ -275,7 +275,8 @@ const schema = {
       "description": "Line 7: optional list of account numbers used by the requester to associate this W-9 with one or more accounts. Free-form to accommodate multiple numbers separated by commas or newlines.",
       "maxLength": 180,
       "required": false,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "ssn": {
       "type": "text",
@@ -283,7 +284,8 @@ const schema = {
       "description": "Part I option 1: the taxpayer's nine-digit U.S. Social Security Number, formatted XXX-XX-XXXX. Use this for individuals and most sole proprietors. Exactly one of ssn or ein must be provided.",
       "pattern": "^\\d{3}-\\d{2}-\\d{4}$",
       "required": false,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "ein": {
       "type": "text",
@@ -291,7 +293,8 @@ const schema = {
       "description": "Part I option 2: the taxpayer's nine-digit Employer Identification Number, formatted XX-XXXXXXX. Required for entities (corporations, partnerships, trusts/estates, LLCs that are not disregarded). Exactly one of ssn or ein must be provided.",
       "pattern": "^\\d{2}-\\d{7}$",
       "required": false,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "treatyExemption": {
       "type": "boolean",
@@ -311,12 +314,19 @@ const schema = {
     "entityMustUseEin": {
       "expr": "not isEntity or (ein and not ssn)",
       "message": "Entities (corporation, partnership, trust/estate, LLC) must provide an EIN, not an SSN.",
-      "severity": "error"
+      "severity": "error",
+      "paths": [
+        "fields.ein"
+      ]
     },
     "nonEntityNeedsOneTin": {
       "expr": "isEntity or (ssn and not ein) or (ein and not ssn)",
       "message": "Individuals and 'other' filers must provide exactly one of SSN or EIN.",
-      "severity": "error"
+      "severity": "error",
+      "paths": [
+        "fields.ssn",
+        "fields.ein"
+      ]
     }
   },
   "annexes": {
@@ -401,7 +411,66 @@ const schema = {
       }
     }
   },
-  "defaultLayer": "pdf"
+  "defaultLayer": "pdf",
+  "tests": [
+    {
+      "name": "individual with an SSN is valid",
+      "input": {
+        "parties": {
+          "taxpayer": {
+            "id": "taxpayer-0",
+            "name": "Jane Q. Public",
+            "firstName": "Jane",
+            "lastName": "Public",
+            "middleName": "Q."
+          }
+        },
+        "fields": {
+          "taxClassification": "individual_or_sole_proprietor",
+          "ssn": "123-45-6789",
+          "mailingAddress": {
+            "line1": "1 Main St",
+            "locality": "Springfield",
+            "region": "IL",
+            "postalCode": "62704",
+            "country": "US"
+          }
+        }
+      },
+      "expect": {
+        "valid": true,
+        "failures": []
+      }
+    },
+    {
+      "name": "C corporation without an EIN fails entityMustUseEin",
+      "input": {
+        "fields": {
+          "taxClassification": "c_corporation"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "entityMustUseEin"
+        ]
+      }
+    },
+    {
+      "name": "individual with neither SSN nor EIN fails nonEntityNeedsOneTin",
+      "input": {
+        "fields": {
+          "taxClassification": "individual_or_sole_proprietor"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "nonEntityNeedsOneTin"
+        ]
+      }
+    }
+  ]
 } as const;
 
 const __c_w_9_instructions_md: string = `---

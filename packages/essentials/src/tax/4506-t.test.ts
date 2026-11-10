@@ -48,6 +48,12 @@ describe("4506-t", () => {
     expect(result.success).toBe(true);
   });
 
+  it("passes its own test cases", () => {
+    const report = f4506T.runTests();
+    expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
+    expect(report.results).toHaveLength(2);
+  });
+
   it("renders the markdown layer on the bound resolver", async () => {
     const result = f4506T.safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");

@@ -43,6 +43,7 @@ import type {
 	FormAnnex,
 	FormField,
 	FormParty,
+	FormTestCase,
 	Identification,
 	Layer,
 	ListField,
@@ -80,6 +81,7 @@ import {
 	FormAnnexSchema,
 	FormPartySchema,
 	FormSchema,
+	FormTestCaseSchema,
 	IdentificationSchema,
 	LayerSchema,
 	MetadataSchema,
@@ -113,13 +115,22 @@ type Flat<T> = T extends unknown ? { [K in keyof T]: T[K] } : never
 
 /**
  * The option and allowed-type arrays on `EnumField`, `MultiselectField` and
- * `IdentificationField` are `readonly` on purpose, so an `as const` artifact
- * type-checks as a `Form`. The schema outputs mutable arrays. `readonly`
- * limits writes, not the data's shape, so these fields are compared with
- * their top-level arrays made mutable; every other difference still fails.
+ * `IdentificationField`, a rule's `paths`, and a form's `tests` with their
+ * `failures` are `readonly` on purpose, so an `as const` artifact type-checks
+ * as a `Form`. The schema outputs mutable arrays. `readonly` limits writes,
+ * not the data's shape, so these are compared with their arrays made
+ * mutable (at the top level, or at every depth for shapes that contain them);
+ * every other difference still fails.
  */
 type WritableArray<V> = V extends readonly (infer U)[] ? U[] : V
 type WritableArrays<T> = T extends unknown ? { [K in keyof T]: WritableArray<T[K]> } : never
+type DeepWritableArrays<T> = T extends readonly unknown[]
+	? number extends T['length']
+		? DeepWritableArrays<T[number]>[]
+		: { -readonly [K in keyof T]: DeepWritableArrays<T[K]> }
+	: T extends object
+		? { [K in keyof T]: DeepWritableArrays<T[K]> }
+		: T
 
 describe('primitives equal their schema output', () => {
 	it('Money, Address, Phone', () => {
@@ -156,19 +167,19 @@ describe('primitives equal their schema output', () => {
 describe('artifacts equal their schema output', () => {
 	it('ArtifactBase, Form, Document, Checklist', () => {
 		expectTypeOf<ArtifactBase>().toEqualTypeOf<Out<typeof ArtifactSchema>>()
-		expectTypeOf<Form>().toEqualTypeOf<Out<typeof FormSchema>>()
+		expectTypeOf<DeepWritableArrays<Form>>().toEqualTypeOf<DeepWritableArrays<Out<typeof FormSchema>>>()
 		expectTypeOf<Document>().toEqualTypeOf<Out<typeof DocumentSchema>>()
 		expectTypeOf<Checklist>().toEqualTypeOf<Out<typeof ChecklistSchema>>()
 	})
 
 	it('Bundle, through its unannotated object schema', () => {
-		expectTypeOf<Bundle>().toEqualTypeOf<Out<typeof BundleObjectSchema>>()
-		expectTypeOf<BundleContentItem>().toEqualTypeOf<Out<typeof BundleContentItemSchema>>()
+		expectTypeOf<DeepWritableArrays<Bundle>>().toEqualTypeOf<DeepWritableArrays<Out<typeof BundleObjectSchema>>>()
+		expectTypeOf<DeepWritableArrays<BundleContentItem>>().toEqualTypeOf<DeepWritableArrays<Out<typeof BundleContentItemSchema>>>()
 	})
 
 	it('the inline bundle item accepts exactly the four artifact kinds', () => {
 		type InlineArtifact = Extract<Out<typeof BundleContentItemSchema>, { type: 'inline' }>['artifact']
-		expectTypeOf<InlineArtifact>().toEqualTypeOf<Artifact>()
+		expectTypeOf<DeepWritableArrays<InlineArtifact>>().toEqualTypeOf<DeepWritableArrays<Artifact>>()
 	})
 
 	it('ChecklistItem', () => {
@@ -212,10 +223,11 @@ describe('shared blocks equal their schema output', () => {
 		expectTypeOf<ExpressionType>().toEqualTypeOf<(typeof ALL_EXPRESSION_TYPES)[number]>()
 	})
 
-	it('ValidationRule, RuleSeverity, RulesSection', () => {
-		expectTypeOf<ValidationRule>().toEqualTypeOf<Out<typeof ValidationRuleSchema>>()
+	it('ValidationRule, RuleSeverity, RulesSection, FormTestCase', () => {
+		expectTypeOf<WritableArrays<ValidationRule>>().toEqualTypeOf<Out<typeof ValidationRuleSchema>>()
 		expectTypeOf<RuleSeverity>().toEqualTypeOf<Out<typeof RuleSeveritySchema>>()
-		expectTypeOf<RulesSection>().toEqualTypeOf<Out<typeof RulesSectionSchema>>()
+		expectTypeOf<DeepWritableArrays<RulesSection>>().toEqualTypeOf<Out<typeof RulesSectionSchema>>()
+		expectTypeOf<DeepWritableArrays<FormTestCase>>().toEqualTypeOf<Out<typeof FormTestCaseSchema>>()
 	})
 })
 

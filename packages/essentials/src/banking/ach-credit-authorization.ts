@@ -1,14 +1,14 @@
-// Generated from Asterdoc's forms library (Fab release e2800547-98fb-4237-a584-e10a1b378fea). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release 1da377cf-c0e5-4dd6-89d9-4347b9a1380a). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
 import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "ach-credit-authorization",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "ACH Credit Authorization",
   "description": "Authorization by which a payee (consumer or organization) authorizes a named originator to initiate ACH credit entries to a deposit account at a named financial institution. Supports one-time and recurring credits, fixed or variable amounts, and optional B2B remittance / addenda fields. Used for vendor / accounts-payable, refunds, dividends, insurance claim payouts, government benefits, and royalty disbursements; governed by NACHA Operating Rules.",
   "code": "ACH-CREDIT-AUTH",
@@ -145,7 +145,8 @@ const schema = {
       "maxLength": 17,
       "pattern": "^[A-Za-z0-9]+$",
       "required": true,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "nameOnAccount": {
       "type": "text",
@@ -529,6 +530,13 @@ const schema = {
       "expr": "not (paymentMode == 'recurring' and frequency == 'semi_monthly') or not (semiMonthlyDay1 and semiMonthlyDay2) or semiMonthlyDay1 != semiMonthlyDay2",
       "message": "The two semi-monthly credit days must differ.",
       "severity": "error"
+    },
+    "payeeRoutingNumberChecksum": {
+      "expr": "payeeRoutingNumber == null or (length(payeeRoutingNumber) == 9 and weightedMod(payeeRoutingNumber, [3, 7, 1], 10) == 0)",
+      "message": "Payee routing number must pass the ABA routing number checksum.",
+      "paths": [
+        "fields.payeeRoutingNumber"
+      ]
     }
   },
   "layers": {
@@ -660,7 +668,72 @@ const schema = {
       }
     }
   },
-  "defaultLayer": "pdf"
+  "defaultLayer": "pdf",
+  "tests": [
+    {
+      "name": "one-time credit to routing number 011000015 is valid",
+      "input": {
+        "parties": {
+          "originator": {
+            "id": "originator-0",
+            "name": "Example Payer LLC",
+            "legalName": "Example Payer LLC"
+          },
+          "payee": {
+            "id": "payee-0",
+            "name": "Jane Doe",
+            "firstName": "Jane",
+            "lastName": "Doe"
+          }
+        },
+        "fields": {
+          "originatorAddress": {
+            "line1": "1 Example Way",
+            "locality": "New York",
+            "region": "NY",
+            "postalCode": "10001",
+            "country": "US"
+          },
+          "payeeType": "individual",
+          "payeeAddress": {
+            "line1": "5 Main St",
+            "locality": "Boston",
+            "region": "MA",
+            "postalCode": "02101",
+            "country": "US"
+          },
+          "payeeBankName": "Example Bank",
+          "accountType": "checking",
+          "payeeRoutingNumber": "011000015",
+          "payeeAccountNumber": "000123456789",
+          "paymentMode": "one_time",
+          "amount": {
+            "amount": 250,
+            "currency": "USD"
+          },
+          "paymentDate": "2026-12-01"
+        }
+      },
+      "expect": {
+        "valid": true,
+        "failures": []
+      }
+    },
+    {
+      "name": "routing number 123456789 in payeeRoutingNumber fails the ABA checksum",
+      "input": {
+        "fields": {
+          "payeeRoutingNumber": "123456789"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "payeeRoutingNumberChecksum"
+        ]
+      }
+    }
+  ]
 } as const;
 
 const __c_ach_credit_authorization_instructions_md: string = `---

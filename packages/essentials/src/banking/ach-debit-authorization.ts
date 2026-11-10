@@ -1,14 +1,14 @@
-// Generated from Asterdoc's forms library (Fab release b97ac294-b040-47cb-abc4-37b4c9f6eb9a). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release 5eab65ae-1f75-44b8-947f-43098d8b083e). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
 import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "ach-debit-authorization",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "ACH Debit Authorization",
   "description": "Authorization by which a payer (consumer or business) authorizes a named originator to initiate ACH debit entries against a deposit account at a named financial institution. Supports one-time and recurring debits, fixed or variable amounts, and is governed by NACHA Operating Rules and (for consumers) Regulation E.",
   "code": "ACH-DEBIT-AUTH",
@@ -145,7 +145,8 @@ const schema = {
       "maxLength": 17,
       "pattern": "^[A-Za-z0-9]+$",
       "required": true,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "nameOnAccount": {
       "type": "text",
@@ -521,6 +522,13 @@ const schema = {
       "expr": "not (paymentMode == 'recurring' and frequency == 'semi_monthly') or not (semiMonthlyDay1 and semiMonthlyDay2) or semiMonthlyDay1 != semiMonthlyDay2",
       "message": "The two semi-monthly draft days must differ.",
       "severity": "error"
+    },
+    "payerRoutingNumberChecksum": {
+      "expr": "payerRoutingNumber == null or (length(payerRoutingNumber) == 9 and weightedMod(payerRoutingNumber, [3, 7, 1], 10) == 0)",
+      "message": "Payer routing number must pass the ABA routing number checksum.",
+      "paths": [
+        "fields.payerRoutingNumber"
+      ]
     }
   },
   "layers": {
@@ -651,7 +659,72 @@ const schema = {
       }
     }
   },
-  "defaultLayer": "pdf"
+  "defaultLayer": "pdf",
+  "tests": [
+    {
+      "name": "one-time debit from routing number 011000015 is valid",
+      "input": {
+        "parties": {
+          "originator": {
+            "id": "originator-0",
+            "name": "Example Lender LLC",
+            "legalName": "Example Lender LLC"
+          },
+          "payer": {
+            "id": "payer-0",
+            "name": "Jane Doe",
+            "firstName": "Jane",
+            "lastName": "Doe"
+          }
+        },
+        "fields": {
+          "originatorAddress": {
+            "line1": "1 Example Way",
+            "locality": "New York",
+            "region": "NY",
+            "postalCode": "10001",
+            "country": "US"
+          },
+          "payerType": "individual",
+          "payerAddress": {
+            "line1": "5 Main St",
+            "locality": "Boston",
+            "region": "MA",
+            "postalCode": "02101",
+            "country": "US"
+          },
+          "payerBankName": "Example Bank",
+          "accountType": "checking",
+          "payerRoutingNumber": "011000015",
+          "payerAccountNumber": "000123456789",
+          "paymentMode": "one_time",
+          "amount": {
+            "amount": 100,
+            "currency": "USD"
+          },
+          "paymentDate": "2026-12-01"
+        }
+      },
+      "expect": {
+        "valid": true,
+        "failures": []
+      }
+    },
+    {
+      "name": "routing number 123456789 in payerRoutingNumber fails the ABA checksum",
+      "input": {
+        "fields": {
+          "payerRoutingNumber": "123456789"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "payerRoutingNumberChecksum"
+        ]
+      }
+    }
+  ]
 } as const;
 
 const __c_ach_debit_authorization_instructions_md: string = `---

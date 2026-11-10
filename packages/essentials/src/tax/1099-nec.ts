@@ -1,14 +1,14 @@
-// Generated from Asterdoc's forms library (Fab release 6928a7bd-bc91-4d4f-ab6e-ffb483fcfb0a). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release 40f5854c-76be-4fd2-b59e-3fecfaf51c3e). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
 import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "1099-nec",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "Nonemployee Compensation",
   "description": "An IRS information return filed by a payer to report nonemployee compensation, excess golden parachute payments, and any federal or state tax withheld for a recipient over a calendar year. Copy A is filed with the IRS, Copy 1 with the state tax department, and Copies B and 2 are furnished to the recipient.",
   "code": "1099-NEC",
@@ -92,7 +92,8 @@ const schema = {
       "pattern": "^(\\d{3}-\\d{2}-\\d{4}|\\d{2}-\\d{7})$",
       "maxLength": 11,
       "required": true,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "recipientTin": {
       "type": "text",
@@ -101,7 +102,8 @@ const schema = {
       "pattern": "^(\\d{3}-\\d{2}-\\d{4}|\\d{2}-\\d{7})$",
       "maxLength": 11,
       "required": true,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "recipientAddress": {
       "type": "address",
@@ -116,7 +118,8 @@ const schema = {
       "description": "Optional payer-assigned identifier (vendor number, account number) used to distinguish multiple 1099-NECs the payer issues to the same recipient.",
       "maxLength": 42,
       "required": false,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "secondTinNotice": {
       "type": "boolean",
@@ -362,7 +365,63 @@ const schema = {
         "topmostSubform[0].Copy2[0].RightCol[0].Box7_ReadOrder[0].f2_17[0]": "state2Income"
       }
     }
-  }
+  },
+  "tests": [
+    {
+      "name": "nonemployee compensation to an individual recipient is valid",
+      "input": {
+        "parties": {
+          "payer": {
+            "id": "payer-0",
+            "name": "Acme Consulting LLC",
+            "legalName": "Acme Consulting LLC"
+          },
+          "recipient": {
+            "id": "recipient-0",
+            "name": "Jane R. Smith",
+            "firstName": "Jane",
+            "lastName": "Smith",
+            "middleName": "R."
+          }
+        },
+        "fields": {
+          "void": false,
+          "corrected": false,
+          "calendarYear": "2024",
+          "payerAddress": {
+            "line1": "100 Industrial Way",
+            "line2": "Suite 200",
+            "locality": "Springfield",
+            "region": "IL",
+            "postalCode": "62704",
+            "country": "US"
+          },
+          "payerPhone": {
+            "number": "+12175550142"
+          },
+          "payerTin": "12-3456789",
+          "recipientTin": "987-65-4321",
+          "recipientAddress": {
+            "line1": "42 Elm Street",
+            "locality": "Champaign",
+            "region": "IL",
+            "postalCode": "61820",
+            "country": "US"
+          },
+          "secondTinNotice": false,
+          "nonemployeeCompensation": {
+            "amount": 12500,
+            "currency": "USD"
+          },
+          "directSales5kOrMore": false
+        }
+      },
+      "expect": {
+        "valid": true,
+        "failures": []
+      }
+    }
+  ]
 } as const;
 
 const __c_1099_nec_instructions_md: string = `---

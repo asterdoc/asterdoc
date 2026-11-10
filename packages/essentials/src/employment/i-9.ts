@@ -1,14 +1,14 @@
-// Generated from Asterdoc's forms library (Fab release e8fbba02-ef4e-42d0-981f-f9228f846a24). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release 29a2bce5-f46c-48b0-a7e8-70776f567846). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
 import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "i-9",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "Employment Eligibility Verification",
   "description": "Used by U.S. employers to verify the identity and employment authorization of every new hire. Section 1 captures the employee's self-attestation of citizenship or immigration status; Section 2 captures the employer's certification that they physically examined acceptable List A or List B+C documents.",
   "code": "I-9",
@@ -96,7 +96,8 @@ const schema = {
       "description": "Employee's nine-digit U.S. Social Security Number, digits only. Optional for paper I-9s unless the employer participates in E-Verify, in which case SSN is required.",
       "required": "fields.employerEverifyEnrolled",
       "visible": true,
-      "pattern": "^\\d{9}$"
+      "pattern": "^\\d{9}$",
+      "sensitive": true
     },
     "employeeEmail": {
       "type": "email",
@@ -143,7 +144,8 @@ const schema = {
       "description": "USCIS Number or Alien Registration Number for LPRs (commonly the 9-digit number from the green card). Required when citizenshipStatus is 'lawful_permanent_resident'.",
       "maxLength": 20,
       "required": "fields.citizenshipStatus == 'lawful_permanent_resident'",
-      "visible": "fields.citizenshipStatus == 'lawful_permanent_resident'"
+      "visible": "fields.citizenshipStatus == 'lawful_permanent_resident'",
+      "sensitive": true
     },
     "workAuthExpirationDate": {
       "type": "date",
@@ -179,7 +181,8 @@ const schema = {
       "description": "USCIS or A-Number when the alien-authorized employee identifies themselves by that number. Required when workAuthDocumentType is 'uscis_a_number'.",
       "maxLength": 20,
       "required": "fields.workAuthDocumentType == 'uscis_a_number'",
-      "visible": "fields.workAuthDocumentType == 'uscis_a_number'"
+      "visible": "fields.workAuthDocumentType == 'uscis_a_number'",
+      "sensitive": true
     },
     "workAuthI94Number": {
       "type": "text",
@@ -187,7 +190,8 @@ const schema = {
       "description": "Eleven-digit Form I-94 admission number issued by U.S. Customs and Border Protection at port of entry. Required when workAuthDocumentType is 'i94_admission_number'.",
       "maxLength": 20,
       "required": "fields.workAuthDocumentType == 'i94_admission_number'",
-      "visible": "fields.workAuthDocumentType == 'i94_admission_number'"
+      "visible": "fields.workAuthDocumentType == 'i94_admission_number'",
+      "sensitive": true
     },
     "workAuthForeignPassport": {
       "type": "text",
@@ -195,7 +199,8 @@ const schema = {
       "description": "Foreign passport number plus the issuing country, captured as a single free-form string (e.g., 'A12345678, Brazil'). Required when workAuthDocumentType is 'foreign_passport'.",
       "maxLength": 60,
       "required": "fields.workAuthDocumentType == 'foreign_passport'",
-      "visible": "fields.workAuthDocumentType == 'foreign_passport'"
+      "visible": "fields.workAuthDocumentType == 'foreign_passport'",
+      "sensitive": true
     },
     "employerEverifyEnrolled": {
       "type": "boolean",
@@ -243,7 +248,8 @@ const schema = {
       "description": "Identifying number printed on the primary List A document. Optional if the document does not bear a number.",
       "maxLength": 45,
       "required": false,
-      "visible": "isListA"
+      "visible": "isListA",
+      "sensitive": true
     },
     "listADocument1ExpirationDate": {
       "type": "date",
@@ -274,7 +280,8 @@ const schema = {
       "description": "Identifying number printed on the second List A document.",
       "maxLength": 45,
       "required": false,
-      "visible": "isListA"
+      "visible": "isListA",
+      "sensitive": true
     },
     "listADocument2ExpirationDate": {
       "type": "date",
@@ -305,7 +312,8 @@ const schema = {
       "description": "Identifying number printed on the third List A document.",
       "maxLength": 45,
       "required": false,
-      "visible": "isListA"
+      "visible": "isListA",
+      "sensitive": true
     },
     "listADocument3ExpirationDate": {
       "type": "date",
@@ -336,7 +344,8 @@ const schema = {
       "description": "Identifying number on the List B document.",
       "maxLength": 45,
       "required": false,
-      "visible": "isListBandC"
+      "visible": "isListBandC",
+      "sensitive": true
     },
     "listBExpirationDate": {
       "type": "date",
@@ -367,7 +376,8 @@ const schema = {
       "description": "Identifying number on the List C document.",
       "maxLength": 45,
       "required": false,
-      "visible": "isListBandC"
+      "visible": "isListBandC",
+      "sensitive": true
     },
     "listCExpirationDate": {
       "type": "date",
@@ -493,7 +503,8 @@ const schema = {
       "description": "Document number on the reverification document.",
       "maxLength": 50,
       "required": false,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "reverification1ExpirationDate": {
       "type": "date",
@@ -570,7 +581,8 @@ const schema = {
       "description": "Document number on the second reverification document.",
       "maxLength": 50,
       "required": false,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "reverification2ExpirationDate": {
       "type": "date",
@@ -647,7 +659,8 @@ const schema = {
       "description": "Document number on the third reverification document.",
       "maxLength": 50,
       "required": false,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "reverification3ExpirationDate": {
       "type": "date",
@@ -1110,7 +1123,60 @@ const schema = {
       "checksum": "sha256:5b2100b871e12f746db1a71a6358d75cb2e4c0db41a827b019f01eebcd43f01a"
     }
   },
-  "defaultLayer": "pdf"
+  "defaultLayer": "pdf",
+  "tests": [
+    {
+      "name": "U.S. citizen verified with a List A document is valid",
+      "input": {
+        "parties": {
+          "employee": {
+            "id": "employee-0",
+            "firstName": "Jordan",
+            "middleName": "M",
+            "lastName": "Rivera",
+            "name": "Jordan Rivera"
+          },
+          "employer": {
+            "id": "employer-0",
+            "name": "Acme Manufacturing LLC",
+            "legalName": "Acme Manufacturing LLC",
+            "entityType": "llc"
+          },
+          "preparer": []
+        },
+        "fields": {
+          "employeeAddress": {
+            "line1": "123 Main St",
+            "locality": "Springfield",
+            "region": "IL",
+            "postalCode": "62704",
+            "country": "US"
+          },
+          "employeeDateOfBirth": "1990-06-15",
+          "citizenshipStatus": "us_citizen",
+          "documentRoute": "list_a",
+          "listADocument1Title": "U.S. Passport",
+          "listADocument1IssuingAuthority": "U.S. Department of State",
+          "firstDayOfEmployment": "2026-04-15",
+          "employerRepresentativeName": "Patricia Chen, HR Director",
+          "employerBusinessAddress": {
+            "line1": "500 Industrial Way",
+            "locality": "Springfield",
+            "region": "IL",
+            "postalCode": "62701",
+            "country": "US"
+          },
+          "alternativeProcedureUsed": false,
+          "employerEverifyEnrolled": false,
+          "preparerAssistanceUsed": false
+        }
+      },
+      "expect": {
+        "valid": true,
+        "failures": []
+      }
+    }
+  ]
 } as const;
 
 const __c_i_9_instructions_md: string = `---

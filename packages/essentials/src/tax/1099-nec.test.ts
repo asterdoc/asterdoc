@@ -63,6 +63,12 @@ describe("1099-nec", () => {
     expect(result.success).toBe(true);
   });
 
+  it("passes its own test cases", () => {
+    const report = f1099NEC.runTests();
+    expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
+    expect(report.results).toHaveLength(1);
+  });
+
   it("renders the markdown layer on the bound resolver", async () => {
     const result = f1099NEC.safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");

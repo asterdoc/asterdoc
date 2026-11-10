@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import type { Form, FormTestCase } from '@asterdoc/types'
-import { form } from '@/artifacts'
+import { field, form } from '@/artifacts'
 
 const definition = (tests: FormTestCase[]): Form => ({
 	kind: 'form',
@@ -177,5 +177,25 @@ describe('form test cases', () => {
 	test('a form without tests passes with no results', () => {
 		const { tests: _tests, ...rest } = definition([])
 		expect(form(rest as Form).runTests()).toEqual({ passed: true, results: [] })
+	})
+})
+
+describe('the builder takes test cases', () => {
+	test('read-only cases, as in an as-const artifact, are set and run', () => {
+		const cases = [
+			{ name: 'a nine-digit code passes', input: { fields: { code: '123456789' } }, expect: { valid: true, failures: [] } },
+			{ name: 'a short code fails codeLength', input: { fields: { code: '123' } }, expect: { valid: false, failures: ['codeLength'] } },
+		] as const
+		const report = form()
+			.name('coded')
+			.field('code', field.text())
+			.rules({ codeLength: { expr: 'length(code) == 9', message: 'The code has nine digits', paths: ['fields.code'] as const } })
+			.tests(cases)
+			.build()
+			.runTests()
+		expect(report.results.map((result) => [result.name, result.passed])).toEqual([
+			['a nine-digit code passes', true],
+			['a short code fails codeLength', true],
+		])
 	})
 })

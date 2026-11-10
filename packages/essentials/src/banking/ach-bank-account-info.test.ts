@@ -22,7 +22,7 @@ const happyPathInputs = {
     "accountHolderType": "organization",
     "orgEntityType": "sole_prop",
     "bankName": "x",
-    "routingNumber": "111111111",
+    "routingNumber": "011000015",
     "accountNumber": "xxxx",
     "accountType": "checking"
   }
@@ -36,6 +36,12 @@ describe("ach-bank-account-info", () => {
   it("accepts the bundled passing vector (synth.required.orgentitytype.present-accountholdertype-organization)", () => {
     const result = achBankAccountInfo.safeFill(happyPathInputs as any);
     expect(result.success).toBe(true);
+  });
+
+  it("passes its own test cases", () => {
+    const report = achBankAccountInfo.runTests();
+    expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
+    expect(report.results).toHaveLength(3);
   });
 
   it("renders the markdown layer on the bound resolver", async () => {

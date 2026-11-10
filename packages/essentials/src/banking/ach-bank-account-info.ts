@@ -1,14 +1,14 @@
-// Generated from Asterdoc's forms library (Fab release 248c4b7c-33a5-4c98-88cf-f8e16f1fbbee). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release 357d8288-0799-41d2-967c-cbfe099712b5). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
 import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "ach-bank-account-info",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "ACH Bank Account Information",
   "description": "Standalone vendor / payee bank-account-information collection form for ACH credit destination setup. Captures account-holder identity (individual or organization), bank routing/account/type, and (for organizations) W-9-adjacent entity classification. Pairs with a separate authorization document (vendor agreement, W-9, MSA); the form itself is data-collection only and does not carry an authorization clause.",
   "code": "ACH-BANK-INFO",
@@ -120,7 +120,8 @@ const schema = {
       "description": "Individual account holder's nine-digit U.S. Social Security Number, formatted XXX-XX-XXXX (hyphens optional). Used for tax-reporting on payments. Visible only when accountHolderType == 'individual'.",
       "pattern": "^\\d{3}-?\\d{2}-?\\d{4}$",
       "required": false,
-      "visible": "fields.accountHolderType == 'individual'"
+      "visible": "fields.accountHolderType == 'individual'",
+      "sensitive": true
     },
     "individualAddress": {
       "type": "address",
@@ -157,7 +158,8 @@ const schema = {
       "description": "Organization's nine-digit Taxpayer Identification Number (typically an EIN), formatted XX-XXXXXXX. Used for 1099 tax reporting on payments. Hyphen optional.",
       "pattern": "^\\d{2}-?\\d{7}$",
       "required": false,
-      "visible": "fields.accountHolderType == 'organization'"
+      "visible": "fields.accountHolderType == 'organization'",
+      "sensitive": true
     },
     "orgEntityType": {
       "type": "enum",
@@ -266,7 +268,8 @@ const schema = {
       "maxLength": 17,
       "pattern": "^[A-Za-z0-9]+$",
       "required": "fields.actionType != 'cancel'",
-      "visible": "fields.actionType != 'cancel'"
+      "visible": "fields.actionType != 'cancel'",
+      "sensitive": true
     },
     "accountType": {
       "type": "enum",
@@ -316,7 +319,8 @@ const schema = {
       "maxLength": 17,
       "pattern": "^[A-Za-z0-9]+$",
       "required": false,
-      "visible": "fields.actionType == 'change'"
+      "visible": "fields.actionType == 'change'",
+      "sensitive": true
     },
     "priorAccountType": {
       "type": "enum",
@@ -351,6 +355,20 @@ const schema = {
       "expr": "actionType == 'change' or (priorRoutingNumber == null and priorAccountNumber == null and priorAccountType == null)",
       "message": "Prior bank info should only be supplied when actionType is 'change'.",
       "severity": "warning"
+    },
+    "routingNumberChecksum": {
+      "expr": "routingNumber == null or (length(routingNumber) == 9 and weightedMod(routingNumber, [3, 7, 1], 10) == 0)",
+      "message": "Routing number must pass the ABA routing number checksum.",
+      "paths": [
+        "fields.routingNumber"
+      ]
+    },
+    "priorRoutingNumberChecksum": {
+      "expr": "priorRoutingNumber == null or (length(priorRoutingNumber) == 9 and weightedMod(priorRoutingNumber, [3, 7, 1], 10) == 0)",
+      "message": "Prior routing number must pass the ABA routing number checksum.",
+      "paths": [
+        "fields.priorRoutingNumber"
+      ]
     }
   },
   "layers": {
@@ -481,7 +499,68 @@ const schema = {
       "checksum": "sha256:a8c3c8bb3c163c3525149665d7b511b1399fb35ef490ab9c9b5f1723151f42d3"
     }
   },
-  "defaultLayer": "pdf"
+  "defaultLayer": "pdf",
+  "tests": [
+    {
+      "name": "new organization account with routing number 011000015 is valid",
+      "input": {
+        "parties": {
+          "requestor": {
+            "id": "requestor-0",
+            "name": "Example Payer LLC",
+            "entityType": "llc"
+          },
+          "accountHolder": {
+            "id": "accountHolder-0",
+            "name": "Example Vendor LLC",
+            "legalName": "Example Vendor LLC"
+          }
+        },
+        "fields": {
+          "actionType": "new",
+          "accountHolderType": "organization",
+          "orgEntityType": "sole_prop",
+          "bankName": "Example Bank",
+          "routingNumber": "011000015",
+          "accountNumber": "000123456789",
+          "accountType": "checking"
+        }
+      },
+      "expect": {
+        "valid": true,
+        "failures": []
+      }
+    },
+    {
+      "name": "routing number 123456789 in routingNumber fails the ABA checksum",
+      "input": {
+        "fields": {
+          "routingNumber": "123456789"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "routingNumberChecksum"
+        ]
+      }
+    },
+    {
+      "name": "routing number 123456789 in priorRoutingNumber fails the ABA checksum",
+      "input": {
+        "fields": {
+          "actionType": "change",
+          "priorRoutingNumber": "123456789"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "priorRoutingNumberChecksum"
+        ]
+      }
+    }
+  ]
 } as const;
 
 const __c_ach_bank_account_info_instructions_md: string = `---

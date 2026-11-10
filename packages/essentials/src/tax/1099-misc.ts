@@ -1,14 +1,14 @@
-// Generated from Asterdoc's forms library (Fab release d1177485-b5d3-4574-94f8-cfeb122b816b). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release 2be1f7fc-c345-4a21-8531-05d9fc759f97). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
 import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "1099-misc",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "Miscellaneous Information",
   "code": "1099-MISC",
   "issuer": "U.S. Internal Revenue Service",
@@ -92,7 +92,8 @@ const schema = {
       "pattern": "^(\\d{3}-\\d{2}-\\d{4}|\\d{2}-\\d{7})$",
       "maxLength": 11,
       "required": true,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "recipientTin": {
       "type": "text",
@@ -101,7 +102,8 @@ const schema = {
       "pattern": "^(\\d{3}-\\d{2}-\\d{4}|\\d{2}-\\d{7})$",
       "maxLength": 11,
       "required": true,
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "recipientAddress": {
       "type": "address",
@@ -116,7 +118,8 @@ const schema = {
       "description": "Optional payer-assigned identifier (vendor number, account number) used to distinguish multiple 1099-MISCs the payer issues to the same recipient. Required when the FATCA filing requirement box is checked.",
       "maxLength": 42,
       "required": "fields.fatcaFilingRequirement",
-      "visible": true
+      "visible": true,
+      "sensitive": true
     },
     "secondTinNotice": {
       "type": "boolean",
@@ -480,7 +483,64 @@ const schema = {
       "checksum": "sha256:3fc50a7983a70452699453292a62fb19296d917c1426f98b2974e8f2c3b34eca"
     }
   },
-  "defaultLayer": "pdfCopyA"
+  "defaultLayer": "pdfCopyA",
+  "tests": [
+    {
+      "name": "rents paid to an individual recipient are valid",
+      "input": {
+        "parties": {
+          "payer": {
+            "id": "payer-0",
+            "name": "Acme Consulting LLC",
+            "legalName": "Acme Consulting LLC"
+          },
+          "recipient": {
+            "id": "recipient-0",
+            "name": "Jane R. Smith",
+            "firstName": "Jane",
+            "lastName": "Smith",
+            "middleName": "R."
+          }
+        },
+        "fields": {
+          "void": false,
+          "corrected": false,
+          "calendarYear": "2024",
+          "payerAddress": {
+            "line1": "100 Industrial Way",
+            "line2": "Suite 200",
+            "locality": "Springfield",
+            "region": "IL",
+            "postalCode": "62704",
+            "country": "US"
+          },
+          "payerPhone": {
+            "number": "+12175550142"
+          },
+          "payerTin": "12-3456789",
+          "recipientTin": "987-65-4321",
+          "recipientAddress": {
+            "line1": "42 Elm Street",
+            "locality": "Champaign",
+            "region": "IL",
+            "postalCode": "61820",
+            "country": "US"
+          },
+          "secondTinNotice": false,
+          "rents": {
+            "amount": 12000,
+            "currency": "USD"
+          },
+          "fatcaFilingRequirement": false,
+          "directSales5kOrMore": false
+        }
+      },
+      "expect": {
+        "valid": true,
+        "failures": []
+      }
+    }
+  ]
 } as const;
 
 const __c_1099_misc_instructions_md: string = `---

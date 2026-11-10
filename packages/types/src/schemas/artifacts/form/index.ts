@@ -33,7 +33,7 @@ export interface Form extends ArtifactBase {
   /** Party role definitions keyed by role identifier, with constraints and signature requirements. */
   parties?: Record<string, FormParty>;
   /** Test cases: each applies its input to an empty draft and compares the validation outcome. */
-  tests?: FormTestCase[];
+  tests?: readonly FormTestCase[];
 }
 
 /**
@@ -59,7 +59,7 @@ export interface FormTestCase {
     /** Whether the draft is valid: the input is accepted, no value is missing or invalid, and every error-severity rule passes. */
     valid: boolean;
     /** The ids of every rule that fails, warnings included, in any order. Omitted, failed rules are not compared. */
-    failures?: string[];
+    failures?: readonly string[];
   };
 }
 

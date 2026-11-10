@@ -1,14 +1,14 @@
-// Generated from Asterdoc's forms library (Fab release a4feccdc-ed09-453c-bd42-1dbf34705cbd). Do not edit by hand.
+// Generated from Asterdoc's forms library (Fab release eed006ce-aae2-4ba3-a8d8-f100070a0639). Do not edit by hand.
 // Regenerate with: pnpm essentials:sync
 
 import { a } from "@asterdoc/core";
 import { createMemoryResolver } from "@asterdoc/resolvers/memory";
 
 const schema = {
-  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
   "kind": "form",
   "name": "4506-t",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "title": "Request for Transcript of Tax Return",
   "description": "Request transcripts of previously filed tax returns or related information returns from the IRS. Filed by taxpayers (or authorized representatives) to obtain Return Transcripts, Account Transcripts, Records of Account, Verification of Non-filing, or Wage & Income transcripts.",
   "code": "4506-T",
@@ -62,14 +62,16 @@ const schema = {
       "description": "Taxpayer's identification number — SSN (XXX-XX-XXXX) for individuals, ITIN for individuals without SSNs, or EIN (XX-XXXXXXX) for entities. Must match the IRS's records exactly or the request is rejected.",
       "pattern": "^(\\d{3}-?\\d{2}-?\\d{4}|\\d{2}-?\\d{7})$",
       "maxLength": 11,
-      "required": true
+      "required": true,
+      "sensitive": true
     },
     "spouseTin": {
       "type": "text",
       "label": "Spouse SSN or ITIN (joint return only)",
       "description": "Spouse's SSN or ITIN. Required only when requesting transcripts of a jointly-filed return and the spouse is co-signing.",
       "pattern": "^\\d{3}-?\\d{2}-?\\d{4}$",
-      "maxLength": 11
+      "maxLength": 11,
+      "sensitive": true
     },
     "currentAddress": {
       "type": "address",
@@ -158,7 +160,10 @@ const schema = {
   "rules": {
     "taxpayerTinDistinctFromSpouse": {
       "expr": "not spouseTin or taxpayerTin != spouseTin",
-      "message": "Taxpayer's TIN and spouse's TIN must be different identifiers."
+      "message": "Taxpayer's TIN and spouse's TIN must be different identifiers.",
+      "paths": [
+        "fields.spouseTin"
+      ]
     },
     "attestationMustBeChecked": {
       "expr": "attestationAck",
@@ -296,7 +301,65 @@ const schema = {
         }
       }
     }
-  }
+  },
+  "tests": [
+    {
+      "name": "joint return transcript request with distinct TINs is valid",
+      "input": {
+        "parties": {
+          "taxpayer": {
+            "id": "taxpayer-0",
+            "name": "Jane A Smith",
+            "firstName": "Jane",
+            "lastName": "Smith",
+            "middleName": "A"
+          },
+          "spouse": {
+            "id": "spouse-0",
+            "name": "John B Smith",
+            "firstName": "John",
+            "lastName": "Smith",
+            "middleName": "B"
+          }
+        },
+        "fields": {
+          "taxpayerTin": "123-45-6789",
+          "spouseTin": "987-65-4321",
+          "currentAddress": {
+            "line1": "100 Main St",
+            "locality": "Springfield",
+            "region": "IL",
+            "postalCode": "62704",
+            "country": "US"
+          },
+          "transcriptType": "return_transcript",
+          "taxFormNumber": "1040",
+          "period1": "2024-12-31",
+          "attestationAck": true
+        }
+      },
+      "expect": {
+        "valid": true,
+        "failures": []
+      }
+    },
+    {
+      "name": "the same TIN for taxpayer and spouse fails taxpayerTinDistinctFromSpouse",
+      "input": {
+        "fields": {
+          "taxpayerTin": "123-45-6789",
+          "spouseTin": "123-45-6789",
+          "attestationAck": true
+        }
+      },
+      "expect": {
+        "valid": false,
+        "failures": [
+          "taxpayerTinDistinctFromSpouse"
+        ]
+      }
+    }
+  ]
 } as const;
 
 const __c_4506_t_instructions_md: string = `---
