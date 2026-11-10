@@ -50,6 +50,11 @@ import { renderDocx } from '@asterdoc/render/docx'
 `application/pdf`, and DOCX Office MIME types. It fails loudly for an unknown
 MIME type rather than guessing.
 
+Values print with `defaultFormatter` unless you pass `formatter`. It is the
+`@asterdoc/format` formatter with the phone and regions providers, so every
+layer format an artifact declares prints. A formatter you create yourself needs
+those providers for phone styles other than `e164` and for region names.
+
 ## Text templates
 
 Text templates keep the block markers `{{#if}}`, `{{#unless}}`, `{{else}}`, and
@@ -73,6 +78,19 @@ Inside `{{#each}}`, `item` is the row and `parent` the enclosing row. A
 condition must be boolean and a loop source a list. `checkTextTemplate()` and
 `checkDocxTemplate()` check every expression against a type environment, and a
 failed render throws `TemplateError` with the layer, position, and expression.
+
+A placeholder, in a text or DOCX template, can carry format modifiers after a
+`|`, as `key=literal` pairs separated by commas. They take the same options as
+a layer `format`, for that one value:
+
+```text
+Due {{ fields.due | date.pattern="DD/MM/YYYY" }}, {{ fields.total | money.fractionDigits=0 }}
+Call {{ fields.phone | phone.style="national" }}, born {{ fields.dob | part="year" }}
+```
+
+An unknown key, a bad literal, or a key that does not apply to the value's kind
+throws `TemplateError` at render. `checkTextTemplate()` and
+`checkDocxTemplate()` report it first when given `values: formValueResolver(form)`.
 
 ## PDF forms and overlays
 
@@ -101,6 +119,26 @@ const output = await renderPdf({
       fit: 'contain',
     },
   ],
+})
+```
+
+A binding is a path string or a binding object `{ path, format?, part? }`. A
+PDF layer's `format` (the `format` option here) applies to every value it
+prints; a binding's `format` merges over it per property. `part` prints one
+piece of a date, phone, or money value as plain digits, such as a date's `year`
+or a money amount's `cents`.
+
+```ts
+const output = await renderPdf({
+  template,
+  form,
+  data,
+  format: { date: { pattern: 'DD/MM/YYYY' } },
+  bindings: {
+    legal_name: 'name',
+    birth_year: { path: 'dob', part: 'year' },
+    fee: { path: 'fee', format: { money: { fractionDigits: 0 } } },
+  },
 })
 ```
 
@@ -141,6 +179,11 @@ bindings are reported as not recoverable rather than split. Most callers use
 ```ts
 const { data, report } = await extractPdfData({ pdf: filled, form, bindings })
 ```
+
+Values are read back through the format they were printed with. Each recovered
+entry carries `lossy`, true when that format drops detail (upper case, a
+rounded amount), so the value is the person's answer but may differ from the
+one filled.
 
 ## Merging PDFs
 

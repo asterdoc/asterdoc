@@ -38,7 +38,7 @@ An installed reference such as `@acme/w9` works in place of a file path for `val
 |---------|---------|---------|
 | `init [dir]` | Create `asterdoc.json` and `.asterdoc/` | [init](#init) |
 | `new form\|document\|checklist\|bundle <name>` | Scaffold an artifact file | [new](#new) |
-| `validate <artifacts...>` | Check schema, logic, layer files, checksums, bindings | [validate](#validate) |
+| `validate <artifacts...>` | Check schema, logic, layer files, checksums, bindings, test cases | [validate](#validate) |
 | `fix <artifact>` | Add or update layer and ContentRef checksums | [fix](#fix) |
 | `attach <artifact> <file>` / `detach <artifact> [target]` | Add or remove a layer, `instructions` or `agentInstructions` | [attach and detach](#attach-and-detach) |
 | `migrate <path>` | Move files to the current schema version | [migrate](#migrate) |
@@ -118,6 +118,8 @@ What it checks, unless `--schema-only`:
 | Layer file or font has a checksum | warning: `` No checksum set, so render and seal cannot verify the file and the content hash does not cover it. Run `asterdoc fix` to add one. `` |
 | Other file references have a checksum | warning: `` No checksum set. Run `asterdoc fix` to add one. `` |
 | Bound values fit PDF text fields | warning |
+| A form's `tests` pass ([logic.md § Test cases](./logic.md#test-cases)) | error: `Test "minor" failed: expected valid true, got false (failed rules: adult)` |
+| A test sets a sensitive field | warning: `Test "<name>" sets the sensitive field fields.ssn. Tests ship inside the artifact: use synthetic values only.` |
 
 <!-- dep:C7 -->
 Exit 0 is a trustworthy gate for these checks. The final check for a form is still the [round trip](#round-trip).
@@ -365,7 +367,7 @@ Telemetry is also off with `ASTERDOC_TELEMETRY_DISABLED=1` or `DO_NOT_TRACK=1`.
 | `Environment variable not set: ACME_TOKEN` | Export the variable a registry `url` or header names |
 | `"w9" is not a document component.` | Name the registry: `asterdoc add @acme/w9` |
 | `Artifact not installed: @acme/lease` / `Artifact "@acme/lease" is not installed.` | `asterdoc add @acme/lease` |
-| `The artifact was written for schema version <v>; ...` | `asterdoc migrate <file>` |
+| `$schema names schema version <v>, newer than this SDK knows; update @asterdoc/core. ...` | Update the CLI and the Asterdoc packages to the latest release |
 | `The artifact has no $schema; ...` / `$schema ... names no schema version; ...` | `asterdoc migrate <file> --from <version>` |
 | `` Checksum mismatch. Run `asterdoc fix` to update. `` | `asterdoc fix <file> -y` |
 | `Error: Invalid artifact: <path>: <message>` (from `fix`) | Fix the listed schema errors by hand, then run `fix` |

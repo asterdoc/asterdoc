@@ -1,17 +1,17 @@
 ---
 name: formatting
-description: Locale-aware presentation of artifact values with @asterdoc/format. Passing a formatter to render, constructor options, every format method, safe results, selection values, and address layouts.
+description: Locale-aware presentation of artifact values with @asterdoc/format. Passing a formatter to render, constructor options, lookup providers, every format method, safe results, selection values, address layouts, and the format an artifact declares on layers, bindings, placeholders and elements.
 metadata:
-  tags: formatting, locale, money, date, address, enum, rating, formatter, render
+  tags: formatting, locale, money, date, phone, country, region, mask, address, enum, rating, formatter, providers, render, format
 ---
 
 # Formatting
 
-**Contents:** [Format a render](#format-a-render) · [Create a formatter](#create-a-formatter) · [Methods](#methods) · [Safe results](#safe-results) · [Value rules](#value-rules) · [Selection values](#selection-values) · [Addresses](#addresses) · [Specialize a formatter](#specialize-a-formatter)
+**Contents:** [Format a render](#format-a-render) · [Create a formatter](#create-a-formatter) · [Lookup providers](#lookup-providers) · [Artifact formats](#artifact-formats) · [Methods](#methods) · [Safe results](#safe-results) · [Value rules](#value-rules) · [Selection values](#selection-values) · [Addresses](#addresses) · [Specialize a formatter](#specialize-a-formatter)
 
 `@asterdoc/format` turns stored values into display text; stored values stay as they are. `@asterdoc/sdk` re-exports all of it.
 
-The caller chooses the presentation: pass the locale and options explicitly. The one presentation an artifact declares is a PDF layer's `format`, because it belongs to that PDF template ([pdf.md § Money](./pdf.md#money)).
+Two levels choose the presentation. The caller passes a formatter: locale, time zone, options per kind. The artifact declares a `format` only where its template needs one, such as a PDF box that wants `MM/DD/YYYY` ([Artifact formats](#artifact-formats)).
 
 ## Format a render
 
@@ -37,7 +37,7 @@ Other render options, such as `progressive` for missing values, are in [renderin
 
 ## Create a formatter
 
-`createFormatter(options)` returns an immutable formatter. `defaultFormatter` is one with no options: `en-US`, UTC, Gregorian.
+`createFormatter(options)` returns an immutable formatter. With no options it prints `en-US`, UTC, Gregorian, and has no [lookup providers](#lookup-providers). `defaultFormatter` from `@asterdoc/format` is that formatter. `defaultFormatter` from `@asterdoc/sdk` or `@asterdoc/render` adds both providers, and is what a render uses when you pass none.
 
 | Option | Default | Description |
 |--------|---------|-------------|
@@ -48,10 +48,77 @@ Other render options, such as `progressive` for missing values, are in [renderin
 | `calendar` | `"gregory"` | Calendar for dates and datetimes |
 | `numberingSystem` | the locale's | Digits for numbers and dates, such as `arab` |
 | `money`, `number`, `percentage`, `date`, `datetime`, `time`, `duration`, `address`, `phone`, `party`, `boolean`, `enum`, `multiselect`, `rating`, ... | none | Base options for each value kind, the same objects the methods take |
+| `providers` | none | `{ phone?, regions? }`: lookup data some formats need ([Lookup providers](#lookup-providers)) |
 | `overrides` | none | Replacement implementations per kind; see [Specialize a formatter](#specialize-a-formatter) |
 | `messages` | none | Extra package messages keyed by locale |
 
 Use a precise locale. The built-in messages cover `en-US`, `en-GB`, `de-DE`, `fr-FR` and `ar-SA`. A region label such as `EU` is not a policy: Intl reads `EU` as Basque.
+
+## Lookup providers
+
+Some formats need data the lean `@asterdoc/format` root leaves out. Add it with `providers`:
+
+| Provider | Import | Needed for |
+|----------|--------|------------|
+| `phoneProvider` | `@asterdoc/format/phone` | Phone `style` other than `e164`, and phone parts |
+| `regionsProvider` | `@asterdoc/format/regions` | `region` display, and `country` display of a value stored as a name. Subdivision names are English only |
+
+```typescript
+import { createFormatter, phoneProvider, regionsProvider } from "@asterdoc/sdk";
+
+const formatter = createFormatter({ locale: "en-GB", providers: { phone: phoneProvider, regions: regionsProvider } });
+```
+
+A render without a formatter uses the SDK's `defaultFormatter`, which has both. A formatter you create has none until you add them: a layer with `"phone": { "style": "national" }` then fails with `missing_format_provider` (`Phone style "national" needs the phone provider`). `compose()` keeps a formatter's providers. In a browser, `@asterdoc/react` prints with the lean default; see the `asterdoc-react` skill.
+
+## Artifact formats
+
+`format` says how values print where a template needs it. It goes in four places:
+
+| Where | Shape | Reference |
+|-------|-------|-----------|
+| A layer that prints values: PDF, text, Markdown, HTML, DOCX, React; file or inline | `"format": { ... }` | [layers.md § Layer shape](./layers.md#layer-shape) |
+| One PDF binding | `{ "path": "dob", "format": { ... }, "part"?: "year" }` | [pdf.md § Binding objects](./pdf.md#binding-objects) |
+| One template placeholder | `{{ fields.dob \| date.pattern="MM/DD/YYYY" }}` | [templates.md § Format modifiers](./templates.md#format-modifiers) |
+| One React element | `format` on `Field`, `Party`, `Table`, `Totals` and the hooks | the `asterdoc-react` skill |
+
+Every key is optional:
+
+| Key | Values | Effect |
+|-----|--------|--------|
+| `locale` | BCP 47 tag, such as `en-US` | Names and words in this locale |
+| `case` | `"upper"`, `"none"` | `upper` prints in upper case, last, after any join. On a layer it skips email, uri and uuid fields. `none` turns off an `upper` set below |
+| `money` | `{ currencyDisplay?: "none", fractionDigits?: 0 \| 2, useGrouping?: boolean }` | No symbol, for a box that pre-prints it. Exactly 0 or 2 digits, rounding half away from zero (`1.999` prints `2`). No grouping separators |
+| `date` | `{ pattern: "MM/DD/YYYY" \| "DD/MM/YYYY" \| "YYYY-MM-DD" }` | Dates in that numeric order |
+| `phone` | `{ style?: "e164" \| "international" \| "national" \| "digits", region?: "US" }` | `+12125551234`, `+1 212 555 1234`, `(212) 555-1234`, `2125551234`. `region` names the plan a national box expects: under `national` and `digits` a number from another plan is refused |
+| `choice` | `{ display?: "label" \| "value" }` | What `enum` and `multiselect` print in text |
+| `boolean` | `{ trueLabel?, falseLabel? }` | The words for true and false in text |
+| `country` | `{ display: "code" \| "name" }` | `CA` or `Canada`, for a `country` field and an address `country` |
+| `region` | `{ display: "code" \| "name" \| "full" }` | `ON`, `Ontario` or `CA-ON`, for a `region` field and an address `region` |
+| `person` | `{ order?: "given-first" \| "family-first" }` | `family-first` prints "Lovelace, Ada", without the title. A person with only `name` prints `name` |
+| `text` | `{ mask?: boolean }` | Whether masked `text` fields print through their mask. Default `true`. A binding or placeholder may also name a mask string |
+
+Checkboxes, radio buttons and dropdowns always take raw values: `choice`, `boolean` and `case` never change them. Without `country` or `region`, the value prints as stored.
+
+Levels merge from lowest to highest, per kind and per property: the caller's formatter, then the layer's `format`, then the binding's, placeholder's or element's. A binding's `money: { useGrouping: false }` keeps the layer's `currencyDisplay`, and a higher `locale` replaces a lower one.
+
+```json schema=form
+{
+  "fields": { "dob": { "type": "date" }, "fee": { "type": "money", "currency": "USD" } },
+  "layers": {
+    "summary": {
+      "kind": "inline",
+      "mimeType": "text/plain",
+      "format": { "date": { "pattern": "MM/DD/YYYY" }, "money": { "fractionDigits": 0 } },
+      "text": "Born {{fields.dob}}. Fee {{fields.fee}}. Filed as {{ fields.dob | date.pattern=\"YYYY-MM-DD\" }}."
+    }
+  }
+}
+```
+
+With `dob` `1990-06-15` and a fee of 1250.5 USD, it prints `Born 06/15/1990. Fee $1,251. Filed as 1990-06-15.`
+
+An artifact that declares no `format`, binding object, modifier or mask prints as it did before these options existed.
 
 ## Methods
 
@@ -60,15 +127,15 @@ Each value kind has a strict method and a safe method. The strict one returns te
 | Kind | Strict | Safe | Options |
 |------|--------|------|---------|
 | number | `formatNumber` | `safeFormatNumber` | Intl number options |
-| money | `formatMoney` | `safeFormatMoney` | Intl number options, `currencyDisplay` (including `"none"`), `currencySign` |
+| money | `formatMoney` | `safeFormatMoney` | Intl number options, `currencyDisplay` (including `"none"`), `currencySign`, `fractionDigits` |
 | percentage | `formatPercentage` | `safeFormatPercentage` | Intl number options |
 | date | `formatDate` | `safeFormatDate` | Intl date options, `timeZone`, `calendar` |
 | datetime | `formatDatetime` | `safeFormatDatetime` | Same |
 | time | `formatTime` | `safeFormatTime` | Same |
 | duration | `formatDuration` | `safeFormatDuration` | Intl number options |
 | address | `formatAddress` | `safeFormatAddress` | `layout`, `countryLayouts` |
-| phone | `formatPhone` | `safeFormatPhone` | `extensionLabel` |
-| person | `formatPerson` | `safeFormatPerson` | none |
+| phone | `formatPhone` | `safeFormatPhone` | `extensionLabel`, `style`, `region` |
+| person | `formatPerson` | `safeFormatPerson` | `order` |
 | organization | `formatOrganization` | `safeFormatOrganization` | none |
 | party | `formatParty` | `safeFormatParty` | `partyType` for a party with only `name` |
 | coordinate | `formatCoordinate` | `safeFormatCoordinate` | Intl number options |

@@ -1,0 +1,306 @@
+---
+title: Formatting values
+description: Print stored values the way each output asks, without changing the data
+ogTitle: Formatting values
+ogDescription: Layer formats, binding objects, template modifiers and React element formats in Asterdoc
+---
+
+A form stores values in one canonical shape: ISO dates, E.164 phone numbers, country and subdivision codes, identifiers without separators. Each output then says how to print them. A U.S. government PDF wants `06/15/1990` and upper-case names; the Markdown copy of the same form wants `Jun 15, 1990`. The data does not change between them.
+
+You say how to print values with a `format` object. This guide covers where it goes, how levels combine, and what it means for reading a filled PDF back. Every key is in the [Format reference](/schemas/artifacts/shared/layer#format).
+
+## The format object
+
+```json
+"format": {
+  "locale": "en-US",
+  "case": "upper",
+  "date": { "pattern": "MM/DD/YYYY" },
+  "money": { "currencyDisplay": "none", "fractionDigits": 0, "useGrouping": false },
+  "country": { "display": "name" },
+  "region": { "display": "code" },
+  "phone": { "style": "national", "region": "US" },
+  "choice": { "display": "label" },
+  "boolean": { "trueLabel": "Yes", "falseLabel": "No" },
+  "person": { "order": "family-first" },
+  "text": { "mask": true }
+}
+```
+
+Every key is optional. A key you leave out keeps the printing of the level below it.
+
+| Key | What it changes |
+|-----|-----------------|
+| `locale` | The locale for names and words, such as country names and boolean words |
+| `case` | `upper` prints values in upper case, after every other option and after a join. `none` turns off an `upper` set below |
+| `date.pattern` | `MM/DD/YYYY`, `DD/MM/YYYY` or `YYYY-MM-DD` |
+| `money` | `currencyDisplay: "none"` drops the symbol; `fractionDigits` (`0` or `2`) rounds half away from zero; `useGrouping: false` drops separators such as the comma in `1,235` |
+| `country.display` | `code` (`CA`) or `name` (`Canada`) |
+| `region.display` | `code` (`ON`), `full` (`CA-ON`) or `name` (`Ontario`) |
+| `phone` | `style`: `e164` (`+12025550143`), `international` (`+1 202 555 0143`), `national` (`(202) 555-0143`) or `digits` (`2025550143`). `region` names the numbering plan a national box expects |
+| `choice.display` | `label` or `value` for `enum` and `multiselect` values in text |
+| `boolean` | The words for true and false in text |
+| `person.order` | `family-first` prints "Doe, Jane Q." |
+| `text.mask` | Whether a masked text field prints with its mask (`123-45-6789`) or without it (`123456789`). A layer takes only `true` or `false`; a binding or placeholder may also give a mask string, which prints that value with that mask |
+
+`case: upper` on a layer skips `email`, `uri` and `uuid` fields. It never changes the export values of checkboxes, radio buttons and dropdowns.
+
+Without `country` or `region`, those values print as stored. Without `text.mask`, a masked field prints with its mask. See [Codes and masks](/guides/field-input) for the fields that store codes and masked values.
+
+## Where it applies
+
+A format goes on a layer. A PDF binding, a template placeholder or a React element can then set its own, over the layer's.
+
+### On a layer
+
+Any layer that prints values can declare a `format`: PDF, text (`text/plain`, `text/markdown`, `text/html`), DOCX and React (`text/tsx`, `text/jsx`), file or inline. Validation refuses it on any other layer.
+
+```json
+"layers": {
+  "pdf": {
+    "kind": "file",
+    "mimeType": "application/pdf",
+    "path": "w-9.pdf",
+    "format": { "case": "upper", "region": { "display": "code" } },
+    "bindings": { "...": "..." }
+  }
+}
+```
+
+### On a PDF binding
+
+A PDF binding value can be an object. `path` is what the string binding would be; `format` sets how that one value prints, merged over the layer's.
+
+```json
+"format": { "date": { "pattern": "MM/DD/YYYY" } },
+"bindings": {
+  "topmostSubform[0].Page1[0].f1_20[0]": "fields.signedOn",
+  "topmostSubform[0].Page1[0].f1_21[0]": { "path": "fields.filedOn", "format": { "date": { "pattern": "YYYY-MM-DD" } } }
+}
+```
+
+A binding object can also take `part`, to print one piece of a value as plain digits, for a form that has a box for each piece:
+
+```json
+"topmostSubform[0].Page1[0].f1_04[0]": { "path": "fields.dob", "part": "month" },
+"topmostSubform[0].Page1[0].f1_05[0]": { "path": "fields.dob", "part": "day" },
+"topmostSubform[0].Page1[0].f1_06[0]": { "path": "fields.dob", "part": "year" }
+```
+
+| Kind | Parts |
+|------|-------|
+| `date` | `year`, `month`, `day` |
+| `phone` | `countryCode`, `nationalNumber`, `extension`; for +1 numbers, also `areaCode` and `subscriberNumber` |
+| `money` | `units`, `cents` |
+
+An option test (`fields.status:married`) prints nothing, and a split part (`fields.ssn:2`) prints a piece of the raw value, so neither takes a `format` or a `part`. A joined path (`fields.city, fields.state`) applies its `format` to each value before the join, and takes no `part`. See [Bindings](/schemas/artifacts/shared/layer#bindings).
+
+### On a template placeholder
+
+In text and DOCX templates, a placeholder takes format modifiers after a single `|`:
+
+```text
+{{ fields.name | person.order="family-first", case="upper" }}
+{{ fields.birthCountry | country.display="name" }}
+{{ fields.dob | date.pattern="MM/DD/YYYY" }}
+{{ fields.dob | part="year" }}
+{{ fields.ssn | text.mask=false }}
+```
+
+Keys are the dotted paths of the format object (`date.pattern`, `money.fractionDigits`, `case`) plus `part`. Values are string, number or boolean literals. `||` is still not an operator. Modifiers work in `{{ }}` and `{{{ }}}`, and inside `#if` and `#each` blocks; a block marker itself takes none.
+
+`validate()` and `asterdoc validate` check each modifier against the value it prints. An unknown key, a wrong value, and a key that does not apply to the value's kind are template errors:
+
+```text
+Template error at layer "summary", line 1, column 18 in {{fields.note | phone.style="national"}}: phone.style applies to phone numbers, not to fields.note, a text value.
+```
+
+See [Format modifiers](/sdk/renderers/text#format-modifiers).
+
+### On a React element
+
+A React layer's `format` reaches the composition. `Document` and `ArtifactProvider` take `format.presentation`, and the printing hooks and the `Field`, `Party`, `Totals` and `Table` components take a `format` prop:
+
+```tsx
+<Field path="dob" format={{ date: { pattern: 'MM/DD/YYYY' } }} />
+<Party role="client" format={{ case: 'upper' }} />
+```
+
+An element format that is malformed, or sets a key that changes none of the values the element prints, throws `ElementFormatError`, and `asterdoc check` reports it as `format:<path>`. See [@asterdoc/react](/sdk/react).
+
+## Precedence and merge
+
+Levels apply from lowest to highest:
+
+1. The formatter the caller renders with.
+2. The layer's `format`.
+3. For React only, the document's `format.presentation`.
+4. The binding's, placeholder's or element's `format`.
+
+Each kind merges per property. A binding's `money: { fractionDigits: 0 }` keeps the layer's `currencyDisplay`. A higher `locale` replaces a lower one. A binding sets `case: "none"` to turn off a layer-wide `upper`.
+
+A layer that reuses bindings through `bindingsFrom` takes each binding with its own `format` and `part`. Its layer `format` stays its own.
+
+## A worked example
+
+This form prints one text layer with a layer format and some placeholder modifiers.
+
+```ts
+import { a } from '@asterdoc/sdk'
+
+const intake = a.form({
+  name: 'intake',
+  fields: {
+    name: { type: 'person', label: 'Name' },
+    birthCountry: { type: 'country', label: 'Country of birth' },
+    state: { type: 'region', label: 'State', country: 'US' },
+    ssn: { type: 'text', label: 'SSN', mask: '###-##-####' },
+    phone: { type: 'phone', label: 'Phone' },
+    dob: { type: 'date', label: 'Date of birth' },
+    fee: { type: 'money', label: 'Fee' },
+  },
+  layers: {
+    summary: {
+      kind: 'inline',
+      mimeType: 'text/plain',
+      format: {
+        locale: 'en-US',
+        country: { display: 'name' },
+        region: { display: 'name' },
+        phone: { style: 'national' },
+        date: { pattern: 'MM/DD/YYYY' },
+      },
+      text: [
+        'Name: {{ fields.name | person.order="family-first", case="upper" }}',
+        'Born in: {{ fields.birthCountry }}',
+        'State: {{ fields.state }} ({{ fields.state | region.display="code" }})',
+        'SSN: {{ fields.ssn }} / {{ fields.ssn | text.mask=false }}',
+        'Phone: {{ fields.phone }}',
+        'Born: {{ fields.dob }}, year {{ fields.dob | part="year" }}',
+        'Fee: {{ fields.fee | money.fractionDigits=0 }}',
+      ].join('\n'),
+    },
+  },
+})
+
+const draft = intake.fill({
+  fields: {
+    name: { name: 'Jane Q. Doe', firstName: 'Jane', middleName: 'Q.', lastName: 'Doe' },
+    birthCountry: 'Canada',
+    state: 'California',
+    ssn: '123-45-6789',
+    phone: { number: '+12025550143' },
+    dob: '1990-06-15',
+    fee: { amount: 1234.5, currency: 'USD' },
+  },
+})
+
+draft.fields.birthCountry // 'CA'
+draft.fields.state        // 'US-CA'
+draft.fields.ssn          // '123456789'
+
+await draft.render({ layer: 'summary' })
+// Name: DOE, JANE Q.
+// Born in: Canada
+// State: California (CA)
+// SSN: 123-45-6789 / 123456789
+// Phone: (202) 555-0143
+// Born: 06/15/1990, year 1990
+// Fee: $1,235
+```
+
+The stored data holds codes and canonical values. Only the printed text changes.
+
+## When a format fails
+
+A value prints through its effective format when a binding, an overlay, a field-id fill or a placeholder reads it. Only a value that is read can fail the render, and a binding's own format always wins over a failing layer option. A failure throws `ArtifactFieldFormatError`, with the value's `path` and `issues`, each with a `code`:
+
+| Code | When |
+|------|------|
+| `invalid_phone` | A phone that does not parse, under a style other than `e164` |
+| `phone_region_mismatch` | A number from another numbering plan under `national` or `digits` with `phone.region` set |
+| `unsupported_part` | A negative amount or a currency without two minor digits as money parts, or `areaCode` and `subscriberNumber` outside +1 |
+| `mask_mismatch` | A stored value that does not fit its field's mask |
+| `missing_format_provider` | A format that needs a lookup provider the formatter does not have (see [Lookup providers](#lookup-providers)) |
+
+`person.order: "family-first"` on a person with only `name` prints `name`, and `validateLayers()` warns that it cannot be reordered.
+
+## Reading a filled PDF back
+
+[Extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) inverts each format. A recovered value goes into `data`. When the format it was printed with drops detail, the report marks the entry `lossy: true`: the value is still the person's answer, but it may not be exactly the one filled.
+
+| Format | Read back as |
+|--------|--------------|
+| `date.pattern`, `money.currencyDisplay` | Recovered exactly |
+| `money.fractionDigits: 0` | Recovered, lossy |
+| `money.useGrouping: false` | Recovered |
+| `country` and `region` names | Recovered as codes; a name that matches more than one place is `not_recoverable` |
+| `phone.style` `e164` or `international` | Recovered from the printed calling code |
+| `phone.style` `national` or `digits` | Recovered only with `format.phone.region`; otherwise `not_recoverable` |
+| `choice.display: label` | The option value; two options with one label are `not_recoverable` |
+| `boolean` labels | The boolean |
+| `text.mask` | The canonical value, with or without the mask's literals |
+| `person.order: family-first` | `not_recoverable`; bind the name parts by sub-path instead |
+| `case: upper` | Recovered, lossy |
+| Parts | Joined only when every part the value needs is bound; otherwise `not_recoverable` |
+
+`data` never holds a guess. On a W-9 layer with `case: "upper"`, for example, a name filled as `Jordan Lee` comes back as `JORDAN LEE` with `lossy: true`, and an SSN printed in three boxes comes back as `000123456`.
+
+## Checking that values fit
+
+Before any data exists, `validateLayers()`, `asterdoc validate` and the `validate_artifact` AI tool check that each bound value fits its PDF text box. The check uses what the binding will print, after every format and `case`:
+
+- A value with a known set of outputs, such as country and region names, choice and boolean labels, is measured at every candidate.
+- A masked value is measured at the widest character each mask position allows, plus its literals.
+- Phone styles and parts are measured at the longest number they print, with the widest digit.
+
+`case: upper` is applied first, since upper case can change a value's length. See [Checking bindings before filling](/sdk/renderers/pdf#checking-bindings-before-filling).
+
+## Lookup providers
+
+Some formats need lookup data. It comes through providers, so a browser bundle carries only what it uses:
+
+| Entry point | Export | Needed for |
+|-------------|--------|------------|
+| `@asterdoc/format` | (built in) | The 249 ISO 3166-1 country codes and their aliases; names come from `Intl.DisplayNames` |
+| `@asterdoc/format/regions` | `regionsProvider` | `region.display`, subdivision names, and country names in input (a name can be a country or a subdivision) |
+| `@asterdoc/format/phone` | `phoneProvider` | `phone.style` other than `e164`, phone parts, and phone read-back |
+
+Subdivision names are English only, from the Unicode CLDR.
+
+The default formatter of `@asterdoc/render`, the SDK, the CLI and `@asterdoc/react-pdf` carries both providers, so every format an artifact can declare prints. Core's input canonicalization always has the regions data. A formatter you create with `createFormatter()` has only the providers you pass, on the server too: pass both when you render with your own formatter.
+
+`@asterdoc/react` in the browser keeps the lean `@asterdoc/format` default, with no providers. A format that needs one fails with `missing_format_provider`, naming the entry point. Pass a formatter created with the providers you use:
+
+```tsx
+import type { Form } from '@asterdoc/core'
+import type { DocumentData } from '@asterdoc/react'
+import { createFormatter } from '@asterdoc/format'
+import { phoneProvider } from '@asterdoc/format/phone'
+import { regionsProvider } from '@asterdoc/format/regions'
+import { Document } from '@/components/asterdoc/document'
+import { Field } from '@/components/asterdoc/field'
+
+const formatter = createFormatter({ providers: { phone: phoneProvider, regions: regionsProvider } })
+
+export function Preview({ artifact, data }: { artifact: Form; data: DocumentData }) {
+  return (
+    <Document artifact={artifact} data={data} format={{ formatter }}>
+      <Field path="phone" />
+    </Document>
+  )
+}
+```
+
+A development preview can use `defaultFormatter` from `@asterdoc/react-pdf/formatter`: the same full formatter the PDF render uses, without the PDF engine.
+
+## Compatibility
+
+A format option never forces a published artifact to change. An artifact that sets none of the new options, with the same inputs, formatter and resources, prints the same PDF field values, text output and DOCX document text as before, and gives the same errors. New normalization runs only where an artifact opts in: a format option, a `country` or `region` field, `codes: true` on an address, or a `mask` on a text field.
+
+## Related
+
+- [Codes and masks](/guides/field-input): the fields that store codes and masked values
+- [Format](/schemas/artifacts/shared/layer#format): every key, with its type
+- [PDF renderer](/sdk/renderers/pdf#artifact-formatting) and [Text renderer](/sdk/renderers/text#format-modifiers)
+- [Formatting](/sdk/formatting): the `@asterdoc/format` API

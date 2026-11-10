@@ -35,14 +35,19 @@ The SDK re-exports everything from `@asterdoc/core`, `@asterdoc/format`, and `@a
 - `createLayerRenderer()`, the MIME-selected renderer from `@asterdoc/render`, to configure rendering options
 - the PDF placement helpers from `@asterdoc/render/pdf`: `locate`, `locator`, `extractFieldsFromPdf`, and the marker encoders
 - `hostedSealAdapter()`, which converts HTML, Markdown, and DOCX layers to PDF through Asterdoc's hosted conversion API when you seal
+- `defaultFormatter`, the renderer's formatter with the phone and regions providers, in place of the lean one from `@asterdoc/format`
+- `phoneProvider` and `regionsProvider`, the lookup data a formatter you create needs for phone styles other than `e164` and for region names
 
-The standalone `@asterdoc/format` presentation API works on values outside artifact rendering too. Use one formatter for values outside artifact rendering as well as for future renderer configuration:
+The standalone `@asterdoc/format` presentation API works on values outside artifact rendering too. Pass the same formatter to `createLayerRenderer({ formatter })` so rendered artifacts print the same way:
 
 ```typescript
-import { createFormatter } from "@asterdoc/sdk";
+import { createFormatter, phoneProvider, regionsProvider } from "@asterdoc/sdk";
 
 const format = createFormatter({ locale: "de-DE" });
 format.formatMoney({ amount: 1500.5, currency: "USD" }); // "1.500,50 $"
+
+const full = createFormatter({ locale: "en-US", providers: { phone: phoneProvider, regions: regionsProvider } });
+full.formatPhone("+12025550123", { style: "national" }); // "(202) 555-0123"
 ```
 
 ## Installation

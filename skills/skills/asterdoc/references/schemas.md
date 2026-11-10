@@ -56,11 +56,13 @@ The current schema version is `2026-11-10`. Write `$schema` as its dated address
 https://schema.asterdoc.com/2026-11-10.json
 ```
 
-A dated per-kind address such as `https://schema.asterdoc.com/2026-11-10/form.json` names the same version. The SDK writes the dated address on `toJSON()` and `toYAML()`. Every schema change gets a new date, and each new date ships with a migration step.
+A dated per-kind address such as `https://schema.asterdoc.com/2026-11-10/form.json` names the same version. The SDK writes the dated address on `toJSON()` and `toYAML()`. Every schema change gets a new date, and each new date ships with a migration step. A published date never changes.
+
+A later SDK can load, validate and extract an artifact or filing written for an earlier date. Renders are not promised to be byte-identical across releases: the durable record of a filing is its sealed canonical PDF and its hash ([sealing.md](./sealing.md)).
 
 ### Loading rules
 
-These surfaces apply the same rules: `load()` and `loadFromObject()` in the SDK, every CLI command that reads an artifact file, `@asterdoc/ai-tools`, and `asterdoc add`. An earlier version is upgraded in memory; the file is not changed.
+These surfaces apply the same rules: `load()` and `loadFromObject()` in the SDK, every CLI command that reads an artifact file, `@asterdoc/ai-tools`, and `asterdoc add`. An earlier version is upgraded in memory and never written back to the file. A draft or sealed form keeps the definition as stored: its `toJSON()` writes the original date, and its `contentHash()` hashes it.
 
 <!-- dep:C2 -->
 `a.form()` and each kind's `.from()` apply the same rules.

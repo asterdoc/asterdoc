@@ -11,7 +11,7 @@ description: >
   React, use asterdoc-react.
 metadata:
   author: asterdoc
-  version: "0.7.0"
+  version: "0.12.0"
   tags: asterdoc, sdk, cli, schemas, ai-tools, mcp, forms, pdf, signing, rendering
   license: MIT
 allowed-tools: "Bash(npx:*) Bash(node:*) Read Write Edit Glob Grep"
@@ -30,8 +30,9 @@ Asterdoc is a documents-as-code framework. An **artifact** is a typed JSON/YAML 
 - **Expressions.** Use `and`, `or`, `not`. Read fields as `fields.<id>` and defs by bare name. A condition must be boolean (`isNotEmpty(fields.x)`, not `fields.x`). Read money as `fields.price.amount` for arithmetic and comparison. See [logic.md](./references/logic.md).
 - **Templates** name values as `{{fields.x}}`. Place every signing mark with a directive such as `{{signature(parties.tenant, "tenant-sig")}}`. The location string is a slot id in the layer's `signatures`, one slot per party and type.
 <!-- dep:C8 -->
-- **PDF bindings** exist only on PDF layers. Keys are the PDF's field names (from `asterdoc inspect`); values are bare Asterdoc paths such as `petName` or `parties.tenant.name`.
+- **PDF bindings** exist only on PDF layers. Keys are the PDF's field names (from `asterdoc inspect`); values are bare Asterdoc paths such as `petName` or `parties.tenant.name`, or `{ path, format?, part? }` objects.
 - **Drafts are immutable.** Every draft and signable method returns a new form; reassign it. <!-- dep:C1 --> reassign `update()`, `clear()`, `reset()`, and `setAnnex()` results. See [filling.md](./references/filling.md).
+- **Sensitive values and tests.** Mark account, tax and identity numbers `sensitive: true`. A form's `tests` ship inside the artifact: use synthetic values only.
 - **Finish line.** Authoring is done when the round trip passes: `data template` → `render --data` → `data extract` (see [cli.md § Round trip](./references/cli.md#round-trip)).
 
 ## Packages
@@ -71,17 +72,17 @@ Each concept has one topic reference. Load every reference the task touches.
 | Task | Load |
 |------|------|
 | The four artifact kinds, base keys, bundle `include` | [references/artifacts.md](./references/artifacts.md) |
-| Field types, properties, the fill value for each type, field builders | [references/fields.md](./references/fields.md) |
+| Field types, properties, the fill value for each type, masks, `sensitive`, input refusals, field builders | [references/fields.md](./references/fields.md) |
 | Party roles, required roles, `payment`, party fill data | [references/parties.md](./references/parties.md) |
 | File attachments | [references/annexes.md](./references/annexes.md) |
-| Conditions, defs, rules, functions, dates, totals over rows | [references/logic.md](./references/logic.md) |
+| Conditions, defs, rules, check digits, test cases, functions, dates, totals over rows | [references/logic.md](./references/logic.md) |
 | Declaring layers, MIME types, `signatures` slots, `defaultLayer` | [references/layers.md](./references/layers.md) |
-| Text, Markdown, HTML and DOCX templates, loops, signing directives | [references/templates.md](./references/templates.md) |
-| PDF field names and coordinates, bindings, fit, fonts, reading a filled PDF | [references/pdf.md](./references/pdf.md) |
+| Text, Markdown, HTML and DOCX templates, format modifiers, loops, signing directives | [references/templates.md](./references/templates.md) |
+| PDF field names and coordinates, bindings, binding objects and parts, fit, fonts, reading a filled PDF | [references/pdf.md](./references/pdf.md) |
 | Rendering in code or CLI, resolvers, PDF utilities | [references/rendering.md](./references/rendering.md) |
-| Locale-aware display of values | [references/formatting.md](./references/formatting.md) |
+| Locale-aware display of values, the `format` an artifact declares, lookup providers | [references/formatting.md](./references/formatting.md) |
 | `instructions` and `agentInstructions` | [references/instructions.md](./references/instructions.md) |
-| Filling step by step, fill state, checking one answer, saving and resuming a draft, sessions | [references/filling.md](./references/filling.md) |
+| Filling step by step, fill state, checking one answer, countries, regions and masks in conversation, saving and resuming a draft, sessions | [references/filling.md](./references/filling.md) |
 | Signers, sealing, capture, signature map, witnesses, packets | [references/sealing.md](./references/sealing.md) |
 
 ## Workflow

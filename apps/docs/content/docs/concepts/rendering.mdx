@@ -109,7 +109,13 @@ const output = await form.render({
 })
 ```
 
-See [Formatting](/sdk/formatting) for details on formatting and localization.
+Each layer can then say how it prints values with a `format` object, over that formatter: dates as `06/15/1990`, country codes as names, names in upper case. A PDF binding, a template placeholder and a React element can each narrow it further. The stored data does not change; only the printed text does.
+
+```json
+"format": { "date": { "pattern": "MM/DD/YYYY" }, "country": { "display": "name" }, "case": "upper" }
+```
+
+See [Formatting values](/guides/value-formatting) for layer formats, and [Formatting](/sdk/formatting) for the formatter and localization.
 
 ---
 

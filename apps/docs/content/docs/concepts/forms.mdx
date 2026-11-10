@@ -36,7 +36,9 @@ fields: {
 }
 ```
 
-See [Primitives](/schemas/primitives) for the complete list of field types.
+Some fields store a canonical code whatever the input: a `country` field stores `CA` for "Canada", a `region` field stores `CA-ON` for "Ontario", and a `text` field with a `mask` such as `###-##-####` stores `123456789` for "123-45-6789". See [Codes and masks](/guides/field-input).
+
+See [Field](/schemas/artifacts/form/field) for the complete list of field types.
 
 ---
 

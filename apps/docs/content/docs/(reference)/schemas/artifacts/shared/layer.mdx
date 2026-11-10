@@ -107,13 +107,13 @@ File-backed layer with external file reference. Used when content is stored in a
   {
     name: 'checksum',
     type: 'string',
-    description: 'SHA-256 checksum for integrity verification',
+    description: '`sha256:` and 64 lowercase hex digits. Render and seal verify the file\'s bytes against it and throw `LayerChecksumError` when they differ. Without it, the file is outside the content hash, and `asterdoc validate` warns',
     isOptional: true,
   },
   {
     name: 'font',
     type: '{ path: string, checksum?: string }',
-    description: 'PDF layers only. A TrueType font (.ttf) for filled values and overlay text, read through the same resolver as `path`. See [PDF renderer fonts](/sdk/renderers/pdf#fonts)',
+    description: 'PDF layers only. A TrueType font (.ttf) for filled values and overlay text, read through the same resolver as `path`. Its `checksum` is verified like the layer\'s. See [PDF renderer fonts](/sdk/renderers/pdf#fonts)',
     isOptional: true,
   },
   {
@@ -124,7 +124,7 @@ File-backed layer with external file reference. Used when content is stored in a
   },
   {
     name: 'bindings',
-    type: 'Record<string, string | { path: string, format?: ValueFormat }>',
+    type: 'Record<string, string | { path: string, format?: ValueFormat, part?: string }>',
     description: 'PDF layers only. Maps each AcroForm field name in the template (key) to the Asterdoc path that fills it (value), as a string or a binding object. See [Bindings](#bindings)',
     isOptional: true,
   },
@@ -261,7 +261,7 @@ A layer that reuses bindings through `bindingsFrom` takes each binding with its 
 
 A split binding such as `fields.ssn:2` on a masked field prints the second group of token characters between literals (`45` for `###-##-####`). For a comb field that has a box per digit, bind with `format: { text: { mask: false } }`.
 
-Levels apply from lowest to highest: the caller's formatter, then the layer's `format`, then a binding's `format`. Each kind merges per property, so a binding's `money` keeps the layer's other money choices, and a higher `locale` replaces a lower one. React layers accept a `format` but do not apply it yet. See [Artifact formatting](/sdk/renderers/pdf#artifact-formatting).
+Levels apply from lowest to highest: the caller's formatter, then the layer's `format`, then a binding's, template placeholder's or React element's `format`. Each kind merges per property, so a binding's `money` keeps the layer's other money choices, and a higher `locale` replaces a lower one. A React layer passes its `format` to the composition as the document's presentation. An artifact that sets none of these options prints exactly as it did before they existed. See [Formatting values](/guides/value-formatting).
 
 ## SignatureSlot
 

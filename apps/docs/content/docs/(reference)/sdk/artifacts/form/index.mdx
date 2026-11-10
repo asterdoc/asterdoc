@@ -166,6 +166,7 @@ checksum renders whatever bytes the resolver returns.
   { name: 'annexes', type: 'Record<string, FormAnnex>', description: 'Predefined annex slots keyed by identifier', isOptional: true },
   { name: 'allowAdditionalAnnexes', type: 'boolean', description: 'Allow ad-hoc annexes beyond defined slots', isOptional: true },
   { name: 'parties', type: 'Record<string, FormParty>', description: 'Party role definitions', isOptional: true },
+  { name: 'tests', type: 'readonly FormTestCase[]', description: 'Test cases that `runTests()` and `asterdoc validate` run. See [Test cases](/schemas/artifacts/form#test-cases)', isOptional: true },
 ]} />
 
 #### Returns
@@ -194,7 +195,7 @@ Returns a `FormInstance` with the following properties and methods:
   { name: 'parties', type: 'Record<string, FormParty> | undefined', description: 'Party role definitions' },
   { name: 'parseData', type: '(data: Record<string, unknown>) => InferFormPayload', description: 'Validate data against form (throws on error)', isMethod: true },
   { name: 'safeParseData', type: '(data: Record<string, unknown>) => ValidationResult', description: 'Validate data (returns result object)', isMethod: true },
-  { name: 'validateFieldInput', type: '(input: { fieldPath: string | string[]; value: unknown }) => ProgressiveValidationResult<unknown>', description: 'Validate one field input at fields.<path>', isMethod: true },
+  { name: 'validateFieldInput', type: "(input: { fieldPath: string | string[]; value: unknown; locale?: string; owner?: unknown; input?: 'canonical' | 'formatted' }) => ProgressiveValidationResult<unknown>", description: 'Validate one field input at fields.<path> and return the value as it is stored. `locale` adds country names in that language; `owner` is the address a `codes: true` member is written into; `input` says how a partial masked value is written (default `canonical`)', isMethod: true },
   { name: 'validateFieldsPatch', type: '(fields: unknown) => ProgressiveValidationResult<Record<string, unknown>>', description: 'Validate a partial fields patch without requiring unrelated fields', isMethod: true },
   { name: 'validatePartyInput', type: '(input: { roleId: string; index?: number; value: unknown }) => ProgressiveValidationResult<{ roleId; index; party }>', description: 'Validate one party input and normalize runtime party id', isMethod: true },
   { name: 'validatePartiesPatch', type: '(parties: unknown) => ProgressiveValidationResult<Record<string, RuntimeParty | RuntimeParty[]>>', description: 'Validate a partial parties patch', isMethod: true },
@@ -206,6 +207,7 @@ Returns a `FormInstance` with the following properties and methods:
   { name: 'clone', type: '() => FormInstance', description: 'Deep clone the instance', isMethod: true },
   { name: 'validate', type: '(options?: ValidateOptions) => StandardSchemaV1.Result', description: 'Validate the form definition', isMethod: true },
   { name: 'isValid', type: '(options?: ValidateOptions) => boolean', description: 'Check if form is valid', isMethod: true },
+  { name: 'runTests', type: '() => FormTestReport', description: 'Run the form\'s [test cases](/schemas/artifacts/form#test-cases) and return `{ passed, results }`. See [Test cases](#test-cases)', isMethod: true },
   { name: 'contentHash', type: '() => Promise<string>', description: '`sha256:` digest of the RFC 8785 canonical JSON of the definition as stored, at the schema version it declares. A form made in memory, or edited after it was read, hashes what `toJSON()` writes for it. A runtime keeps the hash of the definition it was filled from. Keys are sorted, so the order of `layers` is not part of the hash: set `defaultLayer` when it matters', isMethod: true },
   { name: 'toJSON', type: '(options?: SerializationOptions) => object', description: 'Serialize to JSON', isMethod: true },
   { name: 'toYAML', type: '(options?: SerializationOptions) => string', description: 'Serialize to YAML', isMethod: true },
@@ -245,6 +247,7 @@ Chain methods to build a form incrementally:
     { name: 'allowAdditionalAnnexes', params: 'value: boolean', description: 'Allow ad-hoc annexes' },
     { name: 'party', params: 'roleId: string, party: FormParty', description: 'Add a party role' },
     { name: 'parties', params: 'parties: Record<string, FormParty>', description: 'Set all parties at once' },
+    { name: 'tests', params: 'value: readonly FormTestCase[]', description: 'Set the test cases' },
     { name: 'build', params: 'options?: ArtifactInstanceOptions', description: 'Build and validate; bind a resolver for file-backed layers', terminal: true },
   ]}
   returns={{ intermediate: 'FormBuilder', terminal: 'FormInstance' }}

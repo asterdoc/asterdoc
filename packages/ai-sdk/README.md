@@ -19,7 +19,7 @@
 
 Native [AI SDK 7](https://ai-sdk.dev/) tools for Asterdoc document workflows. The adapter consumes the canonical schemas, descriptions, result contracts, and execution functions from `@asterdoc/ai-tools`.
 
-The package is verified with AI SDK `7.0.94`, Zod `4.1.8` or newer in the v4 line, and Node.js `22` or newer.
+The package is verified with AI SDK `7.0.94`, Zod `4.1.12` or newer in the v4 line, and Node.js `22` or newer.
 
 ## Installation
 

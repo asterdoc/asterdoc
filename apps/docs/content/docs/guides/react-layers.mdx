@@ -104,6 +104,8 @@ export default function AgreementDocument({ artifact, data }: ReactLayerComponen
 ```
 
 `Field` prints the label and the formatted value from the artifact. `Signature` prints the client's name and the signing rule the seal measures the field from.
+
+To change how values print, give the layer a `format`, such as `format: { money: { fractionDigits: 0 } }`. It reaches the composition as the document's presentation. One element can narrow it with its own `format` prop: `<Field path="fee" format={{ money: { currencyDisplay: 'none' } }} />`. See [Formatting values](/guides/value-formatting).
 </Step>
 
 <Step>

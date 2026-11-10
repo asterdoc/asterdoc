@@ -44,7 +44,8 @@ await writeFile("lease.pdf", pdf);
 - The resolver root is the artifact file's directory. Layer paths resolve inside it.
 - Every instance derived from the form (each `fill`, each `update`) carries the resolver. Bind it the same way with `a.load(content, { resolver })`, `a.document(def, { resolver })`, `a.checklist(def, { resolver })` or a builder's `.build({ resolver })`.
 - Inline layers need no resolver.
-- A draft renders before every required field is filled. `progressive` sets how missing values print.
+- A draft renders before every required field is filled. `progressive` sets how missing values print. Pass `require: "complete"` to refuse an incomplete draft.
+- A file layer or font with a `checksum` is checked against the bytes the resolver returns; a mismatch throws `LayerChecksumError`.
 
 Documents render raw layer content by default; forms and checklists render through their engine. See [layers.md](./layers.md#render-by-kind).
 
@@ -55,15 +56,19 @@ Documents render raw layer content by default; forms and checklists render throu
 | Option | Type | Effect |
 |--------|------|--------|
 | `layer` | `string` | Layer key. Default: `defaultLayer`, then the first layer |
-| `formatter` | `Formatter` | Locale and value styles for this render ([formatting.md](./formatting.md)) |
+| `formatter` | `Formatter` | Locale and value styles for this render. The layer's `format` applies over it ([formatting.md](./formatting.md)). A formatter you create needs the [lookup providers](./formatting.md#lookup-providers) for phone styles and region names |
 | `progressive` | `{ missing?, incomplete? }` | Enable progressive placeholders. Defaults (`—` and `…`) apply only when this option is passed |
 | `renderers` | `Record<mimeType, renderer>` | Renderers keyed by MIME type, tried before the built-in engines. React layers need one |
 | `renderer` | `AsterdocRenderer` | Replaces the engine for this call. Use `createLayerRenderer({ ... })` to pass engine options |
-| `bindings` | `Record<string, string>` | PDF layers only: PDF field name → Asterdoc path, merged over the layer's own `bindings`. Any other layer refuses it |
+| `bindings` | `Record<string, string \| { path, format?, part? }>` | PDF layers only: PDF field name → Asterdoc path or [binding object](./pdf.md#binding-objects), merged over the layer's own `bindings`. Any other layer refuses it |
+| `require` | `"complete"` | Refuse to render unless the draft passes the check `seal()` makes: no value missing or invalid, every error rule passing. Warnings never block. Throws `FormValidationError` or `FormRuleViolationError` |
 
 ```typescript
 const preview = await form.fill({ fields: { tenantName: "Ada" } }).render({ progressive: { missing: "____" } });
 // Rent: ____
+
+await form.fill({ fields: { tenantName: "Ada" } }).render({ require: "complete" });
+// throws FormValidationError: Form data validation failed: Missing required field: fields.monthlyRent
 ```
 
 ## createLayerRenderer options
@@ -182,6 +187,9 @@ Text, PDF, and DOCX rendering ship in the CLI. React layers require the project 
 | `Resolver content not found: "x"` (`ERR_RESOLVER_NOT_FOUND`) | Memory key differs from the layer path, or the HTTP resolver got a 404 from its fetch | Use the layer's `path` string as the key, or publish the file under the base URL |
 | `ERR_RESOLVER_INVALID_OPTIONS` | A resolver was created with a bad `root`, `baseUrl` or `contents` | Pass the options in the table above |
 | `Layer "x" not found` | Wrong `layer` or `defaultLayer` | Use a key from `layers` |
+| `LayerChecksumError` (`layerKey`, `path`, `target`: `layer` or `font`, `expected`, `actual`) | The resolver returned bytes that differ from the layer's `checksum` | Restore the file, or run `asterdoc fix -y` to record the new one |
+| `FormValidationError`, `FormRuleViolationError` | `require: "complete"` on an incomplete draft | Fill the open values ([filling.md § Readiness](./filling.md#readiness)) |
+| `Cannot format fields.x (phone, unsupported): Phone style "national" needs the phone provider` (`missing_format_provider`) | A formatter without the lookup provider a format needs | Add `providers` ([formatting.md § Lookup providers](./formatting.md#lookup-providers)), or omit `formatter` |
 | `UnregisteredLayerRendererError` | React layer without a renderer | Pass `renderers` (the `asterdoc-react` skill) |
 | `Unsupported render layer MIME type: x` | No engine for the MIME type | Use a type from [layers.md](./layers.md#mime-type-and-engine) |
 | `TemplateError` | An expression failed at render | Fix the expression at the reported layer, line and column ([templates.md](./templates.md)) |

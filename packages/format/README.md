@@ -17,7 +17,7 @@
 
 </div>
 
-`@asterdoc/format` presents structured Asterdoc values as human-readable text. It keeps display policy separate from stored values, localized input parsing, currency conversion, and artifact validation.
+`@asterdoc/format` presents structured Asterdoc values as human-readable text. It keeps display policy separate from stored values, currency conversion, and artifact validation. It also reads country, subdivision, and masked input into the canonical values artifacts store.
 
 The formatter presents numbers, money, percentage points, people, organizations, parties, phones, postal addresses, coordinates, bounding boxes, identifications, attachments, signatures, dates, datetimes, times, ISO 8601 durations, and the selection values a form field carries: booleans, single choices, multiple choices, and ratings. It is immutable and reusable, so repeated calls under one effective policy reuse bounded Intl formatter caches.
 
@@ -62,6 +62,36 @@ us.formatSignature({ timestamp: '2026-09-04T15:30:00Z', method: 'drawn' }) // 'S
 
 Coordinates use `latitude; longitude`; bounding boxes use `southWest | northEast`. The semicolon and pipe separators remain unambiguous when a locale uses a comma as its decimal separator. Coordinate values default to up to nine fractional digits and accept the same number precision options as `formatNumber`.
 
+Phones print in `e164` by default, as stored. The `international`, `national`, and `digits` styles need numbering-plan data, which lives in its own entry so a browser bundle only carries it when asked:
+
+```ts
+import { phoneProvider } from '@asterdoc/format/phone'
+import { regionsProvider } from '@asterdoc/format/regions'
+
+const full = createFormatter({ locale: 'en-US', providers: { phone: phoneProvider, regions: regionsProvider } })
+
+full.formatPhone('+12025550123', { style: 'national' }) // '(202) 555-0123'
+us.safeFormatPhone('+12025550123', { style: 'national' }) // { success: false, status: 'unsupported', issues: [{ code: 'missing_format_provider', ... }] }
+```
+
+`@asterdoc/format/phone` exports `phoneProvider` (built on libphonenumber-js). `@asterdoc/format/regions` exports `regionsProvider`, the ISO 3166-2 subdivisions with their English CLDR names. A format or lookup that needs a provider the caller did not pass fails with `missing_format_provider`, naming the entry to import. `defaultFormatter` from this package carries no providers; `@asterdoc/render`'s `defaultFormatter` carries both.
+
+Country, region, and mask primitives read input into the canonical value an artifact stores. A failed lookup returns a `code` and, when the input names no place or more than one, the `candidates` to choose from:
+
+```ts
+import { resolveCountry, resolveRegion, canonicalizeMasked, formatMasked } from '@asterdoc/format'
+
+resolveCountry('CAN') // { ok: true, value: 'CA' }
+resolveCountry('Germny', { regions: regionsProvider })
+// { ok: false, code: 'unknown_country', candidates: [{ code: 'DE', name: 'Germany' }, ...], ... }
+resolveRegion('Ontario', { country: 'CA', regions: regionsProvider }) // { ok: true, value: 'CA-ON' }
+
+canonicalizeMasked('@@-####', 'AB-1234') // { success: true, value: 'AB1234', complete: true }
+formatMasked('@@-####', 'AB1234') // { success: true, value: 'AB-1234', complete: true }
+```
+
+Mask tokens are `#` for a digit, `@` for an ASCII letter, and `*` for either; any other printable ASCII character is a literal, and `\` escapes a token character. A country name needs `regions`, because a name such as Georgia can also name a subdivision of another country.
+
 Address country and document locale are independent. The default `layout: 'country'` policy provides layouts for US, GB, DE, FR, and SA and returns an `unsupported` result for another country. Select `layout: 'generic'` when a component-preserving layout is appropriate, or provide a `countryLayouts` object whose ISO country-code keys map to formatter functions for another country. Party values with only the shared `name` member are ambiguous; use `partyType: 'person'` or provide a distinguishing person or organization member.
 
 Money always supplies its currency. A bare amount is never assigned a default currency. Percentage values use Asterdoc's percentage-point scale, so `8.25` means `8.25%`, not `825%`.
@@ -92,7 +122,7 @@ const result = formatter.safeFormatMoney({ amount: 10 })
 
 The safe methods are named `safeFormatMoney`, `safeFormatNumber`, `safeFormatPercentage`, `safeFormatAddress`, `safeFormatPhone`, `safeFormatPerson`, `safeFormatOrganization`, `safeFormatParty`, `safeFormatCoordinate`, `safeFormatBbox`, `safeFormatIdentification`, `safeFormatAttachment`, `safeFormatSignature`, `safeFormatDate`, `safeFormatDatetime`, `safeFormatTime`, `safeFormatDuration`, `safeFormatBoolean`, `safeFormatEnum`, `safeFormatMultiselect`, and `safeFormatRating`. Dynamic callers can use `formatValue(kind, value)` or `safeFormatValue(kind, value)`. A kind the formatter does not know returns `unsupported` with the code `unknown_kind`.
 
-A bad option is `invalid` with the code `invalid_options`, like a bad value: a malformed locale, an unknown timezone, calendar, or numbering system, or an Intl option out of range. `unsupported` means the input is right and the runtime or the resources fall short: a locale the runtime has no data for (`unsupported_locale`), a missing package message (`missing_message`), or a country with no address layout (`unsupported_country_layout`).
+A bad option is `invalid` with the code `invalid_options`, like a bad value: a malformed locale, an unknown timezone, calendar, or numbering system, or an Intl option out of range. `unsupported` means the input is right and the runtime or the resources fall short: a locale the runtime has no data for (`unsupported_locale`), a missing package message (`missing_message`), a country with no address layout (`unsupported_country_layout`), or a format that needs a provider the formatter was not given (`missing_format_provider`).
 
 A value family that formats through another kind, such as a signature's date, a bounding box's corners, a rating's number, or a multiselect's labels, passes only its own options. The other kind's formatter-level options do not apply, so `number: { maximumFractionDigits: 0 }` does not round a rating. Overrides of the other kind still apply.
 
@@ -106,7 +136,7 @@ const amountOnly = formatter.compose({
 amountOnly.formatMoney({ amount: 1500.5, currency: 'USD' }) // '1.500,50'
 ```
 
-`currencyDisplay: 'none'` drops the symbol and keeps the currency's fraction digits (two for USD, none for JPY) unless you set digits.
+`currencyDisplay: 'none'` drops the symbol and keeps the currency's fraction digits (two for USD, none for JPY) unless you set digits. `fractionDigits` sets both digit bounds at once and rounds half away from zero, so `{ fractionDigits: 0 }` prints 1234.5 USD as `$1,235` in `en-US`. `person: { order: 'family-first' }` prints Jane Q Smith as `Smith, Jane Q`.
 
 `compose` and `withOverrides` return independent formatter instances. Overrides can delegate to the previous implementation through the third callback argument, without recursively invoking themselves.
 

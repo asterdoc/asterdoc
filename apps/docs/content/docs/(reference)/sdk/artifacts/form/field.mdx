@@ -150,6 +150,7 @@ All field builders share these methods:
     { name: 'description', params: 'value: string', description: 'Set helper text' },
     { name: 'required', params: 'value?: boolean | string', description: 'Mark as required (default: true). Accepts expression.' },
     { name: 'visible', params: 'value?: boolean | string', description: 'Set visibility (default: true). Accepts expression.' },
+    { name: 'sensitive', params: 'value?: boolean', description: 'Mark the value sensitive (default: true): explanations and errors print it as [redacted] with its kind and length. `false` opts an identification or organization field out of its default' },
     { name: 'build', params: '', description: 'Build and validate', terminal: true },
   ]}
   returns={{ intermediate: 'FieldBuilder', terminal: 'FormField' }}
@@ -288,6 +289,7 @@ All fields share these base properties:
   { name: 'description', type: 'string', description: 'Helper text displayed in UI', isOptional: true },
   { name: 'required', type: 'boolean | string', description: 'Whether field is required. Can be an expression.', isOptional: true },
   { name: 'visible', type: 'boolean | string', description: 'Whether field is visible. Can be an expression.', isOptional: true },
+  { name: 'sensitive', type: 'boolean', description: 'Whether the value is sensitive: rule explanations, validation and render errors, and AI tool errors print it as [redacted] with its kind and length. Identification fields, and an organization field\'s taxId and entityId, are sensitive unless this is false. See [Sensitive values](/guides/validation-and-tests#sensitive-values)', isOptional: true },
 ]} />
 
 ## Conditional Logic

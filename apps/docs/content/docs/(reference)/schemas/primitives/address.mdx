@@ -27,7 +27,7 @@ An Address is a structured primitive that represents a postal address.
   {
     name: 'region',
     type: 'string',
-    description: 'State, province, or region, 1–100 characters.',
+    description: 'State, province, or region, 1–100 characters. In an address field with `codes: true`, the ISO 3166-2 code after the dash (`ON` for Ontario).',
   },
   {
     name: 'postalCode',
@@ -37,7 +37,7 @@ An Address is a structured primitive that represents a postal address.
   {
     name: 'country',
     type: 'string',
-    description: 'ISO country code or full country name, 2–100 characters.',
+    description: 'ISO country code or full country name, 2–100 characters. In an address field with `codes: true`, the ISO 3166-1 alpha-2 code (`CA`).',
   },
 ]} />
 

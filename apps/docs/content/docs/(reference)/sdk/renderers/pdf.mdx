@@ -335,7 +335,7 @@ bindings: {
 
 ### Reading bindings back
 
-[Extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) reverses simple, nested, enum checkbox, and split bindings exactly. A combined binding cannot be split back, so its fields are reported as not recoverable.
+[Extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) reverses simple, nested, enum checkbox, and split bindings exactly. A combined binding cannot be split back, so its fields are reported as not recoverable. A value printed through a format is read back through it; a format that drops detail, such as `case: upper` or `money.fractionDigits: 0`, marks the recovered value `lossy`. See [Reading a filled PDF back](/guides/value-formatting#reading-a-filled-pdf-back).
 
 ## Automatic Serialization
 
@@ -344,8 +344,10 @@ Field values are automatically serialized based on their schema types:
 ```ts
 // Money fields formatted as "$50,000.00"
 // Date fields formatted as "Apr 1, 2024"
-// Phone fields formatted as "(555) 123-4567"
+// Phone fields formatted as "+12025550143"
 ```
+
+A layer or binding `format` changes this per output, such as `phone: { style: 'national' }` for `(202) 555-0143`. See [Formatting values](/guides/value-formatting).
 
 ## Field appearance
 
@@ -377,6 +379,8 @@ Other bindings are checked exactly, and a failure is an **error**:
 - **Split bindings** (`ssn:3`): the matching hyphen-separated part of the pattern. When the pattern does not fix where the hyphens fall, the part is bounded by the whole value's `maxLength`.
 - **Enum fields:** the widest option value, since a PDF text box writes the value. **Multiselect fields:** the widest `max` option values, or all of them, joined with `, `.
 - **Combined bindings:** each path's value, joined with `, `.
+
+The check measures what the binding prints, after the layer's and the binding's `format` and `case`. Under `choice.display: label` it measures the labels, and under `boolean` labels both labels. Country and region names are measured at every name the format can print. A masked text field is measured at the widest character each mask position allows, with its literals unless `text.mask` is `false`. A phone under `phone.style` is measured at the longest number the style prints, in `phone.region`'s plan or any plan, and a `part` at the most digits it holds. Upper case is applied before measuring, since it can lengthen a value.
 
 A bound text field with nothing bounding its length is a **warning** (`unbounded`). `validateLayers()` returns warnings in `result.warnings`; they do not fail validation. Composite parts such as `address.line1`, party values, and computed values are not checked.
 

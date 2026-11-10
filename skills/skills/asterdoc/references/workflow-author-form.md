@@ -65,7 +65,10 @@ Build a mapping table with one row per entry in `fields.json`: the PDF name, the
 | Group of checkboxes, pick many | `multiselect` | One `"field:option"` per box |
 | Single checkbox | `boolean` | `"field"` |
 | Radio group or dropdown | `enum` with option values equal to the PDF export values | `"field"` |
-| Split boxes (SSN in 3 parts) | `text` with a `pattern` | `"field:1"`, `"field:2"`, ... |
+| Split boxes (SSN in 3 parts) | `text` with a `mask` (`###-##-####`) | `"field:1"`, `"field:2"`, ... |
+| Separate month, day and year boxes; area code and number; dollars and cents | `date`, `phone`, `money` | `{ "path": "field", "part": "month" }`, ... ([pdf.md § Binding objects](./pdf.md#binding-objects)) |
+| A box that asks for `MM/DD/YYYY`, or pre-prints `$` | `date`, `money` | The layer's `format` ([formatting.md § Artifact formats](./formatting.md#artifact-formats)) |
+| Country or state boxes | `country`, `region`, or `address` with `codes: true` | `"field"` |
 | Repeating rows | `list` with an `item` fieldset | `"rows[0].name"`, ... |
 | Name or signature line of a signer | A party | `"parties.role.name"` |
 
@@ -79,9 +82,9 @@ Write the fields, parties, defs, and rules. Load the topic ref for each part:
 
 | Part | Ref | Watch for |
 |------|-----|-----------|
-| Fields | [fields.md](./fields.md) | The most specific type. A repeating group is a `list`. Money is `money`, not `number`. |
+| Fields | [fields.md](./fields.md) | The most specific type. A repeating group is a `list`. Money is `money`, not `number`. Mark account, tax and identity numbers `sensitive`. |
 | Parties | [parties.md](./parties.md) | One role per kind of signer, not per signature line. `witnesses` and `notarized` go under the party's `signature`. `payment` if the party pays. |
-| Logic | [logic.md](./logic.md) | Field `visible` and `required` expressions use `fields.<id>`. "If yes, complete B" is `visible`. "Sum of lines 1 to 4" is a def. "Must not exceed" is a rule. |
+| Logic | [logic.md](./logic.md) | Field `visible` and `required` expressions use `fields.<id>`. "If yes, complete B" is `visible`. "Sum of lines 1 to 4" is a def. "Must not exceed" is a rule, with `paths` on the fields it is about. Add `tests` for each rule, with synthetic values. |
 | Annexes | [annexes.md](./annexes.md) | Attachments the form asks for. |
 
 Leave out office-use sections, barcodes, and page furniture.

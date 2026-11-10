@@ -35,7 +35,7 @@ import type { Form } from "@asterdoc/types";
 
 function Name() {
   const name = useField("name");
-  return <p>{name.label}: {name.text}</p>;
+  return <p>{name.field.label}: {name.text}</p>;
 }
 
 export function Profile({ artifact, data }: { artifact: Form; data: DocumentData }) {
@@ -54,6 +54,23 @@ Providers emit no styled DOM. Focused hooks expose data and correctness bindings
 - `useFitToWidth` for consumer-owned page furniture
 
 Inputs are immutable snapshots. A provider update publishes only selectors whose resolved value changed. Each provider creates an isolated store, including during SSR, and subscriptions clean up normally under Strict Mode.
+
+## Formatting
+
+`ArtifactProvider` takes `format`: a `formatter`, and a `presentation` that applies a layer `format` to every value in the document. `useField`, `useList`, and `useTotals` take an element `format` of their own, as do the copyable `Field`, `Party`, `Totals`, and `Table` components. It merges over the presentation per property:
+
+```tsx
+function Phone() {
+  const phone = useField("phone", { phone: { style: "national" } });
+  return <p>{phone.text}</p>;
+}
+
+<ArtifactProvider artifact={artifact} data={data} format={{ formatter, presentation: { date: { pattern: "DD/MM/YYYY" } } }}>
+  <Phone />
+</ArtifactProvider>;
+```
+
+A format key that does not apply to the values an element prints throws `ElementFormatError`. The root entry's default formatter has no lookup data, to keep browser bundles small, so a phone style other than `e164` throws `ArtifactFieldFormatError` with a `missing_format_provider` issue. Pass a formatter created with `providers` from `@asterdoc/format/phone` and `@asterdoc/format/regions`, or the server's `defaultFormatter` from `@asterdoc/react-pdf/formatter`.
 
 ## Copyable document components
 

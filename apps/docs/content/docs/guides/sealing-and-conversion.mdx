@@ -131,6 +131,30 @@ prep.warnings      // e.g. slots skipped for unfilled party indexes
 const signable = await draft.seal({ adapter })  // same map, canonicalized
 ```
 
+## Integrity
+
+A seal records what it was made from, so you can tell later whether a filing came from the definition you expect.
+
+Give each file layer, and its font, a `checksum` (`asterdoc fix` writes them). Render and seal check it against the bytes the resolver returns and throw `LayerChecksumError` when they differ, naming the layer, the path and both digests. A layer without a checksum renders whatever bytes it gets, and `asterdoc validate` warns about it.
+
+```ts
+signable.integrity
+// {
+//   contentHash: 'sha256:a3be...',
+//   sdkVersion: '0.12.0',
+//   uncovered: [],
+// }
+```
+
+- `contentHash` is the `sha256:` digest of the RFC 8785 canonical JSON of the definition as stored, at the schema version it declares. `form.contentHash()` returns the same digest before you seal. An unchanged artifact keeps its hash across SDK releases.
+- `sdkVersion` is the `@asterdoc/core` version that sealed it. It is not part of the hash.
+- `migratedFrom` is set when the definition was written for an earlier [schema version](/schemas#schema-versions) and upgraded in memory on load.
+- `uncovered` lists what the hash leaves out: a layer file or font with no checksum (`{ kind: 'layer', layer: 'pdf', path: 'w9.pdf' }`), a React module, or a renderer or adapter supplied at seal time. It is empty when the hash covers everything. Template and font bytes are covered through their checksums.
+
+A runtime's definition (`draft.form`) is a frozen snapshot taken at `fill()`, so the definition a seal hashes cannot change under it. Writing to it throws; edit the authoring form and fill again.
+
+The durable record of a filing is its sealed canonical PDF and `canonicalPdfHash`. A later SDK can load, validate and extract the filing's artifact, but renders are not promised to be byte-identical across releases.
+
 ## Which operation to use
 
 | Goal | Operation |

@@ -195,7 +195,7 @@ Each party is a person or an organization. The type is inferred from its keys:
 | Person | `name` (required), `title`, `firstName`, `middleName`, `lastName`, `suffix` | No organization key is present |
 | Organization | `name` (required), `legalName`, `domicile`, `entityType`, `entityId`, `taxId` | At least one of `legalName`, `domicile`, `entityType`, `entityId`, `taxId` is present |
 
-So an `organization` role filled with `{ "name": "Acme" }` alone is read as a person and fails with `Party type 'person' not allowed for this role. Expected 'organization'`. Give it one organization key, such as `legalName`. A party takes only these keys; put its email, phone or address in fields.
+So an `organization` role filled with `{ "name": "Acme" }` alone is read as a person and fails with `Party type 'person' not allowed for this role. Expected 'organization'`. Give it one organization key, such as `legalName`. A party takes only these keys; put its email, phone or address in fields. A party's `taxId` and `entityId` are always [sensitive](./fields.md#sensitive-values): explanations and errors redact them.
 
 `id` is optional on input. Core assigns `<role>-<index>` (`tenant-0`, `tenant-1`) and refuses an `id` that does not match the party's position.
 

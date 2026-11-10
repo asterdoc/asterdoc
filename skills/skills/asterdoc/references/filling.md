@@ -1,13 +1,13 @@
 ---
 name: filling
-description: Progressive fill of a form draft. fill and immutable draft mutators, fill state and issues, checking input before applying it, clear and reset, persisting and resuming runtime instances, and @asterdoc/sessions for conversational intake. Reading a filled PDF lives in pdf.md.
+description: Progressive fill of a form draft. fill and immutable draft mutators, fill state and issues, checking input before applying it, conversational input for countries, regions and masks, clear and reset, persisting and resuming runtime instances, and @asterdoc/sessions for conversational intake. Reading a filled PDF lives in pdf.md.
 metadata:
-  tags: fill, update, draft, progressive, fill-state, validation, persist, resume, rehydrate, sessions, intake
+  tags: fill, update, draft, progressive, fill-state, validation, candidates, display, persist, resume, rehydrate, sessions, intake
 ---
 
 # Filling
 
-**Contents:** [The draft](#the-draft) · [Fill](#fill) · [Update](#update) · [Fill state](#fill-state) · [Check input first](#check-input-first) · [Readiness](#readiness) · [Persist and resume](#persist-and-resume) · [Sessions](#sessions) · [Extract from a filled PDF](#extract-from-a-filled-pdf)
+**Contents:** [The draft](#the-draft) · [Fill](#fill) · [Update](#update) · [Fill state](#fill-state) · [Check input first](#check-input-first) · [Conversational input](#conversational-input) · [Readiness](#readiness) · [Persist and resume](#persist-and-resume) · [Sessions](#sessions) · [Extract from a filled PDF](#extract-from-a-filled-pdf)
 
 A **draft** is a filled but unsealed form. `fill()` creates it; `update()`, `clear()`, `reset()`, and `setAnnex()` change it. Each call returns a new draft: reassign it. To build a value, look up its shape per field type in [fields.md](./fields.md) and per party in [parties.md § Party fill values](./parties.md#party-fill-values). To sign a finished draft, load [sealing.md](./sealing.md).
 
@@ -146,7 +146,51 @@ const check = lease.validateFieldInput({ fieldPath: "monthlyRent", value: "ten" 
 if (!check.success) console.error(check.errors[0].message); // "Invalid input: expected object, received string"
 ```
 
+A refused value also carries `code` and `candidates` when the engine converts it ([fields.md § Input refusals](./fields.md#input-refusals)).
+
 `form.parseData(payload)` and `form.safeParseData(payload)` check a **complete** submission. Missing required fields fail there, so use them on the final payload only.
+
+## Conversational input
+
+`country`, `region`, `address` with `codes: true`, and masked `text` fields convert what the person typed into a stored code or canonical value. Pass the answer as given and let the engine convert it:
+
+```typescript
+import { a, placeDisplayNames } from "@asterdoc/sdk";
+
+const intake = a.form({
+  name: "intake",
+  fields: {
+    citizenship: { type: "country", label: "Country of citizenship" },
+    home: { type: "address", label: "Home address", codes: true },
+  },
+});
+
+let answers = intake.fill();
+const result = answers.safeUpdate({ fields: { citizenship: "Georgia" } });
+if (!result.success) {
+  const [refusal] = result.error.errors;
+  refusal.code;       // "ambiguous_country"
+  refusal.candidates; // [{ code: "GE", name: "Georgia" }, { code: "US-GA", name: "Georgia, United States" }]
+}
+
+answers = answers.update({
+  fields: {
+    citizenship: "GE",
+    home: { line1: "1 Main St", locality: "Toronto", region: "Ontario", postalCode: "M5V 2T6", country: "Canada" },
+  },
+});
+answers.fields.home.region; // "ON"
+placeDisplayNames(intake.toJSON().fields, answers.fields);
+// { "fields.citizenship": "Georgia", "fields.home.country": "Canada", "fields.home.region": "Ontario, Canada" }
+```
+
+`placeDisplayNames(fields, values, { locale? })` gives the words for each stored code; country names follow `locale`, subdivision names are English. When a person, or an agent for one, answers:
+
+1. Pass what the person said: `"Ontario"`, `"Canada"`, `"123-45-6789"`. Do not convert it yourself.
+2. On a refusal with `candidates`, show the person the candidate names and ask which one they mean. Answer with that candidate's code. For a `country` field, a subdivision candidate (`US-GA`) means its country (`US`); give the subdivision to a region field.
+3. Confirm the stored value in words (`Ontario, Canada`), never as a bare code.
+
+`fieldInputGuidance(field)` returns this contract as a short note for one field, or `undefined` for a field that converts nothing. Show it next to the field in an agent's tool description; the AI tools do ([ai-tools.md](./ai-tools.md#conversational-input)).
 
 ## Readiness
 

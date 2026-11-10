@@ -1,0 +1,191 @@
+---
+title: Rules and test cases
+description: Check values across fields, keep sensitive values out of errors, and ship test cases with the form
+ogTitle: Rules and test cases
+ogDescription: Validation rules, check digits, sensitive values and built-in test cases in Asterdoc forms
+---
+
+A field's own schema checks one value: its type, `pattern`, `min` and `max`. A rule checks what the schema cannot, such as a check digit or a value that depends on another field. This guide covers rules, the values they must not print, and the test cases that keep them honest.
+
+## Rules
+
+A rule is a boolean [expression](/concepts/logic) the data must satisfy. Its key is its id. This guide uses one direct-deposit form throughout:
+
+```yaml
+fields:
+  routingNumber: { type: text, label: Routing number }
+  accountNumber: { type: text, label: Account number, sensitive: true }
+  card: { type: text, label: Card }
+rules:
+  routingChecksum:
+    expr: "weightedMod(fields.routingNumber, [3, 7, 1], 10) == 0"
+    message: Enter a valid routing number
+    paths: [fields.routingNumber]
+  accountLength:
+    expr: "length(fields.accountNumber) >= 4"
+    message: Account number is too short
+    paths: [fields.accountNumber]
+  cardLuhn:
+    expr: "checkDigit(fields.card, 'luhn')"
+    message: Check the card number
+    severity: warning
+layers:
+  summary: { kind: inline, mimeType: text/plain, text: "{{ fields.routingNumber }}" }
+```
+
+| Property | Description |
+|----------|-------------|
+| `expr` | Must be true for the form to be valid |
+| `message` | What a person reads when the rule fails |
+| `severity` | `error` (the default) blocks validity, sealing and `render({ require: 'complete' })`; `warning` does not |
+| `paths` | The field paths the failure attaches to, so a UI can show it beside the field. Each must name a field, or validation fails. Without `paths` the failure is form level; paths are never inferred from the expression |
+
+The rule's id is the stable code of its failure: match on `ruleId`, not on the message.
+
+The examples below read this draft, where all three rules fail:
+
+```ts
+const draft = form.fill({
+  fields: { routingNumber: '123456789', accountNumber: '12', card: '4111111111111112' },
+})
+
+const result = draft.validate()
+
+result.rules.errors[0]
+// {
+//   ruleId: 'routingChecksum',
+//   passed: false,
+//   message: 'Enter a valid routing number',
+//   severity: 'error',
+//   paths: ['fields.routingNumber'],
+//   explanation: { values: [{ path: 'fields.routingNumber', value: '"123456789"' }] },
+// }
+```
+
+A failed rule explains the values its expression read, in `explanation.values`. A list prints at most its first ten elements, then `… N more`. `result.rules.errors` holds the error-severity failures (`routingChecksum`, `accountLength`) and `result.rules.warnings` the warnings (`cardLuhn`).
+
+## Check digits and string tools
+
+The expression language has generic check-digit primitives. They validate structure, not that an account or a card exists.
+
+| Function | Returns |
+|----------|---------|
+| `checkDigit(value, algorithm)` | `true` when the whole string, check characters included, passes `luhn`, `mod97-10`, `mod11-2`, `verhoeff` or `damm` |
+| `weightedMod(value, weights, modulus)` | The sum of each digit times its weight, modulo `modulus`; `null` when the value is empty or has a non-digit |
+| `substring(value, start, end?)`, `charAt(value, index)`, `split(value, separator)` | String pieces, counted in UTF-16 code units |
+
+Nothing is stripped: spaces and dashes make `checkDigit` false and `weightedMod` null. A U.S. ABA routing number is `weightedMod(x, [3, 7, 1], 10) == 0`. Forms that need a structure check of their own, such as an SSN or an EIN, write it in their own expressions. As in JavaScript, `substring` and `charAt` can split a surrogate pair (half an emoji); check-digit inputs are ASCII, so this does not affect them.
+
+Each algorithm's allowed characters, and how to rearrange a value first, are in [Logic: Functions](/concepts/logic#functions).
+
+## Sensitive values
+
+Mark a field `sensitive` when its value must not appear in explanations and errors, such as an account or tax number:
+
+```yaml
+fields:
+  accountNumber: { type: text, label: Account number, sensitive: true }
+```
+
+Some values are sensitive without the flag:
+
+- `identification` fields, and the `taxId` and `entityId` of an `organization` field, unless the field sets `sensitive: false`;
+- a party's `taxId` and `entityId`, always;
+- everything under a sensitive fieldset or list.
+
+A sensitive value prints as `[redacted]` with its kind and length:
+
+```ts
+draft.validate().rules.errors[1].explanation
+// { values: [{ path: 'fields.accountNumber', value: '[redacted] (string, length 2)' }] }
+```
+
+Computed values derived from a sensitive value are redacted too, unless they are boolean. Counting rows (`count(fields.owners)`) is not derived. Validation and render errors, and `@asterdoc/ai-tools` tool errors, name a sensitive input the same way and offer no candidates for it.
+
+To see raw values while debugging, pass `explain: { raw: true }`:
+
+```ts
+draft.validate({ explain: { raw: true } }).rules.errors[1].explanation
+// { values: [{ path: 'fields.accountNumber', value: '"12"' }] }
+```
+
+Never pass it where the output is logged or shown to a model. The AI tools never print raw values.
+
+Redaction covers explanations and errors. It does not change the data: session event logs hold the values as given, and rendered output prints them, because filling them in is the point of a render. A [mask](/guides/field-input#masks) says how a value is written, not that it is private; mark the field `sensitive` as well when it is.
+
+## Test cases
+
+A form can carry its own test cases. Each one applies `input` to an empty draft through `update()`, so masks, countries and regions are canonicalized as for any input, then validates the draft and compares the outcome with `expect`.
+
+```yaml
+tests:
+  - name: a valid routing number passes
+    input:
+      fields:
+        routingNumber: '011000015'
+        accountNumber: '00001234'
+        card: '4111111111111111'
+    expect:
+      valid: true
+  - name: a bad check digit fails
+    input:
+      fields:
+        routingNumber: '123456789'
+        accountNumber: '00001234'
+        card: '4111111111111112'
+    expect:
+      valid: false
+      failures: [routingChecksum, cardLuhn]
+```
+
+| Property | Description |
+|----------|-------------|
+| `name` | Unique within the form |
+| `input` | `{ fields?, parties?, annexes? }`, applied through `update()` |
+| `context.asOf` | The instant `today()` and `now()` read, an ISO 8601 instant with a timezone. Set it for a rule that uses dates, so the test gives the same answer every day |
+| `expect.valid` | Whether the draft is valid. An input `update()` refuses makes the draft invalid with no rule failures |
+| `expect.failures` | The ids of every rule that fails, warnings included, in any order. Omitted, failed rules are not compared |
+
+Run them with `form.runTests()`:
+
+```ts
+const report = form.runTests()
+report.passed // true when every case passed
+
+report.results[1]
+// {
+//   name: 'a bad check digit fails',
+//   passed: true,
+//   valid: false,
+//   failures: ['cardLuhn', 'routingChecksum'],
+//   errors: [],
+//   expected: { valid: false, failures: ['routingChecksum', 'cardLuhn'] },
+//   sensitiveInputs: ['fields.accountNumber'],
+// }
+```
+
+`asterdoc validate` runs them too, after the schema and layer checks. A case whose outcome differs from its `expect` is an error naming the difference.
+
+**Test inputs ship inside the published artifact.** Anyone who installs the form can read them, so use synthetic values only: test card numbers, routing numbers published for testing, made-up account numbers. `asterdoc validate` warns for each case that sets a sensitive field:
+
+```text
+Test "a valid routing number passes" sets the sensitive field fields.accountNumber. Tests ship inside the artifact: use synthetic values only.
+```
+
+## Rendering only complete forms
+
+A draft renders as it is by default, so you can preview a form while it is filled. To refuse a render until the form is ready, pass `require: 'complete'`:
+
+```ts
+await draft.render({ layer: 'summary', require: 'complete' })
+// FormRuleViolationError: Form rules validation failed: Enter a valid routing number, Account number is too short
+```
+
+It makes the check `seal()` makes: no value missing or invalid, and every error-severity rule passing. It throws `FormValidationError` for missing or invalid values and `FormRuleViolationError` for failed rules. Warnings never block.
+
+## Related
+
+- [Logic](/concepts/logic): the expression language
+- [Rules section](/schemas/artifacts/shared/logic#rulessection) and [Test cases](/schemas/artifacts/form#test-cases) in the schema reference
+- [asterdoc validate](/cli/commands/validate)
+- [Sealing](/guides/sealing-and-conversion#integrity): what a seal records about the definition

@@ -36,14 +36,14 @@ hooks need `Pages` above them, and return the unpaginated answer otherwise.
 
 | Hook | Returns | Use it for |
 |---|---|---|
-| `useField(path)` | `{ field, value, text, blank }` | One value. `text` is formatted; `blank` is `true` when `text` is the blank placeholder. |
-| `useList(path)` | `{ field, item, rows, format, text(index, childPath?) }` | A list field. `text(2, "amount")` formats one cell. |
-| `useTotals(defs)` | `{ name, label, value, text }[]` | Computed `defs`, in the order you pass. |
+| `useField(path, format?)` | `{ field, value, text, blank }` | One value. `text` is formatted; `blank` is `true` when `text` is the blank placeholder. |
+| `useList(path, { format?, columns? }?)` | `{ field, item, rows, format, text(index, childPath?, format?) }` | A list field. `text(2, "amount")` formats one cell. `columns` is `{ path, format? }[]`. |
+| `useTotals(defs, { format?, rows? }?)` | `{ name, label, value, text }[]` | Computed `defs`, in the order you pass. `rows` holds one format per def. |
 | `useParty(role)` | `Party[]` | The raw party records of a role. |
-| `usePartyContact(role, index?, paths?)` | `{ roleLabel, nameText, organizationText?, addressText?, contactText? }` | A party's printed lines, as `Party` prints them. `paths` is `{ organization?, address?, contact? }`. |
+| `usePartyContact(role, index?, paths?, format?)` | `{ roleLabel, nameText, organizationText?, addressText?, contactText? }` | A party's printed lines, as `Party` prints them. `paths` is `{ organization?, address?, contact? }`. |
 | `useSignature(role, index?, type?)` | `{ roleLabel, partyText, fieldLabel, required, rule, dateRule, marker? }` | A signing block. Print `marker` and `rule` as **one** string so the seal finds the slot. |
-| `useAnnex(path)` | `{ annex, label, attachment, text }` | An annex slot, `annexes.<slot>`. |
-| `useAnnexPicture(path)` | `useAnnex` plus `picture` | An annex that may be a picture. `picture` is set for PNG, JPEG, GIF, WebP, and SVG MIME types, case-insensitively. |
+| `useAnnex(path, format?)` | `{ annex, label, attachment, text }` | An annex slot, `annexes.<slot>`. |
+| `useAnnexPicture(path, format?)` | `useAnnex` plus `picture` | An annex that may be a picture. `picture` is set for PNG, JPEG, GIF, WebP, and SVG MIME types, case-insensitively. |
 | `useArtifact()` | `Form` | The whole artifact, such as `artifact.title`. |
 | `useFormatter()` | `Formatter` | The document's formatter, for a value that is not a field. |
 | `useDocumentTokens()` | `DocumentTokens` | The resolved tokens: `accentColor`, `logo` (a string source), `pageSize`, `marginPx`, `dir`, `lang`, `typography`. |
@@ -53,6 +53,11 @@ hooks need `Pages` above them, and return the unpaginated answer otherwise.
 | `useKeepVisible(id)` | `boolean` | Whether a keep is on this page. Always `true` outside `Pages`. |
 | `useSectionVisible(id)` | `boolean` | Whether a section has a keep on this page. |
 | `usePageNumber()` | `{ page, pages }` | Preview page numbers. The PDF engine does not use it: see [Page counters](#page-counters). |
+
+A hook's `format` is a `ValueFormat`, merged per property over the document's
+`presentation`, with the same rules as a component's `format`
+([components.md § Element formats](./components.md#element-formats)). Pass a
+literal freely: equal formats do not re-render.
 
 Helpers: `imageSource({ src, bytes }, what)` returns the one image source both
 outputs read. `scaleTextClasses` and `flowGapClasses` are below.

@@ -102,6 +102,12 @@ if (result.success) {
 }
 ```
 
+Each form carries its own test cases, and `runTests()` runs them. Tax IDs, account numbers, and identity document numbers are `sensitive`, so rule explanations show them redacted.
+
+```typescript
+w9.runTests().passed; // true
+```
+
 ## Changelog
 
 View the [Changelog](https://github.com/asterdoc/asterdoc/blob/main/CHANGELOG.md) for updates.

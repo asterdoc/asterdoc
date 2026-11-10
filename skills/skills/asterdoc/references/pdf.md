@@ -1,13 +1,13 @@
 ---
 name: pdf
-description: PDF layers - read field names and coordinates with asterdoc inspect, write bindings for fill and extract, place signature slots, pass the fit check, pick fonts and money format, read a filled PDF back.
+description: PDF layers - read field names and coordinates with asterdoc inspect, write bindings and binding objects (format, parts) for fill and extract, place signature slots, pass the fit check, pick fonts, money and date formats, read a filled PDF back.
 metadata:
-  tags: pdf, acroform, bindings, inspect, extract, coordinates, fonts, fit
+  tags: pdf, acroform, bindings, parts, format, mask, inspect, extract, lossy, coordinates, fonts, fit
 ---
 
 # PDF layers
 
-**Contents:** [Inventory the PDF](#inventory-the-pdf) · [Bindings](#bindings) · [Binding values](#binding-values) · [Example: W-9](#example-w-9) · [Signature slots on a PDF](#signature-slots-on-a-pdf) · [Fit check](#fit-check) · [Fonts](#fonts) · [Money](#money) · [Read a filled PDF back](#read-a-filled-pdf-back) · [Flat PDFs](#flat-pdfs)
+**Contents:** [Inventory the PDF](#inventory-the-pdf) · [Bindings](#bindings) · [Binding values](#binding-values) · [Binding objects](#binding-objects) · [Example: W-9](#example-w-9) · [Signature slots on a PDF](#signature-slots-on-a-pdf) · [Fit check](#fit-check) · [Fonts](#fonts) · [Money](#money) · [Dates](#dates) · [Read a filled PDF back](#read-a-filled-pdf-back) · [Flat PDFs](#flat-pdfs)
 
 A PDF layer is a file layer with `"mimeType": "application/pdf"`. This file covers what only PDF layers have. For the layer shape, file paths, and the slot schema, load [layers.md](./layers.md). To convert a whole PDF form into an artifact, follow [workflow-author-form.md](./workflow-author-form.md).
 
@@ -63,7 +63,7 @@ One table for filling and for reading back. "Extract" is the status [extraction]
 | Direct | `"hasForeignPartners"` | checkbox | Checked when the value is truthy. | `recovered` as a boolean |
 | Direct | `"species"` | radio, dropdown | Selects the state named by the value. Each option `value` must equal the PDF export value exactly. | `recovered` from the selected export value |
 | Option | `"taxClassification:llc"` | checkbox | Checked when an enum equals the option, or a multiselect contains it. One binding per box. | `recovered` from the checked box. Two checked for an enum is `unparseable`. A multiselect comes back as a list. |
-| Split part | `"ssn:1"`, `"ssn:2"`, `"ssn:3"` | text | Writes the Nth `-`-separated part (1-based). | `recovered` by joining the parts with `-`. Every part must be bound. |
+| Split part | `"ssn:1"`, `"ssn:2"`, `"ssn:3"` | text | Writes the Nth `-`-separated part (1-based). On a [masked](./fields.md#text-masks) field, the Nth group of the mask: `45` for `###-##-####`. | `recovered` by joining the parts. Every part must be bound. |
 | Joined | `"mailingAddress.locality,mailingAddress.region,mailingAddress.postalCode"` | text | Joins the non-empty values with `", "`. | `not_recoverable` |
 | Whole composite | `"mailingAddress"` | text | Writes the formatted address in one box. | `not_recoverable`. Bind the parts instead. |
 | Party or computed | `"parties.tenant[0]"`, `"defs.totalDue"` | text | Writes the formatted value. | `not_recoverable` |
@@ -76,6 +76,57 @@ Fill, extraction, the fit check, and validation parse a binding value the same w
 - Space around `:` and `,` is ignored: `"status: married"` is `"status:married"`.
 - A joined part takes no qualifier. `"ssn:1, ssn:2"` fails validation.
 - Every binding key must name a field of the template. Filling fails, naming the key, when one does not.
+
+## Binding objects
+
+A binding value can also be an object. `path` is the string the binding would be. `format` prints this one value its own way, merged over the layer's `format` ([formatting.md § Artifact formats](./formatting.md#artifact-formats)). `part` prints one piece of the value as plain digits, for a form with a box per piece.
+
+```json schema=form
+{
+  "fields": {
+    "signedOn": { "type": "date" },
+    "dob": { "type": "date" },
+    "phone": { "type": "phone" },
+    "fee": { "type": "money", "currency": "USD" },
+    "ssn": { "type": "text", "mask": "###-##-####", "sensitive": true }
+  },
+  "layers": {
+    "pdf": {
+      "kind": "file",
+      "mimeType": "application/pdf",
+      "path": "form.pdf",
+      "format": { "date": { "pattern": "MM/DD/YYYY" } },
+      "bindings": {
+        "SignedOn": "signedOn",
+        "FiledOn": { "path": "signedOn", "format": { "date": { "pattern": "YYYY-MM-DD" } } },
+        "DobMonth": { "path": "dob", "part": "month" },
+        "DobDay": { "path": "dob", "part": "day" },
+        "DobYear": { "path": "dob", "part": "year" },
+        "AreaCode": { "path": "phone", "part": "areaCode" },
+        "PhoneNumber": { "path": "phone", "part": "subscriberNumber" },
+        "Dollars": { "path": "fee", "part": "units" },
+        "Cents": { "path": "fee", "part": "cents" },
+        "SsnComb": { "path": "ssn", "format": { "text": { "mask": false } } }
+      }
+    }
+  }
+}
+```
+
+For June 15, 1990, `SignedOn` prints `06/15/1990` and `FiledOn` `1990-06-15`. `SsnComb` prints `123456789` into a comb field with a box per digit.
+
+| Kind | Parts |
+|------|-------|
+| `date` | `year` (4 digits), `month`, `day` (2 digits) |
+| `phone` | `countryCode`, `nationalNumber`, `extension`; for +1 numbers, `areaCode` and `subscriberNumber` |
+| `money` | `units`, `cents` |
+
+- A part is never formatted as a whole value. Money rounds half away from zero to two decimals, then splits: `1.999` prints `2` and `00`.
+- At render, a negative amount, a currency without two minor digits, and `areaCode` or `subscriberNumber` on a number outside +1 fail with `unsupported_part`. Under a `phone.region`, every phone part but `extension` refuses a number from another plan with `phone_region_mismatch`. Phone parts need the phone provider, which the default formatter has ([formatting.md § Lookup providers](./formatting.md#lookup-providers)).
+- A joined path applies `format` to each value before the join.
+- Validation refuses a part the kind does not have (`Binding "dob" prints the part "cents" of fields.dob, a date value, whose parts are "year", "month", "day".`), a `format` or `part` on a split part such as `ssn:2`, a `format` on an option test such as `status:married`, and a `part` on a joined path.
+- Read-back joins the parts only when every part the value needs is bound: a date's year, month and day; money's units and cents, in the field's `currency`; a phone's country code and national number, or a +1 number's area code and subscriber number. Otherwise the path is `not_recoverable`. Parts that disagree make it `unparseable`.
+- A layer that reuses bindings through `bindingsFrom` takes each binding with its `format` and `part`, but not the other layer's own `format`.
 
 ## Example: W-9
 
@@ -104,7 +155,7 @@ Trimmed from the `@asterdoc/essentials` W-9 (`w9.spec`). The enum keeps three of
     ]
   },
   "mailingAddress": { "type": "address", "label": "Mailing address", "required": true },
-  "ssn": { "type": "text", "label": "Social security number", "pattern": "^\\d{3}-\\d{2}-\\d{4}$" }
+  "ssn": { "type": "text", "label": "Social security number", "sensitive": true, "pattern": "^\\d{3}-\\d{2}-\\d{4}$" }
 },
 "layers": {
   "pdf": {
@@ -219,7 +270,7 @@ A money value prints with its currency symbol (`$1,250.50`). When the PDF pre-pr
 }
 ```
 
-The box then holds `1,250.50`, and extraction reads it back in the field's declared `currency`. Both forms round-trip. Without a field `currency`, bind `fee.amount` to a box that holds a bare number. Only PDF layers declare `format`. Formatter options are in [formatting.md](./formatting.md).
+The box then holds `1,250.50`, and extraction reads it back in the field's declared `currency`. Both forms round-trip. Without a field `currency`, bind `fee.amount` to a box that holds a bare number. `money` also takes `fractionDigits` (`0` or `2`) and `useGrouping`; every key is in [formatting.md § Artifact formats](./formatting.md#artifact-formats). For separate dollar and cent boxes, bind [parts](#binding-objects).
 
 ## Dates
 
@@ -258,7 +309,7 @@ if (!refilled.success) console.error(refilled.error.message); // "Form data vali
 
 `data` holds only values recovered exactly, in the fill payload shape. Extraction does not validate: pass `data` to `safeFill()`. A partial structured value stays partial and fails there with the missing parts named. The CLI `data extract` and the `extract` AI tool ([ai-tools.md](./ai-tools.md)) return the same result.
 
-`report.entries` has one entry per bound path: `{ path, status, sources: [{ field, value }], reason? }`.
+`report.entries` has one entry per bound path: `{ path, status, sources: [{ field, value }], reason?, lossy? }`. Every `recovered` entry carries `lossy`: `true` when the format the box was printed with dropped detail, as `case: "upper"` drops the letter case and `money.fractionDigits: 0` drops the cents. The value is the person's answer but may differ from the one filled: confirm it with the person before you rely on it. A person printed `family-first` in one box is `not_recoverable`; bind the name parts to read them back.
 
 | Status | Meaning |
 |--------|---------|

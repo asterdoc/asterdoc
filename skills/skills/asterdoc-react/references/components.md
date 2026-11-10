@@ -77,7 +77,7 @@ artifact's `defs`. Every component below names a path, a def or a party role.
 |---|---|---|
 | `artifact` | `Form` | The parsed form artifact. |
 | `data` | `DocumentData` | `{ fields: Record<string, unknown>; parties: Record<string, Party \| Party[]>; annexes?: Record<string, Attachment>; defs?: Record<string, unknown> }`. `parties` is required; pass `{}` for none. Supplied `defs` are core's evaluated values; otherwise the provider evaluates them. |
-| `format` | `FormatOptions?` | `{ formatter?, blank?, partial?, progressive? }`. See below. |
+| `format` | `FormatOptions?` | `{ formatter?, blank?, partial?, progressive?, presentation? }`. See below. |
 | `tokens` | `DocumentTokensInput?` | Branding. Inside a `Bundle`, only `accentColor` and `logo`. |
 | `id` | `string?` | Default `artifact.name`. |
 | `className` | `string?` | Default `flex flex-col gap-6 text-sm leading-relaxed text-neutral-900`, stepped by `typography`. |
@@ -87,10 +87,11 @@ artifact's `defs`. Every component below names a path, a def or a party role.
 
 | Field | Type | Notes |
 |---|---|---|
-| `formatter` | `Formatter?` | From `createFormatter(options)` in `@asterdoc/format`: `locale`, `timeZone`, and per-kind options. Default `defaultFormatter` (`en-US`, UTC). |
+| `formatter` | `Formatter?` | From `createFormatter(options)` in `@asterdoc/format`: `locale`, `timeZone`, per-kind options, `providers`. Default: the inherited one, else the lean `defaultFormatter` of `@asterdoc/format` (`en-US`, UTC, no lookup providers). |
 | `blank` | `string?` | What an empty value prints. Default `"—"`. |
 | `partial` | `boolean?` | Partial mode, for a draft that is still being filled. Default `false`. |
 | `progressive` | `{ missing?, incomplete? }?` | Placeholders in partial mode, for an absent value and for a composite with members missing. Both default to `blank`. |
+| `presentation` | `LayerFormat?` | How every value of the document prints, as a layer's `format` declares it: `{ date: { pattern: "MM/DD/YYYY" } }`. Merged per property over the inherited presentation (the React layer's `format`, `renderPdf({ presentation })`). The keys are in the `asterdoc` skill's formatting reference. |
 
 When `format` omits `formatter` or `progressive`, the document inherits it from `FormatterProvider` (including `renderPdf` options). A failed def throws in a finished render, reports `defs.<name>` in check mode, and prints the placeholder in partial mode.
 
@@ -104,6 +105,48 @@ const german = createFormatter({ locale: "de-DE", timeZone: "Europe/Berlin" });
 
 For what partial mode prints and the other ways to turn it on, see
 [render-and-seal.md § Drafts](./render-and-seal.md#drafts).
+
+#### Element formats
+
+`Field`, `Party`, `Table` (and each column and footer row) and `Totals` (and
+each row) take `format`: how that element's values print, merged per property
+over the document's `presentation`. The most specific level wins: presentation,
+then the element, then a column or row.
+
+```tsx
+<Document artifact={applicationForm} data={data} format={{ presentation: { date: { pattern: "MM/DD/YYYY" } } }}>
+  <Field path="dateOfBirth" />
+  <Field path="filedOn" format={{ date: { pattern: "YYYY-MM-DD" } }} />
+  <Field path="ssn" format={{ text: { mask: false } }} />
+</Document>
+```
+
+Each key must apply to a value the element prints. `date.pattern` on a phone
+field throws `ElementFormatError` (`The format at "phone" is not valid:
+date.pattern applies to dates, not to fields.phone, a phone value.`) in a
+finished render; `asterdoc check` reports it as `format:<path>`.
+
+#### Lookup providers in the browser
+
+Phone styles other than `e164`, phone parts and `region` display need lookup
+providers. The server side carries them: `renderPdf`, the layer renderers and
+`asterdoc check` print with `@asterdoc/render`'s `defaultFormatter`. In a
+browser, `@asterdoc/react` stays lean and has none, so a format that needs one
+fails with `missing_format_provider`. Pass a formatter that has them:
+
+```tsx
+import { createFormatter } from "@asterdoc/format";
+import { phoneProvider } from "@asterdoc/format/phone";
+import { regionsProvider } from "@asterdoc/format/regions";
+
+const formatter = createFormatter({ providers: { phone: phoneProvider, regions: regionsProvider } });
+
+<Document artifact={applicationForm} data={data} format={{ formatter }}>…</Document>;
+```
+
+To print a browser preview exactly as the PDF, import the server's formatter
+from `@asterdoc/react-pdf/formatter`, which loads no PDF engine:
+`import { defaultFormatter } from "@asterdoc/react-pdf/formatter"`.
 
 ### `Section`
 
@@ -176,6 +219,7 @@ One labelled value at a path, formatted through the artifact's serializers.
 | `src` | `string?` | Where a browser preview loads an `as="image"` picture. Default: the attachment's file name. |
 | `paragraphs` | `boolean?` | One keep per paragraph (see [pagination.md](./pagination.md#newlines-paragraphs-and-oversize-keeps)). Default `false`. |
 | `rule` | `boolean?` | Prints a fill line where the value is blank, for a form printed before it is filled. Default `false`. |
+| `format` | `ValueFormat?` | How this value prints ([Element formats](#element-formats)). |
 | `className` | `string?` | Default `flex flex-col gap-0.5`. |
 
 ```tsx
@@ -209,7 +253,8 @@ planned by rules 2 to 4 in
 | `columns` | `TableColumn[]` | See below. |
 | `id` | `string?` | Keep-id prefix. Default `path`. |
 | `continuedLabel` | `string?` | Shown on a repeated header only, on one line. |
-| `footer` | `{ def: string; label?: string; emphasis?: boolean }[]?` | Rows from the artifact's `defs`, as keep `<id>:footer`. `emphasis` draws a rule coloured by `accentColor`. |
+| `footer` | `{ def: string; label?: string; emphasis?: boolean; format?: ValueFormat }[]?` | Rows from the artifact's `defs`, as keep `<id>:footer`. `emphasis` draws a rule coloured by `accentColor`. A row's `format` merges over the document's presentation. |
+| `format` | `ValueFormat?` | How every cell prints, under each column's `format`. Each key must apply to at least one item field. |
 | `className` | `string?` | Default `flex flex-col`. |
 
 `TableColumn`:
@@ -221,6 +266,7 @@ planned by rules 2 to 4 in
 | `width` | `string?` | A verified `basis-*` class. Default `"basis-1/4"`. |
 | `align` | `"left" \| "right"?` | Default `"left"`. |
 | `render` | `(text: string, row: unknown) => ReactNode` | Replaces the cell text with markup built from the formatted text and the row. |
+| `format` | `ValueFormat?` | How this column's cells print, over the table's `format`. Checked against the item field even with no rows. |
 
 ```tsx
 <Table
@@ -245,8 +291,9 @@ Prints computed `defs`. It does no arithmetic.
 
 | Prop | Type | Notes |
 |---|---|---|
-| `rows` | `TotalRow[]` | `{ def: string; label?: string; ratePath?: string; emphasis?: boolean }`. `ratePath` prints a field beside the label, such as the tax rate. `emphasis` draws a rule coloured by `accentColor`. |
+| `rows` | `TotalRow[]` | `{ def: string; label?: string; ratePath?: string; emphasis?: boolean; format?: ValueFormat }`. `ratePath` prints a field beside the label, such as the tax rate. `emphasis` draws a rule coloured by `accentColor`. A row's `format` merges over the block's. |
 | `id` | `string?` | Keep id. Default `"totals"`. |
+| `format` | `ValueFormat?` | How every amount prints, such as `{ money: { fractionDigits: 0 } }`. Each key must apply to at least one row. |
 | `className` | `string?` | Default `flex w-1/2 flex-col gap-1 self-end`. |
 
 ```tsx
@@ -272,6 +319,7 @@ path or a blank value is left out.
 | `variant` | `"block" \| "inline"?` | Default `"block"`. |
 | `label` | `string \| false?` | Replaces the role label. `false` prints none. |
 | `keepId` | `string?` | Default `party:<role>`, or `party:<role>:<index>` after the first. |
+| `format` | `ValueFormat?` | How the name and every line print, such as `{ person: { order: "family-first" } }`. Each key must apply to one of them. |
 | `className` | `string?` | Default `flex flex-col gap-0.5` (block). |
 
 ```tsx

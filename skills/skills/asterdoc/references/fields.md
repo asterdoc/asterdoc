@@ -1,19 +1,19 @@
 ---
 name: fields
-description: The 26 Asterdoc field types. Properties per type, the exact fill value per type, SDK builders, and how to choose a type.
+description: The 26 Asterdoc field types. Properties per type, the exact fill value per type, masks, sensitive values, how country and region input is converted, SDK builders, and how to choose a type.
 metadata:
-  tags: fields, types, fill values, constraints, fieldset, list, enum, money, phone, datetime, builders
+  tags: fields, types, fill values, constraints, mask, sensitive, country, region, fieldset, list, enum, money, phone, datetime, builders
 ---
 
 # Fields
 
-**Contents:** [Common properties](#common-properties) · [Field Type Reference](#field-type-reference) · [Type-specific properties](#type-specific-properties) · [Design heuristics](#design-heuristics) · [SDK](#sdk) · [Add a field](#add-a-field)
+**Contents:** [Common properties](#common-properties) · [Field Type Reference](#field-type-reference) · [Type-specific properties](#type-specific-properties) · [Sensitive values](#sensitive-values) · [Input refusals](#input-refusals) · [Design heuristics](#design-heuristics) · [SDK](#sdk) · [Add a field](#add-a-field)
 
 A form's `fields` object maps each field id to a field definition. Field ids, nested ones included, are camelCase ([schemas.md § Identifier patterns](./schemas.md#identifier-patterns)). For `required` and `visible` expressions, load [logic.md](./logic.md).
 
 ## Common properties
 
-Every field type takes `type` plus these four optional properties, along with the properties its type lists below.
+Every field type takes `type` plus these optional properties, along with the properties its type lists below.
 
 | Property | Type | Constraint |
 |----------|------|------------|
@@ -22,6 +22,7 @@ Every field type takes `type` plus these four optional properties, along with th
 | `description` | string | 1-1000 characters |
 | `required` | CondExpr | `true`, `false`, or a boolean expression string. Default: not required. |
 | `visible` | CondExpr | Same. A hidden field is never required. |
+| `sensitive` | boolean | Redact the value in explanations and errors. See [Sensitive values](#sensitive-values). |
 
 `default` is not common. Each type that accepts one lists it, and `fieldset` and `list` accept none.
 
@@ -71,14 +72,25 @@ Each section lists the properties a type adds to the common ones, its fill value
 | `minLength` | integer >= 0 | Minimum length |
 | `maxLength` | integer >= 0 | Maximum length |
 | `pattern` | string | Regular expression, 1-500 characters. A pattern that does not compile, or is open to catastrophic backtracking, is refused. |
+| `mask` | string | `text` only. Input mask; see [Text masks](#text-masks) |
 | `default` | string | Default value |
 
 A `uuid` value must be a UUID. A `uri` value must be an absolute URL (`x.co` fails with `Invalid URL format`).
 
 ```json schema=fields
 "fullName": { "type": "text", "label": "Full legal name", "required": true, "minLength": 2, "maxLength": 100 },
-"ssn": { "type": "text", "label": "SSN", "pattern": "^[0-9]{3}-?[0-9]{2}-?[0-9]{4}$" }
+"ssn": { "type": "text", "label": "SSN", "mask": "###-##-####", "sensitive": true }
 ```
+
+##### Text masks
+
+A `mask` fixes the shape of a formatted identifier. `#` is a digit, `@` a letter, `*` a digit or letter, and `\` makes the next character a literal. Every other character is a literal.
+
+- The stored value holds only the token characters: `"123-45-6789"` and `"123456789"` both store `123456789`. Letters keep their case.
+- Input that puts literals in the wrong places (`"123 45 6789"`) is refused with code `mask_mismatch`. A draft accepts a value that is the start of one (`"12345"`); `validate()` reports it until it fills the mask.
+- `pattern`, `minLength` and `maxLength` apply to the stored value.
+- Renders print through the mask by default (`123-45-6789`). A layer, binding or placeholder can print it without the mask or with another one ([formatting.md § Artifact formats](./formatting.md#artifact-formats)). A PDF split binding `ssn:2` prints the second group (`45`).
+- A mask is not a sensitivity signal. Set `sensitive` too when the value is private.
 
 #### email
 
@@ -257,7 +269,7 @@ Fill with an array of option values. Duplicates fail with `Array items must be u
 | `country` | ISO 3166-1 alpha-2 code | `region` only. The country the subdivision must belong to: `"US"` for a US state. Omit to allow any |
 | `default` | code string | Default value: `"CA"` for `country`, `"CA-ON"` for `region` |
 
-A `country` value is stored as the alpha-2 code; a `region` value as the full ISO 3166-2 code. Input takes a code or a name, and an input that names more than one place (`"Georgia"`) is refused with candidates to choose from. Use `region` with `country` instead of a copied list of states.
+A `country` value is stored as the alpha-2 code; a `region` value as the full ISO 3166-2 code. Input takes a code or a name: `"Canada"` and `"CAN"` store `CA`; `"Ohio"` stores `US-OH` under `country: "US"`. An input that names no place, or more than one (`"Georgia"`), is refused with candidates to choose from ([Input refusals](#input-refusals)). Use `region` with `country` instead of a copied list of states. The default formatter prints the stored code; a layer's `country` and `region` formats print names.
 
 ```json schema=fields
 "stateOfBirth": {
@@ -273,7 +285,7 @@ A `country` value is stored as the alpha-2 code; a `region` value as the full IS
 |----------|------|-------------|
 | `default` | person or organization object | Default value |
 
-`name` is required on both. A person also takes `title`, `firstName`, `middleName`, `lastName` and `suffix`. An organization also takes `legalName`, `domicile`, `entityType`, `entityId` and `taxId`. For the people who sign, use a party role instead; see [parties.md](./parties.md).
+`name` is required on both. A person also takes `title`, `firstName`, `middleName`, `lastName` and `suffix`. An organization also takes `legalName`, `domicile`, `entityType`, `entityId` and `taxId`; its `taxId` and `entityId` are sensitive unless the field sets `sensitive: false`. For the people who sign, use a party role instead; see [parties.md](./parties.md).
 
 #### identification
 
@@ -282,7 +294,7 @@ A `country` value is stored as the alpha-2 code; a `region` value as the full IS
 | `allowedTypes` | string[] | The values the fill value's `type` may take |
 | `default` | identification object | Default value |
 
-`type` and `number` are required. `issueDate` and `expiryDate` are `YYYY-MM-DD`. With `allowedTypes: ["passport"]`, `{ "type": "ssn", ... }` fails with `Must be one of: passport`.
+`type` and `number` are required. `issueDate` and `expiryDate` are `YYYY-MM-DD`. With `allowedTypes: ["passport"]`, `{ "type": "ssn", ... }` fails with `Must be one of: passport`. An identification field is sensitive unless it sets `sensitive: false`.
 
 ```json schema=fields
 "governmentId": { "type": "identification", "label": "Government ID", "allowedTypes": ["passport", "drivers_license"] }
@@ -345,6 +357,33 @@ The fill value is an array of `item` values. To total or test rows in an express
 
 Fill value: `{ "dependents": [{ "name": "Kim", "dateOfBirth": "2019-04-02" }] }`.
 
+## Sensitive values
+
+Mark an account, tax or identity number `sensitive: true`. Identification fields, and the `taxId` and `entityId` of organization fields and parties, are sensitive by default; `sensitive: false` turns that off for a field (not for a party: a party's `taxId` and `entityId` are always sensitive). A value under a sensitive fieldset or list is sensitive too.
+
+Rule explanations, validation and render errors, and AI tool errors print a sensitive value as its kind and length, never the value:
+
+```text
+[redacted] (string, length 9)
+```
+
+An expression error over a sensitive value drops its text ([logic.md § Missing and failed values](./logic.md#missing-and-failed-values)). `validate({ explain: { raw: true } })` prints raw values for your own debugging; never pass it where the output is logged or shown to a model. Redaction does not touch stored data: session event logs and rendered output hold the real value.
+
+## Input refusals
+
+A value the engine converts before it stores it is refused with a `code` and, for places, `candidates: { code, name }[]`:
+
+| `code` | When |
+|--------|------|
+| `unknown_country` | No country matches. `candidates` lists the nearest names |
+| `ambiguous_country` | The name is a country and a subdivision elsewhere (`"Georgia"`: `GE`, `US-GA`) |
+| `unknown_region` | No subdivision matches, or none of the field's `country` |
+| `ambiguous_region` | More than one subdivision matches |
+| `needs_country` | An address with `codes: true` has a region and no country |
+| `mask_mismatch` | The input does not fit the field's mask |
+
+`fill()`, `update()` and `validateFieldInput()` report them in `errors[]`, `{ field, message, code, candidates }`. Show the person the candidate names, ask which one they mean, then answer with its code. A refusal of a sensitive field names its value as `[redacted]` and lists no candidates. For an agent, see [filling.md § Conversational input](./filling.md#conversational-input).
+
 ## Design heuristics
 
 ### Type selection table
@@ -369,7 +408,7 @@ Fill value: `{ "dependents": [{ "name": "Kim", "dateOfBirth": "2019-04-02" }] }`
 | States, provinces | `region` | `text`, an `enum` of states |
 | A person's name parts | `person` | `text` |
 | Company details | `organization` | `text` |
-| Passports, licenses, SSN, EIN | `identification` or `text`+`pattern` | bare `text` |
+| Passports, licenses, SSN, EIN | `identification`, or `text` with a mask, marked sensitive | bare `text` |
 | URLs | `uri` | `text` |
 | System identifiers | `uuid` | `text` |
 | GPS points | `coordinate` | `text` |
@@ -390,13 +429,15 @@ Fill value: `{ "dependents": [{ "name": "Kim", "dateOfBirth": "2019-04-02" }] }`
 
 Name the thing, not the kind: `monthlyRent`, not `amount`; `leaseStartDate`, not `date`.
 
-### Patterns for common identifiers
+### Masks and patterns for common identifiers
 
-| Identifier | Pattern |
-|------------|---------|
-| SSN | `^[0-9]{3}-?[0-9]{2}-?[0-9]{4}$` |
-| EIN | `^[0-9]{2}-?[0-9]{7}$` |
-| US ZIP | `^[0-9]{5}(-[0-9]{4})?$` |
+| Identifier | Mask | Pattern, without a mask |
+|------------|------|-------------------------|
+| SSN | `###-##-####` | `^[0-9]{3}-?[0-9]{2}-?[0-9]{4}$` |
+| EIN | `##-#######` | `^[0-9]{2}-?[0-9]{7}$` |
+| US ZIP | none | `^[0-9]{5}(-[0-9]{4})?$` |
+
+Prefer a mask for a fixed-shape identifier: input is accepted with or without separators and prints formatted. Add a check-digit rule where the identifier has one ([logic.md § Check digits](./logic.md#check-digits)).
 
 ### Order and progressive disclosure
 
@@ -434,12 +475,13 @@ const builtForm = a
 
 ### Field builder methods
 
-`a.field.<type>()` exists for all 26 types. Every builder has `.label()`, `.description()`, `.required(cond = true)`, `.visible(cond = true)` and `.build()`. Every type except `fieldset` and `list` has `.default(value)`. The type-specific methods mirror the properties above:
+`a.field.<type>()` exists for all 26 types. Every builder has `.label()`, `.description()`, `.required(cond = true)`, `.visible(cond = true)`, `.sensitive(on = true)` and `.build()`. Every type except `fieldset` and `list` has `.default(value)`. The type-specific methods mirror the properties above:
 
 <!-- dep:C6 -->
 | Builder | Methods |
 |---------|---------|
-| `text`, `uuid`, `uri` | `.minLength(n)`, `.maxLength(n)`, `.pattern(re)` |
+| `text` | `.minLength(n)`, `.maxLength(n)`, `.pattern(re)`, `.mask(mask)` |
+| `uuid`, `uri` | `.minLength(n)`, `.maxLength(n)`, `.pattern(re)` |
 | `email` | `.minLength(n)`, `.maxLength(n)` |
 | `number` | `.min(n)`, `.max(n)`, `.step(n)` |
 | `money` | `.min(n)`, `.max(n)`, `.currency(code)` |

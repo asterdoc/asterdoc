@@ -37,6 +37,14 @@ segments and the unsafe object members `__proto__`, `prototype`, and
 itself — it asks the artifact for the field at that path and the value's
 serializer for the text to print.
 
+`format` sets how this one value prints, merged over the document's
+presentation per property, such as
+`<Field path="dob" format={{ date: { pattern: 'MM/DD/YYYY' } }} />`. Each key
+must apply to the value's type: a key that changes nothing it prints throws
+`ElementFormatError`, and `asterdoc check` reports it. `Party`, `Totals` and
+`Table` take the same prop. See
+[Formatting values](/guides/value-formatting#on-a-react-element).
+
 Every `Field` is a [`Keep Together`](/components/keep-together),
 which it brings along automatically, and that is also its whole pagination
 story: a field is never split across a page break, and it renders only on

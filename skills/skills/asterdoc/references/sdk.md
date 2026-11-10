@@ -18,6 +18,8 @@ npm install @asterdoc/sdk
 npm install @asterdoc/resolvers   # only when an artifact has file layers (PDF, DOCX, template files)
 ```
 
+The packages need Node 20 or later.
+
 ```typescript
 import { a } from "@asterdoc/sdk";
 import { createFsResolver } from "@asterdoc/resolvers/fs";
@@ -74,13 +76,13 @@ const lease = a.form()
 | Constraint | Detail |
 |------------|--------|
 | Plain values in the object pattern | A field builder inside `a.form({...})` fails with `Invalid discriminator value`. Call `.build()` on it first, or use the builder pattern. |
-| Builder methods | `name`, `version`, `title`, `description`, `code`, `language`, `issuer`, `edition({ key, label, date?, effectiveFrom? })`, `metadata`, `instructions`, `agentInstructions`, `defs`/`def`, `field`/`fields`, `layers`/`layer`/`inlineLayer`/`fileLayer`, `defaultLayer`, `annex`/`annexes`, `allowAdditionalAnnexes`, `party`/`parties`, `build` |
+| Builder methods | `name`, `version`, `title`, `description`, `code`, `language`, `issuer`, `edition({ key, label, date?, effectiveFrom? })`, `metadata`, `instructions`, `agentInstructions`, `defs`/`def`, `rules`, `tests`, `field`/`fields`, `layers`/`layer`/`inlineLayer`/`fileLayer`, `defaultLayer`, `annex`/`annexes`, `allowAdditionalAnnexes`, `party`/`parties`, `build` |
 | Bundle registry items | `.registry(key, coordinate, include?)` takes `@org/repo/name[/edition][@version]` and stores `slug`, `edition` and `version` separately. A two-segment value such as `@acme/disclosure` throws. |
 | Other kinds | `a.document`, `a.checklist` and `a.bundle` take the same two patterns |
 | File layers | Pass the resolver at construction: `a.form(def, { resolver })`. `render()` takes no resolver. |
 
 <!-- dep:C5 -->
-The form builder has `.rules()`. Field builder methods are in [fields.md § Field builder methods](./fields.md#field-builder-methods).
+The form builder has `.rules()` and `.tests()` ([logic.md § Test cases](./logic.md#test-cases)). Field builder methods are in [fields.md § Field builder methods](./fields.md#field-builder-methods).
 
 <!-- dep:C2 -->
 `a.form()`, `a.form.from()` and the other kinds' entry points upgrade an earlier `$schema` in memory, take `strictSchema: true` to refuse it, and throw `SchemaVersionError` on a newer or unknown version.
@@ -158,6 +160,7 @@ const { summary, next } = draft.getFillState(); // what is still open
 - Filling, `update()`, fill state, validators, persist and resume, sessions, and PDF extraction: [filling.md](./filling.md).
 - Signers, signatories, `seal()`, captures and `finalize()`: [sealing.md](./sealing.md).
 - Render options, renderers and resolvers: [rendering.md](./rendering.md).
+- `form.runTests()` runs the form's `tests` ([logic.md § Test cases](./logic.md#test-cases)). `draft.contentHash()` is the `sha256:` hash of the definition as stored ([sealing.md](./sealing.md)).
 
 ## Documents
 
@@ -267,7 +270,7 @@ type LeasePatch = ProgressiveFormPayload<typeof lease>;     // what fill() and u
 
 | Field type | TypeScript type |
 |------------|-----------------|
-| `text`, `email`, `uuid`, `uri` | `string` |
+| `text`, `email`, `uuid`, `uri`, `country`, `region` | `string` |
 | `date`, `datetime`, `time`, `duration` | `string` |
 | `number`, `percentage`, `rating` | `number` |
 | `boolean` | `boolean` |
@@ -289,4 +292,6 @@ type LeasePatch = ProgressiveFormPayload<typeof lease>;     // what fill() and u
 | `Invalid form definition: Unknown variable: "defs.<name>"` | Defs are referenced by bare name | Write `<name>`, not `defs.<name>` ([logic.md](./logic.md)) |
 | `UnboundResolverError: Layer "<key>" is file-backed ("<path>") but ...` | A file layer rendered with no resolver | Pass `{ resolver }` when you construct or load the artifact |
 | `BundleResolverError` | A resolver passed to a bundle | Bind resolvers on the members |
+| `FormValidationError`, `FormRuleViolationError` from `render({ require: "complete" })` or `seal()` | A value is missing or invalid, or an error rule fails | Fill the open values; see `draft.validate()` ([filling.md § Readiness](./filling.md#readiness)) |
+| `LayerChecksumError` | A layer file or font differs from its `checksum` | Restore the file, or run `asterdoc fix -y` to record the new checksum |
 | `ERR_PACKAGE_PATH_NOT_EXPORTED` for `@asterdoc/resolvers` | The package has no root export | Import `@asterdoc/resolvers/fs`, `/http` or `/memory` |

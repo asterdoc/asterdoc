@@ -2,12 +2,12 @@
 name: ai-tools
 description: Give your own AI agent Asterdoc tools with @asterdoc/ai-tools and its adapters (@asterdoc/ai-sdk, @asterdoc/mastra, @asterdoc/tanstack-ai). The ten operations, source modes, snake_case wire format, execute functions, the fill loop, config and security, and how it differs from the hosted MCP server.
 metadata:
-  tags: ai-tools, ai-sdk, vercel, mastra, tanstack-ai, agent, tools, fill, get_fill_state, update_fill, render, extract, snake_case
+  tags: ai-tools, ai-sdk, vercel, mastra, tanstack-ai, agent, tools, fill, get_fill_state, update_fill, render, extract, candidates, display, snake_case
 ---
 
 # AI tools in your own code
 
-**Contents:** [Packages](#packages) · [The ten operations](#the-ten-operations) · [Sources](#sources) · [Wire format](#wire-format) · [The fill loop](#the-fill-loop) · [Adapters](#adapters) · [Config and security](#config-and-security) · [Limits](#limits) · [Differences from MCP](#differences-from-mcp)
+**Contents:** [Packages](#packages) · [The ten operations](#the-ten-operations) · [Sources](#sources) · [Wire format](#wire-format) · [The fill loop](#the-fill-loop) · [Conversational input](#conversational-input) · [Adapters](#adapters) · [Config and security](#config-and-security) · [Limits](#limits) · [Differences from MCP](#differences-from-mcp)
 
 The AI packages are npm libraries. The tools run in your own process, with no Asterdoc account; they make network calls only to fetch artifacts by URL or registry. When a chat client connects to the hosted server instead, load [mcp.md](./mcp.md).
 
@@ -47,7 +47,7 @@ Every adapter wraps `@asterdoc/ai-tools`, so the tool names, inputs and outputs 
 | `"url"` | `url` | Fetches the artifact JSON. File layers resolve against the URL's directory. |
 | `"registry"` | `registry_url?`, `artifact_name`, `edition?`, `version?` | Fetches `registry.json`, finds the edition and version, then fetches that file and checks its SHA-256. An omitted `edition` is the current edition (also `current`); an omitted `version` is the latest (also `latest`). The registry states both defaults. Without `registry_url`, uses `defaultRegistryUrl`. |
 
-The `$schema` rules are the SDK's ([schemas.md § Loading rules](./schemas.md#loading-rules)): a fetched artifact declares the current version, and an inline one may omit it. An older version returns an error that names `asterdoc migrate`.
+The `$schema` rules are the SDK's ([schemas.md § Loading rules](./schemas.md#loading-rules)): a fetched artifact must declare `$schema`, and an inline one may omit it. An earlier version is upgraded in memory. A version newer than the SDK knows, or one that cannot be upgraded, is refused.
 
 A registry read fails with one of these `error.code` values: `artifact_not_found` (the name is not listed), `release_not_found` (the edition or version is not listed; the message names the ones that are), `integrity_mismatch` (the file's SHA-256 differs from `registry.json`), `identity_mismatch` (the file states another name, version or edition), `invalid_artifact` (the file is not a JSON object). `get_registry` returns each artifact's `current_edition` and `editions`, or `latest_version` and `versions`.
 
@@ -67,7 +67,7 @@ The `data` payload for a form is `{ fields, parties, annexes }`. Value shapes: [
 
 For a checklist, `data` maps item ids to `true`, `false` or a string.
 
-Tools return failures in the result instead of throwing. Check `accepted` / `valid` / `success`, then read `error: { code, message, path?, retryable? }` and, for value errors, `errors[]` of the same shape.
+Tools return failures in the result instead of throwing. Check `accepted` / `valid` / `success`, then read `error: { code, message, path?, retryable?, candidates? }` and, for value errors, `errors[]` of the same shape. A failed rule in `get_fill_state` reads `{ rule_id, message, paths?, values? }`: `rule_id` is the stable code, and a sensitive value in `values` prints as `[redacted] (string, length 9)`. Ask the person to check a redacted value; never ask them to read it back.
 
 ## The fill loop
 
@@ -120,7 +120,28 @@ const doc = await executeRender({ ...source, data: second.data, layer: 'markdown
 
 `update_fill` also takes `clear: ['fields.weight']` and `reset: ['fields.weight']` (schema-qualified paths). Use `validate_input` to check one answer before it goes into the draft.
 
-To start from a filled PDF, call `extract` and pass its `data` to `fill`. The report is the SDK's ([filling.md § Extract from a filled PDF](./filling.md#extract-from-a-filled-pdf)). `extract` reads AcroForm fields; for a flattened or scanned PDF, use the hosted `extract` ([mcp.md § Execution](./mcp.md#execution)).
+To start from a filled PDF, call `extract` and pass its `data` to `fill`. The report is the SDK's ([filling.md § Extract from a filled PDF](./filling.md#extract-from-a-filled-pdf)). Each `recovered` entry carries `lossy`; confirm a `lossy: true` value with the person ([pdf.md § Read a filled PDF back](./pdf.md#read-a-filled-pdf-back)). `extract` reads AcroForm fields; for a flattened or scanned PDF, use the hosted `extract` ([mcp.md § Execution](./mcp.md#execution)).
+
+## Conversational input
+
+Countries, regions, coded addresses and masked text are converted before they are stored ([filling.md § Conversational input](./filling.md#conversational-input)). The tools carry that contract to the model:
+
+- `inspect_artifact` adds an `input` note to each such field: the text of `fieldInputGuidance(field)`.
+- A refused value has a `code` (`ambiguous_country`, `unknown_region`, `mask_mismatch`, ...) and, for places, `candidates: [{ code, name }]`.
+- `fill` and `update_fill` return `display`: words for each stored country and region code, keyed by path.
+
+```jsonc
+// fill with { "fields": { "born": "Georgia" } }
+{ "accepted": false, "errors": [{ "code": "ambiguous_country", "path": ["fields", "born"],
+  "message": "\"Georgia\" names a country and a subdivision of another country.",
+  "candidates": [{ "code": "GE", "name": "Georgia" }, { "code": "US-GA", "name": "Georgia, United States" }] }] }
+
+// fill with { "fields": { "born": "Canada", "home": { …, "region": "Ontario", "country": "Canada" } } }
+{ "accepted": true, "data": { "fields": { "born": "CA", "home": { …, "region": "ON", "country": "CA" } } },
+  "display": { "fields.born": "Canada", "fields.home.region": "Ontario, Canada", "fields.home.country": "Canada" } }
+```
+
+Tell your agent to pass what the person said, to ask the person to choose on `candidates`, and to confirm with `display`, never with a bare code.
 
 ## Adapters
 

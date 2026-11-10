@@ -66,12 +66,13 @@ if (result.ok) {
 } else {
   result.code; // why it was refused
   result.reason;
+  result.issues; // for "invalid-value": each issue's code and, for a place, its candidates
 }
 ```
 
 A rejection carries no session at all, so the caller simply keeps the one it had. Nothing about the fill changed.
 
-Open a new log with `{ kind: "start" }`. Apply host-supplied values with `{ kind: "prefill", values, lockedPaths }`: each value must name a field and pass its schema, and a locked field then rejects `answer`, `revise`, and `clear`. Values are coerced only when the input has one reading; money never gets an invented currency, dates must be `YYYY-MM-DD`, and a phone number needs a leading `+` unless the runtime is built with `{ defaultCallingCode: "+1" }`.
+Open a new log with `{ kind: "start" }`. Apply host-supplied values with `{ kind: "prefill", values, lockedPaths }`: each value must name a field and pass its schema, and a locked field then rejects `answer`, `revise`, and `clear`. Values are coerced only when the input has one reading; money never gets an invented currency, dates must be `YYYY-MM-DD`, and a phone number needs a leading `+` unless the runtime is built with `{ defaultCallingCode: "+1" }`. A `country` or `region` answer, and the country and region of a `codes: true` address, are stored as ISO codes; a name that matches no place or more than one is refused with `candidates` to choose from.
 
 Project the log into the current view for rendering:
 

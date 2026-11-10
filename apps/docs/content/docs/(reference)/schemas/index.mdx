@@ -39,7 +39,7 @@ Every loading surface applies the same rules: the SDK, the CLI, the AI tools, an
 | --------- | ------ |
 | The current version | Loads and validates as usual. |
 | An earlier version | Upgrades in memory through the migration steps, then loads and validates as the current version. The file is not changed. |
-| A version newer than the SDK knows | Fails with a newer-version error: update `@asterdoc/core`. |
+| A version newer than the SDK knows | Fails with a newer-version error: "newer than this SDK knows; update @asterdoc/core". |
 | Missing | Fails with a missing-version error. |
 | An unpublished earlier date, the undated `schema.json`, or a non-Asterdoc address | Fails with an unknown-version error. |
 

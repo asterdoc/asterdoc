@@ -1,0 +1,175 @@
+---
+title: Codes and masks
+description: Store countries, regions and masked identifiers as canonical values, whatever form the input takes
+ogTitle: Codes and masks
+ogDescription: Country and region fields, coded addresses, input masks, and conversational input for agents in Asterdoc
+---
+
+People write the same answer in many ways: "Canada", "CA", "CAN"; "123-45-6789" or "123456789". A form that opts in stores one canonical value for all of them, and each layer prints it the way its output asks (see [Formatting values](/guides/value-formatting)). The artifact carries no country or province lists. The lookup data lives once, in `@asterdoc/format`.
+
+Four things opt a value in:
+
+| Declare | Stored value |
+|---------|--------------|
+| A `country` field | The ISO 3166-1 alpha-2 code, upper case: `CA` |
+| A `region` field | The full ISO 3166-2 code, upper case: `CA-ON` |
+| `codes: true` on an `address` field | `country` as an alpha-2 code, `region` as the code after the dash: `ON` |
+| A `mask` on a `text` field | Only the mask's token characters: `123456789` |
+
+Every other value is stored as it is given, as before.
+
+## Countries
+
+```json
+"birthCountry": { "type": "country", "label": "Country of birth" }
+```
+
+Input takes an alpha-2 code (`CA`), an alpha-3 code (`CAN`), or a name or known alias in English, matched without regard to case or accents. `validateFieldInput()` and sessions also take names in the input locale:
+
+```ts
+form.validateFieldInput({ fieldPath: 'birthCountry', value: 'Allemagne', locale: 'fr-FR' })
+// { success: true, value: 'DE', errors: null }
+```
+
+`update()` and `safeUpdate()` match English names and aliases. Former codes (ISO 3166-3) are refused.
+
+## Regions
+
+A `region` field holds one state, province or other subdivision: "State", "Province of birth".
+
+```json
+"state": { "type": "region", "label": "State", "country": "US" },
+"provinceOfBirth": { "type": "region", "label": "Province of birth" }
+```
+
+The stored value is the full ISO 3166-2 code, so it carries its country and needs no link to another field. Input takes the full code (`US-CA`), a subdivision name (`California`), or, when `country` is set, the short code (`CA`). The optional `country` limits the field to that country's subdivisions; without it, any subdivision is allowed.
+
+A `region` field replaces a copied list of states as an `enum`. Existing state enums keep working.
+
+Subdivision names are English only, from the Unicode CLDR.
+
+## Coded addresses
+
+```json
+"homeAddress": { "type": "address", "label": "Home address", "codes": true }
+```
+
+With `codes: true`, the address stores `country` as an alpha-2 code and `region` as the code after the dash, read in the address's country. Input for both takes names or codes:
+
+```ts
+draft.update({ fields: { homeAddress: { line1: '1 Rue Exemple', locality: 'Montréal', region: 'Québec', postalCode: 'H2X 1Y4', country: 'Canada' } } })
+// homeAddress: { line1: '1 Rue Exemple', locality: 'Montréal', region: 'QC', postalCode: 'H2X 1Y4', country: 'CA' }
+```
+
+A patch is read merged over the stored address, so a later `{ homeAddress: { region: 'Ontario' } }` is read in Canada and stores `ON`. In a country with no subdivision codes, a region that is not a full code is stored as given; a full code of another country (`US-CA` under `VA`) is refused. Without `codes`, the address stores what it is given, as before.
+
+## When input does not match
+
+A refused country or region input carries a `code` and `candidates`, so an agent or a UI can ask the person to choose:
+
+| Code | When | `candidates` |
+|------|------|--------------|
+| `unknown_country` | No country matches | Up to 5 nearest `{ code, name }` |
+| `ambiguous_country` | A name matches more than one place, such as a country and a subdivision of another country | Every match |
+| `needs_country` | A short subdivision code with no country to read it in: an address with no country, or a `region` field without `country` | None |
+| `unknown_region` | No subdivision of the country matches, or a code of another country (`US-ON`) | Up to 5 nearest |
+| `ambiguous_region` | A `region` field without `country` gets a name used in more than one country | Every match |
+
+```ts
+form.validateFieldInput({ fieldPath: 'birthCountry', value: 'Georgia' })
+// {
+//   success: false,
+//   errors: [{
+//     field: 'fields.birthCountry',
+//     message: '"Georgia" names a country and a subdivision of another country.',
+//     code: 'ambiguous_country',
+//     candidates: [{ code: 'GE', name: 'Georgia' }, { code: 'US-GA', name: 'Georgia, United States' }],
+//   }],
+// }
+```
+
+A subdivision candidate's name includes its country. A name shared by a country and its own subdivision ("Mexico") is not ambiguous: both readings give the same country.
+
+## Masks
+
+A `mask` on a `text` field describes how the value is written:
+
+| Token | Matches |
+|-------|---------|
+| `#` | A digit, 0-9 |
+| `@` | A letter, A-Z or a-z |
+| `*` | A digit or a letter |
+| `\` | Makes the next character a literal |
+
+Every other character is a literal. Masks are ASCII only.
+
+```json
+"ssn": { "type": "text", "label": "SSN", "mask": "###-##-####" },
+"ein": { "type": "text", "label": "EIN", "mask": "##-#######" },
+"aNumber": { "type": "text", "label": "A-Number", "mask": "A-#########" }
+```
+
+In `A-#########` the `A` is a literal. The stored value holds only the token characters, in order: `123456789` for an SSN written `123-45-6789`.
+
+Input is read by position, never by stripping characters. A complete value is accepted in either form:
+
+- **Canonical:** the token characters only, each fitting its token.
+- **Formatted:** every literal in its place, and each token position fitting.
+
+When both readings match, the formatted one wins. Writing a canonical value again returns it unchanged, so restores and repeated writes are safe.
+
+A draft in progress can hold a partial value. A partial value has no single reading, so the caller says which form it is in:
+
+- `input: 'canonical'` (the default) is for agents, API calls, `update()`, restores and stored data. `12345` stores `12345`.
+- `input: 'formatted'` is for an editor that shows the mask's literals. `form.validateFieldInput({ fieldPath: 'ssn', value: '123-45', input: 'formatted' })` stores `12345`.
+
+`pattern`, `minLength` and `maxLength` apply to the canonical value, and only once it is complete. `validate()` reports a value that does not fill its mask as `mask_mismatch`, and so does a render outside a progressive preview. A progressive preview prints the progressive placeholder for it.
+
+A layer prints a masked field with its mask unless it sets `format: { text: { mask: false } }`. A split binding such as `fields.ssn:2` takes the second group of token characters between literals (`45`). For a comb field with a box per digit, bind with `format: { text: { mask: false } }`.
+
+A mask says how a value is written, not that it is private. To keep a value out of explanations and errors, mark the field `sensitive`; see [Rules and test cases](/guides/validation-and-tests#sensitive-values).
+
+## Where values are canonicalized
+
+Every write path converts input the same way: `fill()`, `update()` and `safeUpdate()`, `validateFieldInput()`, restore, the CLI's `asterdoc data` commands, sessions, and the AI tools. A `country` or `region` field's `default`, and a `codes: true` address's, must already be the code (`"default": "CA"`, not `"Canada"`). A masked `text` field's default may be written with or without the mask's literals (`123-45-6789` or `123456789`) and is stored canonical. `validate()` and `asterdoc validate` refuse a default that breaks these rules, such as one that does not fit its mask, and `fill()` throws on it. `canonicalizeFieldValue(field, value, { mode, locale?, input? })` from `@asterdoc/core` exposes the same step, and recurses through list items and fieldset members.
+
+Sessions pass the full field definition and the session locale:
+
+```ts
+import { createAsterdocRuntime } from '@asterdoc/sessions'
+
+const runtime = createAsterdocRuntime(definition, { locale: 'fr-FR' })
+```
+
+A refused value keeps its `code` and `candidates` through the runtime.
+
+## Conversational input
+
+When an agent fills a form from what a person says ("Ontario, Canada"), the engine, not the model, turns names into codes. The contract is the same on every surface:
+
+1. Pass what the person said, as a name or a code.
+2. On a refusal with `candidates`, show the person the candidate names and ask which one they mean, then answer with that candidate's code.
+3. Confirm values in words, never with a bare code.
+
+`fieldInputGuidance(field)` from `@asterdoc/core` returns this contract as a short note for one field, or `undefined` for a field that stores input as given. The `inspect_artifact` AI tool shows it as each field's `input`, so every agent reads the same words:
+
+```ts
+import { fieldInputGuidance } from '@asterdoc/core'
+
+fieldInputGuidance({ type: 'text', label: 'SSN', mask: '###-##-####' })
+// 'Accepts the value with or without its separators (###-##-####: 9 digits, written 123-45-6789 or 123456789); it is stored without them'
+```
+
+The AI tools carry the rest:
+
+- Tool errors carry `candidates` for country and region refusals. See [AI tools](/ai-tools#errors).
+- [`fill`](/ai-tools/fill) and [`update_fill`](/ai-tools/update-fill) results carry a `display` map with the words for each stored code: `"fields.client_address.region": "Ontario, Canada"`. `data` keeps the codes.
+- [`extract`](/ai-tools/extract) entries carry `lossy`, so an agent knows when a value read from a filled PDF may differ from the one filled.
+
+`placeDisplayNames(fields, values, { locale? })` from `@asterdoc/core` builds the same `display` map for your own agent.
+
+## Related
+
+- [Formatting values](/guides/value-formatting): print codes as names, and masked values with or without their literals
+- [Field reference](/schemas/artifacts/form/field): `country`, `region`, `codes` and `mask`
+- [Field input validation](/sdk/artifacts/form#field-input-validation)

@@ -10,7 +10,7 @@ description: >
   filling a PDF template, or signing after the seal, use the asterdoc skill.
 metadata:
   author: asterdoc
-  version: "0.7.0"
+  version: "0.12.0"
   tags: asterdoc, react, composition, pdf, pagination, registry, seal
   license: MIT
 allowed-tools: "Bash(npx:*) Bash(node:*) Bash(pnpm:*) Bash(asterdoc:*) Read Write Edit Glob Grep"
@@ -22,7 +22,7 @@ A **composition** is a React component that lays out one Asterdoc form artifact.
 
 ## Core rules
 
-- Every value comes from the artifact. `Field`, `Table`, `Totals` and `Signature` name a path, a def or a party.
+- Every value comes from the artifact. `Field`, `Table`, `Totals` and `Signature` name a path, a def or a party. Set how a value prints with `format` ([components.md § Element formats](./references/components.md#element-formats)).
 - The composition is the module's default export, typed with `ReactLayerComponentProps`.
 - Keep the import graph browser-safe: the composition and everything it imports run in a browser, so read the artifact from props.
 - Use only classes in the **verified vocabulary** ([safe-classes.md](./references/safe-classes.md)). Build tables with `Table`.
@@ -56,7 +56,7 @@ Render React layers with `renderPdf` or the layer renderers; `asterdoc render` h
 
 | Task | Load |
 |------|------|
-| Component props, defaults, errors, partial mode | [references/components.md](./references/components.md) |
+| Component props, defaults, errors, partial mode, element formats, lookup providers in the browser | [references/components.md](./references/components.md) |
 | Page breaks, keeps, keep-with-next, header repeat, footers, plans | [references/pagination.md](./references/pagination.md) |
 | Which classes render, common classes that are refused, branding tokens | [references/safe-classes.md](./references/safe-classes.md) |
 | Writing your own component: hooks, hand-built keeps, `markDocumentRoot`, page counters | [references/custom-components.md](./references/custom-components.md) |

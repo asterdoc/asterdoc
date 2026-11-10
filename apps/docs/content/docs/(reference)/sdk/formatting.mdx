@@ -135,16 +135,20 @@ React compositions use the `partial` option instead; see [@asterdoc/react](/sdk/
 ## Use one formatter for an artifact
 
 ```ts
-import { createFormatter, a, createLayerRenderer } from '@asterdoc/sdk'
+import { createFormatter, a, createLayerRenderer, phoneProvider, regionsProvider } from '@asterdoc/sdk'
 
-const formatter = createFormatter({ locale: 'fr-FR' })
+const formatter = createFormatter({ locale: 'fr-FR', providers: { phone: phoneProvider, regions: regionsProvider } })
 const output = await a.form(formDefinition).fill(data).render({
   renderer: createLayerRenderer({ formatter }),
   layer: 'markdown',
 })
 ```
 
-Renderer configuration is explicit. Artifact metadata does not select a locale or formatter profile.
+Renderer configuration is explicit. Artifact metadata does not select a locale or formatter profile. A layer's `format` still applies over the formatter you pass; see [Formatting values](/guides/value-formatting).
+
+## Lookup providers
+
+Phone styles other than `e164`, phone parts and region names need lookup data, passed as `providers`: `phoneProvider` from `@asterdoc/format/phone` and `regionsProvider` from `@asterdoc/format/regions` (English CLDR subdivision names). The default formatter of the SDK, `@asterdoc/render` and the CLI carries both. `createFormatter()` carries only what you pass, and a format that needs a missing provider fails with `missing_format_provider`, naming the entry point. See [Lookup providers](/guides/value-formatting#lookup-providers).
 
 ## Related
 

@@ -388,6 +388,8 @@ The `get_fill_state` result has more, such as `blocked` targets and the reason e
 
 The draft does not change. The model reads the message and asks again. An error names the value and the reason, so the model can also fix its own mistakes, such as a party sent in the wrong shape.
 
+A `country` or `region` field, or an address with `codes: true`, takes what the person said and stores a code: "Ontario" is stored as `ON`. When the answer names no place or more than one, such as "Georgia", the error carries `candidates`, each a `code` and a `name`. The model shows the names, asks which one the person means, and answers with that code. `update_fill` also returns `display`, the words for each stored code, so the model confirms "Ontario, Canada", never a bare code. See [Codes and masks](/guides/field-input#conversational-input).
+
 To take an answer back, the model sends the path in `clear`, such as `["fields.weight"]`. The value is emptied, and `weight` is in `missing` again.
 
 ## Before production

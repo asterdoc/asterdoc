@@ -277,6 +277,28 @@ if (result.success) {
 }
 ```
 
+Every write stores the canonical value: a `country` field its ISO 3166-1 code (`CA`), a `region` field its ISO 3166-2 code (`US-TX`), a `codes: true` address both codes (`US`, `TX`), and masked text without the mask's separators. A value that cannot be resolved fails with a `code` and, for a place, the `candidates` to choose from:
+
+```typescript
+const residency = a
+  .form()
+  .name("residency")
+  .version("1.0.0")
+  .fields({
+    country: { type: "country", label: "Country" },
+    taxId: { type: "text", label: "Tax ID", mask: "##-#######" },
+  })
+  .build();
+
+residency.fill({ fields: { country: "Canada", taxId: "12-3456789" } });
+// stores { country: "CA", taxId: "123456789" }
+
+residency.safeFill({ fields: { country: "Canda" } }).error?.errors[0];
+// { field: "fields.country", code: "unknown_country", candidates: [{ code: "CA", name: "Canada" }, ...], ... }
+```
+
+A form's own `tests` run with `runTests()`. `render({ require: "complete" })` refuses a form that `seal()` would refuse. Render and seal verify a file layer's `checksum` and throw `LayerChecksumError` on a mismatch, and `contentHash()` returns the `sha256:` digest of the stored definition. An artifact written for an older schema date upgrades in memory on load and records it in `migratedFrom`; `strictSchema: true` refuses it, and a date newer than the SDK knows is an error.
+
 Forms render PDF, DOCX, HTML, Markdown, and text layers with the built-in MIME-selected renderer. Pass a custom renderer to `.render()` or `.seal()` only when overriding that default. For API reference and advanced patterns, visit [docs.asterdoc.com](https://docs.asterdoc.com).
 
 ## Changelog

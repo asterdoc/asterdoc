@@ -84,6 +84,7 @@ The catalog defines the following input primitives. See `src/catalog.ts` for the
 | `DateInput`, `DateTimeInput`, `TimeInput`, `DurationInput` | `date`, `datetime`, `time`, `duration` |
 | `EmailInput`, `PhoneInput`, `UriInput` | typed text variants; email and URI values remain plain strings, matching the field schemas |
 | `AddressForm`, `PersonForm`, `OrganizationForm` | `address`, `person`, `organization` |
+| `CountryInput`, `RegionInput` | `country`, `region`; `RegionInput` carries the field's `country` constraint |
 | `IdentificationInput` | `identification` |
 | `RatingStars` | `rating` |
 | `Fieldset` | `fieldset` (recursive container) |

@@ -30,6 +30,7 @@ pnpm add @asterdoc/react-pdf
 | `@asterdoc/react-pdf` | `renderPdf`, PDF adapter types, Takumi, resources, and React layer renderers |
 | `@asterdoc/react-pdf/check` | `checkComposition` and `checkElement` without producing PDF bytes |
 | `@asterdoc/react-pdf/chromium` | The Chromium adapter; requires the optional `puppeteer` and `tailwindcss` peers |
+| `@asterdoc/react-pdf/formatter` | `defaultFormatter`, the server formatter with the phone and regions providers, without a PDF engine |
 
 ```tsx
 import { renderPdf, type PdfAdapter } from "@asterdoc/react-pdf";
@@ -48,3 +49,5 @@ await renderPdf(<Invoice data={data} />, { adapter: companyEngine });
 ```
 
 Document components inherit typography from the consumer application. A paginated browser preview records the application CSS and exact font-resource identities in its page plan; Chromium rendering consumes that same snapshot. Headless callers may instead provide shared explicit font resources. The default Takumi adapter embeds the captured fonts and ignores the captured CSS, because every class a document uses is checked against its vocabulary; it refuses `applicationCss` passed by the caller rather than silently dropping it. A missing Chromium peer raises `MissingAdapterPeerError`; an installed engine that fails during rendering keeps its original initialization error.
+
+Values print with `@asterdoc/render`'s `defaultFormatter`, which carries the phone and regions lookups, so every layer format prints on the server. Pass `formatter` to use your own, and `presentation` to apply a layer `format` to the whole document. A browser preview can import the same formatter from `@asterdoc/react-pdf/formatter` and pass it to `FormatterProvider`, so it prints what the PDF prints.

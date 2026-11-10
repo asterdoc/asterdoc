@@ -71,6 +71,13 @@ file. An inline layer with a React MIME type fails validation.
 The builder form is `.fileLayer('composition', { mimeType: 'text/tsx', path, signatures })`
 followed by `.defaultLayer('composition')`.
 
+The layer can also declare `format`, such as
+`"format": { "date": { "pattern": "MM/DD/YYYY" } }`. A layer render passes it
+to the composition as its presentation, under the `Document`'s own
+`format.presentation` and each element's `format`
+([components.md § Element formats](./components.md#element-formats)). The
+keys are in the `asterdoc` skill's formatting reference.
+
 ### Slot limits
 
 The `signatures` map makes the layer a seal target. Each slot's id is its key.
@@ -172,7 +179,7 @@ Spread it beside other renderers.
 | `components` | Components keyed by the layer's `path` or its key. Checked first. Use it in bundled apps and for any artifact you do not control |
 | `baseDir` | Directory the import route resolves `path` against. See below |
 | `exportName` | Export the import route takes. Default `default` |
-| `pdf` | `RenderPdfOptions` for every render: `images`, `furniture`, `tokens`, `adapter`, `fonts` |
+| `pdf` | `RenderPdfOptions` for every render: `images`, `furniture`, `tokens`, `adapter`, `fonts`, `formatter`, `presentation`. The layer's `format` merges over `presentation` |
 
 **Binding order.** The renderer tries `components` (by path, then by key),
 then the import route. A layer neither covers fails with `UnboundReactLayerError`.
@@ -225,7 +232,8 @@ await writeFile('agreement.pdf', bytes)
 | `fonts` | `PdfFontResource[]` | Application font faces to embed |
 | `resolveFrom` | `string` | Directory relative font paths and package specifiers resolve from. Default `process.cwd()` |
 | `applicationCss` | `string` | Compiled app CSS. Chromium only |
-| `formatter`, `progressive` | | Override the value formatter and its progressive policy |
+| `formatter`, `progressive` | | Override the value formatter and its progressive policy. The default formatter carries the phone and regions lookup providers |
+| `presentation` | `LayerFormat` | How every value prints, as a layer's `format` declares it. The `Document`'s `format.presentation` and each element's `format` merge over it |
 | `signingMarkers` | `boolean` | Embeds the seal marker face. The seal sets it |
 
 `unknownBreaks` and `unknownRepeats` list plan entries whose keep is not in the

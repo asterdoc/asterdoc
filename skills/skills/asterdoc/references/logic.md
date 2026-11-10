@@ -1,13 +1,13 @@
 ---
 name: logic
-description: The Asterdoc expression language. Where expressions go and what each site reads, grammar and precedence, every builtin function, list aggregates, row references, typing rules, missing and failed values, the as-of clock, limits, defs, rules, and the @asterdoc/expr API.
+description: The Asterdoc expression language. Where expressions go and what each site reads, grammar and precedence, every builtin function, list aggregates, row references, typing rules, missing and failed values, the as-of clock, limits, defs, rules and their paths, test cases, and the @asterdoc/expr API.
 metadata:
-  tags: logic, expressions, condexpr, defs, rules, functions, aggregates, lists, dates, clock, expr
+  tags: logic, expressions, condexpr, defs, rules, paths, tests, check digits, functions, aggregates, lists, dates, clock, expr
 ---
 
 # Logic
 
-**Contents:** [Sites](#where-expressions-go) · [Grammar](#grammar) · [Types](#types) · [Functions](#functions) · [List aggregates](#list-aggregates) · [Row references](#row-references-item-parent) · [Missing and failed values](#missing-and-failed-values) · [Dates and the clock](#dates-and-the-clock) · [Defs](#defs) · [Rules](#rules) · [Limits](#limits) · [Patterns](#patterns) · [SDK](#sdk) · [@asterdoc/expr](#the-asterdocexpr-api)
+**Contents:** [Sites](#where-expressions-go) · [Grammar](#grammar) · [Types](#types) · [Functions](#functions) · [List aggregates](#list-aggregates) · [Row references](#row-references-item-parent) · [Missing and failed values](#missing-and-failed-values) · [Dates and the clock](#dates-and-the-clock) · [Defs](#defs) · [Rules](#rules) · [Test cases](#test-cases) · [Limits](#limits) · [Patterns](#patterns) · [SDK](#sdk) · [@asterdoc/expr](#the-asterdocexpr-api)
 
 One expression language drives every artifact: conditions, defs, rules, bundle `include`, party payment amounts, and the `{{ }}` markers in templates. `asterdoc validate` (or `validate()` in code) type-checks every expression in an artifact and exits 0 only when every reference resolves and every type fits.
 
@@ -416,6 +416,7 @@ A compound def exposes its components: `total.amount`, `mailing.country`.
 | `expr` | yes | Boolean expression. The rule passes when it is `true`. |
 | `message` | yes | Shown when the rule fails. 1-500 chars. |
 | `severity` | no | `"error"` (default) blocks validity. `"warning"` is advisory. |
+| `paths` | no | 1-50 field paths the failure attaches to, such as `fields.ssn`. Each must name a field. Without it the failure is form level; paths are never inferred from `expr`. |
 
 ```json schema=form
 {
@@ -436,13 +437,65 @@ A compound def exposes its components: `total.amount`, `mailing.country`.
     },
     "employerGiven": {
       "expr": "fields.employmentStatus != 'employed' or isNotEmpty(fields.employerName)",
-      "message": "Employer name is required when employed"
+      "message": "Employer name is required when employed",
+      "paths": ["fields.employerName"]
     }
   }
 }
 ```
 
 A rule over an unanswered field fails with its message until the field is filled ([Missing and failed values](#missing-and-failed-values)).
+
+The rule id is the stable code of its failure: match on `ruleId`, not on `message`. A failed rule in `validate().rules.errors` (and `getFillState().rules`) reads:
+
+```typescript
+{
+  ruleId: "ssnNot000",
+  passed: false,
+  message: "SSN cannot start with 000",
+  severity: "error",
+  paths: ["fields.ssn"],
+  explanation: { values: [{ path: "fields.ssn", value: "[redacted] (string, length 9)" }] },
+}
+```
+
+`explanation.values` lists each value the expression read, as printed: JSON for a present value, `null` for a missing one, at most ten list elements. A [sensitive](./fields.md#sensitive-values) value prints as its kind and length. `validate({ explain: { raw: true } })` prints it raw; never pass that where the output is logged or shown to a model.
+
+## Test cases
+
+`tests` on a form lists inputs and the outcome each must have. Each case fills an empty draft with its `context`, applies `input` through `update()` (so masks, countries and regions convert as for any input), validates, and compares.
+
+```json schema=form
+{
+  "fields": {
+    "age": { "type": "number", "label": "Age" },
+    "routingNumber": { "type": "text", "label": "Routing number", "mask": "#########" }
+  },
+  "rules": {
+    "adult": { "expr": "fields.age >= 18", "message": "Must be 18 or older", "paths": ["fields.age"] },
+    "routingChecksum": {
+      "expr": "weightedMod(fields.routingNumber, [3, 7, 1], 10) == 0",
+      "message": "Check the routing number",
+      "paths": ["fields.routingNumber"]
+    }
+  },
+  "tests": [
+    { "name": "adult with a valid routing number", "input": { "fields": { "age": 30, "routingNumber": "011000015" } }, "expect": { "valid": true } },
+    { "name": "minor", "input": { "fields": { "age": 12, "routingNumber": "011000015" } }, "expect": { "valid": false, "failures": ["adult"] } },
+    { "name": "bad check digit", "input": { "fields": { "age": 30, "routingNumber": "011000016" } }, "expect": { "valid": false, "failures": ["routingChecksum"] } }
+  ]
+}
+```
+
+| Key | Description |
+|-----|-------------|
+| `name` | Unique within the form, 1-200 characters |
+| `input` | `{ fields?, parties?, annexes? }`, as passed to `update()` |
+| `context.asOf` | Optional instant `today()` and `now()` read ([Dates and the clock](#dates-and-the-clock)) |
+| `expect.valid` | Whether the draft is valid: the input is accepted, no value is missing or invalid, every error rule passes. A refused input is invalid with no failures |
+| `expect.failures` | Optional. The ids of every failing rule, warnings included, in any order. Omitted, failures are not compared |
+
+Run them with `form.runTests()`, which returns `{ passed, results: [{ name, passed, valid, failures, errors, expected, sensitiveInputs }] }`, or with `npx asterdoc validate`, where a failing case is an error. Test inputs ship inside the artifact when it is published: use synthetic values only. `sensitiveInputs` lists the sensitive fields a case sets, and `asterdoc validate` warns about each.
 
 ## Limits
 
@@ -467,6 +520,8 @@ Exceeding an evaluation limit gives code `limit-exceeded`.
 | Every row must satisfy a test | a rule with `count(list, <failing test>) == 0` |
 | A relation between fields (end after start, deposit limit) | a rule |
 | A soft threshold | a rule with `"severity": "warning"` |
+| An identifier with a check digit | a rule with `checkDigit` or `weightedMod`, and `paths` on the field |
+| Expected outcomes to keep true | `tests` |
 
 Progressive disclosure with a shared condition in a def:
 

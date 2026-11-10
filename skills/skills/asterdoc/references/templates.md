@@ -1,13 +1,13 @@
 ---
 name: templates
-description: Template syntax for text (Markdown, HTML, plain) and DOCX layers - markers, roots, conditions, loops, the five signing directives, default output per engine, DOCX commands
+description: Template syntax for text (Markdown, HTML, plain) and DOCX layers - markers, format modifiers, roots, conditions, loops, the five signing directives, default output per engine, DOCX commands
 metadata:
-  tags: templates, markers, if, each, loops, conditions, signature, initials, signatureDate, capacity, printedName, docx, FOR, IF
+  tags: templates, markers, format modifiers, if, each, loops, conditions, signature, initials, signatureDate, capacity, printedName, docx, FOR, IF
 ---
 
 # Templates
 
-**Contents:** [Markers](#markers) · [Roots](#roots) · [Conditions](#conditions) · [Loops](#loops) · [Signing directives](#signing-directives) · [Directive output](#directive-output) · [DOCX commands](#docx-commands) · [Validation](#validation)
+**Contents:** [Markers](#markers) · [Format modifiers](#format-modifiers) · [Roots](#roots) · [Conditions](#conditions) · [Loops](#loops) · [Signing directives](#signing-directives) · [Directive output](#directive-output) · [DOCX commands](#docx-commands) · [Validation](#validation)
 
 Text layers (`text/markdown`, `text/html`, `text/plain`) and DOCX layers are templates. Everything inside `{{ }}` is an artifact expression: the language of `visible`, `required`, defs and rules, described in [logic.md](./logic.md). No JavaScript runs.
 
@@ -38,7 +38,29 @@ Pet deposit: {{fields.petDeposit}}
 {{/if}}
 ```
 
-A path prints formatted for its field type: money as `$1,500.00`, an enum or multiselect as its option labels. A computed value is formatted by its result type. Locale and styles come from the formatter ([formatting.md](./formatting.md)).
+A path prints formatted for its field type: money as `$1,500.00`, an enum or multiselect as its option labels, a masked text field through its mask. A computed value is formatted by its result type. Locale and styles come from the formatter and the layer's `format` ([formatting.md](./formatting.md)).
+
+## Format modifiers
+
+A value placeholder can set how its one value prints, after a single `|`:
+
+```text
+Born: {{ fields.dob | date.pattern="MM/DD/YYYY" }}
+Year: {{ fields.dob | part="year" }}
+SSN: {{ fields.ssn | text.mask=false }}
+Name: {{ fields.name | person.order="family-first", case="upper" }}
+Fee: {{ fields.fee | money.currencyDisplay="none", locale="fr-FR" }}
+```
+
+For a date of 1990-06-15, an SSN masked `###-##-####` and a person Ada Lovelace, the first four print `06/15/1990`, `1990`, `123456789` and `LOVELACE, ADA`.
+
+- Modifiers are a comma-separated list of `key=literal`. A key is a dotted path into a [format](./formatting.md#artifact-formats): `locale`, `case`, `date.pattern`, `money.currencyDisplay`, `money.fractionDigits`, `money.useGrouping`, `phone.style`, `phone.region`, `country.display`, `region.display`, `choice.display`, `boolean.trueLabel`, `boolean.falseLabel`, `person.order`, `text.mask`. A literal is a string, number or boolean.
+- `part` prints one piece of a date, phone or money value as plain digits, as a [PDF binding part](./pdf.md#binding-objects) does.
+- `text.mask` takes `true`, `false` or a mask string, and needs a declared text field. `choice.display` needs a declared `enum` or `multiselect` field.
+- They merge over the formatter and the layer's `format`, per property.
+- They work in `{{ }}` and `{{{ }}}`, before HTML escaping, and in DOCX placeholders. Block markers and DOCX commands take none.
+- A modifier formats one value. On a list or fieldset, write it on a placeholder inside `{{#each}}`.
+- Validation refuses an unknown key, a value the key does not take, and a key that does not apply to the value: `date.pattern` on a text field fails with `date.pattern applies to dates, not to fields.note, a text value.`
 
 ## Roots
 

@@ -25,13 +25,15 @@ Shared ESLint configuration used across Asterdoc framework packages.
 
 ## Usage
 
-Extend this configuration in your package's `.eslintrc.json`:
+The package ships flat configs. Re-export one from your package's `eslint.config.js`:
 
-```json
-{
-  "extends": ["@asterdoc/eslint-config"]
-}
+```js
+import { config } from "@asterdoc/eslint-config/base";
+
+export default config;
 ```
+
+`@asterdoc/eslint-config/react-internal` exports `config` for React packages, `@asterdoc/eslint-config/next-js` exports `nextJsConfig`, and `@asterdoc/eslint-config/service-boundary` default-exports the import boundary rules for `service.ts` files.
 
 ## Changelog
 

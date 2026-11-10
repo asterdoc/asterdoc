@@ -23,11 +23,12 @@ A layer is `inline` (content in the artifact) or `file` (a path the resolver rea
 | `mimeType` | required | required | Selects the engine. See [MIME type and engine](#mime-type-and-engine) |
 | `text` | required | none | Template content, up to 1,000,000 characters |
 | `path` | none | required | Relative to the artifact file's directory, and inside it |
-| `checksum` | none | optional | `sha256:<64 hex>`. `asterdoc fix -y` writes it |
+| `checksum` | none | optional | `sha256:<64 hex>`. `asterdoc fix -y` writes it. Render and seal check it; a mismatch throws `LayerChecksumError` |
 | `title`, `description` | optional | optional | Up to 200 and 2000 characters |
 | `bindings`, `bindingsFrom` | none | PDF only | See [Bindings](#bindings) |
 | `signatures` | optional | optional | See [Signature slots](#signature-slots) |
-| `font`, `format` | none | PDF only | Font for filled values, money display. See [pdf.md](./pdf.md) |
+| `font` | none | PDF only | Font for filled values. See [pdf.md § Fonts](./pdf.md#fonts) |
+| `format` | optional | optional | How values print. PDF, text, Markdown, HTML, DOCX and React layers only. See [formatting.md § Artifact formats](./formatting.md#artifact-formats) |
 
 ```json schema=form
 {
@@ -49,7 +50,7 @@ A layer is `inline` (content in the artifact) or `file` (a path the resolver rea
 }
 ```
 
-Use a file layer for anything longer than a few lines, so the template stays readable and `asterdoc validate` checks its checksum. Add one with the CLI, which detects the MIME type and writes the checksum:
+Use a file layer for anything longer than a few lines, so the template stays readable and its checksum guards the bytes. `asterdoc validate` warns about a file layer or font with no checksum: the content hash does not cover it, and render and seal cannot verify it. Add one with the CLI, which detects the MIME type and writes the checksum:
 
 ```bash
 asterdoc attach lease.json templates/lease.md --name markdown -y
@@ -99,7 +100,7 @@ const pdf = await draft.render({
 });
 ```
 
-A React layer takes no `bindings`, `font` or `format`, and needs no resolver. `baseDir` is the artifact file's directory; use `components` instead when the composition is already imported. To compose, check or seal one, use the `asterdoc-react` skill.
+A React layer takes no `bindings` or `font`, and needs no resolver. Its `format` sets the presentation the composition prints with. `baseDir` is the artifact file's directory; use `components` instead when the composition is already imported. To compose, check or seal one, use the `asterdoc-react` skill.
 
 ## Bindings
 
@@ -152,7 +153,7 @@ Validation rejects `bindings` or `bindingsFrom` on a layer that is not `applicat
 - The reuse is one hop: it takes the named layer's own `bindings`, never that layer's `bindingsFrom`.
 - The named layer must exist, or `validateLayers()` and the render fail.
 
-To write binding values (`field:option`, `ssn:1`, `a,b,c`, list and party indices) or read a filled PDF back, load [pdf.md](./pdf.md).
+A binding value is a path string or an object `{ path, format?, part? }` that prints one value its own way. To write binding values (`field:option`, `ssn:1`, `a,b,c`, list and party indices, binding objects and parts) or read a filled PDF back, load [pdf.md](./pdf.md).
 
 ## Signature slots
 
@@ -285,4 +286,4 @@ const lease = a
   .build();
 ```
 
-`.inlineLayer(key, { mimeType, text, signatures? })` adds an inline layer. `.layers({ ... })` takes a record of objects or `a.layer()` chains. A chain reads `a.layer().file().path("templates/lease.pdf").mimeType("application/pdf").bindings({ Tenant_Name: "tenantName" })`, with `.title()`, `.description()`, `.checksum()`, `.font()`, `.format()`, `.signatures()` and `.bindingsFrom()`. `a.layer().inline()` has `.signatures()` too.
+`.inlineLayer(key, { mimeType, text, signatures? })` adds an inline layer. `.layers({ ... })` takes a record of objects or `a.layer()` chains. A chain reads `a.layer().file().path("templates/lease.pdf").mimeType("application/pdf").bindings({ Tenant_Name: "tenantName" })`, with `.title()`, `.description()`, `.checksum()`, `.font()`, `.format()`, `.signatures()` and `.bindingsFrom()`. `a.layer().inline()` has `.format()` and `.signatures()` too.
