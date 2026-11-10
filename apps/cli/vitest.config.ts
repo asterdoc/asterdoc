@@ -23,9 +23,9 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@asterdoc/core': coreEntry,
-      '@': path.resolve(__dirname, '../../packages/core/src'),
-    },
+    alias: [
+      { find: /^@asterdoc\/core$/, replacement: coreEntry },
+      { find: '@', replacement: path.resolve(__dirname, '../../packages/core/src') },
+    ],
   },
 })

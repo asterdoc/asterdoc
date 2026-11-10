@@ -1,0 +1,14 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"extends": ["//"],
+	"tasks": {
+		"test": {
+			"dependsOn": ["^build", "build"],
+			"inputs": [
+				"$TURBO_DEFAULT$",
+				"$TURBO_ROOT$/framework/packages/components/package.json",
+				"$TURBO_ROOT$/framework/packages/components/src/**"
+			]
+		}
+	}
+}

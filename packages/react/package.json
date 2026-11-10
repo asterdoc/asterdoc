@@ -88,6 +88,7 @@
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "esbuild": "catalog:",
     "eslint": "catalog:",
     "jsdom": "^25.0.1",
     "pdfjs-dist": "catalog:",

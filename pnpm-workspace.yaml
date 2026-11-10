@@ -17,6 +17,13 @@ catalog:
   # Phone styles of @asterdoc/format/phone, with minimal metadata. Pinned:
   # its metadata decides printed output, so an update is a reviewed change.
   libphonenumber-js: "1.13.15"
+  # English subdivision names (ISO 3166-2) for @asterdoc/format/regions, and the
+  # CLDR containment that says which subdivision codes are current. Pinned: the
+  # regions tests record this release's counts.
+  cldr-subdivisions-full: "49.0.0"
+  cldr-core: "49.0.0"
+  # Bundles packages in tests and size reports to measure what a browser build carries.
+  esbuild: "^0.27.2"
 
   "@neondatabase/serverless": "^1.0.2"
   "@orpc/contract": "^1.10.3"

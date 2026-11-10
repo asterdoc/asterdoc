@@ -1,7 +1,10 @@
 import { defineConfig } from 'tsup'
 
+const publicEntries = ['src/index.ts', 'src/text.ts', 'src/text/field-formatter.ts', 'src/pdf.ts', 'src/docx.ts']
+const providerCarryingModules = ['src/default-formatter.ts']
+
 export default defineConfig({
-  entry: ['src/index.ts', 'src/text.ts', 'src/text/field-formatter.ts', 'src/pdf.ts', 'src/docx.ts'],
+  entry: [...publicEntries, ...providerCarryingModules],
   format: ['esm'],
   dts: { resolve: true },
   splitting: true,

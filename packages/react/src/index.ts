@@ -132,7 +132,7 @@ export {
 export {
   DATE_RULE,
 } from "./headless/signing";
-export { INITIALS_RULE, SIGNATURE_RULE } from "@asterdoc/core";
+export { INITIALS_RULE, SIGNATURE_RULE } from "@asterdoc/core/compose";
 
 export {
   annexSlot,

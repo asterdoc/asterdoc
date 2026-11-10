@@ -1,5 +1,4 @@
-import { isValidMask } from '@asterdoc/format'
-import { phoneProvider } from '@asterdoc/format/phone'
+import { isCountryCode, isValidMask } from '@asterdoc/format'
 import type { ValueFormat } from '@asterdoc/types'
 import { isValuePart, partProblem } from '../parts/rules'
 import type { DeclaredValue } from './values'
@@ -125,9 +124,9 @@ export const FORMAT_MODIFIER_RULES = new Map<string, FormatModifierRule>([
     applies: onlyFor('phone.style', ['phone'], 'phone numbers'),
   }],
   ['phone.region', {
-    value: (value) => typeof value === 'string' && phoneProvider.callingCode(value) !== undefined
+    value: (value) => isCountryCode(value)
       ? undefined
-      : `phone.region takes the ISO 3166-1 alpha-2 code of a numbering plan, such as "US", not ${literalText(value)}.`,
+      : `phone.region takes an ISO 3166-1 alpha-2 code, such as "US", not ${literalText(value)}.`,
     applies: onlyFor('phone.region', ['phone'], 'phone numbers'),
   }],
   ['choice.display', {

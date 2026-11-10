@@ -4,14 +4,14 @@ import { defineConfig } from "tsup";
 const packageJson = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf8")) as { version: string };
 
 export default defineConfig({
-  entry: ["src/index.ts"],
+  entry: ["src/index.ts", "src/compose.ts"],
   format: ["esm"], // ESM only - saves ~1.6MB by removing CJS bundle
   dts: {
     resolve: true,
     // Skip DTS for now - types are still generated but may have errors
     // The runtime code works fine, types are for development only
   },
-  splitting: false,
+  splitting: true,
   sourcemap: false,
   clean: true,
   preserveImportMeta: true, // Preserve JSON import attributes

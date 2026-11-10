@@ -66,6 +66,11 @@ describe('phone, choice and boolean modifiers on template placeholders', () => {
     expect(() => render('{{ fields.uk | phone.style="national", phone.region="US" }}')).toThrowError(/calling code \+44/)
   })
 
+  it('accept at check a phone.region the phone provider has no plan for, and refuse it at render', () => {
+    expect(check('{{ fields.us | phone.style="national", phone.region="AQ" }}')).toEqual([])
+    expect(() => render('{{ fields.us | phone.style="national", phone.region="AQ" }}')).toThrowError(/Phone region "AQ" names no numbering plan/)
+  })
+
   it('fail with missing_format_provider when the caller formatter has no phone provider', () => {
     expect(() => render('{{ fields.us | phone.style="national" }}', { formatter: createFormatter() })).toThrowError(/@asterdoc\/format\/phone/)
   })
@@ -86,7 +91,7 @@ describe('phone, choice and boolean modifiers on template placeholders', () => {
   it('refuse wrong values at check and at render', () => {
     const cases: Array<[string, RegExp]> = [
       ['{{ fields.us | phone.style="local" }}', /phone\.style takes "e164", "international", "national", "digits", not "local"/],
-      ['{{ fields.us | phone.region="XX" }}', /phone\.region takes the ISO 3166-1 alpha-2 code of a numbering plan/],
+      ['{{ fields.us | phone.region="XX" }}', /phone\.region takes an ISO 3166-1 alpha-2 code/],
       ['{{ fields.us | phone.region="us" }}', /not "us"/],
       ['{{ fields.status | choice.display="code" }}', /choice\.display takes "label", "value"/],
       ['{{ fields.wed | boolean.trueLabel=true }}', /boolean\.trueLabel takes a string/],

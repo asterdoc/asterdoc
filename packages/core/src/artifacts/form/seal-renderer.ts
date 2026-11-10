@@ -30,6 +30,7 @@ import {
 	pageTextRuns,
 } from '@asterdoc/render/pdf'
 import type { LocateHit } from '@asterdoc/render/pdf'
+import { INITIALS_RULE, SIGNATURE_RULE } from './signing-rules'
 import type {
 	Layer,
 	AsterdocRenderer,
@@ -247,12 +248,6 @@ export async function locateFlowMarkers(pdf: Uint8Array, flow: readonly SigningF
 		throw new LocateError(error.message + (await glyphCoverageHint(pdf)), error.failures)
 	}
 }
-
-/** The visible rule used for a flow-positioned signature field. */
-export const SIGNATURE_RULE = '________________'
-
-/** The visible rule used for a flow-positioned initials field. */
-export const INITIALS_RULE = '______'
 
 /**
  * Core's text placeholders for a seal pass. With markers, each flow slot's

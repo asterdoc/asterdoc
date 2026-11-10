@@ -1,4 +1,4 @@
-import { evaluateFormDefs } from "@asterdoc/core";
+import { evaluateFormDefs } from "@asterdoc/core/compose";
 import { mergeFormats, type ModifierTarget } from "@asterdoc/render";
 import type { Attachment, Form, FormAnnex, FormField, Formatter, ValueFormat, Party } from "@asterdoc/types";
 import {
