@@ -17,7 +17,7 @@ export { parseExpression, type ParseResult } from './expression-parser'
 export { validateFormDefs } from './validate-form-logic'
 export type { LogicValidationOptions, LogicValidationIssue } from './shared'
 export { validateBundleDefs } from './validate-bundle-logic'
-export { isInlineBundleArtifact, isFormArtifact, isBundleArtifact } from './shared'
+export { isInlineBundleArtifact, isFormArtifact, isBundleArtifact } from '../../shared/artifact-guards'
 
 /** Artifacts that support logic validation */
 export type LogicValidatableArtifact = Form | Bundle

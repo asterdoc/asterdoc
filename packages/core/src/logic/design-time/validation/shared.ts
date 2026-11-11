@@ -1,4 +1,4 @@
-import type { CondExpr, Form, Bundle, BundleContentItem, DefsSection, Expression, ScalarExpressionType } from '@asterdoc/types'
+import type { CondExpr, DefsSection, Expression, ScalarExpressionType } from '@asterdoc/types'
 import { T, type ExprType, type TypeEnv } from '@asterdoc/expr'
 import { parseExpression } from './expression-parser'
 import { definitionExpressionLeaves } from '../../shared/defs-dependencies'
@@ -30,43 +30,6 @@ export interface LogicValidationIssue {
   expectedType?: string
   /** Actual inferred type, as an @asterdoc/expr type name (for type validation issues) */
   actualType?: string
-}
-
-// ============================================================================
-// Type Guards for Content Items
-// ============================================================================
-
-/**
- * Checks if a bundle content item is an inline artifact (type: 'inline').
- */
-export function isInlineBundleArtifact(
-  item: BundleContentItem
-): item is Extract<BundleContentItem, { type: 'inline' }> {
-  return item.type === 'inline' && 'artifact' in item
-}
-
-/**
- * Checks if an artifact is a Form.
- */
-export function isFormArtifact(artifact: unknown): artifact is Form {
-  return (
-    typeof artifact === 'object' &&
-    artifact !== null &&
-    'kind' in artifact &&
-    artifact.kind === 'form'
-  )
-}
-
-/**
- * Checks if an artifact is a Bundle.
- */
-export function isBundleArtifact(artifact: unknown): artifact is Bundle {
-  return (
-    typeof artifact === 'object' &&
-    artifact !== null &&
-    'kind' in artifact &&
-    artifact.kind === 'bundle'
-  )
 }
 
 /**

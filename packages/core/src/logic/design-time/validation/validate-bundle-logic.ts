@@ -8,10 +8,8 @@ import { createTypeEnv } from '@asterdoc/expr'
 import { parseExpression } from './expression-parser'
 import { validateFormDefs } from './validate-form-logic'
 import { buildBundleTypeAcc } from '../type-checking'
+import { isInlineBundleArtifact, isFormArtifact, isBundleArtifact } from '../../shared/artifact-guards'
 import {
-  isInlineBundleArtifact,
-  isFormArtifact,
-  isBundleArtifact,
   unknownVariableMessage,
   validateReservedDefinitionNames,
   validateDefsSection,

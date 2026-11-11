@@ -22,7 +22,7 @@ import type {
 } from '@asterdoc/types'
 import { check, createTypeEnv, T, type ExprType, type TypeEnv } from '@asterdoc/expr'
 import { parseExpression } from '../validation/expression-parser'
-import { isInlineBundleArtifact, isFormArtifact, isBundleArtifact } from '../validation/shared'
+import { isInlineBundleArtifact, isFormArtifact, isBundleArtifact } from '../../shared/artifact-guards'
 import { topologicalSort } from '../../shared/topological-sort'
 import { defsDependencyExpressions } from '../../shared/defs-dependencies'
 import { isScalarExpressionType } from '../../shared/expression-types'
