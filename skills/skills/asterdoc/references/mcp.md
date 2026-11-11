@@ -1,13 +1,13 @@
 ---
 name: mcp
-description: The hosted Asterdoc MCP server at https://mcp.asterdoc.com/mcp. It needs an Asterdoc account. Connect with OAuth or an x-api-key, choose test, live, or both modes per connection, the data payload shape, every tool with its arguments and limits, which tools are billed, and rate limits.
+description: The hosted Asterdoc MCP server at https://mcp.asterdoc.com/mcp. It needs an Asterdoc account. Connect with OAuth or an x-api-key, choose test, live, or both modes per connection, the direct tools and find_operations for the rest, what each credential sees, the data payload shape, every operation with its arguments and limits, which are billed, and rate limits.
 metadata:
-  tags: mcp, model-context-protocol, mcp.asterdoc.com, hosted, registry, fill, render, seal, extract, e-signature, payments, account, billing, webhooks, oauth, api-key
+  tags: mcp, model-context-protocol, find_operations, permissions, mcp.asterdoc.com, hosted, registry, fill, render, seal, extract, e-signature, payments, account, billing, webhooks, oauth, api-key
 ---
 
 # Hosted MCP server
 
-**Contents:** [Connect](#connect) · [Payload shape](#payload-shape) · [Workflow](#workflow) · [Artifact tools](#artifact-tools) · [Registry tools](#registry-tools) · [Render](#render) · [Platform tools](#platform-tools) · [Account tools](#account-tools) · [Limits](#limits)
+**Contents:** [Connect](#connect) · [Tools and operations](#tools-and-operations) · [Payload shape](#payload-shape) · [Workflow](#workflow) · [Artifact tools](#artifact-tools) · [Registry tools](#registry-tools) · [Render](#render) · [Platform tools](#platform-tools) · [Account tools](#account-tools) · [Limits](#limits)
 
 Use this surface when an MCP client (Claude Code, Claude Desktop, Cursor) is connected to Asterdoc's hosted server. Nothing is installed. The server needs an Asterdoc account: every session acts for one Asterdoc organization. A person signs up and creates the organization in the Asterdoc console (`https://console.asterdoc.com`) before connecting.
 
@@ -19,6 +19,7 @@ When the user builds an agent in code, load [ai-tools.md](./ai-tools.md) instead
 |----------|-----|
 | MCP (streamable HTTP) | `https://mcp.asterdoc.com/mcp` |
 | OAuth protected-resource metadata | `https://mcp.asterdoc.com/.well-known/oauth-protected-resource` |
+| OAuth authorization-server metadata | `https://mcp.asterdoc.com/.well-known/oauth-authorization-server` (the AuthKit issuer's, served here for clients that look on the MCP host) |
 | Health | `https://mcp.asterdoc.com/health` |
 
 **OAuth (interactive clients).** Add the server by URL. The client runs sign-in on first connect. In Claude Code:
@@ -36,7 +37,7 @@ Then run `/mcp` and choose **Authenticate**. The token must be scoped to an orga
 | Test only, or live only | Every call runs in that mode. A call that names the other mode is refused. |
 | Test and live | Every call that touches mode-owned content or records must pass `mode` (`"test"` or `"live"`). A call without it is refused; there is no default. |
 
-Each mode has its own permissions, capped by the member's role. Every result from a platform tool ends with the mode it ran in (`mode: test`). Only `validate` and `fill` take no `mode`: they run on the artifact you pass in. Every other tool calls the platform and runs in a mode.
+Each mode has its own permissions, capped by the member's role. Every result from a platform tool ends with the mode it ran in (`mode: test`). Only `validate` takes no `mode`: it runs on the artifact you pass in. Every other tool calls the platform and runs in a mode.
 
 The same console page lists the member's connections. Revoke one mode, or the whole connection; the next call is refused. An organization administrator can turn MCP access off per mode for the whole organization.
 
@@ -48,6 +49,7 @@ A refused call returns `isError: true`. Its text starts with the error code, the
 | `MCP_MODE_REQUIRED` | A test-and-live connection called without `mode`. |
 | `MCP_MODE_NOT_GRANTED` | The call named a mode the connection does not hold. |
 | `MCP_MODE_DISABLED` | An administrator turned MCP access off in that mode. |
+| `MCP_PERMISSION_MISSING` | The connection lacks a permission the operation needs in the call's mode. The message names it. |
 
 **API key (headless clients).** Send the key in the `x-api-key` header, for example in `.mcp.json`:
 
@@ -64,7 +66,7 @@ A refused call returns `isError: true`. Its text starts with the error code, the
 }
 ```
 
-The server checks the key with the platform before it opens a session. An API-key connection runs in the key's mode (`ofk_test_…` or `ofk_live_…`) and needs no console setup. A call that names the other mode is refused.
+The server checks the key with the platform before it opens a session. An API-key connection runs in the key's mode (`asterdoc_test_…` or `asterdoc_live_…`) with the key's permissions, and needs no console setup. A call that names the other mode is refused.
 
 | Response | Meaning |
 |----------|---------|
@@ -74,6 +76,38 @@ The server checks the key with the platform before it opens a session. An API-ke
 | `429` | Rate limit. See [Limits](#limits). |
 | `400` | A JSON-RPC batch (an array body). Send one message per request. |
 | `413` | A request body over 4 MB. |
+
+## Tools and operations
+
+The server lists 7 tools of its own and 4 discovery tools, so a client loads a short list. Every other operation is reached through the discovery tools.
+
+| Listed | Tools |
+|--------|-------|
+| Direct | `search`, `get_artifact`, `describe`, `validate`, `fill`, `render`, `extract` |
+| Discovery | `find_operations`, `describe_operation`, `run_read_operation`, `run_write_operation` |
+
+Behind `find_operations`: `list_artifacts`, `prefill`, `seal`, `extract_job_submit`, `extract_job_get`, `extract_job_list`, the [e-signature](#e-signature), [payments](#payments) and [account](#account-tools) operations.
+
+To run one:
+
+1. `find_operations` with what you want to do, for example `{ "query": "send for signature" }`. It returns each match's `operation`, a one-line `summary` and its `risk` (`read` or `write`). An empty query lists all.
+2. `describe_operation` with that `operation`. It returns the full description and the JSON Schema of its arguments.
+3. `run_read_operation` (risk `read`) or `run_write_operation` (risk `write`) with `operation`, `arguments` built from that schema, and `mode` when the connection holds both modes.
+
+```jsonc
+// run_write_operation
+{ "operation": "void_envelope", "arguments": { "envelope_id": "env_123", "reason": "Wrong form" }, "mode": "test" }
+```
+
+The wrong runner, a direct tool's name or arguments that fail the schema are refused, and nothing runs. The operation tables below give each operation's arguments.
+
+**What each credential sees.** The server lists, finds and runs only what the connection's permissions allow: an API key's permissions, or an OAuth connection's grant for each mode. A tool or operation appears when one usable mode holds every permission it needs. When a grant changes, the list follows on the next call. When the connection is not set up, or every mode is switched off, nothing is hidden, so the first call returns the refusal with its console link.
+
+| | OAuth connection | API key |
+|-|------------------|---------|
+| Permissions | The grant for each mode, capped by the member's role | The key's own |
+| Modes | Test, live or both, set in the console | The key's one mode |
+| `void_envelope`, `refund_payment` | The person confirms each one first | Run on the key's permission |
 
 ## Payload shape
 
@@ -96,12 +130,12 @@ For a checklist, `data` is `{ "items": { "<item id>": true } }`: each item id ma
 
 ## Workflow
 
-1. Find the artifact: `search` or `list_artifacts`. Each result carries `artifact`: a Platform coordinate such as `@acme/forms/nda`.
+1. Find the artifact: `search`, or `list_artifacts` through `run_read_operation`. Each result carries `artifact`: a Platform coordinate such as `@acme/forms/nda`.
 2. `get_artifact` with that `artifact`. Read `fields`, `parties` and `layers`, and follow `agentInstructions` when present.
 3. `fill` with `{ "source": "registry", "id": "<artifact>" }` and your `data`. Repeat until `accepted` and `complete` are both `true`.
 4. `render` with the same `artifact` and `data`, or pass the same source to `seal` or `create_envelope`.
 
-For signing, call `seal` (the canonical PDF and signature map) or `create_envelope` (seal and send). For reading a filled document, call `describe` then `extract`.
+For signing, run `seal` (the canonical PDF and signature map) or `create_envelope` (seal and send) through `run_write_operation`. For reading a filled document, call `describe` then `extract`.
 
 ## Artifact tool
 
@@ -160,7 +194,7 @@ A registry coordinate resolves in the call's mode. A test session never falls ba
 
 A registry source without a version resolves `latest`, the newest version that its publisher has not yanked or deleted. A source that names a version exactly resolves it even when yanked. `describe` returns the resolved `version_id` and `version`, plus `yanked`, `yanked_message` and `deprecated_message`; `extract` returns the same in `metadata` as `artifact_version_id`, `artifact_version`, `artifact_yanked`, `artifact_yanked_message` and `artifact_deprecated_message`. When `yanked` is `true` or `deprecated_message` is set, tell the user and suggest a newer version. A deleted version fails with `Gone (version_deleted)`; a retry will not bring it back.
 
-OAuth and API-key connections get the same platform tools. Each call needs the permission in the tables below: an API key must hold it, and an OAuth connection must be granted it for the call's mode.
+Each operation needs the permission in the tables below: an API key must hold it, and an OAuth connection must be granted it for the call's mode. A connection sees only the operations its permissions allow ([Tools and operations](#tools-and-operations)).
 
 A billed tool fails with an insufficient-balance error when the organization's balance is empty.
 
