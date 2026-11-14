@@ -37,7 +37,7 @@ export function createRenderCommand(): Command {
     .argument('<artifact>', 'Artifact file (JSON/YAML) or "-" for stdin')
     .description('Render an artifact layer')
     .option('--data <pathOrJson>', 'Data payload: file path, "-" for stdin, or inline JSON (for field substitution)')
-    .option('--bindings <pathOrJson>', 'PDF layers only: AcroForm field bindings merged over the layer\'s own, each a path string or { path, format } (path to JSON/YAML or inline JSON)')
+    .option('--bindings <pathOrJson>', 'PDF layers only: AcroForm field bindings merged over the layer\'s own, each a path string, { path, format, part } or { template, format } (path to JSON/YAML or inline JSON)')
     .option('--out <file>', 'Write output to file (defaults to stdout)')
     .option('--format <style>', 'Summary format: pretty|json', 'pretty')
     .option('--layer <key>', 'Layer key to use (defaults to defaultLayer, else the first declared layer)')

@@ -8,6 +8,7 @@ import type {
 import { requestRenderData } from '../render-data'
 import type { PdfFont } from './drawing-fonts'
 import { renderPdf } from './render'
+import { requestExpressions, type TemplateExpressionOptions } from '../template/context'
 
 export interface PdfRendererOptions {
   formatter?: Formatter
@@ -16,6 +17,8 @@ export interface PdfRendererOptions {
    * tried before the font the layer declares.
    */
   font?: PdfFont
+  /** Configured functions binding templates can call when no artifact context is supplied. */
+  expressions?: Pick<TemplateExpressionOptions, 'functions' | 'signatures'>
 }
 
 type PdfLayer = RendererLayer & { type: 'pdf'; content: Uint8Array }
@@ -39,6 +42,7 @@ export function pdfRenderer(options: PdfRendererOptions = {}): AsterdocRenderer<
         form,
         formatter: request.ctx?.formatter ?? formatter,
         bindings: request.template.bindings,
+        expressions: requestExpressions(options.expressions, request.ctx?.expressions),
         ...fromLayer(request.template),
       })
     },

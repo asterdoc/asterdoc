@@ -7,7 +7,7 @@
  * `last` answer where a row sits, and exist only inside a loop.
  */
 
-import type { Formatter, FormatterProgressivePolicy, LayerFormat, ValuePart } from '@asterdoc/types'
+import type { Formatter, FormatterProgressivePolicy, ValueFormat, ValuePart } from '@asterdoc/types'
 import {
   buildRegistry,
   EvaluationError,
@@ -115,8 +115,8 @@ export interface TemplateEnvironment {
   resolveRaw(segments: readonly string[]): unknown
   /** The caller's formatter, before the layer's format. */
   callerFormatter: Formatter
-  /** The layer's format, under each placeholder's modifiers. */
-  format?: LayerFormat
+  /** The layer's format, or a PDF binding's merged over it, under each placeholder's modifiers. */
+  format?: ValueFormat
   progressive?: FormatterProgressivePolicy
   /** What the artifact declares at each path, so modifiers format with field metadata. */
   values?: TemplateValueResolver

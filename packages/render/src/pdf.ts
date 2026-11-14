@@ -9,6 +9,7 @@ export { embedPdfSignature, preparePdfSignature, readPdfSignature, signedBytes }
 export type { PdfSignatureOptions, PdfSignatureRecord, PreparedPdfSignature } from './pdf/signature'
 export { parseBinding, parseBindings, PdfBindingKeyError, PdfBindingSyntaxError } from './layer-bindings'
 export type { ParsedLayerBinding, ParsedPdfBinding, PdfBindingPart } from './layer-bindings'
+export type { BindingTemplate, BindingTemplatePiece, BindingTemplateSlot } from './template/binding'
 export { MIN_FONT_SIZE, PdfFieldFillError } from './pdf/field-appearance'
 export type { PdfFieldFillDetail, PdfFieldFillReason } from './pdf/field-appearance'
 export { PdfFontError, pdfFontMetrics } from './pdf/drawing-fonts'

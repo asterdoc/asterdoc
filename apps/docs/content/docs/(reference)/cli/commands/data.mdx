@@ -235,7 +235,7 @@ asterdoc data extract <form-file> <pdf> [options]
 
 ### Output
 
-For one PDF, the output is `{ file, layer, data, report }`. `data` holds only the values read back exactly, as a `{ fields, parties }` payload you can pass to [`data validate`](#data-validate) or [`data fill`](#data-fill). `report.entries` has one entry for each binding target, with a `status` of `recovered`, `empty`, `not_recoverable`, or `unparseable` and the raw PDF values. `report.unbound` lists PDF fields that hold a value no binding covers.
+For one PDF, the output is `{ file, layer, data, report }`. `data` holds only the values read back exactly, as a `{ fields, parties }` payload you can pass to [`data validate`](#data-validate) or [`data fill`](#data-fill). `report.entries` has one entry for each binding target, with a `status` of `recovered`, `empty`, `not_recoverable`, or `unparseable` and the raw PDF values. A field bound to a [template](/guides/pdf-layers#several-values-in-one-field) is read back only when its text splits into the template's values in exactly one way; otherwise it is `not_recoverable` or `unparseable`, with a `reason`. See [`extract`](/ai-tools/extract). `report.unbound` lists PDF fields that hold a value no binding covers.
 
 For a directory, the output is `{ results: [...] }` with one result for each `.pdf` file in name order. A file that cannot be read has `{ file, error: { code, message } }` in place of the data.
 

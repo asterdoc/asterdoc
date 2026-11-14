@@ -97,11 +97,12 @@ function printTable(fields: PdfFieldInfo[], sourcePath?: string): void {
     field.name,
     field.type,
     field.required ? 'yes' : 'no',
+    field.multiline === undefined ? '' : field.multiline ? 'yes' : 'no',
     formatFieldValue(field.value),
   ])
 
   console.log(kleur.cyan(`Fields from ${sourcePath ?? 'stdin'}:`))
-  console.log(formatTable(['Name', 'Type', 'Required', 'Value'], rows))
+  console.log(formatTable(['Name', 'Type', 'Required', 'Multi-line', 'Value'], rows))
 }
 
 function printSummary(fields: PdfFieldInfo[], sourcePath?: string): void {

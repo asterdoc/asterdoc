@@ -40,8 +40,16 @@ Each entry's `sources` lists the PDF fields that carry the path, as `{ field, va
 |--------|---------|
 | `recovered` | The value was read back and is in `data`. `lossy` is `true` when the format the PDF printed it with drops detail, so the value may differ from the one filled |
 | `empty` | The PDF fields are empty. An unchecked box counts as empty, because it cannot be told apart from an unanswered one. |
-| `not_recoverable` | The PDF holds a value that cannot be mapped back, such as a box that joins several values. `reason` says why. |
-| `unparseable` | The PDF text does not parse into the field's type, or the fields that carry the path disagree. `reason` says why. |
+| `not_recoverable` | The PDF holds a value that cannot be mapped back, such as a template box whose text splits more than one way. `reason` says why. |
+| `unparseable` | The PDF text does not parse into the field's type, does not match the binding's template, or the fields that carry the path disagree. `reason` says why. |
+
+A field bound to a [template](/guides/pdf-layers#several-values-in-one-field) is read back only when its text splits into the template's values in exactly one way. With the template `{{fields.city}}, {{fields.state}} {{fields.zip}}`, the text `Boston, MA 02110` is recovered. The reasons for the other cases are:
+
+| Case | Status and reason |
+|------|-------------------|
+| The text splits more than one way, such as `2150 Market Street, Suite 300` with an optional unit | `not_recoverable`: The field's text splits into the template's values in more than one way, and extraction does not guess. |
+| The text does not match the template | `unparseable`: The field's text does not match the binding's template. |
+| The template prints a computed value | `not_recoverable`: The template prints a computed value, which cannot be read back. |
 
 ### Error codes
 
@@ -93,10 +101,10 @@ const draft = await executeFill({ ...source, data: extracted.data ?? {} })
         "lossy": false
       },
       {
-        "path": "mailingAddress.locality",
+        "path": "mailingAddress.line1",
         "status": "not_recoverable",
-        "sources": [{ "field": "topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_08[0]", "value": "Springfield, IL, 62704" }],
-        "reason": "Several values are joined into one PDF field, and extraction does not guess how to split them."
+        "sources": [{ "field": "topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_07[0]", "value": "2150 Market Street, Suite 300" }],
+        "reason": "The field's text splits into the template's values in more than one way, and extraction does not guess."
       }
     ],
     "unbound": []

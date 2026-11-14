@@ -61,10 +61,12 @@ Build a mapping table with one row per entry in `fields.json`: the PDF name, the
 | PDF field | Asterdoc field | Binding |
 |-----------|---------------|---------|
 | Text | The most specific type ([fields.md](./fields.md)). Set `maxLength` from `maxLen` or the box width. | `"path"` |
+| Text box that takes a code (a tax class letter, a state code) | `enum` whose option `value` is the code the form asks for, in the form's case: `C`, `S`, `P`, not `c`, `s`, `p`. Put the readable name in `label`. | `"field"` |
 | Group of checkboxes, pick one | `enum` | One `"field:option"` per box |
 | Group of checkboxes, pick many | `multiselect` | One `"field:option"` per box |
 | Single checkbox | `boolean` | `"field"` |
 | Radio group or dropdown | `enum` with option values equal to the PDF export values | `"field"` |
+| One box that holds several values (a city line, a street with a unit) | `address`, or the separate fields | `{ "template": "{{fields.address.locality}}, {{fields.address.region}} {{fields.address.postalCode}}" }` ([pdf.md § Template bindings](./pdf.md#template-bindings)). A line break needs a multi-line box (`multiline` in `inspect`). |
 | Split boxes (SSN in 3 parts) | `text` with a `mask` (`###-##-####`) | `"field:1"`, `"field:2"`, ... |
 | Separate month, day and year boxes; area code and number; dollars and cents | `date`, `phone`, `money` | `{ "path": "field", "part": "month" }`, ... ([pdf.md § Binding objects](./pdf.md#binding-objects)) |
 | A box that asks for `MM/DD/YYYY`, or pre-prints `$` | `date`, `money` | The layer's `format` ([formatting.md § Artifact formats](./formatting.md#artifact-formats)) |
@@ -73,6 +75,8 @@ Build a mapping table with one row per entry in `fields.json`: the PDF name, the
 | Name or signature line of a signer | A party | `"parties.role.name"` |
 
 The binding syntax and what each form reads back are in [pdf.md](./pdf.md#binding-values).
+
+A PDF text box prints an enum's option `value`, not its `label`. When a box takes a code, make the option `value` that code, in the form's case. An LLC tax classification box asks for `C`, `S` or `P`, so the options are `{ "value": "C", "label": "C corporation" }`, `{ "value": "S", "label": "S corporation" }`, `{ "value": "P", "label": "Partnership" }`, not `c`, `s`, `p`. Keep the label for the human-readable name.
 
 **Done when** the mapping table has as many rows as `jq length fields.json` prints, and each row is bound or has a skip reason.
 
@@ -150,7 +154,7 @@ jq '.report.unbound | length' extracted.json
 
 - Every `render` exits 0.
 - A text output shows each sample value, and `grep -n "error" out.md` prints nothing.
-- On the PDF branch, the `jq` listing shows only paths you left blank on purpose (`empty`) or joined on purpose (`not_recoverable`, such as `a,b,c`), and `unbound` is `0`.
+- On the PDF branch, the `jq` listing shows only paths you left blank on purpose (`empty`) or boxes that read back more than one way on purpose (`not_recoverable`, such as a street line with an optional unit), and `unbound` is `0`.
 
 A `not_recoverable` or `unparseable` entry you did not plan for is a binding bug. Fix the binding in stage 4 and run the round trip again.
 

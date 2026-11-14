@@ -9,14 +9,14 @@ const fixtures = ['pet-addendum.pdf', 'pet-addendum-2.pdf']
 
 const expectedFields = {
   'pet-addendum.pdf': [
-    { name: 'name', type: 'text', value: '', required: false, rect: [72, 648, 288, 668], maxLen: 100 },
-    { name: 'weight', type: 'text', value: '', required: false, rect: [72, 612, 288, 632], maxLen: 100 },
+    { name: 'name', type: 'text', value: '', required: false, rect: [72, 648, 288, 668], maxLen: 100, multiline: false },
+    { name: 'weight', type: 'text', value: '', required: false, rect: [72, 612, 288, 632], maxLen: 100, multiline: false },
     { name: 'species', type: 'dropdown', value: ['fish'], required: false, rect: [72, 576, 288, 596] },
     { name: 'hasVaccination', type: 'checkbox', value: false, required: false, rect: [72, 540, 92, 560] },
   ],
   'pet-addendum-2.pdf': [
-    { name: 'pet_name', type: 'text', value: '', required: false, page: 1, rect: [72, 648, 288, 668], maxLen: 100 },
-    { name: 'petWeight', type: 'text', value: '', required: false, page: 1, rect: [72, 612, 288, 632], maxLen: 100 },
+    { name: 'pet_name', type: 'text', value: '', required: false, page: 1, rect: [72, 648, 288, 668], maxLen: 100, multiline: false },
+    { name: 'petWeight', type: 'text', value: '', required: false, page: 1, rect: [72, 612, 288, 632], maxLen: 100, multiline: false },
     { name: 'SPECIES', type: 'dropdown', value: ['dog'], required: false, page: 1, rect: [72, 576, 288, 596] },
     { name: 'is_vaccinated', type: 'checkbox', value: false, required: true, page: 1, rect: [72, 540, 92, 560] },
   ],
@@ -264,7 +264,7 @@ describe('PDF artifact formatting', () => {
   it('applies artifact context to indexed values, computed values and parties', async () => {
     const formatter = createFormatter({ locale: 'de-DE' })
     const template = textFieldsPdf(['amount', 'total', 'owner', 'combined'])
-    const bindings = { amount: 'rows[0].amount', total: 'defs.total', owner: 'parties.owner', combined: 'count, enabled' }
+    const bindings = { amount: 'rows[0].amount', total: 'defs.total', owner: 'parties.owner', combined: { template: '{{fields.count}}, {{fields.enabled}}' } }
     const direct = await renderPdf({ template, form, formatter, data, bindings })
     const { parties, defs, ...fields } = data
     const adapted = await pdfRenderer().render({ kind: 'form', template: { type: 'pdf', content: template, bindings }, artifact: form,

@@ -1,6 +1,7 @@
 import type { BindingValue, Bindings, Form, FormField, ValueFormat, ValuePart } from '@asterdoc/types'
 import { pathSegments } from './path'
 import { ALL_VALUE_PARTS, bindingDeclaration, isValuePart, partsOf } from './parts/rules'
+import { joinedTemplate, parseBindingTemplate, pathExpression, type BindingTemplate } from './template/binding'
 
 /** The part of a layer that decides which bindings it fills with. */
 export interface LayerBindingsSpec {
@@ -59,16 +60,18 @@ export class PdfBindingSyntaxError extends Error {
   }
 }
 
-/** One PDF binding, read from either of the shapes a binding value takes. */
+/** One PDF binding, read from any of the shapes a binding value takes. */
 export interface ParsedPdfBinding {
-  /** The binding's path text: the string binding, or a binding object's `path`. */
+  /** The binding's text: the string binding, or a binding object's `path` or `template`. */
   path: string
-  /** The paths the binding reads. */
+  /** The paths the binding reads: the one a path binding names, or every one a template's placeholders read. */
   parts: PdfBindingPart[]
   /** The format a binding object declares, merged over its layer's format. */
   format?: ValueFormat
   /** The part of the value a binding object prints, such as a date's `year`. */
   part?: ValuePart
+  /** The template a template binding prints. */
+  template?: BindingTemplate
 }
 
 /** One binding of a layer, with the PDF field it fills. */
@@ -89,48 +92,107 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * - `name` or `fields.name` reads one path.
  * - `status:married` tests an option; `ssn:2` fills the second hyphen-separated
  *   part. Space around the `:` is ignored.
- * - `city, state, zip` joins several whole values with `, `. A part of a joined
- *   binding takes no qualifier.
  * - `{ path, format, part }` reads `path` as a string binding does and prints
  *   with `format`, or prints only `part` of the value.
+ * - `{ template, format }` prints a template: several values and the text
+ *   between them, such as `{{fields.city}}, {{fields.state}} {{fields.zip}}`.
  *
- * @throws {PdfBindingSyntaxError} for a value of neither shape, an empty part
- * or qualifier, a qualifier inside a joined binding, or a `part` that is not
- * a string.
+ * @throws {PdfBindingSyntaxError} for a value of none of these shapes, an
+ * empty path or qualifier, several paths joined with a comma, a `part` that is
+ * not a string or sits on a template, or a template whose markers do not
+ * pair or that holds an `{{#each}}` loop or a signing directive.
  */
 export function parseBinding(value: BindingValue): ParsedPdfBinding {
-  if (typeof value === 'string') return { path: value, parts: parsePath(value) }
-  if (!isRecord(value) || typeof value.path !== 'string') {
-    throw new PdfBindingSyntaxError(JSON.stringify(value) ?? String(value), 'is neither a path string nor a binding object with a string path')
+  if (typeof value === 'string') return { path: value, parts: [parsePath(value)] }
+  const described = () => JSON.stringify(value) ?? String(value)
+  if (!isRecord(value)) throw new PdfBindingSyntaxError(described(), 'is neither a path string nor a binding object')
+  const { path, template, format, part } = value as Record<string, unknown>
+  if (path !== undefined && template !== undefined) {
+    throw new PdfBindingSyntaxError(described(), 'holds both a path and a template; a binding object holds one of them')
   }
-  if (value.format !== undefined && !isRecord(value.format)) {
-    throw new PdfBindingSyntaxError(value.path, 'has a format that is not an object')
+  const text = path ?? template
+  if (typeof text !== 'string') {
+    throw new PdfBindingSyntaxError(described(), 'is neither a path string nor a binding object with a string path or template')
   }
-  if (value.part !== undefined && typeof value.part !== 'string') {
-    throw new PdfBindingSyntaxError(value.path, 'has a part that is not a string')
+  if (format !== undefined && !isRecord(format)) throw new PdfBindingSyntaxError(text, 'has a format that is not an object')
+  if (template !== undefined) {
+    if (part !== undefined) throw new PdfBindingSyntaxError(text, 'sets a part on a template; write it on a placeholder, such as {{fields.dob | part="year"}}')
+    const parsed = parseBindingTemplate(text)
+    if ('problem' in parsed) throw new PdfBindingSyntaxError(text, parsed.problem)
+    return {
+      path: text,
+      parts: templateParts(parsed.template),
+      ...(format !== undefined && { format: format as ValueFormat }),
+      template: parsed.template,
+    }
   }
+  if (part !== undefined && typeof part !== 'string') throw new PdfBindingSyntaxError(text, 'has a part that is not a string')
   return {
-    path: value.path,
-    parts: parsePath(value.path),
-    ...(value.format !== undefined && { format: value.format }),
-    ...(value.part !== undefined && { part: value.part as ValuePart }),
+    path: text,
+    parts: [parsePath(text)],
+    ...(format !== undefined && { format: format as ValueFormat }),
+    ...(part !== undefined && { part: part as ValuePart }),
   }
 }
 
-function parsePath(binding: string): PdfBindingPart[] {
-  const parts = binding.split(',').map((text): PdfBindingPart => {
-    const separator = text.indexOf(':')
-    const source = (separator === -1 ? text : text.slice(0, separator)).trim()
-    if (!source) throw new PdfBindingSyntaxError(binding, 'has an empty path')
-    if (separator === -1) return { source, path: bindingDataPath(source) }
-    const qualifier = text.slice(separator + 1).trim()
-    if (!qualifier) throw new PdfBindingSyntaxError(binding, `has an empty qualifier after "${source}:"`)
-    return { source, path: bindingDataPath(source), qualifier }
-  })
-  if (parts.length > 1 && parts.some((part) => part.qualifier !== undefined)) {
-    throw new PdfBindingSyntaxError(binding, 'qualifies a part of a joined binding; a joined binding reads whole values')
+const TEMPLATE_ROOTS = new Set(['fields', 'parties', 'annexes'])
+
+function templatePart(segments: readonly string[]): PdfBindingPart {
+  const source = TEMPLATE_ROOTS.has(segments[0]!) ? segments.join('.') : ['defs', ...segments].join('.')
+  return { source, path: bindingDataPath(source) }
+}
+
+function templateParts(template: BindingTemplate): PdfBindingPart[] {
+  const parts = new Map<string, PdfBindingPart>()
+  for (const segments of template.references) {
+    const part = templatePart(segments)
+    if (!parts.has(part.source)) parts.set(part.source, part)
   }
-  return parts
+  return [...parts.values()]
+}
+
+/** The binding path a placeholder of a binding template prints, or undefined for a computed value. */
+export function templateSlotPart(segments: readonly string[] | undefined): PdfBindingPart | undefined {
+  return segments ? templatePart(segments) : undefined
+}
+
+function templateSegments(source: string): string[] {
+  const segments = pathSegments(renderDataPath({ fields: {} }, source))
+  return segments[0] === 'defs' ? segments.slice(1) : segments
+}
+
+/**
+ * The template that prints what a comma-joined binding of schema 2026-11-10
+ * printed: each path's value, with `, ` between the values that are not empty.
+ *
+ * @throws {PdfBindingSyntaxError} when a joined path is empty or has a `:` qualifier.
+ */
+export function joinedBindingTemplate(binding: string): string {
+  return joinedTemplate(binding.split(',').map((text) => {
+    const source = text.trim()
+    if (!source) throw new PdfBindingSyntaxError(binding, 'has an empty path')
+    if (source.includes(':')) throw new PdfBindingSyntaxError(binding, 'qualifies a part of a joined binding; a joined binding reads whole values')
+    return templateSegments(source)
+  }))
+}
+
+function joinProblem(binding: string): string {
+  const paths = binding.split(',').map((text) => text.trim())
+  const template = paths.every((path) => path !== '' && !path.includes(':'))
+    ? paths.map((path) => `{{${pathExpression(templateSegments(path))}}}`).join(', ')
+    : '{{fields.city}}, {{fields.state}}'
+  return `joins several paths with a comma, which a binding does not do; print several values in one field with a template, such as ${JSON.stringify({ template })}`
+}
+
+function parsePath(binding: string): PdfBindingPart {
+  if (binding.includes(',')) throw new PdfBindingSyntaxError(binding, joinProblem(binding))
+  const separator = binding.indexOf(':')
+  const source = (separator === -1 ? binding : binding.slice(0, separator)).trim()
+  if (!source) throw new PdfBindingSyntaxError(binding, 'has an empty path')
+  if (separator === -1) return { source, path: bindingDataPath(source) }
+  const qualifier = binding.slice(separator + 1).trim()
+  if (!qualifier) throw new PdfBindingSyntaxError(binding, `has an empty qualifier after "${source}:"`)
+  return { source, path: bindingDataPath(source), qualifier }
 }
 
 /** Parse every binding of a layer. @throws {PdfBindingSyntaxError} as {@link parseBinding} does. */
@@ -186,13 +248,11 @@ export function bindingFormatProblem(form: Form | undefined, binding: ParsedPdfB
 
 /**
  * Why a binding's part cannot apply, or undefined when it can. A part reads
- * one whole value of a kind that has it, so it takes no joined path and no
- * `:` qualifier.
+ * one whole value of a kind that has it, so it takes no `:` qualifier.
  */
 export function bindingPartProblem(form: Form | undefined, binding: ParsedPdfBinding): string | undefined {
   const { part } = binding
   if (part === undefined) return undefined
-  if (binding.parts.length > 1) return `prints the part "${part}" of a joined binding, which reads whole values`
   const [only] = binding.parts as [PdfBindingPart]
   if (only.qualifier !== undefined) {
     const source = `${only.source}:${only.qualifier}`

@@ -87,7 +87,7 @@ Every key is optional:
 | Key | Values | Effect |
 |-----|--------|--------|
 | `locale` | BCP 47 tag, such as `en-US` | Names and words in this locale |
-| `case` | `"upper"`, `"none"` | `upper` prints in upper case, last, after any join. On a layer it skips email, uri and uuid fields. `none` turns off an `upper` set below |
+| `case` | `"upper"`, `"none"` | `upper` prints in upper case, last. On a layer it skips email, uri and uuid fields. On a PDF binding it changes the whole box, a template's own text included. `none` turns off an `upper` set below |
 | `money` | `{ currencyDisplay?: "none", fractionDigits?: 0 \| 2, useGrouping?: boolean }` | No symbol, for a box that pre-prints it. Exactly 0 or 2 digits, rounding half away from zero (`1.999` prints `2`). No grouping separators |
 | `date` | `{ pattern: "MM/DD/YYYY" \| "DD/MM/YYYY" \| "YYYY-MM-DD" }` | Dates in that numeric order |
 | `phone` | `{ style?: "e164" \| "international" \| "national" \| "digits", region?: "US" }` | `+12125551234`, `+1 212 555 1234`, `(212) 555-1234`, `2125551234`. `region` names the plan a national box expects: under `national` and `digits` a number from another plan is refused |

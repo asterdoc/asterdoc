@@ -24,8 +24,10 @@ import {
 } from '../layer-bindings'
 import { formatFieldOptions, formatterFor, hasNewFormatOptions, mergeFormats } from '../presentation'
 import { bindingDeclaration } from '../parts/rules'
+import type { TemplateExpressionOptions } from '../template/context'
 import { printValuePart } from '../parts/print'
 import { acroFields, setAcroFieldValue, type AcroField } from './acroform'
+import { bindingTemplatePrinter } from './binding-template'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
 import { applyPdfOverlays, type PdfOverlay } from './overlay'
 import { PdfModel } from './syntax'
@@ -34,8 +36,10 @@ export interface RenderPdfOptions {
   template: BinaryContent
   form?: Form
   data: Record<string, unknown>
-  /** AcroForm field name to Asterdoc path, as a string or a binding object with its own format. */
+  /** AcroForm field name to Asterdoc path, as a string, or a binding object with its own format, part, or template. */
   bindings?: Bindings
+  /** The expression context and configured functions binding templates read. */
+  expressions?: TemplateExpressionOptions
   formatter?: Formatter
   overlays?: PdfOverlay[]
   /**
@@ -155,6 +159,7 @@ async function renderPdfWithValues({
   form,
   data,
   bindings,
+  expressions,
   formatter = defaultFormatter,
   overlays = [],
   font,
@@ -192,6 +197,7 @@ async function renderPdfWithValues({
   const caseLocale = (bindingFormat: ValueFormat | undefined) => formatterFor(formatter, mergeFormats(format, bindingFormat)).locale
   const bindingCase = (value: unknown, bindingFormat: ValueFormat | undefined): unknown =>
     bindingFormat?.case === undefined ? value : bindingCased(value, bindingFormat, caseLocale(bindingFormat))
+  const printTemplate = bindingTemplatePrinter({ data, form, formatter, format, expressions })
   assertListBindingCapacity(form, data, parsed)
   const model = await PdfModel.load(template)
   const fonts = PdfFontSet.create(model, { font, layerFont })
@@ -220,11 +226,11 @@ async function renderPdfWithValues({
       if (model.dict(catalogRef)?.entries.delete('NeedsRendering')) model.markUpdated(catalogRef)
       // Bindings given, even none, replace filling PDF fields by field id.
       if (bindings) {
-        for (const { field: pdfName, parts, format: bindingFormat, part: valuePart } of parsed) {
+        for (const binding of parsed) {
+          const { field: pdfName, parts, format: bindingFormat, part: valuePart } = binding
           const field = byName.get(pdfName)
-          if (parts.length > 1) {
-            const combined = parts.map((part) => read(part.source, bindingFormat)).filter((value) => value !== null && value !== undefined && String(value) !== '').join(', ')
-            if (combined) assign(field, bindingCase(combined, bindingFormat), model, fonts)
+          if (binding.template) {
+            assign(field, printTemplate(binding), model, fonts)
             continue
           }
           const { path, qualifier } = parts[0]!

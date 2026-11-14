@@ -106,6 +106,38 @@ describe('asterdoc migrate', () => {
     expect(await readFile(file, 'utf-8')).toBe(noticeYaml)
   })
 
+  it('rewrites a comma-joined PDF binding of 2026-11-10 as the template that prints the same text', async () => {
+    const lease = (bindings: Record<string, unknown>) => JSON.stringify({
+      $schema: 'https://schema.asterdoc.com/2026-11-10.json',
+      kind: 'form',
+      name: 'lease',
+      version: '1.0.0',
+      title: 'Lease',
+      fields: { city: { type: 'text', label: 'City' }, state: { type: 'text', label: 'State' } },
+      layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: './lease.pdf', bindings } },
+    }, null, 2) + '\n'
+    const file = path.join(dir, 'lease.json')
+    await writeFile(file, lease({ place: 'city, state', city: 'city' }))
+
+    const result = await run(['migrate', file], dir)
+
+    expect(result.exitCode).toBe(0)
+    const migrated = JSON.parse(await readFile(file, 'utf8'))
+    expect(migrated.$schema).toBe(ASTERDOC_SCHEMA_URL)
+    expect(migrated.layers.pdf.bindings).toEqual({
+      place: { template: '{{fields.city}}{{#if isNotEmpty(fields.state)}}{{#if isNotEmpty(fields.city)}}, {{/if}}{{fields.state}}{{/if}}' },
+      city: 'city',
+    })
+
+    const refused = path.join(dir, 'refused.json')
+    const before = lease({ place: 'city:1, state' })
+    await writeFile(refused, before)
+    const failure = await run(['migrate', refused], dir)
+    expect(failure.exitCode).not.toBe(0)
+    expect(failure.stdout + failure.stderr).toContain('qualifies a part of a joined binding')
+    expect(await readFile(refused, 'utf8')).toBe(before)
+  })
+
   it('refuses a $schema that names an unpublished version and leaves the file as it is', async () => {
     const file = path.join(dir, 'notice.json')
     const source = notice('https://schema.asterdoc.com/2020-01-01.json')

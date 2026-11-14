@@ -1,5 +1,6 @@
-import type { Formatter, FormatterProgressivePolicy, LayerFormat } from '@asterdoc/types'
+import type { Formatter, FormatterProgressivePolicy, ValueFormat } from '@asterdoc/types'
 import type { EvaluationContext, Expr, Value } from '@asterdoc/expr'
+import { DIRECTIVE_MODIFIER_RULE, SIGNING_DIRECTIVES } from '../template/directives'
 import { TemplateError, type TemplateDiagnostic } from '../template/errors'
 import { parseTemplate, type ExpressionSlot, type TemplateNode } from '../template/markers'
 import { fromValue, TemplateScope, type Frame, type TemplateEnvironment } from '../template/scope'
@@ -22,11 +23,7 @@ export class Markup {
 /** Places a signing mark for a party at a location: `signature`, `initials`, and the related directives. */
 export type SigningDirective = (party: unknown, root: Record<string, unknown>, args: unknown[]) => unknown
 
-/** Names a template writes as signing directives rather than as expression functions. */
-export const SIGNING_DIRECTIVES: ReadonlySet<string> = new Set(['signature', 'initials', 'signatureDate', 'capacity', 'printedName'])
-
-/** The rule a signing directive with format modifiers breaks. */
-export const DIRECTIVE_MODIFIER_RULE = 'A signing directive places a signing mark and takes no format modifiers.'
+export { DIRECTIVE_MODIFIER_RULE, SIGNING_DIRECTIVES } from '../template/directives'
 
 export interface TemplateRenderOptions {
   /** The expression context: fields, computed values, parties, items, and configured functions. */
@@ -41,14 +38,16 @@ export interface TemplateRenderOptions {
   formatter: Formatter
   /** The caller's formatter, before the layer's format. */
   callerFormatter: Formatter
-  /** The layer's format, under each placeholder's format modifiers. */
-  format?: LayerFormat
+  /** The layer's format, or a PDF binding's merged over it, under each placeholder's format modifiers. */
+  format?: ValueFormat
   progressive?: FormatterProgressivePolicy
   /** What the artifact declares at each path. */
   values?: TemplateValueResolver
   directives?: Record<string, SigningDirective>
   /** Escapes an interpolated value for the output format; identity when the format needs none. */
   escape: (value: string) => string
+  /** Told the text of each value placeholder the render reaches, before escaping. */
+  printed?: (text: string) => void
   /** The layer key, for error messages. */
   layer?: string
 }
@@ -152,6 +151,7 @@ export function renderTemplateNodes(nodes: readonly TemplateNode[], scope: Templ
       const text = directive
         ? renderDirective(expression as Extract<Expr, { kind: 'Call' }>, node.slot, scope, options)
         : scope.present(expression, node.slot.source, node.slot.position, modifiers)
+      if (!directive) options.printed?.(text as string)
       result += text instanceof Markup ? text.value : node.escaped ? escape(text) : text
       continue
     }

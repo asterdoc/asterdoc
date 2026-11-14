@@ -78,7 +78,7 @@ describe('reading a binding value', () => {
     const format: LayerFormat = { date: { pattern: 'YYYY-MM-DD' } }
     expect(parseBinding({ path: 'fields.dob', format })).toEqual({ path: 'fields.dob', parts: [{ source: 'fields.dob', path: 'dob' }], format })
     expect(parseBinding({ path: 'ssn:2' })).toEqual({ path: 'ssn:2', parts: [{ source: 'ssn', path: 'ssn', qualifier: '2' }] })
-    expect(parseBinding('city, state')).toEqual(parseBinding({ path: 'city, state' }))
+    expect(parseBinding({ path: 'city' })).toEqual(parseBinding('city'))
   })
 
   it('keeps the PDF field each binding fills', () => {
@@ -89,7 +89,7 @@ describe('reading a binding value', () => {
     expect(() => parseBinding(42 as unknown as string)).toThrow(PdfBindingSyntaxError)
     expect(() => parseBinding({ format: {} } as unknown as string)).toThrow('neither a path string nor a binding object')
     expect(() => parseBinding({ path: 'dob', format: 'MM/DD/YYYY' } as unknown as string)).toThrow('format that is not an object')
-    expect(() => parseBinding({ path: 'city,,zip' })).toThrow('Binding "city,,zip" has an empty path.')
+    expect(() => parseBinding({ path: ':married' })).toThrow('Binding ":married" has an empty path.')
   })
 })
 
@@ -109,9 +109,13 @@ describe('a PDF binding format', () => {
     expect(await values(layered)).toMatchObject({ amount: '12,000.50' })
   })
 
-  it('formats each value of a joined path before the join', async () => {
-    const bindings: Bindings = { both: { path: 'dob, filed', format: { date: { pattern: 'DD/MM/YYYY' } } } }
-    expect(await values(await renderPdf({ template: template(), form, data, bindings }))).toMatchObject({ both: '15/06/2021, 02/01/2020' })
+  it('formats each value of a template, under the modifiers of its own placeholder', async () => {
+    const bindings: Bindings = { both: { template: '{{fields.dob}} to {{fields.filed}}', format: { date: { pattern: 'DD/MM/YYYY' } } } }
+    expect(await values(await renderPdf({ template: template(), form, data, bindings }))).toMatchObject({ both: '15/06/2021 to 02/01/2020' })
+    const modified: Bindings = { both: { template: '{{fields.dob | date.pattern="YYYY-MM-DD"}} to {{fields.filed}}', format: { date: { pattern: 'DD/MM/YYYY' } } } }
+    expect(await values(await renderPdf({ template: template(), form, data, bindings: modified }))).toMatchObject({ both: '2021-06-15 to 02/01/2020' })
+    const layered: Bindings = { both: { template: '{{fields.dob}} to {{fields.filed}}' } }
+    expect(await values(await renderPdf({ template: template(), form, data, bindings: layered, format: { date: { pattern: 'MM/DD/YYYY' } } }))).toMatchObject({ both: '06/15/2021 to 01/02/2020' })
   })
 
   it('prints names and words in its locale, over the layer locale', async () => {
@@ -176,12 +180,13 @@ describe('formatting values one by one', () => {
     const strings: Record<string, string> = {
       dob: 'fields.dob', amount: 'amount', status: 'status', wedText: 'wed', married: 'status:married', single: 'status:single',
       ssn1: 'ssn:1', ssn3: 'ssn:3', city: 'home.locality', home: 'home', person0: 'people[0].name', born1: 'people.1.born',
-      client: 'parties.client', clientLast: 'parties.client.lastName', joined: 'home.locality, home.region',
+      client: 'parties.client', clientLast: 'parties.client.lastName',
     }
+    const joined: Bindings = { joined: { template: '{{fields.home.locality}}, {{fields.home.region}}' } }
     const objects: Bindings = Object.fromEntries(Object.entries(strings).map(([key, path]) => [key, path.includes(':') ? { path } : { path, format: {} }]))
     for (const layerFormat of [undefined, { money: { currencyDisplay: 'none' }, date: { pattern: 'DD/MM/YYYY' } }] as const) {
-      const once = await values(await renderPdf({ template: acroFormPdf(fields), form, data, bindings: strings, format: layerFormat }))
-      const each = await values(await renderPdf({ template: acroFormPdf(fields), form, data, bindings: objects, format: layerFormat }))
+      const once = await values(await renderPdf({ template: acroFormPdf(fields), form, data, bindings: { ...strings, ...joined }, format: layerFormat }))
+      const each = await values(await renderPdf({ template: acroFormPdf(fields), form, data, bindings: { ...objects, ...joined }, format: layerFormat }))
       expect(each).toEqual(once)
       expect(once).toMatchObject({ married: true, single: false, ssn3: '6789', person0: 'Ann', clientLast: 'Public', joined: 'Springfield, IL' })
     }

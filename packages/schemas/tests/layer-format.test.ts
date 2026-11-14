@@ -10,6 +10,9 @@ import {
   LAYER_KEY_MIME_TYPES,
   LayerSchema,
   mimeTypesPattern,
+  PDF_BINDING_OBJECT_RULE,
+  PDF_BINDING_TEMPLATE_PART_RULE,
+  PdfBindingObjectSchema,
   PdfBindingsSchema,
 } from "../src/zod/artifacts/shared/layer";
 import { RegistryInlineLayerSchema, RegistryLayerSchema } from "../src/zod/registry/registry-item";
@@ -117,7 +120,7 @@ describe("a layer's format", () => {
 
 describe("a binding object", () => {
   it("takes a path and a format, beside string bindings", () => {
-    const bindings = { f1: "fields.name", f2: { path: "fields.dob", format: dateFormat }, f3: { path: "city, state" } };
+    const bindings = { f1: "fields.name", f2: { path: "fields.dob", format: dateFormat }, f3: { path: "ssn:2" } };
     const result = PdfBindingsSchema.safeParse(bindings);
     expect(messages(result)).toEqual([]);
     expect(result.data).toEqual(bindings);
@@ -135,6 +138,40 @@ describe("a binding object", () => {
     for (const part of parts) expect(messages(PdfBindingsSchema.safeParse({ f1: { path: "fields.x", part } })), part).toEqual([]);
     expect(PdfBindingsSchema.safeParse({ f1: { path: "fields.dob", part: "week" } }).success).toBe(false);
     expect(PdfBindingsSchema.safeParse({ f1: { path: "fields.dob", part: "Year" } }).success).toBe(false);
+  });
+
+  it("takes a template with a format, in place of a path", () => {
+    const bindings = { f1: { template: "{{fields.city}}, {{fields.state}} {{fields.zip}}" }, f2: { template: "{{fields.dob}}\n{{fields.name}}", format: dateFormat } };
+    const result = PdfBindingsSchema.safeParse(bindings);
+    expect(messages(result)).toEqual([]);
+    expect(result.data).toEqual(bindings);
+    expect(PdfBindingObjectSchema.safeParse(bindings.f2).success).toBe(true);
+    expect(PdfBindingObjectSchema.safeParse({ path: "fields.dob", part: "year" }).success).toBe(true);
+  });
+
+  it("refuses a template that is empty or longer than 2000 characters", () => {
+    expect(PdfBindingsSchema.safeParse({ f1: { template: "" } }).success).toBe(false);
+    expect(PdfBindingsSchema.safeParse({ f1: { template: "x".repeat(2000) } }).success).toBe(true);
+    expect(messages(PdfBindingsSchema.safeParse({ f1: { template: "x".repeat(2001) } })).join("\n")).toContain("template");
+  });
+
+  it("refuses a binding object with both a path and a template, or with neither, naming the rule", () => {
+    for (const binding of [{ path: "fields.city", template: "{{fields.city}}" }, { format: dateFormat }, {}]) {
+      expect(messages(PdfBindingsSchema.safeParse({ f1: binding })), JSON.stringify(binding)).toEqual([`f1: ${PDF_BINDING_OBJECT_RULE}`]);
+      expect(messages(PdfBindingObjectSchema.safeParse(binding)), JSON.stringify(binding)).toEqual([`: ${PDF_BINDING_OBJECT_RULE}`]);
+    }
+    expect(messages(PdfBindingsSchema.safeParse({ f1: { path: "fields.city", template: "{{fields.city}}", part: "year" } }))).toEqual([`f1: ${PDF_BINDING_OBJECT_RULE}`]);
+  });
+
+  it("refuses a part on a template, naming the placeholder form", () => {
+    expect(messages(PdfBindingsSchema.safeParse({ f1: { template: "{{fields.dob}}", part: "year" } }))).toEqual([`f1: ${PDF_BINDING_TEMPLATE_PART_RULE}`]);
+  });
+
+  it("names what is wrong inside a binding object", () => {
+    expect(messages(PdfBindingsSchema.safeParse({ f1: { template: "{{fields.dob}}", digits: 4 } })).join("\n")).toContain("digits");
+    expect(messages(PdfBindingsSchema.safeParse({ f1: { template: "{{fields.dob}}", format: { date: { pattern: "DD.MM.YYYY" } } } })).join("\n")).toContain("format.date.pattern");
+    expect(messages(PdfBindingsSchema.safeParse({ f1: 7 }))).toEqual(["f1: A binding is a path string or a binding object"]);
+    expect(messages(PdfBindingsSchema.safeParse({ f1: "" })).join("\n")).toContain(">=1 characters");
   });
 
   it("is refused on a layer that is not a PDF, as any binding is", () => {
@@ -190,12 +227,18 @@ describe("the MIME rules in the published JSON Schema", () => {
     expect(mimeTypesPattern(["a/b", "c/d"])).toBe("^(?:[aA]/[bB]|[cC]/[dD])$");
   });
 
-  it("states a binding value as the old string schema or a binding object", () => {
+  it("states a binding value as a path string, a path object, or a template object", () => {
     const json = z.toJSONSchema(PdfBindingsSchema, { target: "draft-2020-12" }) as unknown as {
-      additionalProperties: { anyOf: Array<{ type?: string; description?: string; required?: string[] }> };
+      additionalProperties: { anyOf: Array<{ type?: string; description?: string; required?: string[]; properties?: Record<string, unknown>; additionalProperties?: boolean }> };
     };
-    const [text, object] = json.additionalProperties.anyOf;
+    const [text, path, template] = json.additionalProperties.anyOf;
+    expect(json.additionalProperties.anyOf).toHaveLength(3);
     expect(text).toEqual({ type: "string", minLength: 1, maxLength: 500, description: "Asterdoc path whose value fills the field (e.g., fields.name, parties.buyer.name)" });
-    expect(object).toMatchObject({ type: "object", required: ["path"] });
+    expect(path).toMatchObject({ type: "object", required: ["path"], additionalProperties: false });
+    expect(path!.properties).toMatchObject({ template: { not: {} } });
+    expect(Object.keys(path!.properties!)).toEqual(["path", "format", "part", "template"]);
+    expect(template).toMatchObject({ type: "object", required: ["template"], additionalProperties: false });
+    expect(template!.properties).toMatchObject({ path: { not: {} }, part: { not: {} } });
+    expect(Object.keys(template!.properties!)).toEqual(["template", "format", "path", "part"]);
   });
 });

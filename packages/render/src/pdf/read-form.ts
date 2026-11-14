@@ -3,7 +3,8 @@ import { canonicalizeMasked, parseMask, resolveAddressRegion, resolveCountry, re
 import { phoneProvider } from '@asterdoc/format/phone'
 import type { BinaryContent, Bindings, EnumOption, EnumOptionValue, Form, FormField, Formatter, LayerBooleanFormat, LayerCountryFormat, LayerDateFormat, LayerFormat, LayerPhoneFormat, LayerRegionFormat, ValueFormat, ValuePart, ValueTextFormat } from '@asterdoc/types'
 import { effectiveMask, validateFieldBindings } from '../text/field-formatter'
-import { assertBindingFormats, fieldDefinition, parseBindings, resolveLayerBindings, splitPartIndex } from '../layer-bindings'
+import { assertBindingFormats, fieldDefinition, parseBindings, resolveLayerBindings, splitPartIndex, templateSlotPart } from '../layer-bindings'
+import type { BindingTemplate, BindingTemplatePiece, BindingTemplateSlot } from '../template/binding'
 import { formatterFor, mergeFormats } from '../presentation'
 import { bindingDeclaration } from '../parts/rules'
 import { pathSegments } from '../path'
@@ -981,6 +982,69 @@ function maskGroupsReading(mask: string, bound: number, values: readonly string[
   return read.success ? { kind: 'value', value: read.value, lossy: caseLost(reader, 'text', read.value) } : { kind: 'unparseable', reason: read.message }
 }
 
+interface TemplateValue {
+  slot: BindingTemplateSlot
+  text: string
+}
+
+type TemplateSplit =
+  | { kind: 'split'; values: TemplateValue[] }
+  | { kind: 'ambiguous' }
+  | { kind: 'mismatch' }
+  | { kind: 'unreadable'; reason: string }
+
+const sameLineBreaks = (text: string) => text.replace(/\r\n|\r/g, '\n')
+
+function* templateSplits(pieces: readonly BindingTemplatePiece[], text: string, index: number, position: number, dead: Set<string>): Generator<TemplateValue[]> {
+  const key = `${index}:${position}`
+  if (dead.has(key)) return
+  let found = false
+  const piece = pieces[index]
+  if (piece === undefined) {
+    if (position === text.length) {
+      found = true
+      yield []
+    }
+  } else if ('text' in piece) {
+    if (text.startsWith(piece.text, position)) {
+      for (const rest of templateSplits(pieces, text, index + 1, position + piece.text.length, dead)) {
+        found = true
+        yield rest
+      }
+    }
+  } else {
+    const next = pieces[index + 1]
+    const ends: number[] = []
+    if (next === undefined) ends.push(text.length)
+    else if ('text' in next) for (let at = text.indexOf(next.text, position); at !== -1; at = text.indexOf(next.text, at + 1)) ends.push(at)
+    else for (let at = position; at <= text.length; at++) ends.push(at)
+    for (const end of ends) {
+      for (const rest of templateSplits(pieces, text, index + 1, end, dead)) {
+        found = true
+        yield end === position ? rest : [{ slot: piece.slot, text: text.slice(position, end) }, ...rest]
+      }
+    }
+  }
+  if (!found) dead.add(key)
+}
+
+function splitTemplateText(template: BindingTemplate, raw: string, own: ((text: string) => string) | undefined): TemplateSplit {
+  if (!template.variants) return { kind: 'unreadable', reason: 'The template has more branches than extraction reads back.' }
+  const slots = template.variants.flat().flatMap((piece) => 'slot' in piece ? [piece.slot] : [])
+  if (slots.some((slot) => !slot.segments)) return { kind: 'unreadable', reason: 'The template prints a computed value, which cannot be read back.' }
+  const text = sameLineBreaks(raw)
+  const found = new Map<string, TemplateValue[]>()
+  for (const variant of template.variants) {
+    const pieces = variant.map((piece): BindingTemplatePiece => 'text' in piece ? { text: sameLineBreaks(own ? own(piece.text) : piece.text) } : piece)
+    for (const values of templateSplits(pieces, text, 0, 0, new Set())) {
+      found.set(JSON.stringify(values.map((value) => [value.slot.segments, value.slot.part ?? null, value.text])), values)
+      if (found.size > 1) return { kind: 'ambiguous' }
+    }
+  }
+  const [values] = found.values()
+  return values ? { kind: 'split', values } : { kind: 'mismatch' }
+}
+
 function setValue(root: Record<string, unknown>, segments: string[], value: unknown): void {
   let current: Record<string, unknown> | unknown[] = root
   for (let index = 0; index < segments.length - 1; index++) {
@@ -1010,9 +1074,11 @@ function placeValue(data: PdfExtractedData, path: string, value: unknown): void 
  * Read a filled PDF back into artifact data through the layer's bindings.
  *
  * Only exact reversals are returned: direct fields, split fields, checkbox and
- * radio maps. A joined binding's raw text is reported as not recoverable, and
- * text that does not parse into the field's type is reported with its raw
- * value. Nothing is validated here; pass the data to the normal fill path.
+ * radio maps, and a template's values when the field's text splits into them
+ * in exactly one way. A template's text that splits in several ways, or that
+ * prints a computed value, is reported as not recoverable, and text that does
+ * not parse into the field's type is reported with its raw value. Nothing is
+ * validated here; pass the data to the normal fill path.
  *
  * @throws {PdfEncryptedError} when the PDF is encrypted.
  * @throws {PdfExtractionError} when the PDF or the layer choice cannot be read.
@@ -1080,18 +1146,53 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
     return entry
   }
 
-  for (const { field: pdfName, parts, format: bindingFormat, part: valuePart } of parsed) {
+  const addValuePart = (entry: PathWork, path: string, valuePart: ValuePart, text: string | undefined): void => {
+    const earlier = entry.valueParts.get(valuePart)
+    if (earlier !== undefined && text !== undefined && earlier !== text) {
+      entry.readings.push(unparseable(`The PDF fields that carry the part ${valuePart} hold different values.`))
+    }
+    entry.partKind ??= bindingDeclaration(form, path)?.kind
+    entry.valueParts.set(valuePart, earlier ?? text)
+  }
+
+  for (const { field: pdfName, parts, format: bindingFormat, part: valuePart, template } of parsed) {
     const state = states.get(pdfName)
     const bindingReader = readerFor(bindingFormat)
 
-    if (parts.length > 1) {
-      for (const part of parts) {
-        const entry = workFor(part.path)
-        entry.sources.push(source(state, pdfName))
-        entry.readings.push(state?.raw === undefined
-          ? { kind: 'empty' }
-          : { kind: 'not_recoverable', reason: 'Several values are joined into one PDF field, and extraction does not guess how to split them.' })
+    if (template) {
+      const entries = new Map(parts.map((part) => [part.path, workFor(part.path)]))
+      for (const entry of entries.values()) entry.sources.push(source(state, pdfName))
+      const all = (reading: Reading): void => {
+        for (const entry of entries.values()) entry.readings.push(reading)
       }
+      if (state?.raw === undefined) {
+        all({ kind: 'empty' })
+        continue
+      }
+      if (state.field.type !== 'text') {
+        all(notRecoverable('A template fills a text field, and this PDF field is not one.'))
+        continue
+      }
+      const own = bindingFormat?.case === 'upper' ? (text: string) => text.toLocaleUpperCase(bindingReader.formatter.locale) : undefined
+      const split = splitTemplateText(template, state.raw, own)
+      if (split.kind !== 'split') {
+        all(split.kind === 'unreadable' ? notRecoverable(split.reason) : split.kind === 'ambiguous'
+          ? notRecoverable('The field\'s text splits into the template\'s values in more than one way, and extraction does not guess.')
+          : unparseable('The field\'s text does not match the binding\'s template.'))
+        continue
+      }
+      const read = new Set<string>()
+      for (const { slot, text } of split.values) {
+        const path = templateSlotPart(slot.segments)!.path
+        const entry = entries.get(path)!
+        read.add(path)
+        if (slot.part !== undefined) {
+          addValuePart(entry, path, slot.part, text)
+          continue
+        }
+        entry.readings.push(readDirect({ field: state.field, raw: text }, targetFor(form, path), readerFor(mergeFormats(bindingFormat, slot.format))))
+      }
+      for (const [path, entry] of entries) if (!read.has(path)) entry.readings.push({ kind: 'empty' })
       continue
     }
 
@@ -1099,13 +1200,7 @@ export async function extractPdfData({ pdf, form, bindings, formatter: filledWit
     const entry = workFor(path)
     entry.sources.push(source(state, pdfName))
     if (valuePart !== undefined) {
-      const text = state?.raw
-      const earlier = entry.valueParts.get(valuePart)
-      if (earlier !== undefined && text !== undefined && earlier !== text) {
-        entry.readings.push(unparseable(`The PDF fields that carry the part ${valuePart} hold different values.`))
-      }
-      entry.partKind ??= bindingDeclaration(form, path)?.kind
-      entry.valueParts.set(valuePart, earlier ?? text)
+      addValuePart(entry, path, valuePart, state?.raw)
       continue
     }
     const target = targetFor(form, path)
@@ -1295,8 +1390,18 @@ function labelCollisions(field: FormField, path: string, format: ValueFormat | u
  */
 export function findPdfLabelCollisions({ form, bindings, format, formatter = defaultFormatter }: FindPdfLabelCollisionsOptions): PdfLabelCollision[] {
   const targets = bindings
-    ? parseBindings(bindings).flatMap(({ field, parts, format: bindingFormat }) =>
-      parts.length === 1 && parts[0]!.qualifier === undefined ? [{ field, path: parts[0]!.path, format: mergeFormats(format, bindingFormat) }] : [])
+    ? parseBindings(bindings).flatMap(({ field, parts, format: bindingFormat, template }) => {
+      if (!template) return parts[0]!.qualifier === undefined ? [{ field, path: parts[0]!.path, format: mergeFormats(format, bindingFormat) }] : []
+      const slots = new Map<string, { field: string; path: string; format: ValueFormat | undefined }>()
+      for (const piece of (template.variants ?? []).flat()) {
+        if ('text' in piece || piece.slot.part !== undefined) continue
+        const part = templateSlotPart(piece.slot.segments)
+        if (!part) continue
+        const slotFormat = mergeFormats(format, bindingFormat, piece.slot.format)
+        slots.set(JSON.stringify([part.path, slotFormat ?? {}]), { field, path: part.path, format: slotFormat })
+      }
+      return [...slots.values()]
+    })
     : Object.keys(form.fields ?? {}).map((name) => ({ field: name, path: name, format }))
   return targets.flatMap((target) => {
     const field = fieldDefinition(form, target.path)

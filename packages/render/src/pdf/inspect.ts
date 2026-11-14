@@ -1,5 +1,5 @@
 import type { BinaryContent } from '@asterdoc/types'
-import { acroFields, textValue, type PdfFieldType } from './acroform'
+import { acroFields, textFieldDrawing, textValue, type PdfFieldType } from './acroform'
 import { documentPages } from './page-tree'
 import { isRef, PdfModel } from './syntax'
 
@@ -13,6 +13,8 @@ export interface PdfFieldInfo {
   page?: number
   rect?: [number, number, number, number]
   maxLen?: number | null
+  /** For a text field: whether it prints several lines, so a binding template's line break starts a new line. */
+  multiline?: boolean
 }
 
 export interface InspectOptions {
@@ -92,6 +94,7 @@ export async function inspectAcroFormFields(
       page,
       rect,
       maxLen: type === 'text' ? field.maxLength ?? null : undefined,
+      ...(type === 'text' && { multiline: textFieldDrawing(field).multiline }),
     })
   }
   return result

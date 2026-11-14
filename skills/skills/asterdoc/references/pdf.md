@@ -1,13 +1,13 @@
 ---
 name: pdf
-description: PDF layers - read field names and coordinates with asterdoc inspect, write bindings and binding objects (format, parts) for fill and extract, place signature slots, pass the fit check, pick fonts, money and date formats, read a filled PDF back.
+description: PDF layers - read field names and coordinates with asterdoc inspect, write bindings, binding objects (format, parts) and templates for several values in one box, for fill and extract, place signature slots, pass the fit check, pick fonts, money and date formats, read a filled PDF back.
 metadata:
-  tags: pdf, acroform, bindings, parts, format, mask, inspect, extract, lossy, coordinates, fonts, fit
+  tags: pdf, acroform, bindings, parts, template, format, mask, inspect, extract, lossy, coordinates, fonts, fit
 ---
 
 # PDF layers
 
-**Contents:** [Inventory the PDF](#inventory-the-pdf) · [Bindings](#bindings) · [Binding values](#binding-values) · [Binding objects](#binding-objects) · [Example: W-9](#example-w-9) · [Signature slots on a PDF](#signature-slots-on-a-pdf) · [Fit check](#fit-check) · [Fonts](#fonts) · [Money](#money) · [Dates](#dates) · [Read a filled PDF back](#read-a-filled-pdf-back) · [Flat PDFs](#flat-pdfs)
+**Contents:** [Inventory the PDF](#inventory-the-pdf) · [Bindings](#bindings) · [Binding values](#binding-values) · [Binding objects](#binding-objects) · [Template bindings](#template-bindings) · [Example: W-9](#example-w-9) · [Signature slots on a PDF](#signature-slots-on-a-pdf) · [Fit check](#fit-check) · [Fonts](#fonts) · [Money](#money) · [Dates](#dates) · [Read a filled PDF back](#read-a-filled-pdf-back) · [Flat PDFs](#flat-pdfs)
 
 A PDF layer is a file layer with `"mimeType": "application/pdf"`. This file covers what only PDF layers have. For the layer shape, file paths, and the slot schema, load [layers.md](./layers.md). To convert a whole PDF form into an artifact, follow [workflow-author-form.md](./workflow-author-form.md).
 
@@ -29,6 +29,7 @@ The JSON is an array with one entry per AcroForm field:
 | `page` | One-based page number. |
 | `rect` | `[x1, y1, x2, y2]` in PDF points, origin at the **bottom-left** of the page. |
 | `maxLen` | Character limit of the box. A comb field (one character per box) has one. `null` means none. |
+| `multiline` | Text fields only: `true` when the box prints several lines. A template's line break needs one. |
 | `value` | Current value, if the PDF is already filled. |
 
 `--filter "<glob>"` narrows by name. An empty array `[]` means a flat PDF (see [Flat PDFs](#flat-pdfs)). The renderer reads AcroForm fields only; XFA-only forms have no fields to bind.
@@ -59,27 +60,27 @@ One table for filling and for reading back. "Extract" is the status [extraction]
 
 | Form | Example value | PDF field | Fill | Extract |
 |------|---------------|-----------|------|---------|
-| Direct | `"businessName"` | text | Writes the formatted value. An enum or multiselect writes the option **value** (the code, such as `C` or `5`), never the label. | `recovered`, parsed into the field type |
+| Direct | `"businessName"` | text | Writes the formatted value. An enum or multiselect writes the option **value** (the code, such as `C` or `5`), never the label. Make the value the code the form asks for, in the form's case: an LLC tax classification box takes `C`, `S` or `P`, so the options are `C`, `S`, `P`, not `c`, `s`, `p`. Keep the label for the human-readable name. | `recovered`, parsed into the field type |
 | Direct | `"hasForeignPartners"` | checkbox | Checked when the value is truthy. | `recovered` as a boolean |
 | Direct | `"species"` | radio, dropdown | Selects the state named by the value. Each option `value` must equal the PDF export value exactly. | `recovered` from the selected export value |
 | Option | `"taxClassification:llc"` | checkbox | Checked when an enum equals the option, or a multiselect contains it. One binding per box. | `recovered` from the checked box. Two checked for an enum is `unparseable`. A multiselect comes back as a list. |
 | Split part | `"ssn:1"`, `"ssn:2"`, `"ssn:3"` | text | Writes the Nth `-`-separated part (1-based). On a [masked](./fields.md#text-masks) field, the Nth group of the mask: `45` for `###-##-####`. | `recovered` by joining the parts. Every part must be bound. |
-| Joined | `"mailingAddress.locality,mailingAddress.region,mailingAddress.postalCode"` | text | Joins the non-empty values with `", "`. | `not_recoverable` |
+| Template | `{ "template": "{{fields.mailingAddress.locality}}, {{fields.mailingAddress.region}} {{fields.mailingAddress.postalCode}}" }` | text | Prints the template with each value in its placeholder. See [Template bindings](#template-bindings). | `recovered` when the text splits into the values one way, else `not_recoverable` or `unparseable` |
 | Whole composite | `"mailingAddress"` | text | Writes the formatted address in one box. | `not_recoverable`. Bind the parts instead. |
 | Party or computed | `"parties.tenant[0]"`, `"defs.totalDue"` | text | Writes the formatted value. | `not_recoverable` |
 
-Prefer bindings that read back. Join values only when the PDF gives them one box, as the W-9 does for city, state, and ZIP.
+Prefer bindings that read back. Use a template only when the PDF gives several values one box, as the W-9 does for city, state, and ZIP. A string is always one path: `"city, state"` is refused (see [Template bindings](#template-bindings)).
 
 Fill, extraction, the fit check, and validation parse a binding value the same way:
 
 - A path may carry the `fields.` prefix: `"fields.businessName"` is `"businessName"`.
-- Space around `:` and `,` is ignored: `"status: married"` is `"status:married"`.
-- A joined part takes no qualifier. `"ssn:1, ssn:2"` fails validation.
+- Space around `:` is ignored: `"status: married"` is `"status:married"`.
+- A string with a comma is refused, with a message that names the template form. `"ssn:1, ssn:2"` fails validation.
 - Every binding key must name a field of the template. Filling fails, naming the key, when one does not.
 
 ## Binding objects
 
-A binding value can also be an object. `path` is the string the binding would be. `format` prints this one value its own way, merged over the layer's `format` ([formatting.md § Artifact formats](./formatting.md#artifact-formats)). `part` prints one piece of the value as plain digits, for a form with a box per piece.
+A binding value can also be an object. `path` is the string the binding would be (a binding that prints several values holds `template` instead, see [Template bindings](#template-bindings)). `format` prints this one value its own way, merged over the layer's `format` ([formatting.md § Artifact formats](./formatting.md#artifact-formats)). `part` prints one piece of the value as plain digits, for a form with a box per piece.
 
 ```json schema=form
 {
@@ -123,10 +124,47 @@ For June 15, 1990, `SignedOn` prints `06/15/1990` and `FiledOn` `1990-06-15`. `S
 
 - A part is never formatted as a whole value. Money rounds half away from zero to two decimals, then splits: `1.999` prints `2` and `00`.
 - At render, a negative amount, a currency without two minor digits, and `areaCode` or `subscriberNumber` on a number outside +1 fail with `unsupported_part`. Under a `phone.region`, every phone part but `extension` refuses a number from another plan with `phone_region_mismatch`. Phone parts need the phone provider, which the default formatter has ([formatting.md § Lookup providers](./formatting.md#lookup-providers)).
-- A joined path applies `format` to each value before the join.
-- Validation refuses a part the kind does not have (`Binding "dob" prints the part "cents" of fields.dob, a date value, whose parts are "year", "month", "day".`), a `format` or `part` on a split part such as `ssn:2`, a `format` on an option test such as `status:married`, and a `part` on a joined path.
+- Validation refuses a part the kind does not have (`Binding "dob" prints the part "cents" of fields.dob, a date value, whose parts are "year", "month", "day".`), a `format` or `part` on a split part such as `ssn:2`, a `format` on an option test such as `status:married`, and a `part` on a template (write it on the placeholder).
 - Read-back joins the parts only when every part the value needs is bound: a date's year, month and day; money's units and cents, in the field's `currency`; a phone's country code and national number, or a +1 number's area code and subscriber number. Otherwise the path is `not_recoverable`. Parts that disagree make it `unparseable`.
 - A layer that reuses bindings through `bindingsFrom` takes each binding with its `format` and `part`, but not the other layer's own `format`.
+
+## Template bindings
+
+A binding object holds `path` or `template`, never both. A `template` prints several values in one box, in the template language of text layers ([templates.md](./templates.md)): `{{ }}` placeholders with any expression and format modifiers, `{{#if}}`, `{{#unless}}`, `{{else}}` and `{{! comment }}`. It is 1 to 2000 characters.
+
+```json schema=form
+{
+  "fields": {
+    "address": { "type": "address", "label": "Address" },
+    "dob": { "type": "date", "label": "Date of birth" }
+  },
+  "layers": {
+    "pdf": {
+      "kind": "file",
+      "mimeType": "application/pdf",
+      "path": "form.pdf",
+      "bindings": {
+        "Street": { "template": "{{fields.address.line1}}{{#if fields.address.line2 != null}}, {{fields.address.line2}}{{/if}}" },
+        "CityLine": { "template": "{{fields.address.locality}}, {{fields.address.region}} {{fields.address.postalCode}}" },
+        "Born": { "template": "{{fields.dob | part=\"month\"}}/{{fields.dob | part=\"day\"}}/{{fields.dob | part=\"year\"}}" }
+      }
+    }
+  }
+}
+```
+
+`CityLine` prints `Boston, MA 02110`. `Street` prints `2150 Market Street, Suite 300` with a unit and `2150 Market Street` without one.
+
+- **Paths.** A placeholder reads the expression roots: `fields.x`, `parties.role.name`, a computed value by its name (`{{total}}`), a list row by its index (`{{fields.lines[0].amount}}`). Write `fields.` in a template: a bare name is read as a computed value, though a string binding takes the bare id.
+- **Printing.** A placeholder prints as a path binding to the same path does: a choice prints its option **value**, not its label, unless `choice.display` says `label`; masks apply; then the layer `format`, the binding `format`, and the placeholder's own modifiers. The binding's `format.case` changes the whole box, the template's own text included. A layer's `case` changes the values only.
+- **No `part` on the binding.** Write it on the placeholder: `{{fields.dob | part="year"}}`.
+- **Empty.** When every placeholder the template reached prints nothing, the box stays empty, so `{{fields.city}}, {{fields.state}}` with both empty does not print `, `. A branch with only literal text prints that text.
+- **Line breaks.** A line break in the template starts a new line in a multi-line box. In a single-line box `asterdoc validate` reports an error: `the template has a line break, and "<field>" is a single-line field in "<file>", which prints it as a space; a line break starts a new line only in a multi-line field.` Check `multiline` in `asterdoc inspect`. A template bound to a box that is not a text field is also an error.
+- **Refused.** `{{#each}}`: a box prints a fixed text, so bind each list row to its own box (`fields.lines[0].amount`). Signing directives such as `signature(...)` and `initials(...)`: a PDF layer places signing marks through its signature slots.
+- **Optional pieces.** Put a piece that may be missing inside `{{#if}}`, with the text that belongs to it, as `Street` does.
+- **Comma join.** A string such as `"city, state"` is refused: `Binding "city, state" joins several paths with a comma, which a binding does not do; print several values in one field with a template, such as {"template":"{{fields.city}}, {{fields.state}}"}.` An artifact on an earlier schema version still loads: its upgrade step writes the template that prints the same text, and `npx asterdoc migrate <file>` rewrites the file the same way.
+
+`validate()` and `asterdoc validate` check a template like a text layer's: every expression and format modifier against the form, with messages such as `Layer "pdf", binding "f1": Template error at line 1, column 23 in {{fields.owner}}: ...`. The fit check measures each text a template can print, one for each combination of its `{{#if}}` blocks; a template with a computed placeholder is not measured.
 
 ## Example: W-9
 
@@ -170,7 +208,7 @@ Trimmed from the `@asterdoc/essentials` W-9 (`w9.spec`). The enum keeps three of
       "topmostSubform[0].Page1[0].Boxes3a-b_ReadOrder[0].c1_1[1]": "taxClassification:c_corporation",
       "topmostSubform[0].Page1[0].Boxes3a-b_ReadOrder[0].c1_1[5]": "taxClassification:llc",
       "topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_07[0]": "mailingAddress.line1",
-      "topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_08[0]": "mailingAddress.locality,mailingAddress.region,mailingAddress.postalCode",
+      "topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_08[0]": { "template": "{{fields.mailingAddress.locality}}, {{fields.mailingAddress.region}} {{fields.mailingAddress.postalCode}}" },
       "topmostSubform[0].Page1[0].f1_11[0]": "ssn:1",
       "topmostSubform[0].Page1[0].f1_12[0]": "ssn:2",
       "topmostSubform[0].Page1[0].f1_13[0]": "ssn:3"
@@ -192,7 +230,7 @@ Trimmed from the `@asterdoc/essentials` W-9 (`w9.spec`). The enum keeps three of
 "defaultLayer": "pdf"
 ```
 
-A round trip of this artifact reports every path `recovered` except the three joined address parts (`not_recoverable`).
+A round trip of this artifact reports every path `recovered`, the city line included, because `Portland, OR 97201` splits into the template's values one way. `mailingAddress.country` has no box, so it is not in `data`.
 
 ## Signature slots on a PDF
 
@@ -301,13 +339,13 @@ const draft = w9.fill({
 });
 const pdf = await draft.render({ layer: "pdf" });
 const { data, report } = await w9.extract(pdf, { layer: "pdf" });
-// data: { fields: { taxClassification, mailingAddress: { line1 }, ssn }, parties: { taxpayer: { name } } }
+// data: { fields: { taxClassification, mailingAddress: { line1, locality, region, postalCode }, ssn }, parties: { taxpayer: { name } } }
 
 const refilled = w9.safeFill(data);
-if (!refilled.success) console.error(refilled.error.message); // "Form data validation failed: Missing required field: fields.mailingAddress.locality, …": the joined city, state and ZIP box does not read back
+if (!refilled.success) console.error(refilled.error.message); // "Form data validation failed: Missing required field: fields.mailingAddress.country": no box holds the country, so ask for it
 ```
 
-`data` holds only values recovered exactly, in the fill payload shape. Extraction does not validate: pass `data` to `safeFill()`. A partial structured value stays partial and fails there with the missing parts named. The CLI `data extract` and the `extract` AI tool ([ai-tools.md](./ai-tools.md)) return the same result.
+`data` holds only values recovered exactly, in the fill payload shape. Extraction does not validate: pass `data` to `safeFill()`. A partial structured value stays partial and fails there with the missing parts named. A template box gives all its values only when its text splits one way; `2150 Market Street, Suite 300` read with the optional-unit `Street` template above splits two ways, so `line1` and `line2` are `not_recoverable`. The CLI `data extract` and the `extract` AI tool ([ai-tools.md](./ai-tools.md)) return the same result.
 
 `report.entries` has one entry per bound path: `{ path, status, sources: [{ field, value }], reason?, lossy? }`. Every `recovered` entry carries `lossy`: `true` when the format the box was printed with dropped detail, as `case: "upper"` drops the letter case and `money.fractionDigits: 0` drops the cents. The value is the person's answer but may differ from the one filled: confirm it with the person before you rely on it. A person printed `family-first` in one box is `not_recoverable`; bind the name parts to read them back.
 
@@ -315,8 +353,8 @@ if (!refilled.success) console.error(refilled.error.message); // "Form data vali
 |--------|---------|
 | `recovered` | Read back exactly. |
 | `empty` | The bound PDF fields hold no value. |
-| `not_recoverable` | The binding cannot be reversed: joined, whole composite, whole party, `defs.*`, `annexes.*`, or an unbound split part. `reason` says which. |
-| `unparseable` | The PDF value does not parse into the field type, two boxes are checked for one enum, or the fields that carry the path disagree. |
+| `not_recoverable` | The binding cannot be reversed: a template whose text splits more than one way (`The field's text splits into the template's values in more than one way, and extraction does not guess.`) or that prints a computed value (`The template prints a computed value, which cannot be read back.`), whole composite, whole party, `defs.*`, `annexes.*`, or an unbound split part. `reason` says which. |
+| `unparseable` | The PDF value does not parse into the field type, does not match the binding's template (`The field's text does not match the binding's template.`), two boxes are checked for one enum, or the fields that carry the path disagree. |
 
 `report.unbound` lists filled PDF fields that no binding covers: `{ field, type, value }`.
 

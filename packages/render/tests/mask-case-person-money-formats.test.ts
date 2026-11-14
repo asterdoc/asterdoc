@@ -143,10 +143,12 @@ describe('case', () => {
     expect(text('{{fields.ssn}}|{{fields.city}}', { case: 'upper' }, withFields({ ssn: '12345' }), { incomplete: '[pending]' })).toBe('[pending]|SPRINGFIELD')
   })
 
-  it('applies after the mask and after a join', async () => {
+  it('applies after the mask, and on a template binding to the whole field', async () => {
     expect(text('{{fields.code}}', { case: 'upper' })).toBe('A-XY')
-    expect(await fill({ both: { path: 'city, email', format: { case: 'upper' } } })).toMatchObject({ both: 'SPRINGFIELD, JANE@EXAMPLE.COM' })
-    expect(await fill({ both: 'city, email' }, { case: 'upper' })).toMatchObject({ both: 'SPRINGFIELD, jane@example.com' })
+    const both = '{{fields.city}} at {{fields.email}}'
+    expect(await fill({ both: { template: both, format: { case: 'upper' } } })).toMatchObject({ both: 'SPRINGFIELD AT JANE@EXAMPLE.COM' })
+    expect(await fill({ both: { template: both } }, { case: 'upper' })).toMatchObject({ both: 'SPRINGFIELD at jane@example.com' })
+    expect(await fill({ both: { template: both, format: { case: 'none' } } }, { case: 'upper' })).toMatchObject({ both: 'springfield at jane@example.com' })
   })
 
   it('applies to any text box from a binding, and a binding turns a layer upper off with none', async () => {

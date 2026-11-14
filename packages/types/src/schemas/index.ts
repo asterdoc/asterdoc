@@ -95,6 +95,8 @@ export type {
   ReactLayerMimeType,
   Bindings,
   BindingObject,
+  PathBinding,
+  TemplateBinding,
   BindingValue,
   ValuePart,
   // Document

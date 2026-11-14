@@ -32,7 +32,7 @@ Every key is optional. A key you leave out keeps the printing of the level below
 | Key | What it changes |
 |-----|-----------------|
 | `locale` | The locale for names and words, such as country names and boolean words |
-| `case` | `upper` prints values in upper case, after every other option and after a join. `none` turns off an `upper` set below |
+| `case` | `upper` prints values in upper case, after every other option. On a binding it changes the whole box, a template's own text included. `none` turns off an `upper` set below |
 | `date.pattern` | `MM/DD/YYYY`, `DD/MM/YYYY` or `YYYY-MM-DD` |
 | `money` | `currencyDisplay: "none"` drops the symbol; `fractionDigits` (`0` or `2`) rounds half away from zero; `useGrouping: false` drops separators such as the comma in `1,235` |
 | `country.display` | `code` (`CA`) or `name` (`Canada`) |
@@ -93,11 +93,25 @@ A binding object can also take `part`, to print one piece of a value as plain di
 | `phone` | `countryCode`, `nationalNumber`, `extension`; for +1 numbers, also `areaCode` and `subscriberNumber` |
 | `money` | `units`, `cents` |
 
-An option test (`fields.status:married`) prints nothing, and a split part (`fields.ssn:2`) prints a piece of the raw value, so neither takes a `format` or a `part`. A joined path (`fields.city, fields.state`) applies its `format` to each value before the join, and takes no `part`. See [Bindings](/schemas/artifacts/shared/layer#bindings).
+An option test (`fields.status:married`) prints nothing, and a split part (`fields.ssn:2`) prints a piece of the raw value, so neither takes a `format` or a `part`. See [Bindings](/schemas/artifacts/shared/layer#bindings).
+
+A binding that prints several values in one box is a template, and it takes a `format` too. The `format` applies to each value, merged over the layer's and under the placeholder's own modifiers. Its `case` applies to the whole box, the template's own text included, while a layer's `case` changes the values only. A template takes no `part`; write it as a modifier on the placeholder.
+
+```json
+"topmostSubform[0].Page1[0].f1_22[0]": {
+  "template": "{{fields.dob | part=\"month\"}}/{{fields.dob | part=\"day\"}}/{{fields.dob | part=\"year\"}}"
+},
+"topmostSubform[0].Page1[0].f1_23[0]": {
+  "template": "c/o {{fields.name}}, {{fields.city}}",
+  "format": { "case": "upper" }
+}
+```
+
+The second box prints `C/O HARBOR LEDGER, BOSTON`. See [PDF layers](/guides/pdf-layers#several-values-in-one-field).
 
 ### On a template placeholder
 
-In text and DOCX templates, a placeholder takes format modifiers after a single `|`:
+In text and DOCX templates, and in a PDF binding template, a placeholder takes format modifiers after a single `|`:
 
 ```text
 {{ fields.name | person.order="family-first", case="upper" }}
@@ -243,6 +257,7 @@ A value prints through its effective format when a binding, an overlay, a field-
 | `person.order: family-first` | `not_recoverable`; bind the name parts by sub-path instead |
 | `case: upper` | Recovered, lossy |
 | Parts | Joined only when every part the value needs is bound; otherwise `not_recoverable` |
+| Template binding | Recovered only when the text splits into the template's values in exactly one way; otherwise `not_recoverable` or `unparseable` |
 
 `data` never holds a guess. On a W-9 layer with `case: "upper"`, for example, a name filled as `Jordan Lee` comes back as `JORDAN LEE` with `lossy: true`, and an SSN printed in three boxes comes back as `000123456`.
 

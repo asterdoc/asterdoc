@@ -187,11 +187,11 @@ describe('parts of a value bound to a PDF', () => {
     expect(await values(await renderPdf({ template, form, data, formatter, bindings: { ext: { path: 'home', part: 'extension' } } }))).toMatchObject({ ext: '42' })
   })
 
-  it('refuse a part with a qualifier, on a joined path, or that the value\'s kind does not have', async () => {
+  it('refuse a part with a qualifier, on a template, or that the value\'s kind does not have', async () => {
     const cases: Array<[Bindings[string], RegExp]> = [
       [{ path: 'dob:1', part: 'year' }, /sets a part on the split part "dob:1"/],
       [{ path: 'married:yes', part: 'year' }, /sets a part on the option test "married:yes"/],
-      [{ path: 'dob, fee', part: 'year' }, /prints the part "year" of a joined binding/],
+      [{ template: '{{fields.dob}}', part: 'year' } as never, /sets a part on a template; write it on a placeholder/],
       [{ path: 'note', part: 'year' }, /prints the part "year" of fields\.note, a text value; only date, phone and money values have parts/],
       [{ path: 'dob', part: 'units' }, /prints the part "units" of fields\.dob, a date value, whose parts are "year", "month", "day"/],
       [{ path: 'fee', part: 'areaCode' }, /whose parts are "units", "cents"/],

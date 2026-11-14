@@ -35,7 +35,7 @@ Each property is a ContentRef: inline text or a file reference.
 
 ```json schema=artifact
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-12.json",
   "name": "rental-application",
   "kind": "form",
   "instructions": {

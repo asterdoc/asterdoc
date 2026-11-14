@@ -35,9 +35,10 @@
  * prints plain digits, checked at the most digits it holds, each the widest
  * digit: a phone's `nationalNumber` and `countryCode` in `phone.region`'s plan,
  * which render enforces, or in any plan; money `units` by the field's `max`.
- * A comma-joined
- * binding joins each path's value with ", ". More characters than a comb field
- * has boxes is an error.
+ * A template binding is checked at the text each combination of its blocks
+ * prints: its own text around each placeholder's value. A template with a
+ * computed placeholder, or with a value nothing is known about, is not
+ * checked. More characters than a comb field has boxes is an error.
  *
  * The font is the one filling would choose: the layer's declared font, then
  * the form's own font for the field, then Helvetica. A font supplied only at
@@ -50,7 +51,7 @@ import { acroFields, textFieldDrawing, widgetLayout, type AcroField } from './ac
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
 import { layoutFieldText, MIN_FONT_SIZE, PdfFieldFillError, type FieldLayout } from './field-appearance'
 import { analyzePattern, REFERENCE_REPERTOIRE, type CharSet } from './pattern-bounds'
-import { parseBinding, splitPartIndex, type PdfBindingPart } from '../layer-bindings'
+import { parseBinding, splitPartIndex, templateSlotPart, type PdfBindingPart } from '../layer-bindings'
 import { fieldDefinition } from '../layer-bindings'
 import { PdfModel } from './syntax'
 import { defaultFormatter } from '../default-formatter'
@@ -75,7 +76,7 @@ export type PdfBindingFitReason = 'overflow' | 'comb-length' | 'unbounded'
 export interface PdfBindingFitIssue {
   /** Fully qualified name of the PDF form field. */
   field: string
-  /** The binding's path text as the layer declares it: the string binding, or a binding object's `path`. */
+  /** The binding's text as the layer declares it: the string binding, or a binding object's `path` or `template`. */
   binding: string
   /** The artifact paths the binding reads, such as `fields.amountSource`. */
   paths: string[]
@@ -404,9 +405,14 @@ function shownFor(casing: BindingCase, type: string): Shown {
   return upper ? (text) => text.toLocaleUpperCase(casing.locale) : unchanged
 }
 
-/** The text a binding prints from its sources' values, each already as case prints it. */
-function printedText(sources: readonly BoundSource[], value: (source: BoundSource) => string): string {
-  return sources.map(value).join(', ')
+interface BindingPrint<S = SourceAnalysis> {
+  sources: S[]
+  template: boolean
+  text(values: readonly string[]): string
+}
+
+function printedText(print: BindingPrint<BoundSource>, value: (source: BoundSource) => string): string {
+  return print.text(print.sources.map(value))
 }
 
 /** The most digits money `units` print: those of the field's `max`, rounded as parts round it; undefined when nothing bounds it. */
@@ -524,8 +530,8 @@ function analyzeSource(form: Form, { path, qualifier }: PdfBindingPart, format: 
   return choiceSource(path, field, format, formatter, shown)
 }
 
-/** The binding's path text and the sources it reads, or undefined when it is not checked. */
-function analyzeBinding(form: Form, value: BindingValue, format: LayerFormat | undefined, formatter: Formatter): { binding: string; sources: SourceAnalysis[] } | undefined {
+/** The binding's text and each text it can print, or undefined when it is not checked. */
+function analyzeBinding(form: Form, value: BindingValue, format: LayerFormat | undefined, formatter: Formatter): { binding: string; prints: BindingPrint[] } | undefined {
   const parsed = parseBinding(value)
   const effective = mergeFormats(format, parsed.format)
   const localized = formatterFor(formatter, effective)
@@ -535,29 +541,54 @@ function analyzeBinding(form: Form, value: BindingValue, format: LayerFormat | u
     layer: !bindingSets && format?.case === 'upper',
     binding: bindingSets && parsed.format?.case === 'upper',
   }
-  const { part } = parsed
-  const sources = part === undefined
-    ? parsed.parts.map((source) => analyzeSource(form, source, effective, localized, casing))
-    : parsed.parts.map((source) => bindingDeclaration(form, source.source) ? partSource(form, source.path, part, effective, localized) : { kind: 'other' as const })
-  // A joined value is checked only when every part is known.
-  if (sources.some((source) => source.kind === 'other')) return undefined
-  return { binding: parsed.path, sources }
+  const partOrValue = (source: PdfBindingPart, part: ValuePart | undefined, sourceFormat: ValueFormat | undefined, sourceFormatter: Formatter): SourceAnalysis => {
+    if (part === undefined) return analyzeSource(form, source, sourceFormat, sourceFormatter, casing)
+    return bindingDeclaration(form, source.source) ? partSource(form, source.path, part, sourceFormat, sourceFormatter) : { kind: 'other' }
+  }
+  let prints: BindingPrint[]
+  if (parsed.template) {
+    const { variants } = parsed.template
+    if (!variants) return undefined
+    const own = casing.binding ? (text: string) => text.toLocaleUpperCase(casing.locale) : unchanged
+    prints = variants.map((pieces) => {
+      const sources = pieces.flatMap((piece): SourceAnalysis[] => {
+        if ('text' in piece) return []
+        const source = templateSlotPart(piece.slot.segments)
+        if (!source) return [{ kind: 'other' }]
+        const slotFormat = mergeFormats(effective, piece.slot.format)
+        return [partOrValue(source, piece.slot.part, slotFormat, formatterFor(formatter, slotFormat))]
+      })
+      return {
+        sources,
+        template: true,
+        text: (values) => {
+          let next = 0
+          return pieces.map((piece) => 'text' in piece ? own(piece.text) : values[next++]).join('')
+        },
+      }
+    })
+  } else {
+    prints = [{ sources: parsed.parts.map((source) => partOrValue(source, parsed.part, effective, localized)), template: false, text: (values) => values.join('') }]
+  }
+  if (prints.some((print) => print.sources.some((source) => source.kind === 'other'))) return undefined
+  return { binding: parsed.path, prints }
 }
 
 function describe(layout: FieldLayout): string {
   return `${format(layout.width)} × ${format(layout.height)} pt box`
 }
 
-function fitFailure(field: AcroField, binding: string, sources: BoundSource[], layout: FieldLayout, text: string, kind: ValueKind, error: PdfFieldFillError): PdfBindingFitIssue | undefined {
+function fitFailure(field: AcroField, binding: string, print: BindingPrint<BoundSource>, layout: FieldLayout, text: string, kind: ValueKind, error: PdfFieldFillError): PdfBindingFitIssue | undefined {
   if (error.reason !== 'overflow' && error.reason !== 'comb-length') return undefined
+  const { sources } = print
   const length = [...text].length
   const paths = sources.map((source) => displayPath(source.path))
   const shown = length <= SHOWN_LENGTH ? `: "${text}"` : ''
   const exact = sources.every((source) => source.exact)
   const adjective = exact || error.reason === 'comb-length' ? 'longest' : kind
-  const what = sources.length === 1
-    ? `the ${adjective} value ${paths[0]} accepts under ${sources[0]!.basis} (${length} characters${shown})`
-    : `the ${adjective} joined value of ${paths.join(', ')} (${length} characters)`
+  const what = print.template
+    ? `the ${adjective} text the template prints${paths.length > 0 ? ` from ${paths.join(', ')}` : ''} (${length} characters${shown})`
+    : `the ${adjective} value ${paths[0]} accepts under ${sources[0]!.basis} (${length} characters${shown})`
   const message = error.reason === 'comb-length'
     ? `${what} has more characters than the field's ${error.limit} comb boxes`
     : `${what} does not fit the ${describe(layout)} at the minimum size of ${format(error.limit ?? MIN_FONT_SIZE)} pt` +
@@ -602,16 +633,16 @@ export async function checkPdfBindingFit({ template, form, bindings, layerFont, 
     if (!field || field.type !== 'text') continue
     const analysis = analyzeBinding(form, value, format, formatter)
     if (!analysis) continue
-    const { binding, sources: analyzed } = analysis
+    const { binding, prints } = analysis
     const drawing = textFieldDrawing(field)
     const layouts = field.widgets
       .map((widget) => widgetLayout(model, field, widget, drawing))
       .filter((layout): layout is NonNullable<typeof layout> => layout !== undefined)
     if (layouts.length === 0) continue
 
-    const unbounded = analyzed.filter((source): source is Extract<SourceAnalysis, { kind: 'unbounded' }> => source.kind === 'unbounded')
+    const unbounded = prints.flatMap((print) => print.sources).filter((source): source is Extract<SourceAnalysis, { kind: 'unbounded' }> => source.kind === 'unbounded')
     if (unbounded.length > 0) {
-      const paths = unbounded.map((source) => displayPath(source.path))
+      const paths = [...new Set(unbounded.map((source) => displayPath(source.path)))]
       issues.push({
         field: field.name,
         binding,
@@ -623,22 +654,30 @@ export async function checkPdfBindingFit({ template, form, bindings, layerFont, 
       continue
     }
 
-    const sources = analyzed.map((source) => (source as Extract<SourceAnalysis, { kind: 'bounded' }>).source)
-    for (const layout of layouts) {
-      const issue = checkLayout(fonts, field, binding, sources, layout)
-      if (issue) {
-        issues.push(issue)
-        break
+    const bounded = prints.map((print): BindingPrint<BoundSource> => ({
+      ...print,
+      sources: print.sources.map((source) => (source as Extract<SourceAnalysis, { kind: 'bounded' }>).source),
+    }))
+    const failed = (): PdfBindingFitIssue | undefined => {
+      for (const print of bounded) {
+        for (const layout of layouts) {
+          const issue = checkLayout(fonts, field, binding, print, layout)
+          if (issue) return issue
+        }
       }
+      return undefined
     }
+    const issue = failed()
+    if (issue) issues.push(issue)
   }
   return issues
 }
 
-function checkLayout(fonts: PdfFontSet, field: AcroField, binding: string, sources: BoundSource[], layout: FieldLayout & { appearance: { fontName?: string } }): PdfBindingFitIssue | undefined {
+function checkLayout(fonts: PdfFontSet, field: AcroField, binding: string, print: BindingPrint<BoundSource>, layout: FieldLayout & { appearance: { fontName?: string } }): PdfBindingFitIssue | undefined {
+  const { sources } = print
   let chosen: MeasuringFont
   try {
-    const probe = sources.map((source) => source.probe).join('')
+    const probe = print.text(sources.map((source) => source.probe))
     chosen = fonts.select(field.name, probe, layout.appearance.fontName)
   } catch (error) {
     // Characters no font can draw are a font question, not a fit question.
@@ -647,18 +686,18 @@ function checkLayout(fonts: PdfFontSet, field: AcroField, binding: string, sourc
   }
   const exact = sources.every((source) => source.exact)
   const checks: { kind: ValueKind; text: string }[] = [
-    { kind: 'typical', text: printedText(sources, (source) => source.value(chosen, 'typical')) },
-    ...(exact ? [] : [{ kind: 'widest' as const, text: printedText(sources, (source) => source.value(chosen, 'widest')) }]),
+    { kind: 'typical', text: printedText(print, (source) => source.value(chosen, 'typical')) },
+    ...(exact ? [] : [{ kind: 'widest' as const, text: printedText(print, (source) => source.value(chosen, 'widest')) }]),
   ]
   if (sources.some((source) => source.longest)) {
-    checks.push({ kind: exact ? 'typical' : 'widest', text: printedText(sources, (source) => source.longest?.(chosen) ?? source.value(chosen, 'widest')) })
+    checks.push({ kind: exact ? 'typical' : 'widest', text: printedText(print, (source) => source.longest?.(chosen) ?? source.value(chosen, 'widest')) })
   }
   for (const { kind, text } of checks) {
     try {
       layoutFieldText(layout, text, fonts.select(field.name, text, layout.appearance.fontName))
     } catch (error) {
       if (!(error instanceof PdfFieldFillError)) throw error
-      return fitFailure(field, binding, sources, layout, text, kind, error)
+      return fitFailure(field, binding, print, layout, text, kind, error)
     }
   }
   return undefined

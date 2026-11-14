@@ -5,7 +5,7 @@ import { describe, test, expect } from 'vitest'
 import { a, validate } from '@asterdoc/sdk'
 
 const definition = {
-  $schema: 'https://schema.asterdoc.com/2026-11-10.json',
+  $schema: 'https://schema.asterdoc.com/2026-11-12.json',
   kind: 'form' as const,
   name: 'direct-deposit',
   version: '1.0.0',

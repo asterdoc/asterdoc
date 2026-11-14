@@ -55,7 +55,7 @@ export { MASK_PATTERN, MaskSchema } from './artifacts/form/mask';
 export { ArtifactSchema } from './artifacts/shared/base';
 export { ArtifactEditionSchema, EDITION_DATE_PATTERN } from './artifacts/shared/edition';
 export { ContentRefSchema } from './artifacts/shared/content-ref';
-export { FormatSchema, LayerSchema, ValueFormatSchema, PdfBindingObjectSchema, PdfBindingsSchema, SignatureSlotSchema, SignatureSlotTypeSchema } from './artifacts/shared/layer';
+export { FormatSchema, LayerSchema, ValueFormatSchema, PdfBindingObjectSchema, PdfPathBindingSchema, PdfTemplateBindingSchema, PDF_BINDING_OBJECT_RULE, PDF_BINDING_TEMPLATE_PART_RULE, PdfBindingsSchema, SignatureSlotSchema, SignatureSlotTypeSchema } from './artifacts/shared/layer';
 export {
 	caseInsensitiveAlternative,
 	DOCX_MIME_TYPE,

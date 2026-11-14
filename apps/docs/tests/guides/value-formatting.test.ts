@@ -111,7 +111,7 @@ describe('Formatting values guide', () => {
 
   describe('template modifier check', () => {
     const definition = {
-      $schema: 'https://schema.asterdoc.com/2026-11-10.json',
+      $schema: 'https://schema.asterdoc.com/2026-11-12.json',
       kind: 'form',
       name: 'modifiers',
       version: '1.0.0',
@@ -167,6 +167,49 @@ describe('Formatting values guide', () => {
       expect(data.fields).toEqual({ name: 'JORDAN LEE', ssn: '000123456' })
       expect(report.entries.find((entry) => entry.path === 'name')?.lossy).toBe(true)
       expect(report.entries.find((entry) => entry.path === 'ssn')?.lossy).toBe(false)
+    })
+  })
+
+  describe('a PDF binding template', () => {
+    const P = 'topmostSubform[0].Page1[0].'
+    const w9 = a.form({
+      name: 'w9-template',
+      fields: {
+        name: { type: 'text', label: 'Name', required: true },
+        city: { type: 'text', label: 'City' },
+        dob: { type: 'date', label: 'Date of birth' },
+      },
+      layers: {
+        pdf: {
+          kind: 'file',
+          mimeType: 'application/pdf',
+          path: 'w9.pdf',
+          bindings: {
+            [`${P}f1_01[0]`]: { template: 'c/o {{fields.name}}, {{fields.city}}', format: { case: 'upper' } },
+            [`${P}f1_02[0]`]: { template: '{{fields.dob | part="month"}}/{{fields.dob | part="day"}}/{{fields.dob | part="year"}}' },
+          },
+        },
+      },
+    }, { resolver: createFsResolver({ root: pdfs }) })
+
+    test('case on the binding changes the whole box, and a placeholder takes a part', async () => {
+      const pdf = await w9.fill({ fields: { name: 'Harbor Ledger', city: 'Boston', dob: '1990-03-05' } }).render({ layer: 'pdf' })
+      if (typeof pdf === 'string') throw new Error('a PDF layer renders bytes')
+      const printed = Object.fromEntries((await inspectAcroFormFields(new Uint8Array(pdf))).filter((field) => field.value).map((field) => [field.name, field.value]))
+      expect(printed[`${P}f1_01[0]`]).toBe('C/O HARBOR LEDGER, BOSTON')
+      expect(printed[`${P}f1_02[0]`]).toBe('03/05/1990')
+    })
+
+    test('a binding with both a path and a template does not validate', () => {
+      const result = validate({
+        $schema: 'https://schema.asterdoc.com/2026-11-12.json',
+        kind: 'form',
+        name: 'both',
+        version: '1.0.0',
+        fields: { name: { type: 'text', label: 'Name' } },
+        layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: 'w9.pdf', bindings: { [`${P}f1_01[0]`]: { path: 'fields.name', template: '{{fields.name}}' } } } },
+      })
+      expect(result.issues?.map((issue) => issue.message).join(' ')).toContain('either path')
     })
   })
 })

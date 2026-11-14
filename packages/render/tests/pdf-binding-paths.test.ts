@@ -10,7 +10,7 @@
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import type { Form } from '@asterdoc/types'
+import type { Bindings, Form } from '@asterdoc/types'
 import { inspectAcroFormFields, PdfBindingKeyError, PdfBindingSyntaxError, renderPdf } from '../src/pdf'
 import { acroFormPdf, pagePdf, textFieldsPdf } from './pdf-fixtures'
 
@@ -27,7 +27,7 @@ const form = {
   },
 } as unknown as Form
 
-async function filled(bindings: Record<string, string>): Promise<Record<string, unknown>> {
+async function filled(bindings: Bindings): Promise<Record<string, unknown>> {
   const output = await renderPdf({ template, form, data: { petName: 'Rex', breed: 'Beagle', species: 'dog' }, bindings })
   return Object.fromEntries((await inspectAcroFormFields(output)).map((field) => [field.name, field.value]))
 }
@@ -41,8 +41,12 @@ describe('PDF binding paths', () => {
     expect((await filled({ name: 'fields.petName' })).name).toBe('Rex')
   })
 
-  it('fills each fields.-prefixed part of a joined binding', async () => {
-    expect((await filled({ name: 'fields.petName, fields.breed' })).name).toBe('Rex, Beagle')
+  it('fills a template binding with each value its placeholders name', async () => {
+    expect((await filled({ name: { template: '{{fields.petName}}, {{fields.breed}}' } })).name).toBe('Rex, Beagle')
+  })
+
+  it('refuses a template placeholder that names a path the form does not declare', async () => {
+    await expect(filled({ name: { template: '{{fields.petName}} ({{fields.nickname}})' } })).rejects.toThrow('Unknown field path "fields.nickname"')
   })
 
   it('fills a fields.-prefixed choice binding', async () => {

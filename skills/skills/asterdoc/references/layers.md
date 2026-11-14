@@ -104,7 +104,7 @@ A React layer takes no `bindings` or `font`, and needs no resolver. Its `format`
 
 ## Bindings
 
-`bindings` belong to PDF layers only. Each key is a PDF field name, copied exactly from `asterdoc inspect`. Each value is an Asterdoc path. Text, Markdown, HTML and DOCX templates name values directly as `{{fields.x}}`.
+`bindings` belong to PDF layers only. Each key is a PDF field name, copied exactly from `asterdoc inspect`. Each value is an Asterdoc path, or a `{ "template": "..." }` object that prints several values in one box ([pdf.md § Template bindings](./pdf.md#template-bindings)). Text, Markdown, HTML and DOCX templates name values directly as `{{fields.x}}`.
 
 <!-- dep:C8 -->
 Validation rejects `bindings` or `bindingsFrom` on a layer that is not `application/pdf`.

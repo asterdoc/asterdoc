@@ -246,7 +246,7 @@ A sealed form serializes `signatureMap` and `canonicalPdfHash`, not `canonicalPd
 import { a, createAsterdocRuntime, execute, deriveView, sessionPayload, type FormSession } from "@asterdoc/sdk";
 
 const definition = {
-  $schema: "https://schema.asterdoc.com/2026-11-10.json",
+  $schema: "https://schema.asterdoc.com/2026-11-12.json",
   kind: "form",
   name: "intake",
   fields: {

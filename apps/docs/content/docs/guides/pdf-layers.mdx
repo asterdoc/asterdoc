@@ -174,8 +174,10 @@ const w9Form = a.form({
         // Nested path for complex types
         'topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_07[0]': 'address.line1',
 
-        // Combined fields (joined with comma)
-        'topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_08[0]': 'address.locality,address.region,address.postalCode',
+        // Several values in one field (a template)
+        'topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_08[0]': {
+          template: '{{fields.address.locality}}, {{fields.address.region}} {{fields.address.postalCode}}',
+        },
 
         // Split fields (SSN split across 3 inputs)
         'topmostSubform[0].Page1[0].f1_11[0]': 'ssn:1',
@@ -285,8 +287,56 @@ if (!fillResult.success) throw fillResult.error
 const draft = fillResult.data
 ```
 
-The combined city, state, and ZIP code box cannot be split back into its parts, so the report marks those fields `not_recoverable` and `data` leaves them out. See [Extracting data from a filled PDF](/sdk/artifacts/form#extracting-data-from-a-filled-pdf).
+The city, state, and ZIP code box holds a template, and `Boston, MA 02110` splits into those three values in only one way, so the report marks them `recovered`. See [Several values in one field](#several-values-in-one-field) for when a template reads back, and [Extracting data from a filled PDF](/sdk/artifacts/form#extracting-data-from-a-filled-pdf).
 </Step>
 </Steps>
 
-You've now created a form that fills an existing PDF template using field bindings. The binding syntax handles common patterns like checkboxes for enum values, split fields for formatted data like SSN/EIN, and combined fields for address components.
+## Several values in one field
+
+A string binding is one path. When a PDF box holds several values, write a **template**: a binding object with `template` in place of `path`. It uses the same language as a text layer, so `{{ }}` placeholders take any expression and format modifier, and `{{#if}}`, `{{#unless}}`, `{{else}}` and `{{! comment }}` work as they do there.
+
+```json
+"bindings": {
+  "topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_08[0]": {
+    "template": "{{fields.address.locality}}, {{fields.address.region}} {{fields.address.postalCode}}"
+  }
+}
+```
+
+With a city of Boston, a state of MA and a ZIP of 02110, the box prints `Boston, MA 02110`. Paths start from the expression roots: `fields.`, `parties.buyer.name`, a computed value by its name (`{{total}}`), and a list row by its index (`{{fields.lines[0].amount}}`).
+
+Each placeholder prints its value as a path binding to the same path would. A choice prints its option value, masks apply, the layer `format` applies, then the binding's `format`, then the placeholder's own modifiers. A binding takes `path` or `template`, never both, and a template takes no `part`. Write it on the placeholder instead: `{{fields.dob | part="year"}}`.
+
+### An optional piece
+
+Put a piece that may be missing in a block, so its text goes with it. This street line adds the unit only when there is one:
+
+```json
+{ "template": "{{fields.address.line1}}{{#if fields.address.line2 != null}}, {{fields.address.line2}}{{/if}}" }
+```
+
+### Line breaks
+
+A line break in the template starts a new line in a multi-line field. In a single-line field the PDF prints it as a space, so `asterdoc validate` reports an error. `asterdoc inspect` shows which text fields are multi-line. A template bound to a field that is not a text field is also an error.
+
+### An empty field
+
+When every placeholder the template reached prints nothing, the field stays empty. With a city and a state that are both empty, `{{fields.city}}, {{fields.state}}` leaves the box blank instead of printing `, `. A branch that holds only literal text prints that text.
+
+### Case
+
+`case: "upper"` in the binding's `format` changes the whole field, the template's own text included. A layer's `case` changes the values only.
+
+### What a template refuses
+
+- `{{#each}}`. A PDF field prints a fixed text, so bind each list row to its own field, such as `fields.lines[0].amount`.
+- Signing directives such as `signature(...)` and `initials(...)`. A PDF layer places signing marks through its signature slots.
+- A comma-joined path such as `"city, state, zip"`. Write a template instead: `{"template":"{{fields.city}}, {{fields.state}}"}`. A file on an earlier schema version still loads: the upgrade step turns each joined binding into a template that prints the same text, and [`asterdoc migrate`](/cli/commands/migrate) rewrites the file.
+
+`validate()` checks every expression and modifier in a template against the form, as it does for a text layer. The fit check measures each text a template can print, one for each combination of its `{{#if}}` blocks. A template with a computed placeholder is not measured.
+
+### Reading a template field back
+
+`extract` recovers the values only when the field's text splits into the template's values in exactly one way. `Boston, MA 02110` does, with the city line above. `2150 Market Street, Suite 300` with the optional-unit template splits two ways, a street with a unit or a street that holds a comma, so the paths are `not_recoverable` and `extract` does not guess. Text that does not match the template is `unparseable`, and a template that prints a computed value is `not_recoverable`. See [Extracting data from a filled PDF](/sdk/artifacts/form#extracting-data-from-a-filled-pdf).
+
+You've now created a form that fills an existing PDF template using field bindings. The binding syntax handles common patterns like checkboxes for enum values, split fields for formatted data like SSN/EIN, and templates for several values in one box.

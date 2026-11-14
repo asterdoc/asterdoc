@@ -312,26 +312,55 @@ export interface FileLayer {
 export type Layer = InlineLayer | FileLayer;
 
 /**
- * One PDF binding written as an object: the binding text a string binding
- * would be, and the format its value prints with.
+ * One PDF binding written as an object with a path: the path a string binding
+ * would be, with the format its value prints with or the part of it it prints.
  */
-export interface BindingObject {
-  /** The Asterdoc path, in the binding language a string binding uses: `fields.dob`, `ssn:2`, `city, state`. */
+export interface PathBinding {
+  /** The Asterdoc path, in the binding language a string binding uses: `fields.dob`, `ssn:2`, `status:married`. */
   path: string;
   /**
-   * How the value prints, merged over the layer's format. A joined path
-   * applies it to each value before the join. An option test such as
-   * `status:married` takes none.
+   * How the value prints, merged over the layer's format. An option test such
+   * as `status:married` takes none.
    */
   format?: ValueFormat;
   /**
    * The piece of the value the field prints, as plain digits: a date's
    * `year`, `month` or `day`; a phone's `countryCode`, `nationalNumber` or
    * `extension`, and for +1 numbers `areaCode` and `subscriberNumber`; a money
-   * amount's `units` or `cents`. Not on a `:` qualifier or a joined path.
+   * amount's `units` or `cents`. Not on a `:` qualifier.
    */
   part?: ValuePart;
+  /** A binding object holds `path` or `template`, never both. */
+  template?: never;
 }
+
+/**
+ * One PDF binding that prints several values in one field, with the text
+ * between them: a template in the language text layers use.
+ */
+export interface TemplateBinding {
+  /**
+   * The text the field prints, such as
+   * `{{fields.city}}, {{fields.state}} {{fields.zip}}`. It takes value
+   * placeholders with their format modifiers, `{{#if}}` and `{{#unless}}`
+   * blocks, and line breaks for a multi-line field; it takes no `{{#each}}`
+   * loop and no signing directive.
+   */
+  template: string;
+  /**
+   * How the template's values print, merged over the layer's format and under
+   * each placeholder's format modifiers. Its `case` applies to the whole
+   * field, the template's own text included.
+   */
+  format?: ValueFormat;
+  /** A binding object holds `path` or `template`, never both. */
+  path?: never;
+  /** A template takes no part; a placeholder does, as `{{fields.dob | part="year"}}`. */
+  part?: never;
+}
+
+/** One PDF binding written as an object: a {@link PathBinding} or a {@link TemplateBinding}. */
+export type BindingObject = PathBinding | TemplateBinding;
 
 /**
  * A piece of a date, phone or money value that a binding or placeholder
@@ -349,7 +378,7 @@ export type ValuePart =
   | "units"
   | "cents";
 
-/** One PDF binding: a path string, or a binding object that also carries a format. */
+/** One PDF binding: a path string, or a binding object that carries a format, a part, or a template. */
 export type BindingValue = string | BindingObject;
 
 /**

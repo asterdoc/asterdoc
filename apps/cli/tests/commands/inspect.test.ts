@@ -59,6 +59,34 @@ describe('CLI inspect command', () => {
       }
     })
 
+    it('says which text fields print several lines, in JSON and in the table', async () => {
+      const pdf = path.join(tempDir, 'lines.pdf')
+      await fs.writeFile(pdf, [
+        '%PDF-1.4',
+        '1 0 obj << /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R 5 0 R 6 0 R] >> >> endobj',
+        '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj',
+        '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [4 0 R 5 0 R 6 0 R] >> endobj',
+        '4 0 obj << /FT /Tx /T (address) /Ff 4096 /Subtype /Widget /Rect [72 600 400 700] /P 3 0 R >> endobj',
+        '5 0 obj << /FT /Tx /T (city) /Subtype /Widget /Rect [72 560 400 580] /P 3 0 R >> endobj',
+        '6 0 obj << /FT /Btn /T (agree) /Subtype /Widget /Rect [72 520 92 540] /P 3 0 R >> endobj',
+        'trailer << /Root 1 0 R >>',
+        '%%EOF',
+      ].join('\n'))
+
+      const json = await executeCliCommand(['inspect', pdf, '--format', 'json'])
+      expect(json.exitCode).toBe(0)
+      const fields = JSON.parse(json.stdout) as Array<{ name: string; multiline?: boolean }>
+      expect(fields.map((field) => [field.name, field.multiline])).toEqual([['address', true], ['city', false], ['agree', undefined]])
+
+      const table = await executeCliCommand(['inspect', pdf])
+      expect(table.exitCode).toBe(0)
+      expect(table.stdout).toContain('Multi-line')
+      const row = (name: string) => table.stdout.split('\n').find((line) => line.includes(name))?.split(/\s{2,}|\s*[│|]\s*/).map((cell) => cell.trim()).filter(Boolean)
+      expect(row('address')).toEqual(['address', 'text', 'no', 'yes'])
+      expect(row('city')).toEqual(['city', 'text', 'no', 'no'])
+      expect(row('agree')).toEqual(['agree', 'checkbox', 'no', 'false'])
+    })
+
     it('should output JSON format', async () => {
       const pdf = path.join(fixturesDir, 'pet-addendum-bindings.pdf')
       const result = await executeCliCommand(['inspect', pdf, '--format', 'json'])

@@ -2,13 +2,13 @@
  * Reading a filled AcroForm back into artifact data through the layer's bindings.
  *
  * The fixtures are purpose-built so every binding shape the fill path writes
- * has a field of its own: direct text, split parts, a joined box, checkbox
+ * has a field of its own: direct text, split parts, a template box, checkbox
  * maps for one and for many options, a radio group, and a dropdown. The
  * round trips fill through `renderPdf`, so a change to either direction that
  * breaks the other fails here.
  */
 
-import type { Form } from '@asterdoc/types'
+import type { Bindings, Form } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
 import { extractPdfData, PdfEncryptedError, PdfExtractionError, renderPdf, selectPdfExtractionLayer } from '../src/pdf'
 import { acroFormPdf, pagePdf, type AcroFormFixtureField } from './pdf-fixtures'
@@ -39,10 +39,10 @@ const form = {
   },
 } as unknown as Form
 
-const bindings: Record<string, string> = {
+const bindings: Bindings = {
   full_name: 'fullName',
   applicant: 'parties.applicant.name',
-  names: 'firstName,lastName',
+  names: { template: '{{fields.lastName}}, {{fields.firstName}}' },
   ssn_1: 'ssn:1',
   ssn_2: 'ssn:2',
   ssn_3: 'ssn:3',
@@ -114,6 +114,8 @@ describe('extractPdfData', () => {
     expect(result.data).toEqual({
       fields: {
         fullName: 'Jane Q. Public',
+        firstName: 'Jane',
+        lastName: 'Public',
         ssn: '123-45-6789',
         status: 'married',
         color: 'green',
@@ -130,13 +132,15 @@ describe('extractPdfData', () => {
     })
   })
 
-  it('reports a joined binding as not recoverable and leaves its fields empty', async () => {
-    const result = await extractPdfData({ pdf: await filled(data), form, bindings })
+  it('reports a template field whose text splits in more than one way as not recoverable and leaves its fields empty', async () => {
+    const result = await extractPdfData({ pdf: await filled({ ...data, lastName: 'Public, Jr.' }), form, bindings })
 
     for (const path of ['firstName', 'lastName']) {
-      expect(entry(result, path)).toMatchObject({
+      expect(entry(result, path)).toEqual({
+        path,
         status: 'not_recoverable',
-        sources: [{ field: 'names', value: 'Jane, Public' }],
+        sources: [{ field: 'names', value: 'Public, Jr., Jane' }],
+        reason: 'The field\'s text splits into the template\'s values in more than one way, and extraction does not guess.',
       })
     }
     expect(result.data.fields).not.toHaveProperty('firstName')
@@ -144,23 +148,23 @@ describe('extractPdfData', () => {
   })
 
   it('reads bindings written with the fields. prefix and space around qualifiers as fill writes them', async () => {
-    const written: Record<string, string> = {
+    const written: Bindings = {
       ...bindings,
-      names: 'fields.firstName, fields.lastName',
+      full_name: 'fields.fullName',
       ssn_2: 'fields.ssn : 2',
       status_married: 'fields.status: married',
     }
     const pdf = await renderPdf({ template: acroFormPdf(layout), form, data, bindings: written })
     const result = await extractPdfData({ pdf, form, bindings: written })
 
-    expect(result.data.fields).toMatchObject({ ssn: '123-45-6789', status: 'married' })
-    expect(entry(result, 'firstName')).toMatchObject({ status: 'not_recoverable', sources: [{ field: 'names', value: 'Jane, Public' }] })
+    expect(result.data.fields).toMatchObject({ fullName: 'Jane Q. Public', firstName: 'Jane', ssn: '123-45-6789', status: 'married' })
+    expect(result.report.entries.map((item) => item.path)).not.toContain('fields.fullName')
     expect(result.report.entries.map((item) => item.path)).not.toContain('fields.firstName')
   })
 
   it('refuses a binding it cannot parse', async () => {
-    await expect(extractPdfData({ pdf: await filled(data), form, bindings: { ...bindings, names: 'firstName:1, lastName' } }))
-      .rejects.toThrow('qualifies a part of a joined binding')
+    await expect(extractPdfData({ pdf: await filled(data), form, bindings: { ...bindings, names: 'firstName, lastName' } }))
+      .rejects.toThrow('joins several paths with a comma')
   })
 
   it('reports empty fields, unparseable text, and PDF fields no binding covers', async () => {
@@ -276,7 +280,7 @@ describe('extractPdfData', () => {
   })
 
   describe('failure cases', () => {
-    const codeOf = async (pdf: Uint8Array, use: Record<string, string> = bindings) => {
+    const codeOf = async (pdf: Uint8Array, use: Bindings = bindings) => {
       const error = await extractPdfData({ pdf, form, bindings: use }).catch((caught: unknown) => caught)
       expect(error).toBeInstanceOf(PdfExtractionError)
       return error as PdfExtractionError

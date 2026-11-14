@@ -67,6 +67,7 @@ try {
 | `2026-10-28` | First Asterdoc version. It has the same shape as Paradoc's `2026-10-02` at `schema.paradoc.dev`. To move a Paradoc artifact to it, bring the artifact to `2026-10-02` with Paradoc 0.8 if it is older, then run `asterdoc migrate <file> --from 2026-10-28`. Only `$schema` changes. |
 | `2026-11-06` | Adds the optional `format.date` setting to PDF layers. Only `$schema` changes. |
 | `2026-11-10` | Adds the optional value-formatting settings on layers, bindings and fields. Only `$schema` changes. |
+| `2026-11-12` | Adds the template binding, `{ "template": "..." }`, which prints several values in one PDF field, and removes the comma join (`"city, state"`). The step from `2026-11-10` turns each joined binding into the template that prints the same text: its values joined with `, `, empty values skipped. A binding object keeps its `format`. `asterdoc migrate` rewrites a file the same way. |
 
 ## Hosted server
 

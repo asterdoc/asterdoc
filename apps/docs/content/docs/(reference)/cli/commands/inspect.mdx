@@ -72,15 +72,17 @@ Table format:
 
 ```
 Fields from /Users/you/my-project/form-template.pdf:
-┌──────────────────┬──────────┬──────────┬─────────┐
-│ Name             │ Type     │ Required │ Value   │
-├──────────────────┼──────────┼──────────┼─────────┤
-│ full_name        │ text     │ yes      │         │
-│ address_line1    │ text     │ yes      │         │
-│ address_city     │ text     │ yes      │         │
-│ agree_terms      │ checkbox │ no       │ false   │
-└──────────────────┴──────────┴──────────┴─────────┘
+┌──────────────────┬──────────┬──────────┬────────────┬─────────┐
+│ Name             │ Type     │ Required │ Multi-line │ Value   │
+├──────────────────┼──────────┼──────────┼────────────┼─────────┤
+│ full_name        │ text     │ yes      │ no         │         │
+│ address_lines    │ text     │ yes      │ yes        │         │
+│ address_city     │ text     │ yes      │ no         │         │
+│ agree_terms      │ checkbox │ no       │            │ false   │
+└──────────────────┴──────────┴──────────┴────────────┴─────────┘
 ```
+
+`Multi-line` is `yes` or `no` for a text field and empty for any other field. In `--format json`, a text field has a `multiline` boolean. A [binding template](/guides/pdf-layers#several-values-in-one-field) may hold a line break only for a multi-line field; a single-line field prints it as a space, and `asterdoc validate` reports an error.
 
 Summary format:
 

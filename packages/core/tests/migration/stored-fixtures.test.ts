@@ -6,7 +6,7 @@ import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION, SCHEMA_VERSIONS, type SchemaVersio
 import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 import { inspectAcroFormFields } from '@asterdoc/render/pdf'
 import { SchemaVersionError, load } from '@/serialization'
-import { validate } from '@/validation/artifact'
+import { validate, validateLayers } from '@/validation/artifact'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const fixtures = join(here, 'fixtures')
@@ -30,6 +30,29 @@ function versionError(run: () => unknown): SchemaVersionError {
 	}
 	throw new Error('Expected a SchemaVersionError')
 }
+
+describe('a stored 2026-11-10 form with a comma-joined binding', () => {
+	const lease = new Map(stored('2026-11-10')).get('lease.json') as string
+
+	test('loads with the template that prints the same text, and keeps the binding\'s format', () => {
+		expect(JSON.parse(lease).layers.pdf.bindings.name).toEqual({ path: 'tenant, signed', format: { date: { pattern: 'MM/DD/YYYY' } } })
+		const upgraded = load<'form'>(lease, { resolver }).toJSON() as unknown as { layers: { pdf: { bindings: Record<string, unknown> } } }
+		expect(upgraded.layers.pdf.bindings.name).toEqual({
+			template: '{{fields.tenant}}{{#if isNotEmpty(fields.signed)}}{{#if isNotEmpty(fields.tenant)}}, {{/if}}{{fields.signed}}{{/if}}',
+			format: { date: { pattern: 'MM/DD/YYYY' } },
+		})
+	})
+
+	test('prints one value alone when the other is empty, as the join did', async () => {
+		const draft = load<'form'>(lease, { resolver }).fill({ fields: { tenant: 'Ada Lovelace' } })
+		const filled = await inspectAcroFormFields((await draft.render({ layer: 'pdf' })) as Uint8Array)
+		expect(filled.find((field) => field.name === 'name')?.value).toBe('Ada Lovelace')
+	})
+
+	test('passes validateLayers once upgraded', async () => {
+		expect((await validateLayers(JSON.parse(lease), { resolver })).issues).toBeUndefined()
+	})
+})
 
 describe('stored artifacts from every earlier schema date', () => {
 	test('every earlier published date has stored fixtures of every kind', () => {
@@ -70,7 +93,7 @@ describe('stored artifacts from every earlier schema date', () => {
 			expect(await draft.render()).toBe('Tenant Ada Lovelace signed on Mar 4, 2026.')
 			const filled = await inspectAcroFormFields((await draft.render({ layer: 'pdf' })) as Uint8Array)
 			const box = filled.find((field) => field.name === 'name')?.value
-			expect(box).toBe(version === '2026-10-28' ? 'Mar 4, 2026' : '03/04/2026')
+			expect(box).toBe({ '2026-10-28': 'Mar 4, 2026', '2026-11-06': '03/04/2026', '2026-11-10': 'Ada Lovelace, 03/04/2026' }[version as string])
 		})
 
 		test('the document, checklist and bundle render or assemble', async () => {

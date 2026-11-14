@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import type { Form, FormField } from '@asterdoc/types'
+import type { Bindings, Form, FormField } from '@asterdoc/types'
 import { checkPdfBindingFit, PdfFieldFillError, renderPdf, TYPICAL_TEXT } from '../src/pdf'
 import { analyzePattern } from '../src/pdf/pattern-bounds'
 import { syntheticFont } from './font-fixtures'
@@ -26,7 +26,7 @@ const formOf = (fields: Record<string, FormField>): Form =>
 const box = (name: string, width: number, height: number, extra: Partial<FixtureField> = {}): FixtureField =>
   ({ name, rect: [20, 20, 20 + width, 20 + height], ...extra })
 
-async function check(fields: FixtureField[], form: Form, bindings?: Record<string, string>, layerFont?: Uint8Array) {
+async function check(fields: FixtureField[], form: Form, bindings?: Bindings, layerFont?: Uint8Array) {
   return checkPdfBindingFit({
     template: acroFieldsPdf(fields),
     form,
@@ -35,7 +35,7 @@ async function check(fields: FixtureField[], form: Form, bindings?: Record<strin
   })
 }
 
-async function fillFails(fields: FixtureField[], form: Form, bindings: Record<string, string>, data: Record<string, unknown>) {
+async function fillFails(fields: FixtureField[], form: Form, bindings: Bindings, data: Record<string, unknown>) {
   const error = await renderPdf({ template: acroFieldsPdf(fields), form, data, bindings }).then(() => undefined, (caught: unknown) => caught)
   return error instanceof PdfFieldFillError ? error.reason : undefined
 }
@@ -73,7 +73,8 @@ describe('checkPdfBindingFit', () => {
 
   it('refuses a binding it cannot parse instead of skipping it', async () => {
     const form = formOf({ first: { type: 'text', maxLength: 10 }, last: { type: 'text', maxLength: 10 } })
-    await expect(check([box('name', 200, 14)], form, { name: 'first:1, last' })).rejects.toThrow('qualifies a part of a joined binding')
+    await expect(check([box('name', 200, 14)], form, { name: 'first, last' })).rejects.toThrow('joins several paths with a comma')
+    await expect(check([box('name', 200, 14)], form, { name: { template: '{{#if fields.first != null}}{{fields.first}}' } })).rejects.toThrow('has a template that does not parse')
   })
 
   it('warns when a typical value fits but the widest value, all W, does not', async () => {
@@ -169,11 +170,61 @@ describe('checkPdfBindingFit', () => {
     expect(issues).toEqual([expect.objectContaining({ severity: 'warning', reason: 'unbounded', paths: ['fields.memo'] })])
   })
 
-  it('checks a joined binding when every part is bounded', async () => {
+  it('checks a template binding at the text it prints: each value and the text between them', async () => {
     const form = formOf({ city: { type: 'text', maxLength: 20 }, state: { type: 'text', maxLength: 2 } })
-    expect(await check([box('place', 300, 14)], form, { place: 'city, state' })).toEqual([])
-    expect(await check([box('place', 60, 12)], form, { place: 'city, state' }))
-      .toEqual([expect.objectContaining({ reason: 'overflow', paths: ['fields.city', 'fields.state'] })])
+    const place = { template: '{{fields.city}}, {{fields.state}}' }
+    expect(await check([box('place', 300, 14)], form, { place })).toEqual([])
+    const issues = await check([box('place', 60, 12)], form, { place })
+    expect(issues).toEqual([expect.objectContaining({ reason: 'overflow', binding: place.template, paths: ['fields.city', 'fields.state'], length: 24 })])
+    expect(issues[0]!.message).toContain('the typical text the template prints from fields.city, fields.state (24 characters')
+    expect(await fillFails([box('place', 60, 12)], form, { place }, { city: typical(20), state: 'IL' })).toBe('overflow')
+  })
+
+  it('counts the text of a template itself', async () => {
+    const form = formOf({ code: { type: 'text', maxLength: 10, pattern: '^\\d{10}$' } })
+    expect(await check([box('code', 40, 12)], form, { code: { template: '{{fields.code}}' } })).toEqual([])
+    expect(await check([box('code', 40, 12)], form, { code: { template: 'Number {{fields.code}}' } }))
+      .toEqual([expect.objectContaining({ severity: 'error', reason: 'overflow', length: 17 })])
+  })
+
+  it('checks the text of every combination of a template\'s blocks', async () => {
+    const digits = { type: 'text', maxLength: 10, pattern: '^\\d{10}$' } as const
+    const form = formOf({ first: digits, second: digits })
+    const optional = { template: '{{fields.first}}{{#if fields.second != null}}, {{fields.second}}{{/if}}' }
+    expect(await check([box('both', 40, 12)], form, { both: optional }))
+      .toEqual([expect.objectContaining({ severity: 'error', reason: 'overflow', paths: ['fields.first', 'fields.second'], length: 22 })])
+    expect(await check([box('both', 80, 12)], form, { both: optional })).toEqual([])
+    const either = { template: '{{#if fields.second != null}}{{fields.second}}{{else}}{{fields.first}}{{/if}}' }
+    expect(await check([box('both', 40, 12)], form, { both: either })).toEqual([])
+  })
+
+  it('measures a template\'s own text in the case the binding prints it', async () => {
+    const form = formOf({ code: { type: 'text', maxLength: 2, pattern: '^\\d{2}$' } })
+    const lower = { template: 'iiiiiiiiiiiiiiiiiiii{{fields.code}}' }
+    expect(await check([box('code', 40, 12)], form, { code: lower })).toEqual([])
+    expect(await check([box('code', 40, 12)], form, { code: { ...lower, format: { case: 'upper' } } }))
+      .toEqual([expect.objectContaining({ reason: 'overflow' })])
+  })
+
+  it('checks a placeholder under its own format modifiers and part', async () => {
+    const form = formOf({ dob: { type: 'date' }, kind: { type: 'enum', enum: [{ value: 'a', label: 'A long label for the first option' }] } })
+    expect(await check([box('year', 30, 12)], form, { year: { template: '{{fields.dob | part="year"}}' } })).toEqual([])
+    expect(await check([box('year', 8, 12)], form, { year: { template: '{{fields.dob | part="year"}}' } }))
+      .toEqual([expect.objectContaining({ reason: 'overflow', length: 4 })])
+    expect(await check([box('kind', 30, 12)], form, { kind: { template: '{{fields.kind}}' } })).toEqual([])
+    expect(await check([box('kind', 30, 12)], form, { kind: { template: '{{fields.kind | choice.display="label"}}' } }))
+      .toEqual([expect.objectContaining({ reason: 'overflow' })])
+  })
+
+  it('does not check a template that prints a computed value', async () => {
+    const form = formOf({ city: { type: 'text', maxLength: 200 } })
+    expect(await check([box('place', 20, 12)], form, { place: { template: '{{upper(fields.city)}}' } })).toEqual([])
+  })
+
+  it('warns once about a template value with nothing bounding its length', async () => {
+    const form = formOf({ memo: { type: 'text' }, code: { type: 'text', maxLength: 4 } })
+    const issues = await check([box('memo', 100, 12)], form, { memo: { template: '{{fields.code}}: {{fields.memo}}{{#if fields.code != null}} ({{fields.memo}}){{/if}}' } })
+    expect(issues).toEqual([expect.objectContaining({ severity: 'warning', reason: 'unbounded', paths: ['fields.memo'] })])
   })
 
   it('fills same-named fields when the layer declares no bindings', async () => {

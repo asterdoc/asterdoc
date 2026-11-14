@@ -11,7 +11,7 @@ metadata:
 
 Text layers (`text/markdown`, `text/html`, `text/plain`) and DOCX layers are templates. Everything inside `{{ }}` is an artifact expression: the language of `visible`, `required`, defs and rules, described in [logic.md](./logic.md). No JavaScript runs.
 
-A PDF layer is not a template: it maps PDF field names to data through `bindings` ([pdf.md](./pdf.md)). A React composition reads data through components (the `asterdoc-react` skill).
+A PDF layer is not a template: it maps PDF field names to data through `bindings` ([pdf.md](./pdf.md)). A binding that prints several values in one box takes a `template` in this same language, without `{{#each}}` and the signing directives ([pdf.md § Template bindings](./pdf.md#template-bindings)). A React composition reads data through components (the `asterdoc-react` skill).
 
 ## Markers
 

@@ -361,38 +361,91 @@ export const ValueFormatSchema = FormatSchema.extend({
 	description: 'How one bound value prints, merged over its layer\'s format',
 });
 
+/** The rule a binding object with both or neither of `path` and `template` breaks. */
+export const PDF_BINDING_OBJECT_RULE = 'A binding object holds either path, which prints one value, or template, which prints several; never both';
+
+/** The rule a template binding with a `part` breaks. */
+export const PDF_BINDING_TEMPLATE_PART_RULE = 'A template binding takes no part; write it on a placeholder, such as {{fields.dob | part="year"}}';
+
 /**
- * One PDF binding written as an object: the binding text it would be as a
+ * One PDF binding written as an object with a path: the path it would be as a
  * string, the format its value prints with, and the part of it it prints.
  */
-export const PdfBindingObjectSchema = z.object({
+export const PdfPathBindingSchema = z.object({
 	path: z.string()
 		.min(1)
 		.max(500)
-		.describe('Asterdoc path whose value fills the field, written as a string binding is (e.g., fields.dob, ssn:2, city, state)'),
+		.describe('Asterdoc path whose value fills the field, written as a string binding is (e.g., fields.dob, ssn:2, status:married)'),
 	format: ValueFormatSchema
-		.describe('How this binding\'s value prints, merged over the layer\'s format. A joined path applies it to each value before the join. Not on an option test such as status:married')
+		.describe('How this binding\'s value prints, merged over the layer\'s format. Not on an option test such as status:married')
 		.optional(),
 	part: ValuePartSchema
-		.describe('The piece of the value the field prints, as plain digits: a date\'s year, month or day; a phone\'s countryCode, nationalNumber or extension, and for +1 numbers areaCode and subscriberNumber; a money amount\'s units or cents. Not on a qualified path such as ssn:2, or a joined path')
+		.describe('The piece of the value the field prints, as plain digits: a date\'s year, month or day; a phone\'s countryCode, nationalNumber or extension, and for +1 numbers areaCode and subscriberNumber; a money amount\'s units or cents. Not on a qualified path such as ssn:2')
 		.optional(),
+	template: z.never({ error: PDF_BINDING_OBJECT_RULE }).optional(),
 }).strict().meta({
+	title: 'PdfPathBinding',
+	description: 'A PDF binding that prints one value, with its own format or part',
+});
+
+/**
+ * One PDF binding that prints several values in one field: a template in the
+ * language text layers use.
+ */
+export const PdfTemplateBindingSchema = z.object({
+	template: z.string()
+		.min(1)
+		.max(2000)
+		.describe('The text the field prints, in the template language of text layers (e.g., {{fields.city}}, {{fields.state}} {{fields.zip}}). Takes value placeholders with format modifiers, {{#if}} and {{#unless}} blocks, and line breaks for a multi-line field; no {{#each}} loop and no signing directive'),
+	format: ValueFormatSchema
+		.describe('How the template\'s values print, merged over the layer\'s format and under each placeholder\'s format modifiers. Its case applies to the whole field')
+		.optional(),
+	path: z.never({ error: PDF_BINDING_OBJECT_RULE }).optional(),
+	part: z.never({ error: PDF_BINDING_TEMPLATE_PART_RULE }).optional(),
+}).strict().meta({
+	title: 'PdfTemplateBinding',
+	description: 'A PDF binding that prints a template: several values and the text between them',
+});
+
+function bindingObjectProblem(input: unknown): string {
+	if (typeof input !== 'object' || input === null || Array.isArray(input)) return 'A binding is a path string or a binding object';
+	const hasPath = 'path' in input;
+	const hasTemplate = 'template' in input;
+	if (hasPath === hasTemplate) return PDF_BINDING_OBJECT_RULE;
+	if (hasTemplate && 'part' in input) return PDF_BINDING_TEMPLATE_PART_RULE;
+	const checked = (hasTemplate ? PdfTemplateBindingSchema : PdfPathBindingSchema).safeParse(input);
+	if (checked.success) return PDF_BINDING_OBJECT_RULE;
+	return checked.error.issues.map((issue) => issue.path.length > 0 ? `${issue.path.map(String).join('.')}: ${issue.message}` : issue.message).join('; ');
+}
+
+/**
+ * One PDF binding written as an object: a path with its format or part, or a
+ * template.
+ */
+export const PdfBindingObjectSchema = z.union(
+	[PdfPathBindingSchema, PdfTemplateBindingSchema],
+	{ error: (issue) => bindingObjectProblem(issue.input) },
+).meta({
 	title: 'PdfBinding',
-	description: 'A PDF binding with its own format or part',
+	description: 'A PDF binding written as an object: a path with its own format or part, or a template',
 });
 
 /**
  * A PDF layer's bindings: each key is a fully qualified AcroForm field name in
- * the template, and each value is the Asterdoc path that fills it, as a string
- * or as a binding object that also carries a format.
+ * the template, and each value is the Asterdoc path that fills it, as a string,
+ * or a binding object that carries a format, a part, or a template.
  */
 export const PdfBindingsSchema = z.record(
 	z.string().min(1).max(500).describe('AcroForm field name in the PDF template, fully qualified (e.g., topmostSubform[0].Page1[0].f1_01[0])'),
-	z.union([
-		z.string().min(1).max(500).describe('Asterdoc path whose value fills the field (e.g., fields.name, parties.buyer.name)'),
-		PdfBindingObjectSchema,
-	]),
-).describe('PDF layers only. Maps each AcroForm field name (key) to the Asterdoc path (value) that fills it');
+	z.union(
+		[
+			z.string().min(1).max(500).describe('Asterdoc path whose value fills the field (e.g., fields.name, parties.buyer.name)'),
+			PdfPathBindingSchema,
+			PdfTemplateBindingSchema,
+		],
+		{ error: (issue) => bindingObjectProblem(issue.input) },
+	),
+).describe('PDF layers only. Maps each AcroForm field name (key) to the Asterdoc path or template (value) that fills it');
 
 /** A PDF layer that reuses a sibling PDF layer's bindings. */
 export const PdfBindingsFromSchema = z.string()

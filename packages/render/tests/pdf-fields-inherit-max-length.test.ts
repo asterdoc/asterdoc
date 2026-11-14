@@ -33,7 +33,20 @@ describe('PDF fields inherit MaxLen', () => {
       { id: 4, body: '<< /FT /Tx /T (free) /Subtype /Widget /Rect [20 20 120 40] /P 3 0 R >>' },
       { id: 5, body: '<< /Fields [4 0 R] >>' },
     ]))
-    expect(fields).toEqual([{ name: 'free', type: 'text', value: undefined, required: false, page: 1, rect: [20, 20, 120, 40], maxLen: null }])
+    expect(fields).toEqual([{ name: 'free', type: 'text', value: undefined, required: false, page: 1, rect: [20, 20, 120, 40], maxLen: null, multiline: false }])
+  })
+  it('inspect says which text fields print several lines', async () => {
+    const fields = await inspectAcroFormFields(assemblePdf([
+      { id: 1, body: '<< /Type /Catalog /Pages 2 0 R /AcroForm 7 0 R >>' },
+      { id: 2, body: '<< /Type /Pages /Kids [3 0 R] /Count 1 >>' },
+      { id: 3, body: '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << >> /Annots [4 0 R 5 0 R 6 0 R] >>' },
+      { id: 4, body: '<< /FT /Tx /T (address) /Ff 4096 /Subtype /Widget /Rect [20 20 120 80] /P 3 0 R >>' },
+      { id: 5, body: '<< /FT /Tx /T (city) /Subtype /Widget /Rect [20 100 120 120] /P 3 0 R >>' },
+      { id: 6, body: '<< /FT /Btn /T (agree) /Subtype /Widget /Rect [20 140 40 160] /P 3 0 R >>' },
+      { id: 7, body: '<< /Fields [4 0 R 5 0 R 6 0 R] >>' },
+    ]))
+    expect(fields.map((field) => [field.name, field.multiline])).toEqual([['address', true], ['city', false], ['agree', undefined]])
+    expect(fields.find((field) => field.name === 'agree')).not.toHaveProperty('multiline')
   })
   it('inspect returns no fields for a PDF without an AcroForm', async () => {
     expect(await inspectAcroFormFields(pagePdf([[300, 300]]))).toEqual([])

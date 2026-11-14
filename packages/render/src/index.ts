@@ -19,6 +19,7 @@ export {
   containsMask,
   fieldDefinition,
   isOptionTest,
+  joinedBindingTemplate,
   parseBinding,
   parseBindings,
   PdfBindingKeyError,
@@ -30,6 +31,7 @@ export {
   type ParsedPdfBinding,
   type PdfBindingPart,
 } from './layer-bindings'
+export type { BindingTemplate, BindingTemplatePiece, BindingTemplateSlot } from './template/binding'
 export { formatFieldOptions, formatterFor, hasNewFormatOptions, mergeFormats } from './presentation'
 export { printValuePart } from './parts/print'
 export { ALL_VALUE_PARTS, UNSUPPORTED_PART, VALUE_PARTS } from './parts/rules'
@@ -46,7 +48,7 @@ export interface CreateLayerRendererOptions {
   /** A font the PDF engine tries first, before the font a PDF layer declares. */
   pdfFont?: PdfFont
   docxSignatureOptions?: DocxSignatureOptions
-  /** Host-configured functions text and DOCX templates can call, with their signatures. */
+  /** Host-configured functions text and DOCX templates and PDF binding templates can call, with their signatures. */
   expressions?: Pick<TemplateExpressionOptions, 'functions' | 'signatures'>
 }
 
@@ -108,6 +110,7 @@ export function createLayerRenderer(options: CreateLayerRendererOptions = {}): A
         return pdfRenderer({
           formatter: options.formatter,
           font: options.pdfFont,
+          expressions: options.expressions,
         }).render(request as never)
       }
 

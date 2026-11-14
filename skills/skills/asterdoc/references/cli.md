@@ -154,7 +154,7 @@ asterdoc migrate forms/                           # rewrite in place; JSON stays
 asterdoc migrate lease.json --from 2026-11-06     # $schema missing, undated, unpublished, or not Asterdoc's
 ```
 
-Each file reports `migrated`, `current` or `failed`. A failed file stays as it was, and the command exits 1. When a step names a value it cannot convert, fix that value by hand and run `migrate` again. Files that are not artifacts are skipped. To bump the artifact's own `version`, use `asterdoc version`.
+Each file reports `migrated`, `current` or `failed`. A failed file stays as it was, and the command exits 1. When a step names a value it cannot convert, fix that value by hand and run `migrate` again. From `2026-11-10` it rewrites each comma-joined PDF binding (`"city, state"`) as the template binding that prints the same text. Files that are not artifacts are skipped. To bump the artifact's own `version`, use `asterdoc version`.
 
 ### version, generate, hash
 
@@ -253,7 +253,7 @@ asterdoc inspect lease.pdf --summary
 asterdoc inspect lease.pdf --filter "Tenant*" --include-buttons --include-signatures
 ```
 
-Each entry has `name`, `type`, `value`, `required`, `rect` and, for text, `maxLen`. The `name` values are the keys of a PDF layer's `bindings`. See [pdf.md](./pdf.md).
+Each entry has `name`, `type`, `value`, `required`, `rect` and, for text, `maxLen` and `multiline`. The table has a `Multi-line` column: `yes` or `no` for text fields, empty for the rest. The `name` values are the keys of a PDF layer's `bindings`. See [pdf.md](./pdf.md).
 
 ### Round trip
 

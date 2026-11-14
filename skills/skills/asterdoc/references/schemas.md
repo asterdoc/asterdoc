@@ -17,7 +17,7 @@ Every file starts with `$schema`, `kind` and `name`:
 
 ```json schema=artifact
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-10.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-12.json",
   "kind": "form",
   "name": "pet-registration",
   "version": "1.0.0",
@@ -32,8 +32,8 @@ Every file starts with `$schema`, `kind` and `name`:
 The same file in YAML. `.yaml` and `.yml` both load. The comment line gives editors completion against the schema:
 
 ```yaml
-# yaml-language-server: $schema=https://schema.asterdoc.com/2026-11-10.json
-$schema: https://schema.asterdoc.com/2026-11-10.json
+# yaml-language-server: $schema=https://schema.asterdoc.com/2026-11-12.json
+$schema: https://schema.asterdoc.com/2026-11-12.json
 kind: form
 name: pet-registration
 version: 1.0.0
@@ -50,13 +50,13 @@ Every object in the schema is strict, so an unknown key is an error. Name the fi
 
 ## Schema version
 
-The current schema version is `2026-11-10`. Write `$schema` as its dated address, the same for every kind:
+The current schema version is `2026-11-12`. Write `$schema` as its dated address, the same for every kind:
 
 ```text
-https://schema.asterdoc.com/2026-11-10.json
+https://schema.asterdoc.com/2026-11-12.json
 ```
 
-A dated per-kind address such as `https://schema.asterdoc.com/2026-11-10/form.json` names the same version. The SDK writes the dated address on `toJSON()` and `toYAML()`. Every schema change gets a new date, and each new date ships with a migration step. A published date never changes.
+A dated per-kind address such as `https://schema.asterdoc.com/2026-11-12/form.json` names the same version. The SDK writes the dated address on `toJSON()` and `toYAML()`. Every schema change gets a new date, and each new date ships with a migration step. A published date never changes.
 
 A later SDK can load, validate and extract an artifact or filing written for an earlier date. Renders are not promised to be byte-identical across releases: the durable record of a filing is its sealed canonical PDF and its hash ([sealing.md](./sealing.md)).
 
@@ -83,7 +83,7 @@ The SDK throws `SchemaVersionError` with that `code`. Run [migrate](#migrate) to
 
 ### Migrate
 
-Rewrite `$schema` with `migrate`, which also converts the values the new version reads differently. A hand edit of `$schema` skips those steps.
+Rewrite `$schema` with `migrate`, which also converts the values the new version reads differently. From `2026-11-10`, a comma-joined PDF binding such as `"city, state"` becomes the template binding that prints the same text ([pdf.md § Template bindings](./pdf.md#template-bindings)). A hand edit of `$schema` skips those steps.
 
 ```bash
 asterdoc migrate pet-registration.yaml --dry-run      # print the diff, then run without --dry-run

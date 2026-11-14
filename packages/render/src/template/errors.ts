@@ -18,7 +18,7 @@ export interface TemplateDiagnostic {
   expression?: string
   /** Line and column in a text template, or in the paragraph of a DOCX part. */
   position?: TemplatePosition
-  /** The DOCX part and paragraph, such as `word/document.xml paragraph 12`. */
+  /** The DOCX part and paragraph, such as `word/document.xml paragraph 12`, or the PDF binding, such as `binding "f1_08"`. */
   location?: string
 }
 

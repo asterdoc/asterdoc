@@ -87,7 +87,9 @@ describe('PDF Layers Guide', () => {
             'topmostSubform[0].Page1[0].Boxes3a-b_ReadOrder[0].c1_1[5]': 'taxClassification:llc',
             'topmostSubform[0].Page1[0].Boxes3a-b_ReadOrder[0].f1_03[0]': 'llcTaxCode',
             'topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_07[0]': 'address.line1',
-            'topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_08[0]': 'address.locality,address.region,address.postalCode',
+            'topmostSubform[0].Page1[0].Address_ReadOrder[0].f1_08[0]': {
+              template: '{{fields.address.locality}}, {{fields.address.region}} {{fields.address.postalCode}}',
+            },
             'topmostSubform[0].Page1[0].f1_11[0]': 'ssn:1',
             'topmostSubform[0].Page1[0].f1_12[0]': 'ssn:2',
             'topmostSubform[0].Page1[0].f1_13[0]': 'ssn:3',
@@ -105,7 +107,7 @@ describe('PDF Layers Guide', () => {
       expect(w9Form.layers!.pdf).toBeDefined()
       expect(w9Form.layers!.pdf.kind).toBe('file')
 
-      const pdfLayer = w9Form.layers!.pdf as { bindings?: Record<string, string> }
+      const pdfLayer = w9Form.layers!.pdf as { bindings?: Record<string, unknown> }
       expect(pdfLayer.bindings).toBeDefined()
       expect(Object.keys(pdfLayer.bindings!).length).toBeGreaterThan(10)
     })
@@ -160,6 +162,26 @@ describe('PDF Layers Guide', () => {
       } finally {
         rmSync(tempDir, { recursive: true, force: true })
       }
+    })
+
+    // ============================================================================
+    // Step 7: Read a Filled PDF Back
+    // ============================================================================
+
+    test('reads the city line back, because it splits one way', async () => {
+      const output = await filled.render({ renderer: createLayerRenderer(), layer: 'pdf' })
+      if (typeof output === 'string') throw new Error('a PDF layer renders bytes')
+      const { data, report } = await w9Form.extract(output)
+      expect((data as { fields: { address: Record<string, string> } }).fields.address).toMatchObject({
+        line1: '123 Main Street',
+        locality: 'San Francisco',
+        region: 'CA',
+        postalCode: '94105',
+      })
+      const statuses = Object.fromEntries(report.entries.map((entry) => [entry.path, entry.status]))
+      expect(statuses['address.locality']).toBe('recovered')
+      expect(statuses['address.region']).toBe('recovered')
+      expect(statuses['address.postalCode']).toBe('recovered')
     })
   })
 })
