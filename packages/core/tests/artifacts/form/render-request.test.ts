@@ -78,10 +78,19 @@ describe('the render request a filled form hands its renderer', () => {
 })
 
 describe('the render request a definition-level render hands its renderer', () => {
-	test('passes a FormData payload through as it is', async () => {
+	test('passes a FormData payload through, with the computed values that it does not bring', async () => {
 		const { renderer, seen } = recordingRenderer()
 		const parties = { applicant: { id: 'applicant-0', name: 'Ada Applicant' } }
 		const data = { fields: { amount: 250 }, parties, annexes: { photo } }
+
+		await application.render({ renderer, data })
+
+		expect(seen).toEqual([{ ...data, defs: { large: true } }])
+	})
+
+	test('passes a payload that brings its computed values through as it is', async () => {
+		const { renderer, seen } = recordingRenderer()
+		const data = { fields: { amount: 250 }, defs: { large: false } }
 
 		await application.render({ renderer, data })
 

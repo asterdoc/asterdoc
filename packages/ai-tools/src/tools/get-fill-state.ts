@@ -34,7 +34,7 @@ function stateOutput(kind: 'form' | 'checklist', state: {
 	done: FillItemState[]
 	candidates: FillTarget[]
 	next: FillTarget | null
-}, rules: CoreRules, context: unknown, errors?: ToolError[], redact: (values: Record<string, unknown>) => Record<string, unknown> = (values) => values): FillStateOutput {
+}, rules: CoreRules, problems: { notApplicable?: FillStateOutput['not_applicable']; unprintedNames?: FillStateOutput['unprinted_names'] }, context: unknown, errors?: ToolError[], redact: (values: Record<string, unknown>) => Record<string, unknown> = (values) => values): FillStateOutput {
 	return {
 		artifact_kind: kind,
 		phase: state.phase,
@@ -50,6 +50,8 @@ function stateOutput(kind: 'form' | 'checklist', state: {
 		open_optional: structuredClone(state.openOptional),
 		blocked: structuredClone(state.blocked),
 		done: structuredClone(state.done),
+		...(problems.notApplicable && problems.notApplicable.length > 0 ? { not_applicable: problems.notApplicable } : {}),
+		...(problems.unprintedNames && problems.unprintedNames.length > 0 ? { unprinted_names: problems.unprintedNames } : {}),
 		candidates: structuredClone(state.candidates),
 		next: structuredClone(state.next),
 		evaluation_context: contextSnapshot(context),
@@ -63,7 +65,7 @@ export async function executeGetFillState(
 ): Promise<FillStateOutput> {
 	try {
 		const normalized = FillStateInputSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject, redactDefsValues } = await import('@asterdoc/core')
+		const { isChecklist, isForm, loadFromObject, notApplicableProblems, redactDefsValues, unprintedNameProblems } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		if (isForm(artifact)) {
 			const instance = loadFromObject<'form'>(artifact, { resolver: makeResolver(base_url, config) })
@@ -76,16 +78,16 @@ export async function executeGetFillState(
 			// rules were not run. Report the evaluation issues as tool errors.
 			if (!draft.runtimeState.resolved) {
 				const issues: ToolError[] = state.issues.map((issue) => ({ code: 'logic_unresolved', message: issue.message, ...(issue.path.length > 0 ? { path: [...issue.path] } : {}) }))
-				return stateOutput('form', state, state.rules, draft.context, issues, redact)
+				return stateOutput('form', state, state.rules, {}, draft.context, issues, redact)
 			}
-			return stateOutput('form', state, state.rules, draft.context, undefined, redact)
+			return stateOutput('form', state, state.rules, { notApplicable: notApplicableProblems(state), unprintedNames: unprintedNameProblems(state) }, draft.context, undefined, redact)
 		}
 		if (isChecklist(artifact)) {
 			const instance = loadFromObject<'checklist'>(artifact, { resolver: makeResolver(base_url, config) })
 			const result = instance.safeFill(asChecklistPayload(normalized.data) as never, contextOptions(normalized.evaluation_context))
 			if (!result.success) return { artifact_kind: 'checklist', phase: 'draft', summary: { required_total: 0, required_done: 0, required_remaining: 0, completion_percent: 0 }, rules: { valid: false, errors: [], warnings: [] }, open_required: [], open_optional: [], blocked: [], done: [], candidates: [], next: null, errors: validationErrors(result.error) }
 			const state = result.data.getFillState()
-			return stateOutput('checklist', state, state.rules, result.data.context)
+			return stateOutput('checklist', state, state.rules, {}, result.data.context)
 		}
 		const kind = artifactKind(artifact)
 		return {

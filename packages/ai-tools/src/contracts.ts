@@ -350,6 +350,8 @@ export const FillStateOutputSchema = z.object({
 	open_optional: z.array(FillItemStateSchema),
 	blocked: z.array(FillItemStateSchema),
 	done: z.array(FillItemStateSchema),
+	not_applicable: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
+	unprinted_names: z.array(z.object({ path: z.string(), message: z.string() })).optional(),
 	candidates: z.array(FillTargetSchema),
 	next: FillTargetSchema.nullable(),
 	evaluation_context: z.record(z.string(), z.unknown()).optional(),

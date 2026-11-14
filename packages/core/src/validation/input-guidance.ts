@@ -13,13 +13,15 @@ const countryRegionInput = (country: string) =>
 
 const ADDRESS_CODES_INPUT = `\`country\` and \`region\` take the names or codes the person gave (Canada or CA, Ontario or ON); they are stored as codes. A name that matches no place or more than one is refused with candidates: ${CHOOSE} If the person picks a subdivision candidate for \`country\` (US-GA), answer \`country\` with the part before the dash (US) and \`region\` with the part after it (GA).`
 
+const PHONE_INPUT = '`number` is the full international number with no spaces or marks: +, the country code, the national number (+12154852665). A number given with no country code takes the code of the form\'s country (+1 for the United States and Canada).'
+
 /**
  * What an agent passes for a field whose input the engine converts before it
- * is stored, as a short note to put next to the field: a `country`
- * field, a `region` field (with or without its `country` constraint), an
- * `address` with `codes: true`, and a `text` field with a valid `mask`. Every
- * other field, and a value that is not a field definition, returns
- * `undefined`.
+ * is stored, or accepts in one written form only, as a short note to put next
+ * to the field: a `country` field, a `region` field (with or without its
+ * `country` constraint), an `address` with `codes: true`, a `text` field with
+ * a valid `mask`, and a `phone`. Every other field, and a value that is not a
+ * field definition, returns `undefined`.
  *
  * Agent tool layers show this text instead of writing their own, so every
  * agent reads the same contract.
@@ -32,6 +34,7 @@ export function fieldInputGuidance(field: unknown): string | undefined {
 		return typeof definition.country === 'string' ? countryRegionInput(definition.country) : REGION_INPUT
 	}
 	if (definition.type === 'address' && definition.codes === true) return ADDRESS_CODES_INPUT
+	if (definition.type === 'phone') return PHONE_INPUT
 	if (definition.type === 'text' && typeof definition.mask === 'string' && isValidMask(definition.mask)) {
 		return `Accepts the value with or without its separators (${describeMask(definition.mask)}); it is stored without them`
 	}

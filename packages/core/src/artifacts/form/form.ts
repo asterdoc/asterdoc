@@ -122,8 +122,11 @@ import type {
 	FillTargetOptions,
 	FillTarget,
 	FillState,
+	FillBatch,
 } from '@/fill-state/types'
-import { computeFillState, getAvailableFillTargets, getNextFillTarget } from '@/fill-state/engine'
+import { computeFillState, getAvailableFillTargets, getNextFillTarget, notApplicableProblems } from '@/fill-state/engine'
+import { unprintedNameProblems } from '@/fill-state/printed-names'
+import { fillBatch } from '@/fill-state/batch'
 import {
 	captureRuntimeContext,
 	restoreRuntimeContext,
@@ -719,24 +722,19 @@ function validateCompleteFormData(
 	const missingValues = fillState.openRequired
 		.filter((item) => item.kind === 'field' || item.kind === 'annex')
 		.map((item) => createMissingValueError(item.kind === 'field' ? 'field' : 'annex', item.key))
-	if (missingValues.length > 0) {
-		throw new FormValidationError(missingValues)
-	}
-
+	const notApplicable = notApplicableProblems(fillState).map((problem) => ({ field: problem.path, message: problem.message }))
+	const unprintedNames = unprintedNameProblems(fillState).map((problem) => ({ field: problem.path, message: problem.message }))
 	const partyContext = buildFormContext(formDef, { fields, parties, context: options?.context })
-
-	for (const [roleId, formParty] of Object.entries(formDef.parties ?? {})) {
+	const partyErrors = Object.entries(formDef.parties ?? {}).flatMap(([roleId, formParty]) => {
 		const partyResult = validatePartiesForRole(
 			parties[roleId],
 			{ ...formParty, required: evaluatePartyRequiredness(formParty, partyContext) },
 			roleId,
 		)
-		if (!partyResult.success) {
-			throw new FormValidationError(
-				partyResult.errors.map((message) => ({ field: `parties.${roleId}`, message })),
-			)
-		}
-	}
+		return partyResult.success ? [] : partyResult.errors.map((message) => ({ field: `parties.${roleId}`, message }))
+	})
+	const problems = [...missingValues, ...notApplicable, ...unprintedNames, ...partyErrors]
+	if (problems.length > 0) throw new FormValidationError(problems)
 
 	return {
 		fields,
@@ -1123,6 +1121,12 @@ export interface DraftForm<F extends Form> extends RuntimeFormBase<F> {
 	getFillState(options?: FillTargetOptions): FillState
 
 	/**
+	 * Describe every target that is open now, for a filler that supplies them in
+	 * one batch, with the count that waits behind unfilled answers.
+	 */
+	getFillBatch(): FillBatch
+
+	/**
 	 * Get the next recommended fill target, or null if all required are done.
 	 */
 	getNextFillTarget(options?: FillTargetOptions): FillTarget | null
@@ -1408,6 +1412,19 @@ function renderPayload(data: FormData | undefined): FormData {
 		)
 	}
 	return data
+}
+
+function withComputedDefs(formDef: Form, data: FormData): FormData {
+	if (data.defs !== undefined || formDef.defs === undefined) return data
+	const state = runtimeStateFrom(
+		evaluateFormDefs(formDef, {
+			fields: data.fields,
+			parties: (data.parties ?? {}) as Record<string, Party | Party[]>,
+			signing: signingStateOf(data.captures ?? [], []),
+		}),
+	)
+	if (state.defsValues.size === 0) return data
+	return { ...data, defs: Object.fromEntries(state.defsValues) }
 }
 
 /**
@@ -2238,6 +2255,11 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		getFillState(options?: FillTargetOptions): FillState {
 			const state = getRuntimeState()
 			return computeFillState(formDef, fieldValues, partyValues, annexValues, state, options, witnesses, context)
+		},
+
+		getFillBatch(): FillBatch {
+			const state = getRuntimeState()
+			return fillBatch(formDef, computeFillState(formDef, fieldValues, partyValues, annexValues, state, undefined, witnesses, context))
 		},
 
 		getNextFillTarget(options?: FillTargetOptions): FillTarget | null {
@@ -3148,7 +3170,7 @@ function createFormInstance<F extends Form>(
 				layer: layerKey,
 				bindings: optionsBindings,
 			} = options
-			const formData = renderPayload(data)
+			const formData = data === undefined ? renderPayload(data) : withComputedDefs(formDef, renderPayload(data))
 
 			if (!formDef.layers) {
 				throw new Error('Form has no layers defined')

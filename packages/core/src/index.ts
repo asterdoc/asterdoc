@@ -405,7 +405,15 @@ export type {
   FillTarget,
   FillItemState,
   FillState,
+  InapplicableFillItem,
+  UnprintedPartyName,
+  FillBatch,
+  FillBatchOption,
+  FillBatchProblem,
+  FillBatchRule,
+  FillBatchTarget,
 } from "./fill-state";
+export { fillBatch, notApplicableProblems, printedPartyMembers, unprintedNameProblems } from "./fill-state";
 
 // ============================================================================
 // LOGIC

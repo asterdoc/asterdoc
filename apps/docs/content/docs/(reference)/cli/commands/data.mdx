@@ -2,7 +2,7 @@
 title: data
 description: Data operations for artifacts
 ogTitle: asterdoc data
-ogDescription: Generate templates, fill forms with data, and extract data from filled PDFs
+ogDescription: Generate templates, fill forms with data, list the open fields, and extract data from filled PDFs
 ---
 
 Data operations for Asterdoc artifacts.
@@ -19,6 +19,7 @@ asterdoc data <command> [options]
 |---------|-------------|
 | `template` | Generate an instance template from a form |
 | `fill` | Fill form data interactively or from a data payload |
+| `next` | List the fields open now, with how to write each value |
 | `validate` | Validate instance data against a form artifact |
 | `extract` | Extract form data from filled PDF forms |
 
@@ -207,6 +208,60 @@ Validate data from stdin and print a JSON result:
 
 ```bash
 cat data.json | asterdoc data validate my-form.yaml - --json
+```
+
+---
+
+## data next
+
+List the fields, parties and annexes that are open now, with how to write each value: the type, the options, the limits, the value shape and the page of the PDF it prints on. An agent fills a form in passes with it: list, write a batch of values, list again. The [asterdoc-fill skill](/ai/skills) gives an agent the full procedure.
+
+```bash
+asterdoc data next <form-file> [options]
+```
+
+### Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `form-file` | Form artifact file (JSON/YAML) |
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `--data <data>` | Data filled so far: file path, `-` for stdin, or inline JSON |
+| `--full` | With `--data`: describe every open target in full |
+| `--layer <key>` | PDF layer whose page numbers to show. Defaults to the form's only PDF layer, or its default layer. |
+| `--json` | Output machine-readable JSON |
+
+### Output
+
+The second line gives the state of the data:
+
+| Line starts with | Meaning |
+|------------------|---------|
+| `Complete` | No target is open and every rule passes. |
+| `Ready to render` | No required target is open and every rule passes. Optional targets are still open. |
+| `Not ready to render` | A required target is open, a rule is not met, or the data has a problem. |
+
+Without `--data`, every open target is described in full. With `--data`, a required target and a target that an answer opened are described in full. An optional target that no answer opened is one line under `In short form`, because the first listing described it. `--full` describes each of those in full again.
+
+Only a required target is marked, with `[required]`; every other target is optional. An option whose label repeats its value prints the value only. A long option list prints in full for the first target that has it; a later target with the same list prints `options: the same as <key>`.
+
+A list whose rows are objects prints the fields of a row under `rows`, each with its type, options and limits. In `--json`, they are in the `rows` of the list.
+
+`Problems in the data` lists each value the form refuses. `Rules not met yet` lists the rules that fail. `Warnings` lists values the form accepts but that are probably wrong. `Waiting` counts the targets that can open after more answers.
+
+`--json` gives the same data as one object: `complete`, `problems`, `rules`, `summary`, `open`, `waiting` and `warnings`. Each entry of `open` is in full, and has `conditional: true` when an answer opened it.
+
+### Examples
+
+List the whole form, then the next pass:
+
+```bash
+asterdoc data next g-28.json
+asterdoc data next g-28.json --data data.json
 ```
 
 ---

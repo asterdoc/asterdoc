@@ -7,6 +7,7 @@ Agent skills for [Asterdoc](https://asterdoc.com), the documents-as-code framewo
 | Skill | Use it for |
 |---|---|
 | [asterdoc](skills/asterdoc/) | Authoring, filling, validating, rendering and sealing artifacts with the TypeScript SDK, the `asterdoc` CLI, raw JSON/YAML, the AI agent tools, or the hosted MCP server. Includes a staged workflow for creating a form or converting a PDF form. |
+| [asterdoc-fill](skills/asterdoc-fill/) | Filling an existing form from the facts at hand with the `asterdoc` CLI: `asterdoc data next` gives the fields open now, the agent writes them in one batch per pass, then renders and checks the PDF. For agents that fill forms rather than author them. |
 | [asterdoc-react](skills/asterdoc-react/) | Composing, checking, previewing, rendering and sealing documents written in React with `@asterdoc/react` and `@asterdoc/react-pdf`. |
 
 Install `asterdoc-react` on its own when composing documents in React is the only Asterdoc work in play. Install both when you also author the artifacts.
@@ -18,6 +19,7 @@ Install `asterdoc-react` on its own when composing documents in React is the onl
 ```bash
 npx skills add https://github.com/asterdoc/asterdoc --skill asterdoc
 npx skills add https://github.com/asterdoc/asterdoc --skill asterdoc-react
+npx skills add https://github.com/asterdoc/asterdoc --skill asterdoc-fill
 ```
 
 Or copy them by hand:

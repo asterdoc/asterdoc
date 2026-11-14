@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -45,10 +45,10 @@ const manifest = (name: string, body = "See [the guide](./references/guide.md)."
   `---\nname: ${name}\ndescription: >\n  A demo\n  skill.\n---\n\n${body}\n`;
 
 describe("the public skills", () => {
-  it("publish asterdoc and asterdoc-react with a valid index", () => {
+  it("publish asterdoc, asterdoc-fill and asterdoc-react with a valid index", () => {
     const { index, read } = publish(publicSkills, "public");
     expect(index.$schema).toBe(SKILLS_INDEX_SCHEMA);
-    expect(index.skills.map((skill) => skill.name)).toEqual(["asterdoc", "asterdoc-react"]);
+    expect(index.skills.map((skill) => skill.name)).toEqual(["asterdoc", "asterdoc-fill", "asterdoc-react"]);
     for (const skill of index.skills) {
       expect(skill.digest).toBe(sha256(read(skill.url)));
       expect(skill.description.length).toBeLessThanOrEqual(1024);
@@ -73,12 +73,12 @@ describe("the public skills", () => {
     }
   });
 
-  it("ship every reference the manifest links to", () => {
+  it("ship every reference the manifest links to, and link a skill's references when it has them", () => {
     const { index, read } = publish(publicSkills, "refs");
     for (const skill of index.skills) {
       const files = readArchive(read(skill.url)).map((file) => file.path);
       const linked = relativeLinks(readFileSync(path.join(publicSkills, skill.name, "SKILL.md"), "utf8"));
-      expect(linked.length).toBeGreaterThan(0);
+      if (existsSync(path.join(publicSkills, skill.name, "references"))) expect(linked.length, skill.name).toBeGreaterThan(0);
       for (const target of linked) expect(files).toContain(path.posix.normalize(target));
     }
   });

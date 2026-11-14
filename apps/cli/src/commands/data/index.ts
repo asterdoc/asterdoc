@@ -3,6 +3,7 @@ import { createTemplateCommand } from './template.js'
 import { createValidateCommand } from './validate.js'
 import { createFillCommand } from './fill.js'
 import { createExtractCommand } from './extract.js'
+import { createNextCommand } from './next.js'
 
 /**
  * Create the 'data' command group
@@ -18,6 +19,7 @@ export function createDataCommand(): Command {
 	dataCmd.addCommand(createValidateCommand())
 	dataCmd.addCommand(createFillCommand())
 	dataCmd.addCommand(createExtractCommand())
+	dataCmd.addCommand(createNextCommand())
 
 	return dataCmd
 }

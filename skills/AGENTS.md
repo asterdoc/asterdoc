@@ -6,9 +6,10 @@ Guidance for AI agents working in this tree.
 
 The official agent skills for [Asterdoc](https://asterdoc.com), the documents-as-code framework. Users install them from `github.com/asterdoc/asterdoc` with `npx skills add https://github.com/asterdoc/asterdoc --skill <name>`.
 
-Two skills:
+Three skills:
 
 - `skills/asterdoc/`: authoring, filling, validating, rendering and sealing artifacts on every surface (TypeScript SDK, `asterdoc` CLI, raw JSON/YAML, AI agent tools, hosted MCP), plus the authoring workflow.
+- `skills/asterdoc-fill/`: filling an existing form from facts with the `asterdoc` CLI, in passes driven by `asterdoc data next`. For agents that fill forms; it links nothing and stays one file.
 - `skills/asterdoc-react/`: composing, checking, previewing, rendering and sealing documents written in React with `@asterdoc/react` and `@asterdoc/react-pdf`.
 
 ## Structure
@@ -30,6 +31,9 @@ Two skills:
     │       ├── instructions.md, filling.md, sealing.md, essentials.md
     │       # Workflow refs
     │       └── workflow-author-form.md
+    ├── asterdoc-fill/
+    │   ├── SKILL.md
+    │   └── metadata.json
     └── asterdoc-react/
         ├── SKILL.md
         ├── metadata.json
@@ -112,6 +116,7 @@ The skill states these in `SKILL.md`; repeat one in a reference only where it ap
 ```bash
 uvx --from skills-ref agentskills validate ./skills/asterdoc
 uvx --from skills-ref agentskills validate ./skills/asterdoc-react
+uvx --from skills-ref agentskills validate ./skills/asterdoc-fill
 ```
 
 Tests tie the skills to the code:

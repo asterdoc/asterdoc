@@ -1,7 +1,8 @@
-import type { BinaryContent } from '@asterdoc/types'
+import type { BinaryContent, Bindings } from '@asterdoc/types'
+import { parseBindings } from '../layer-bindings'
 import { acroFields, textFieldDrawing, textValue, type PdfFieldType } from './acroform'
 import { documentPages } from './page-tree'
-import { isRef, PdfModel } from './syntax'
+import { isDict, isRef, PdfModel } from './syntax'
 
 export type { PdfFieldType } from './acroform'
 
@@ -98,4 +99,62 @@ export async function inspectAcroFormFields(
     })
   }
   return result
+}
+
+function fieldPages(model: PdfModel): Map<string, number[]> {
+  const form = acroFields(model)
+  const result = new Map<string, number[]>()
+  if (!form) return result
+  const pageOf = new Map<number, number>()
+  const annotationPage = new Map<number, number>()
+  documentPages(model).forEach(({ ref, record }, index) => {
+    pageOf.set(ref.object, index + 1)
+    const annotations = isDict(record.value) ? model.resolve(record.value.entries.get('Annots')) : undefined
+    if (!Array.isArray(annotations)) return
+    for (const annotation of annotations) if (isRef(annotation)) annotationPage.set(annotation.object, index + 1)
+  })
+  for (const field of form.fields) {
+    const pages = new Set<number>()
+    for (const widget of field.widgets) {
+      const parent = widget.dict.entries.get('P')
+      const page = (isRef(parent) ? pageOf.get(parent.object) : undefined) ?? (widget.ref ? annotationPage.get(widget.ref.object) : undefined)
+      if (page !== undefined) pages.add(page)
+    }
+    if (pages.size > 0) result.set(field.name, [...pages].sort((a, b) => a - b))
+  }
+  return result
+}
+
+/** Options for {@link pdfBindingPages}. */
+export interface PdfBindingPagesOptions {
+  /** The PDF layer's bytes. */
+  template: BinaryContent
+  /** The layer's bindings. */
+  bindings: Bindings
+}
+
+/**
+ * The pages of a PDF layer each bound path prints on: for every path a
+ * binding reads, the one-based pages that hold a widget of a field it fills,
+ * in page order. The key is the path as fill data holds it, without the
+ * `fields` root, such as `mailingAddress.line1` or `parties.buyer.name`.
+ *
+ * Nothing is read from the artifact but its bindings, and nothing is written:
+ * a page number belongs to the layer, not to the field.
+ *
+ * @throws {PdfBindingSyntaxError} when a binding cannot be parsed.
+ */
+export async function pdfBindingPages({ template, bindings }: PdfBindingPagesOptions): Promise<Map<string, number[]>> {
+  const pages = fieldPages(await PdfModel.load(template))
+  const byPath = new Map<string, Set<number>>()
+  for (const { field, parts } of parseBindings(bindings)) {
+    const found = pages.get(field)
+    if (!found) continue
+    for (const { path } of parts) {
+      const set = byPath.get(path) ?? new Set<number>()
+      for (const page of found) set.add(page)
+      byPath.set(path, set)
+    }
+  }
+  return new Map([...byPath].map(([path, set]) => [path, [...set].sort((a, b) => a - b)]))
 }

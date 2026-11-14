@@ -1,5 +1,5 @@
-export { inspectAcroFormFields, inspectPdf } from './pdf/inspect'
-export type { InspectOptions, PdfFieldInfo, PdfFieldType, PdfInfo, PdfPageInfo } from './pdf/inspect'
+export { inspectAcroFormFields, inspectPdf, pdfBindingPages } from './pdf/inspect'
+export type { InspectOptions, PdfBindingPagesOptions, PdfFieldInfo, PdfFieldType, PdfInfo, PdfPageInfo } from './pdf/inspect'
 export { flattenPdf } from './pdf/flatten'
 export { mergePdfs, PdfMergeError } from './pdf/merge'
 export { PdfEncryptedError } from './pdf/syntax'

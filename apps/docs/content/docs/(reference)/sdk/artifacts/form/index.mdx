@@ -579,7 +579,7 @@ Created by `signable.finalize()`. Fully frozen, ready for archival.
   { name: 'progressive', type: 'FormatterProgressivePolicy', description: 'Text for missing and incomplete values in a preview', isOptional: true },
   { name: 'bindings', type: 'Record<string, string>', description: 'PDF layers only: AcroForm field name to Asterdoc path, merged over the layer\'s own bindings. Refused for any other layer', isOptional: true },
   { name: 'require', type: "'complete'", description: 'Filled forms only: refuse to render unless no value is missing or invalid and every error-severity rule passes, the check `seal()` makes. Throws `FormValidationError` or `FormRuleViolationError`. Warnings never block. Omitted, the form renders as it is', isOptional: true },
-  { name: 'data', type: 'FormData', description: 'Values to render with: field values under `fields`, with `parties`, `annexes` and `defs` beside them. `RenderOptions` only', isOptional: true },
+  { name: 'data', type: 'FormData', description: 'Values to render with: field values under `fields`, with `parties`, `annexes` and `defs` beside them. When `defs` is left out, the form computes them from the values, as a filled form does. `RenderOptions` only', isOptional: true },
 ]} />
 
 ```ts

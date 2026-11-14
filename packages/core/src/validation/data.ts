@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { Form } from '@asterdoc/types'
 import { compile, type InferFormPayload } from '@/inference'
+import { PHONE_NUMBER_PATTERN } from '@/inference/composite-shapes'
 import { deepClone } from '@/utils/clone'
 import { createSafeRegex } from '@/utils/safe-pattern'
 import { compareFormattedTemporal } from '@/utils/temporal-compare'
@@ -253,6 +254,10 @@ function isRecordSchema(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+const PATTERN_MESSAGES = new Map([
+	[`/${PHONE_NUMBER_PATTERN}/`, 'Must be the full international number with no spaces or marks: +, the country code, the national number, such as +14155552671'],
+])
+
 /**
  * Map a single Zod issue to ValidationError format.
  */
@@ -287,7 +292,7 @@ export function mapZodIssueToValidationError(
 		} else if (formatIssue.format === 'url' || formatIssue.format === 'uri') {
 			message = 'Invalid URL format'
 		} else if (formatIssue.format === 'regex') {
-			message = 'Does not match required pattern'
+			message = PATTERN_MESSAGES.get(String((issue as { pattern?: unknown }).pattern)) ?? 'Does not match required pattern'
 		}
 	} else if (issue.code === 'invalid_value') {
 		const valueIssue = issue as { values?: unknown[] }

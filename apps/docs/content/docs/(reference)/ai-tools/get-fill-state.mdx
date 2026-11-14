@@ -32,6 +32,8 @@ Takes a [source](/ai-tools#sources) plus:
 | `open_optional` | `FillItemState[]` | Visible, optional, unfilled targets |
 | `blocked` | `FillItemState[]` | Hidden targets that can become visible once their prerequisites are filled |
 | `done` | `FillItemState[]` | Filled targets |
+| `not_applicable` | `{ path, message }[]` | Form only. Values given for targets that do not apply, each with the condition under which the target applies. Remove each value, or correct the answer that hides its target. Absent when there is none |
+| `unprinted_names` | `{ path, message }[]` | Form only. Parties whose name a PDF layer of the form does not print: the layer prints the name from members such as `firstName` and `lastName`, and the party gives none of them. Give those members next to `name`. Absent when there is none |
 | `candidates` | `FillTarget[]` | Targets that can be filled now. Forms use dependency order, with required targets before optional targets by default and declaration order breaking ties. Checklists use item declaration order. |
 | `next` | `FillTarget \| null` | The first candidate, or `null` when nothing is left |
 | `evaluation_context` | `object` | The draft's fixed context |

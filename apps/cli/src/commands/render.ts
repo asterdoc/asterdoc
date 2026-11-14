@@ -17,7 +17,8 @@ import { parseDataInput, toFormPayload } from '../utils/data-input.js'
 import { loadValidatedArtifact } from '../utils/artifact-file.js'
 import { createLayerRenderer } from '@asterdoc/render'
 import type { Bindings } from '@asterdoc/types'
-import { formatPayloadErrors, validateFormPayload } from '../utils/validate-data.js'
+import { formatPayloadErrors, validateDraftPayload, validateFormPayload, type FilledPayload } from '../utils/validate-data.js'
+import { readBack, readBackLines, readBackPasses, type ReadBack } from '../utils/read-back.js'
 
 type OutputFormat = 'json' | 'pretty'
 
@@ -28,7 +29,13 @@ interface RenderOptions {
   format?: OutputFormat
   dryRun?: boolean
   layer?: string
+  draft?: boolean
+  check?: boolean
 }
+
+const CHECK_NEEDS = '--check reads a filled PDF back: it needs a form artifact, a PDF layer, --data and --out.'
+
+const DRAFT_HINT = 'To render the data as it is, with each of these left empty, add --draft.'
 
 export function createRenderCommand(): Command {
   const render = new Command('render')
@@ -42,6 +49,8 @@ export function createRenderCommand(): Command {
     .option('--format <style>', 'Summary format: pretty|json', 'pretty')
     .option('--layer <key>', 'Layer key to use (defaults to defaultLayer, else the first declared layer)')
     .option('--dry-run', 'Validate and resolve layer without rendering')
+    .option('--draft', 'Render data that is not complete: a required field with no value prints empty, and the command lists each one')
+    .option('--check', 'After a PDF render with --data and --out: read the PDF back and compare each value with the data')
     .action(async (artifactTarget: string, options: RenderOptions) => {
       try {
         const format = normalizeFormatOption(options.format ?? 'pretty')
@@ -61,6 +70,10 @@ export function createRenderCommand(): Command {
         const layerKey = resolveLayerKey(layers, undefined, defaultLayer, { layer: options.layer })
         const layer = layers[layerKey]!
 
+        if (options.check && !(isForm(artifact) && options.data && options.out && layer.mimeType.toLowerCase() === 'application/pdf')) {
+          throw new Error(CHECK_NEEDS)
+        }
+
         if (options.dryRun) {
           printDryRunSummary({
             artifact,
@@ -76,6 +89,8 @@ export function createRenderCommand(): Command {
 
         // Determine the content to output
         let content: string | Uint8Array
+        let draftOpen: string[] = []
+        let checked: ReadBack | undefined
 
         // Parse bindings if provided
         const parsedBindings = options.bindings
@@ -91,18 +106,23 @@ export function createRenderCommand(): Command {
         if ((options.data || parsedBindings) && isForm(artifact)) {
           // Parse data from file, stdin, or inline JSON
           const parsedData = options.data ? await parseDataInput(options.data) : undefined
-          let normalizedData
+          let normalizedData: FilledPayload | undefined
           if (parsedData) {
-            const validationResult = validateFormPayload(
-              artifact as Form,
-              toFormPayload(parsedData.data)
-            )
-            if (!validationResult.success) {
-              throw new Error(
-                formatPayloadErrors(validationResult.errors, validationResult.ruleErrors).join('\n')
-              )
+            const payload = toFormPayload(parsedData.data)
+            if (options.draft) {
+              const draft = validateDraftPayload(artifact as Form, payload)
+              if (!draft.success) throw new Error(formatPayloadErrors(draft.errors, draft.ruleErrors).join('\n'))
+              normalizedData = draft.data
+              draftOpen = draft.open
+            } else {
+              const validationResult = validateFormPayload(artifact as Form, payload)
+              if (!validationResult.success) {
+                const lines = formatPayloadErrors(validationResult.errors, validationResult.ruleErrors)
+                const draftRenders = validateDraftPayload(artifact as Form, payload).success
+                throw new Error([...lines, ...(draftRenders ? [DRAFT_HINT] : [])].join('\n'))
+              }
+              normalizedData = validationResult.data
             }
-            normalizedData = validationResult.data
           }
 
           const formInstance = formApi.from(artifact as Form, { resolver })
@@ -115,6 +135,10 @@ export function createRenderCommand(): Command {
             layer: layerKey,
             bindings: parsedBindings,
           })
+
+          if (options.check && normalizedData && typeof content !== 'string') {
+            checked = readBack(await formInstance.extract(content, { layer: layerKey }), normalizedData)
+          }
 
           // Log data source if not writing to file (when outputting to stdout)
           if (options.data && parsedData && !options.out && format === 'pretty') {
@@ -151,8 +175,11 @@ export function createRenderCommand(): Command {
               artifact: artifact.name,
               layer: layerKey,
               mimeType: layer.mimeType,
+              ...(options.draft && { draft: { open: draftOpen } }),
+              ...(checked && { check: { passed: readBackPasses(checked), ...checked } }),
             }, null, 2))
           }
+          if (checked && format === 'pretty') for (const line of readBackLines(options.out, checked)) console.log(line)
         } else {
           // Output to stdout
           if (typeof content === 'string') {
@@ -161,6 +188,11 @@ export function createRenderCommand(): Command {
             process.stdout.write(Buffer.from(content))
           }
         }
+        if (draftOpen.length > 0 && !(options.out && format === 'json')) {
+          console.error(kleur.yellow(`Draft: the data is not complete. ${draftOpen.length === 1 ? 'This is' : 'These are'} still open:`))
+          for (const line of draftOpen) console.error(`  - ${line}`)
+        }
+        if (checked && !readBackPasses(checked)) process.exit(1)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))

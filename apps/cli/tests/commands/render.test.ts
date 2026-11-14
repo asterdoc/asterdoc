@@ -165,6 +165,22 @@ describe('CLI render command', () => {
       expect(Object.fromEntries(fields.map((field) => [field.name, field.value]))).toMatchObject({ pet_name: 'Milo', petWeight: '5,5' })
     })
 
+    it.each([
+      ['prints the value of the def', true, 'Milo'],
+      ['leaves the box empty when the def is empty', false, ''],
+    ])('should fill a PDF box that is bound to a def: %s', async (_case, hasVaccination, printed) => {
+      const outPath = path.join(tempDir, 'def-bound.pdf')
+      const data = JSON.stringify({ fields: { name: 'Milo', hasVaccination } })
+
+      const result = await executeCliCommand(['render', path.join(fixturesDir, 'pet-addendum-pdf-defs.yaml'), '--data', data, '--out', outPath])
+
+      expect(result.stderr).toBe('')
+      expect(result.exitCode).toBe(0)
+      const { inspectAcroFormFields } = await import('@asterdoc/render/pdf')
+      const fields = await inspectAcroFormFields(new Uint8Array(await fs.readFile(outPath)))
+      expect(fields.find((field) => field.name === 'pet_name')?.value).toBe(printed)
+    })
+
     it('should refuse a --bindings binding object the schema refuses', async () => {
       const data = JSON.stringify({ fields: { name: 'Milo', species: 'cat', weight: 5, hasVaccination: true } })
       const bindings = JSON.stringify({ petWeight: { path: 'fields.weight', format: { locale: 'not a locale' } } })
@@ -385,6 +401,223 @@ describe('CLI render command', () => {
         'render', artifactPath, '--layer', 'attached',
       ], { cwd: outsideDir })
       expect(rendered).toMatchObject({ exitCode: 0, stdout: 'attached layer' })
+    })
+  })
+
+  describe('render --draft', () => {
+    let tempDir: string
+    let formFile: string
+    let outFile: string
+
+    const intake = {
+      $schema: ASTERDOC_SCHEMA_URL,
+      kind: 'form',
+      name: 'intake',
+      version: '1.0.0',
+      title: 'Intake',
+      fields: {
+        name: { type: 'text', label: 'Name', required: true },
+        weight: { type: 'number', label: 'Weight', required: true, min: 1 },
+        hasPet: { type: 'boolean', label: 'Has a pet' },
+        petName: { type: 'text', label: 'Pet name', visible: 'fields.hasPet == true' },
+      },
+      rules: {
+        realName: { expr: 'fields.name != "Nobody"', severity: 'error', message: 'Give a real name' },
+      },
+      layers: { text: { kind: 'inline', mimeType: 'text/plain', text: 'Name: {{fields.name}}. Weight: {{fields.weight}}.' } },
+      defaultLayer: 'text',
+    }
+
+    const render = async (fields: Record<string, unknown>, ...flags: string[]) => {
+      const dataFile = path.join(tempDir, 'data.json')
+      await fs.writeFile(dataFile, JSON.stringify({ fields }))
+      return executeCliCommand(['render', formFile, '--data', dataFile, '--out', outFile, ...flags])
+    }
+
+    beforeEach(async () => {
+      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-render-draft-'))
+      formFile = path.join(tempDir, 'intake.json')
+      outFile = path.join(tempDir, 'out.txt')
+      await fs.writeFile(formFile, JSON.stringify(intake))
+    })
+
+    afterEach(async () => {
+      await fs.rm(tempDir, { recursive: true, force: true })
+    })
+
+    it('refuses data with an open required field, writes no file, and names --draft', async () => {
+      const result = await render({ name: 'Rex' })
+      expect(result.exitCode).toBe(1)
+      expect(result.stderr).toContain('fields.weight: Missing required field: fields.weight')
+      expect(result.stderr).toContain('To render the data as it is, with each of these left empty, add --draft.')
+      expect(existsSync(outFile)).toBe(false)
+    })
+
+    it('with --draft, renders the data with the open field empty and lists what is open', async () => {
+      const result = await render({ name: 'Rex' }, '--draft')
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(await fs.readFile(outFile, 'utf8')).toBe('Name: Rex. Weight: .')
+      expect(result.stderr).toContain('Draft: the data is not complete. This is still open:')
+      expect(result.stderr).toContain('  - fields.weight: Missing required field: fields.weight')
+    })
+
+    it('with --draft, lists a rule that is not met beside the open fields', async () => {
+      const result = await render({ name: 'Nobody' }, '--draft')
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(result.stderr).toContain('Draft: the data is not complete. These are still open:')
+      expect(result.stderr).toContain('  - rules.realName: Give a real name')
+    })
+
+    it('with --draft, still refuses a value the form does not accept and a value for a field that does not apply', async () => {
+      const invalid = await render({ name: 'Rex', weight: 0 }, '--draft')
+      expect(invalid.exitCode).toBe(1)
+      expect(invalid.stderr).toContain('fields.weight')
+      const hidden = await render({ name: 'Rex', weight: 30, petName: 'Milo' }, '--draft')
+      expect(hidden.exitCode).toBe(1)
+      expect(hidden.stderr).toContain('fields.petName: A value is given, but this field does not apply.')
+      expect(existsSync(outFile)).toBe(false)
+    })
+
+    it('does not name --draft for data that a draft render refuses too', async () => {
+      const result = await render({ name: 'Rex', weight: 30, petName: 'Milo' })
+      expect(result.exitCode).toBe(1)
+      expect(result.stderr).not.toContain('--draft')
+    })
+
+    it('with --draft and complete data, renders with no draft note', async () => {
+      const result = await render({ name: 'Rex', weight: 30 }, '--draft')
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(await fs.readFile(outFile, 'utf8')).toBe('Name: Rex. Weight: 30.')
+      expect(result.stderr).not.toContain('Draft')
+    })
+
+    describe('for a form with a role that needs one party', () => {
+      const owner = { name: 'Dana Ortiz' }
+      const renderWithParties = async (data: Record<string, unknown>, ...flags: string[]) => {
+        const dataFile = path.join(tempDir, 'data.json')
+        await fs.writeFile(dataFile, JSON.stringify(data))
+        return executeCliCommand(['render', formFile, '--data', dataFile, '--out', outFile, ...flags])
+      }
+
+      beforeEach(async () => {
+        await fs.writeFile(formFile, JSON.stringify({ ...intake, parties: { owner: { label: 'Owner', partyType: 'person', min: 1, max: 1 } } }))
+      })
+
+      it('names a missing party, a missing field and a rule that is not met in one refusal', async () => {
+        const result = await renderWithParties({ fields: { name: 'Nobody' } })
+        expect(result.exitCode).toBe(1)
+        expect(result.stderr).toContain('fields.weight: Missing required field: fields.weight')
+        expect(result.stderr).toContain('parties.owner: Role "owner" requires at least 1 party(ies)')
+        expect(result.stderr).toContain('rules.realName: Give a real name')
+        expect(result.stderr).toContain('add --draft')
+      })
+
+      it('with --draft, renders and lists all three as open', async () => {
+        const result = await renderWithParties({ fields: { name: 'Nobody' } }, '--draft')
+        expect(result.exitCode, result.stderr).toBe(0)
+        expect(result.stderr).toContain('  - fields.weight: Missing required field: fields.weight')
+        expect(result.stderr).toContain('  - parties.owner: Role "owner" requires at least 1 party(ies)')
+        expect(result.stderr).toContain('  - rules.realName: Give a real name')
+        expect(await fs.readFile(outFile, 'utf8')).toBe('Name: Nobody. Weight: .')
+      })
+
+      it('with --draft, still refuses more parties than the role allows', async () => {
+        const result = await renderWithParties({ fields: { name: 'Rex', weight: 30 }, parties: { owner: [owner, { name: 'Sam Ortiz' }] } }, '--draft')
+        expect(result.exitCode).toBe(1)
+        expect(result.stderr).toContain('parties.owner')
+        expect(existsSync(outFile)).toBe(false)
+      })
+    })
+
+    it('with --format json, gives the open items in the summary', async () => {
+      const result = await render({ name: 'Rex' }, '--draft', '--format', 'json')
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(JSON.parse(result.stdout)).toMatchObject({ success: true, draft: { open: ['fields.weight: Missing required field: fields.weight'] } })
+    })
+  })
+
+  describe('render --check', () => {
+    let tempDir: string
+    let outFile: string
+
+    const pet = (bindings: Record<string, unknown>) => ({
+      $schema: ASTERDOC_SCHEMA_URL,
+      kind: 'form',
+      name: 'pet',
+      version: '1.0.0',
+      title: 'Pet',
+      fields: {
+        name: { type: 'text', label: 'Name', required: true },
+        weight: { type: 'number', label: 'Weight' },
+        species: { type: 'enum', label: 'Species', enum: [{ value: 'dog' }, { value: 'cat' }] },
+      },
+      layers: {
+        pdf: { kind: 'file', mimeType: 'application/pdf', path: './pet.pdf', bindings },
+        text: { kind: 'inline', mimeType: 'text/plain', text: 'Name: {{fields.name}}' },
+      },
+      defaultLayer: 'pdf',
+    })
+    const data = JSON.stringify({ fields: { name: 'Milo Rex', weight: 5.5, species: 'cat' } })
+
+    const render = async (bindings: Record<string, unknown>, ...flags: string[]) => {
+      const formFile = path.join(tempDir, 'pet.json')
+      await fs.writeFile(formFile, JSON.stringify(pet(bindings)))
+      return executeCliCommand(['render', formFile, ...flags])
+    }
+
+    beforeEach(async () => {
+      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-render-check-'))
+      outFile = path.join(tempDir, 'filled.pdf')
+      await fs.copyFile(path.join(fixturesDir, 'pet-addendum-bindings.pdf'), path.join(tempDir, 'pet.pdf'))
+    })
+
+    afterEach(async () => {
+      await fs.rm(tempDir, { recursive: true, force: true })
+    })
+
+    it('reads the PDF back and says in one line that every value equals the data', async () => {
+      const result = await render({ pet_name: 'fields.name', petWeight: 'fields.weight' }, '--data', data, '--out', outFile, '--check')
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(result.stdout).toContain(`Read back from ${outFile}: 2 values equal the data.\n`)
+      expect(result.stdout).not.toContain('Not compared')
+    })
+
+    it('says nothing of a read-back without --check', async () => {
+      const result = await render({ pet_name: 'fields.name', petWeight: 'fields.weight' }, '--data', data, '--out', outFile)
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(result.stdout).not.toContain('Read back')
+    })
+
+    it('exits 0 for values that print in a form that does not read back, and shows what the box holds', async () => {
+      const result = await render({ pet_name: { template: '{{fields.name}} {{fields.species}}' }, petWeight: 'fields.weight' }, '--data', data, '--out', outFile, '--check')
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(result.stdout).toContain('1 value equals the data.')
+      expect(result.stdout).toContain('  Not compared (2): each one prints in a form that does not read back as one value. This is not a fault.\n    - name: the PDF holds "Milo Rex cat"\n    - species: the PDF holds "Milo Rex cat"\n')
+    })
+
+    it('exits 1 and names the path when a box cannot be read back as the value, with the file still written', async () => {
+      const result = await render({ pet_name: 'fields.name', petWeight: { path: 'fields.name', format: { case: 'upper' } } }, '--data', data, '--out', outFile, '--check')
+      expect(result.exitCode).toBe(1)
+      expect(result.stdout).toContain('0 values equal the data, 1 cannot be read.')
+      expect(result.stdout).toContain('    - name: The PDF fields that carry this path hold different values.')
+      expect(existsSync(outFile)).toBe(true)
+    })
+
+    it('gives the result in the summary with --format json', async () => {
+      const result = await render({ pet_name: 'fields.name', petWeight: 'fields.weight' }, '--data', data, '--out', outFile, '--check', '--format', 'json')
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(JSON.parse(result.stdout)).toMatchObject({ success: true, check: { passed: true, equal: 2, differ: [], notPrinted: [], unreadable: [], notCompared: [] } })
+    })
+
+    it.each([
+      ['no --out', ['--data', data]],
+      ['no --data', ['--out', 'filled.pdf']],
+      ['a layer that is not a PDF', ['--data', data, '--out', 'filled.txt', '--layer', 'text']],
+    ])('refuses --check with %s and writes no file', async (_case, flags) => {
+      const result = await render({ pet_name: 'fields.name' }, ...flags, '--check')
+      expect(result.exitCode).toBe(1)
+      expect(result.stderr).toContain('--check reads a filled PDF back: it needs a form artifact, a PDF layer, --data and --out.')
+      expect(existsSync(outFile)).toBe(false)
     })
   })
 })

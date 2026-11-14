@@ -8,8 +8,10 @@ import type {
 	FillTarget,
 	FillTargetOptions,
 	FillItemState,
+	FillBatchProblem,
 	FillItemStatus,
 	FillState,
+	InapplicableFillItem,
 } from './types'
 import type { EvaluationIssue, FormRuntimeState } from '@/logic/runtime/evaluation/types'
 import type { RuntimeContext } from '@/artifacts/shared/runtime-context'
@@ -18,6 +20,8 @@ import { evaluateFormRules } from '@/logic/runtime/evaluation/rule-evaluator'
 import { evaluatePartyRequiredness } from '@/validation/party'
 import { buildFieldDependencyGraph, referencedIds, transitiveBlockers } from './dependency-graph'
 import { fillNodeOf } from '@/logic/shared/list-paths'
+import { fieldAtSegments } from '@/logic/shared/sensitive-values'
+import { unprintedPartyNames } from './printed-names'
 
 /** A list row enclosing fields: its runtime id and item definition. */
 interface RowScope {
@@ -74,6 +78,76 @@ function isPartyFilled(parties: Record<string, unknown>, roleId: string): boolea
 /** Check if an annex is filled */
 function isAnnexFilled(annexes: Record<string, unknown>, annexId: string): boolean {
 	return isFilled(annexes[annexId])
+}
+
+function carriesValue(value: unknown): boolean {
+	if (value === null || value === undefined || value === '' || value === false) return false
+	if (Array.isArray(value)) return value.some(carriesValue)
+	if (typeof value === 'object') return Object.values(value).some(carriesValue)
+	return true
+}
+
+function keyTokens(key: string): string[] {
+	return key.match(/[^.[\]]+/g) ?? []
+}
+
+function keyPrefixes(key: string): string[] {
+	const prefixes: string[] = []
+	for (const token of key.match(/[^.[\]]+|\[\d+\]/g) ?? []) {
+		const last = prefixes[prefixes.length - 1]
+		prefixes.push(last === undefined ? token : token.startsWith('[') ? `${last}${token}` : `${last}.${token}`)
+	}
+	return prefixes
+}
+
+function valueAtKey(values: Record<string, unknown>, key: string): unknown {
+	let value: unknown = values
+	for (const token of keyTokens(key)) {
+		if (value === null || typeof value !== 'object') return undefined
+		value = (value as Record<string, unknown>)[token]
+	}
+	return value
+}
+
+function hidingCondition(form: Form, runtimeState: FormRuntimeState, item: FillItemState): string | undefined {
+	if (item.kind === 'annex') {
+		const visible = (form.annexes as Record<string, { visible?: unknown }> | undefined)?.[item.key]?.visible
+		return typeof visible === 'string' ? visible : undefined
+	}
+	const hidden = keyPrefixes(item.key).find((prefix) => runtimeState.fields.get(prefix)?.visible === false)
+	if (hidden === undefined) return undefined
+	const visible = fieldAtSegments(form.fields ?? {}, keyTokens(hidden))?.visible
+	return typeof visible === 'string' ? visible : undefined
+}
+
+function inapplicableItems(
+	form: Form,
+	runtimeState: FormRuntimeState,
+	done: readonly FillItemState[],
+	fieldValues: Record<string, unknown>,
+	annexValues: Record<string, unknown>,
+): InapplicableFillItem[] {
+	const found = done.flatMap((item): InapplicableFillItem[] => {
+		if (item.visible || item.kind === 'party') return []
+		const value = item.kind === 'annex' ? annexValues[item.key] : valueAtKey(fieldValues, item.key)
+		if (!carriesValue(value)) return []
+		const condition = hidingCondition(form, runtimeState, item)
+		return condition === undefined ? [] : [{ ...item, condition }]
+	})
+	const inside = (item: FillItemState, outer: FillItemState): boolean =>
+		item.kind === 'field' && outer.kind === 'field' && (item.key.startsWith(`${outer.key}.`) || item.key.startsWith(`${outer.key}[`))
+	return found.filter((item) => !found.some((outer) => inside(item, outer)))
+}
+
+/**
+ * The values a fill state lists as not applicable, as problems at the path of
+ * each value, with the condition under which the target applies.
+ */
+export function notApplicableProblems(state: Pick<FillState, 'notApplicable'>): FillBatchProblem[] {
+	return state.notApplicable.map((item) => ({
+		path: `${item.kind === 'annex' ? 'annexes' : 'fields'}.${item.key}`,
+		message: `A value is given, but this ${item.kind} does not apply. It applies when: ${item.condition}`,
+	}))
 }
 
 /**
@@ -173,6 +247,8 @@ export function computeFillState(
 			openOptional: [],
 			blocked: [],
 			done: [],
+			notApplicable: [],
+			unprintedNames: [],
 			candidates: [],
 			next: null,
 		}
@@ -446,6 +522,8 @@ export function computeFillState(
 		openOptional,
 		blocked,
 		done,
+		notApplicable: inapplicableItems(form, runtimeState, done, fieldValues, annexValues),
+		unprintedNames: unprintedPartyNames(form, partyValues),
 		candidates,
 		next: candidates[0] ?? null,
 	}

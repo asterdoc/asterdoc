@@ -186,6 +186,36 @@ describe('get_fill_state targets', () => {
 		expect(parsed.candidates.map((target) => target.key)).toEqual(['hasPet', 'notes'])
 	})
 
+	it('names a value given for a target that does not apply, and leaves the key out when there is none', async () => {
+		const state = await executeGetFillState({ source: 'artifact', artifact: conditionalForm, data: { fields: { hasPet: false, petName: 'Mochi' } } })
+		expect(FillStateOutputSchema.parse(state).not_applicable).toEqual([
+			{ path: 'fields.petName', message: 'A value is given, but this field does not apply. It applies when: fields.hasPet == true' },
+		])
+		const applies = await executeGetFillState({ source: 'artifact', artifact: conditionalForm, data: { fields: { hasPet: true, petName: 'Mochi' } } })
+		expect(applies.errors).toBeUndefined()
+		expect('not_applicable' in applies).toBe(false)
+	})
+
+	it('names a party whose name a PDF layer does not print, and leaves the key out when the name prints', async () => {
+		const splitName = {
+			kind: 'form',
+			name: 'appearance',
+			version: '1.0.0',
+			title: 'Notice of appearance',
+			fields: { matter: { type: 'text', label: 'Matter' } },
+			parties: { client: { label: 'Client', partyType: 'person', min: 1, max: 1 } },
+			layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: 'form.pdf', bindings: { family: 'parties.client.lastName', given: 'parties.client.firstName' } } },
+			defaultLayer: 'pdf',
+		}
+		const nameOnly = await executeGetFillState({ source: 'artifact', artifact: splitName, data: { fields: {}, parties: { client: { name: 'Elena Quintero' } } } })
+		expect(FillStateOutputSchema.parse(nameOnly).unprinted_names).toEqual([
+			{ path: 'parties.client', message: 'The "pdf" layer prints this party\'s name from lastName and firstName, and the party gives none of them. Its name would not print. Give them next to name.' },
+		])
+		const withParts = await executeGetFillState({ source: 'artifact', artifact: splitName, data: { fields: {}, parties: { client: { name: 'Elena Quintero', firstName: 'Elena', lastName: 'Quintero' } } } })
+		expect(withParts.errors).toBeUndefined()
+		expect('unprinted_names' in withParts).toBe(false)
+	})
+
 	it('returns checklist targets of kind item', async () => {
 		const checklist = {
 			kind: 'checklist' as const,

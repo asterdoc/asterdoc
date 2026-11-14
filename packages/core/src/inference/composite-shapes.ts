@@ -67,6 +67,9 @@ const COMPOSITE_JSON_SCHEMAS = Object.fromEntries(
 	Object.entries(COMPOSITE_VALUE_SCHEMAS).map(([type, schema]) => [type, toJsonSchema(schema)]),
 ) as Record<CompositeValueType, JsonSchema>
 
+/** The pattern a phone's `number` must match, as the form payload schema states it. */
+export const PHONE_NUMBER_PATTERN = COMPOSITE_JSON_SCHEMAS.phone.properties?.number?.pattern
+
 /** True when the field type's value is a composite object. */
 export function isCompositeType(type: string | undefined): type is CompositeValueType {
 	return type !== undefined && Object.prototype.hasOwnProperty.call(COMPOSITE_VALUE_SCHEMAS, type)
@@ -114,7 +117,7 @@ const SHAPE_GUIDANCE: Record<CompositeValueType, string> = {
 	coordinate: 'Geographic point. `lat` and `lon` are numbers in decimal degrees.',
 	bbox: 'Geographic bounding box: the `southWest` and `northEast` corners, each `{ lat, lon }` in decimal degrees.',
 	person:
-		'Person. Always give `name`, the full display name. The split-name members are optional; include them only when the user gave them.',
+		'Person. Always give `name`, the full display name. Also give `firstName`, `middleName` and `lastName` when the name has those parts: a form that prints the parts leaves its name boxes empty without them.',
 	organization:
 		'Organization. Always give `name`, the common operating name. The other members are optional registration and tax details.',
 	identification:

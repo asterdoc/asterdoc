@@ -1,0 +1,27 @@
+$schema: https://schema.asterdoc.com/2026-11-10.json
+name: pet-addendum
+version: 1.0.0
+title: Pet Addendum
+kind: form
+fields:
+  name:
+    label: Name
+    description: The name of the pet
+    required: true
+    type: text
+  hasVaccination:
+    label: Has Vaccination
+    required: true
+    type: boolean
+defs:
+  vaccinatedName:
+    type: string
+    value: "fields.hasVaccination ? fields.name : ''"
+defaultLayer: default
+layers:
+  default:
+    kind: file
+    mimeType: application/pdf
+    path: ./pet-addendum-bindings.pdf
+    bindings:
+      pet_name: defs.vaccinatedName

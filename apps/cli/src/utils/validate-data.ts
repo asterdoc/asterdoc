@@ -8,6 +8,9 @@
 import {
   form as formApi,
   FormValidationError,
+  type DraftForm,
+  type FillBatch,
+  type FillBatchProblem,
   type Form,
   type FormValidationResult,
   type ValidationError,
@@ -23,15 +26,35 @@ export type PayloadValidationResult =
   | { success: true; data: FilledPayload }
   | { success: false; errors: ValidationError[]; ruleErrors: RuleValidationResult[] }
 
+type PayloadFailure = Extract<PayloadValidationResult, { success: false }>
+
+/** The payload of a draft: complete or not, each value in it was accepted. */
+export type DraftValidationResult =
+  | { success: true; data: FilledPayload; open: string[] }
+  | PayloadFailure
+
+function fillFailure(error: Error): PayloadFailure {
+  if (error instanceof FormValidationError) return { success: false, errors: error.errors, ruleErrors: [] }
+  return { success: false, errors: [{ field: 'root', message: error.message }], ruleErrors: [] }
+}
+
+function filledPayload(draft: DraftForm<Form>): FilledPayload {
+  return {
+    fields: draft.fields,
+    ...(Object.keys(draft.parties).length > 0 && { parties: draft.parties }),
+    ...(Object.keys(draft.annexes).length > 0 && { annexes: draft.annexes }),
+  }
+}
+
+/** The faults a fill batch finds in the values given: more values do not correct them. */
+export function batchProblems(batch: FillBatch): FillBatchProblem[] {
+  return [...batch.issues, ...batch.notApplicable, ...batch.unprintedNames]
+}
+
 /** Fill the form with the payload and validate it, as the SDK does. */
 export function validateFormPayload(formDef: Form, payload: Record<string, unknown>): PayloadValidationResult {
   const filled = formApi.from(formDef).safeFill(payload as never)
-  if (!filled.success) {
-    if (filled.error instanceof FormValidationError) {
-      return { success: false, errors: filled.error.errors, ruleErrors: [] }
-    }
-    return { success: false, errors: [{ field: 'root', message: filled.error.message }], ruleErrors: [] }
-  }
+  if (!filled.success) return fillFailure(filled.error)
 
   const draft = filled.data
   const result = draft.validate()
@@ -39,14 +62,34 @@ export function validateFormPayload(formDef: Form, payload: Record<string, unkno
     return { success: false, errors: result.errors, ruleErrors: result.rules.errors }
   }
 
-  return {
-    success: true,
-    data: {
-      fields: draft.fields,
-      ...(Object.keys(draft.parties).length > 0 && { parties: draft.parties }),
-      ...(Object.keys(draft.annexes).length > 0 && { annexes: draft.annexes }),
-    },
+  return { success: true, data: filledPayload(draft) }
+}
+
+const TARGET_ROOTS = { field: 'fields', party: 'parties', annex: 'annexes' } as const
+
+/**
+ * Fill the form with a payload that may not be complete. A value the form
+ * refuses and a fault in the values given fail as in `validateFormPayload`.
+ * A required field, party or annex that is absent and a rule that is not met
+ * do not: each is returned in `open`, as the line `validateFormPayload`
+ * reports for it.
+ */
+export function validateDraftPayload(formDef: Form, payload: Record<string, unknown>): DraftValidationResult {
+  const filled = formApi.from(formDef).safeFill(payload as never)
+  if (!filled.success) return fillFailure(filled.error)
+
+  const draft = filled.data
+  const batch = draft.getFillBatch()
+  const problems = batchProblems(batch)
+  if (problems.length > 0) {
+    return { success: false, errors: problems.map((problem) => ({ field: problem.path || 'root', message: problem.message })), ruleErrors: [] }
   }
+
+  const result = draft.validate()
+  const openTargets = new Set(batch.open.filter((target) => target.required).map((target) => `${TARGET_ROOTS[target.kind]}.${target.key}`))
+  const faults = result.errors.filter((error) => !openTargets.has(error.field))
+  if (faults.length > 0) return { success: false, errors: faults, ruleErrors: [] }
+  return { success: true, data: filledPayload(draft), open: result.valid ? [] : formatPayloadErrors(result.errors, result.rules.errors) }
 }
 
 /** Print validation errors and failed rules, one per line. */
