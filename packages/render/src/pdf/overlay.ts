@@ -1,6 +1,7 @@
 import { unzlibSync, zlibSync } from 'fflate'
 import type { PdfFont, PdfFontSet } from './drawing-fonts'
 import { MIN_FONT_SIZE, PdfFieldFillError, type DrawingFont } from './field-appearance'
+import { artifactPath } from '../layer-bindings'
 import { type PdfRef, PdfModel, type PdfValue } from './syntax'
 import { addPageResource, appendPageContent, documentPages } from './page-tree'
 
@@ -74,6 +75,16 @@ function fittedFontSize(text: string, overlay: PdfTextOverlay, font: DrawingFont
     throw new PdfFieldFillError(subject, 'overflow', { limit: floor }, `the text does not fit its ${width} pt width at the minimum size of ${floor} pt`)
   }
   return size
+}
+
+function fittedFont(fonts: PdfFontSet, overlay: PdfTextOverlay, text: string, subject: string) {
+  try {
+    const font = fonts.select(subject, text, undefined, overlay.font)
+    return { font, size: fittedFontSize(text, overlay, font, subject) }
+  } catch (error) {
+    if (error instanceof PdfFieldFillError && 'field' in overlay && overlay.field) throw error.withPaths([artifactPath(overlay.field)])
+    throw error
+  }
 }
 
 function readUint32(bytes: Uint8Array, offset: number): number {
@@ -270,13 +281,12 @@ export function applyPdfOverlays(
       }
       const text = String(textValue(overlay, read) ?? '').replace(/\r\n|\r|\n/g, ' ')
       const subject = overlaySubject(overlay, overlays.indexOf(overlay))
-      const font = fonts.select(subject, text, undefined, overlay.font)
+      const { font, size } = fittedFont(fonts, overlay, text, subject)
       let fontName = pageFonts.get(font.resourceName)
       if (fontName === undefined) {
         fontName = addPageResource(model, page, 'Font', font.resourceName, font.reference())
         pageFonts.set(font.resourceName, fontName)
       }
-      const size = fittedFontSize(text, overlay, font, subject)
       const x = overlay.x + (overlay.width === undefined ? 0 : 1)
       const y = overlay.y + (overlay.height === undefined ? 0 : Math.max(1, (overlay.height - size) / 2))
       const [red, green, blue] = (overlay.color ?? [0, 0, 0]).map(component)

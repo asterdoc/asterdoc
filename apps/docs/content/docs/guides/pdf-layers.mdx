@@ -268,8 +268,25 @@ pdf: {
 }
 ```
 
-Scripts that need shaping, such as Arabic or Devanagari, are refused; render
-those documents from a [React composition layer](/guides/react-layers). See
+A value with a character that no font of the layer can draw stops the render.
+The error names the PDF field, the artifact value it prints, and the character:
+
+```text
+Cannot fill PDF field "form1[0].Page1[0].NativeName[0]" with fields.nameInNativeAlphabet: no available font can draw "王" (U+738B). Declare a font that has this character on the PDF layer of the artifact: "font": { "path": "<file>.ttf" }. The SDK can also take a font for one render: pdfRenderer({ font }).
+```
+
+To correct it, declare a font on the layer that has the character, as shown
+above. The `asterdoc render` command uses the fonts of the layer only. A host
+application that uses the SDK can also pass a font at render time.
+
+`asterdoc validate` finds this before the first render. It prints the values
+of each test in the artifact's `tests` with the fonts of each PDF layer, and
+reports each value that they cannot draw. The error names the layer, the test,
+the PDF field and the artifact path. So when a form takes names in other
+scripts, give it a test with such a name.
+
+Scripts that need shaping, such as Arabic or Devanagari, are refused whatever
+the font; render those documents from a [React composition layer](/guides/react-layers). See
 [Fonts](/sdk/renderers/pdf#fonts) for the full font order.
 </Step>
 

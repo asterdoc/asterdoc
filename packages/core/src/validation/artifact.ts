@@ -332,6 +332,8 @@ function readOnce(resolver: Resolver): Resolver {
  *   text field: it fits the box at the minimum font size, and has no more
  *   characters than a comb field has boxes. A bound text field with nothing
  *   bounding its length is a warning;
+ * - for a form, that the fonts of each PDF layer can draw the values of each
+ *   test in `tests`, as a render of the test's draft prints them;
  * - for a form, that a stored value a layer prints with a country or region
  *   format normalizes; a default that does not is a warning.
  * - for a form, a warning for each layer or PDF binding that prints person

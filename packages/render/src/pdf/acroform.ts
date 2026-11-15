@@ -273,28 +273,53 @@ function choiceOptions(model: PdfModel, field: AcroField): Array<{ value: string
   })
 }
 
-function setChoiceValue(model: PdfModel, fonts: PdfFontSet, field: AcroField, value: unknown): void {
+interface ChoiceSelection {
+  multiSelect: boolean
+  selected: string[]
+  options: Array<{ value: string; display: string }>
+  drawn: DrawnValue
+}
+
+function choiceSelection(model: PdfModel, field: AcroField, value: unknown): ChoiceSelection {
   const multiSelect = (field.flags & MULTI_SELECT) !== 0
   const selected = multiSelect && Array.isArray(value) ? value.map(String) : [String(value)]
   const options = choiceOptions(model, field)
+  const shown = selected.map((item) => options.find((option) => option.value === item)?.display ?? item)
+  const listBox = (field.flags & COMBO) === 0
+  return { multiSelect, selected, options, drawn: { text: listBox ? shown.join('\n') : shown.join(', '), multiline: listBox } }
+}
+
+function setChoiceValue(model: PdfModel, fonts: PdfFontSet, field: AcroField, value: unknown): void {
+  const { multiSelect, selected, options, drawn } = choiceSelection(model, field, value)
   const stored = selected.map(encodeTextString)
   field.dict.entries.set('V', multiSelect && stored.length !== 1 ? stored : stored[0] ?? '')
   const indices = selected.map((item) => options.findIndex((option) => option.value === item))
   if (indices.length > 0 && indices.every((index) => index >= 0)) {
     field.dict.entries.set('I', [...new Set(indices)].sort((left, right) => left - right))
   } else field.dict.entries.delete('I')
-  const shown = selected.map((item) => options.find((option) => option.value === item)?.display ?? item)
-  const listBox = (field.flags & COMBO) === 0
-  field.widgets.forEach((widget) => textAppearance(model, fonts, field, widget, {
-    text: listBox ? shown.join('\n') : shown.join(', '),
-    multiline: listBox,
-  }))
+  field.widgets.forEach((widget) => textAppearance(model, fonts, field, widget, drawn))
 }
 
 function setTextValue(model: PdfModel, fonts: PdfFontSet, field: AcroField, value: unknown): void {
   const text = String(value)
   field.dict.entries.set('V', encodeTextString(text))
   field.widgets.forEach((widget) => textAppearance(model, fonts, field, widget, { text, ...textFieldDrawing(field) }))
+}
+
+export function drawnFieldText(model: PdfModel, field: AcroField, value: unknown): string | undefined {
+  if (field.type === 'text') return String(value)
+  if (field.type === 'dropdown') return choiceSelection(model, field, value).drawn.text
+  return undefined
+}
+
+export function fieldFontNames(model: PdfModel, field: AcroField): Array<string | undefined> {
+  if (field.type !== 'text' && field.type !== 'dropdown') return []
+  const drawing = textFieldDrawing(field)
+  const names = field.widgets.flatMap((widget) => {
+    const layout = widgetLayout(model, field, widget, drawing)
+    return layout ? [layout.appearance.fontName] : []
+  })
+  return [...new Set(names)]
 }
 
 export function setAcroFieldValue(model: PdfModel, fonts: PdfFontSet, field: AcroField, value: unknown): void {

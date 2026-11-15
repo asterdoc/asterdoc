@@ -18,6 +18,7 @@ export type { FontProgramProblem as PdfFontProblem } from './pdf/truetype'
 export type { RenderPdfOptions } from './pdf/render'
 export { pdfRenderer } from './pdf/renderer'
 export type { PdfRendererOptions } from './pdf/renderer'
+export { pdfFontCheck } from './pdf/value-fonts'
 export type { PdfImageOverlay, PdfOverlay, PdfTextOverlay } from './pdf/overlay'
 export {
 	FieldType,

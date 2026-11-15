@@ -152,7 +152,8 @@ alignment, color, comb boxes, and multiline wrapping; a list box shows every
 selected value. A value that does not fit shrinks to `MIN_FONT_SIZE` (6 points).
 Past that, or with more characters than a comb field has boxes, the render throws
 `PdfFieldFillError` with the field name, the `reason` (`overflow` or
-`comb-length`), and the `limit`.
+`comb-length`), and the `limit`. Its `paths` are the artifact paths the field
+prints, such as `fields.fullName`.
 
 Each value, and each overlay text, uses the first font that can draw all of it:
 the overlay's own `font` when it names one, then `font` (supplied at render

@@ -11,11 +11,13 @@ export interface PdfFieldFillDetail {
   character?: string
   /** For `unsupported-script`, the script that needs glyph shaping. */
   script?: string
+  /** The artifact paths the field prints, as fill data names them, such as `fields.fullName`. */
+  paths?: readonly string[]
 }
 
 /**
  * Thrown when a value cannot be drawn faithfully in a PDF form field or a text
- * overlay, naming the field and why.
+ * overlay, naming the field, the artifact paths it prints, and why.
  */
 export class PdfFieldFillError extends Error {
   /** Fully qualified name of the PDF form field, or the overlay that failed. */
@@ -24,15 +26,39 @@ export class PdfFieldFillError extends Error {
   readonly limit?: number
   readonly character?: string
   readonly script?: string
+  /**
+   * The artifact paths whose values the field prints, as fill data names
+   * them: `fields.fullName`, `parties.client.lastName`. A template binding
+   * gives each path its template reads. Absent when the text was not read
+   * from artifact data, as for an overlay with fixed text.
+   */
+  readonly paths?: readonly string[]
+  private readonly problem: string
 
   constructor(field: string, reason: PdfFieldFillReason, detail: PdfFieldFillDetail, message: string) {
-    super(`Cannot fill PDF field "${field}": ${message}`)
+    const paths = detail.paths && detail.paths.length > 0 ? [...new Set(detail.paths)] : undefined
+    super(`Cannot fill PDF field "${field}"${paths ? ` with ${paths.join(', ')}` : ''}: ${message}`)
     this.name = 'PdfFieldFillError'
     this.field = field
     this.reason = reason
+    this.problem = message
     if (detail.limit !== undefined) this.limit = detail.limit
     if (detail.character !== undefined) this.character = detail.character
     if (detail.script !== undefined) this.script = detail.script
+    if (paths) this.paths = paths
+  }
+
+  /**
+   * The same failure, naming the artifact paths the field prints, so that
+   * whoever wrote the data can find the value that was refused.
+   */
+  withPaths(paths: readonly string[]): PdfFieldFillError {
+    return new PdfFieldFillError(this.field, this.reason, {
+      ...(this.limit !== undefined && { limit: this.limit }),
+      ...(this.character !== undefined && { character: this.character }),
+      ...(this.script !== undefined && { script: this.script }),
+      paths,
+    }, this.problem)
   }
 }
 

@@ -1,5 +1,5 @@
 import type { Form, FormTestCase } from '@asterdoc/types'
-import type { FormInstance, ProgressiveFormPayload } from './form'
+import type { FormInstance, ProgressiveFormPayload, SafeFillResult } from './form'
 import { sensitiveInputPaths } from '@/logic/shared/sensitive-values'
 
 /** One test case's outcome. */
@@ -44,13 +44,22 @@ function sameIds(actual: readonly string[], expected: readonly string[]): boolea
 	return actual.length === wanted.size && actual.every((id) => wanted.has(id))
 }
 
-function outcome(form: FormInstance<Form>, test: FormTestCase): Pick<FormTestResult, 'valid' | 'failures' | 'errors'> {
-	const asOf = test.context?.asOf
-	const filled = form.safeFill(undefined, asOf === undefined ? undefined : { context: { asOf } })
-	if (!filled.success) return { valid: false, failures: [], errors: refusal(filled.error) }
-	const updated = filled.data.safeUpdate(test.input as ProgressiveFormPayload<Form>)
-	if (!updated.success) return { valid: false, failures: [], errors: refusal(updated.error) }
-	const validation = updated.data.validate()
+export function testDrafts(form: FormInstance<Form>): (test: FormTestCase) => SafeFillResult<Form> {
+	const empty = new Map<string | undefined, SafeFillResult<Form>>()
+	return (test) => {
+		const asOf = test.context?.asOf
+		let filled = empty.get(asOf)
+		if (!filled) {
+			filled = form.safeFill(undefined, asOf === undefined ? undefined : { context: { asOf } })
+			empty.set(asOf, filled)
+		}
+		return filled.success ? filled.data.safeUpdate(test.input as ProgressiveFormPayload<Form>) : filled
+	}
+}
+
+function outcome(draft: SafeFillResult<Form>): Pick<FormTestResult, 'valid' | 'failures' | 'errors'> {
+	if (!draft.success) return { valid: false, failures: [], errors: refusal(draft.error) }
+	const validation = draft.data.validate()
 	return {
 		valid: validation.valid,
 		failures: validation.rules.rules.filter((rule) => !rule.passed).map((rule) => rule.ruleId).sort(),
@@ -60,8 +69,9 @@ function outcome(form: FormInstance<Form>, test: FormTestCase): Pick<FormTestRes
 
 /** Run each of a form's test cases on an empty draft and compare the outcome. */
 export function runFormTests(definition: Form, form: FormInstance<Form>): FormTestReport {
+	const draftOf = testDrafts(form)
 	const results = (definition.tests ?? []).map((test): FormTestResult => {
-		const actual = outcome(form, test)
+		const actual = outcome(draftOf(test))
 		const passed = actual.valid === test.expect.valid
 			&& (test.expect.failures === undefined || sameIds(actual.failures, test.expect.failures))
 		return {

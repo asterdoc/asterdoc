@@ -12,6 +12,7 @@ import {
 } from '../text/field-formatter'
 import { getPath, pathSegments } from '../path'
 import {
+  artifactPath,
   assertBindingFormats,
   bindingDataPath,
   containsMask,
@@ -29,6 +30,7 @@ import { printValuePart } from '../parts/print'
 import { acroFields, setAcroFieldValue, type AcroField } from './acroform'
 import { bindingTemplatePrinter } from './binding-template'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
+import { PdfFieldFillError } from './field-appearance'
 import { applyPdfOverlays, type PdfOverlay } from './overlay'
 import { PdfModel } from './syntax'
 
@@ -58,11 +60,10 @@ export interface RenderPdfOptions {
   format?: LayerFormat
 }
 
-function assign(field: AcroField | undefined, value: unknown, model: PdfModel, fonts: PdfFontSet): void {
-  if (!field || value === null || value === undefined) return
-  setAcroFieldValue(model, fonts, field, field.type === 'checkbox' || field.type === 'radio' || field.type === 'dropdown'
+export function assignedValue(field: AcroField, value: unknown): unknown {
+  return field.type === 'checkbox' || field.type === 'radio' || field.type === 'dropdown'
     ? unwrapFormattedValue(value)
-    : value)
+    : value
 }
 
 function declaresFormat(binding: Bindings[string]): boolean {
@@ -146,6 +147,105 @@ function assertListBindingCapacity(
   for (const [key, field] of Object.entries(form.fields)) visit(field, data[key], [key])
 }
 
+interface DataValues {
+  data: Record<string, unknown>
+  preprocessed: Record<string, unknown>
+  read(source: string, bindingFormat?: ValueFormat, part?: ValuePart): unknown
+  printTemplate(binding: ParsedLayerBinding): string | undefined
+}
+
+interface BoundValue {
+  field: string
+  paths: string[]
+  value(values: DataValues): unknown
+}
+
+type LayerValuesOptions = Pick<RenderPdfOptions, 'form' | 'bindings' | 'formatter' | 'overlays' | 'format'>
+
+export function layerValues({ form, bindings, formatter = defaultFormatter, overlays = [], format }: LayerValuesOptions) {
+  const parsed = parseBindings(bindings ?? {})
+  const perValue = form !== undefined && (
+    hasNewFormatOptions(format) ||
+    Object.values(bindings ?? {}).some(declaresFormat) ||
+    readsMaskedField(form, parsed, bindings, overlays)
+  )
+  let asserted = false
+  const assertBindings = (): void => {
+    if (asserted) return
+    if (form) {
+      const sources = parsed.flatMap(({ parts }) => parts.map((part) => part.source))
+      sources.push(...overlays.flatMap((overlay) => 'field' in overlay && overlay.field ? [overlay.field] : []))
+      validateFieldBindings(form, Object.fromEntries(sources.map((source, index) => [String(index), source])))
+    }
+    assertBindingFormats(form, parsed)
+    asserted = true
+  }
+  const caseLocale = (bindingFormat: ValueFormat | undefined) => formatterFor(formatter, mergeFormats(format, bindingFormat)).locale
+  const layerCasedPart = (part: string, definition: FormField | undefined): string =>
+    format?.case === 'upper' && !CASE_KEEPING_TYPES.has(definition?.type ?? '') ? part.toLocaleUpperCase(caseLocale(undefined)) : part
+  const bindingCase = (value: unknown, bindingFormat: ValueFormat | undefined): unknown =>
+    bindingFormat?.case === undefined ? value : bindingCased(value, bindingFormat, caseLocale(bindingFormat))
+
+  const bindingValue = (binding: ParsedLayerBinding): BoundValue['value'] => ({ data, read, printTemplate }) => {
+    if (binding.template) return printTemplate(binding)
+    const { parts, format: bindingFormat, part: valuePart } = binding
+    const { path, qualifier, source } = parts[0]!
+    if (qualifier === undefined) return bindingCase(read(source, bindingFormat, valuePart), bindingFormat)
+    const value = getPath(data, renderDataPath(data, source))
+    if (typeof value === 'boolean') return value
+    if (Array.isArray(value)) return value.includes(qualifier)
+    const definition = fieldDefinition(form, path)
+    if (definition?.type === 'enum') return String(value) === qualifier
+    const index = splitPartIndex(qualifier)
+    if (index === undefined || value === null || value === undefined) return undefined
+    const part = splitPart(definition, value, index, definition ? `fields.${path}` : renderDataPath(data, source))
+    return part ? layerCasedPart(part, definition) : undefined
+  }
+
+  // Bindings given, even none, replace filling PDF fields by field id.
+  const bound: BoundValue[] = bindings
+    ? parsed.map((binding) => ({
+        field: binding.field,
+        paths: [...new Set(binding.parts.map((part) => artifactPath(part.source)))],
+        value: bindingValue(binding),
+      }))
+    : (Object.entries(form?.fields ?? {}) as [string, FormField][])
+        .filter(([, definition]) => definition.type !== 'fieldset')
+        .map(([name]) => ({
+          field: name,
+          paths: [`fields.${name}`],
+          value: ({ data, preprocessed, read }) => perValue
+            ? read(name) ?? data[name]
+            : (preprocessed.fields as Record<string, unknown> | undefined)?.[name] ?? preprocessed[name],
+        }))
+
+  return {
+    parsed,
+    bound,
+    fills: parsed.length > 0 || Boolean(form?.fields && Object.keys(form.fields).length > 0),
+    of(data: Record<string, unknown>, expressions?: TemplateExpressionOptions): DataValues {
+      const preprocessed = form && !perValue
+        ? formatFieldData(data, form, formatter, formatFieldOptions(format, { choices: 'value' }))
+        : data
+      assertBindings()
+      const read = (source: string, bindingFormat?: ValueFormat, part?: ValuePart): unknown => {
+        if (!form || !perValue) return getPath(preprocessed, renderDataPath(preprocessed, source))
+        const effective = mergeFormats(format, bindingFormat)
+        if (part !== undefined) {
+          const declared = bindingDeclaration(form, source)!
+          return printValuePart(formatterFor(formatter, effective), declared.kind, getPath(data, renderDataPath(data, source)), part, declared.path, { ...(effective?.phone && { phone: effective.phone }) })
+        }
+        const options = formatFieldOptions(effective, { choices: 'value' })
+        if (bindingFormat?.case !== undefined) delete options.case
+        return formatValueAt(data, form, formatterFor(formatter, effective), source, options)
+      }
+      const printTemplate = bindingTemplatePrinter({ data, form, formatter, format, expressions })
+      assertListBindingCapacity(form, data, parsed)
+      return { data, preprocessed, read, printTemplate }
+    },
+  }
+}
+
 export async function renderPdf(options: RenderPdfOptions): Promise<BinaryContent> {
   try {
     return await renderPdfWithValues(options)
@@ -166,50 +266,18 @@ async function renderPdfWithValues({
   layerFont,
   format,
 }: RenderPdfOptions): Promise<BinaryContent> {
-  const parsed = parseBindings(bindings ?? {})
-  const perValue = form !== undefined && (
-    hasNewFormatOptions(format) ||
-    Object.values(bindings ?? {}).some(declaresFormat) ||
-    readsMaskedField(form, parsed, bindings, overlays)
-  )
-  const preprocessed = form && !perValue
-    ? formatFieldData(data, form, formatter, formatFieldOptions(format, { choices: 'value' }))
-    : data
-  if (form) {
-    const sources = parsed.flatMap(({ parts }) => parts.map((part) => part.source))
-    sources.push(...overlays.flatMap((overlay) => 'field' in overlay && overlay.field ? [overlay.field] : []))
-    validateFieldBindings(form, Object.fromEntries(sources.map((source, index) => [String(index), source])))
-  }
-  assertBindingFormats(form, parsed)
-  const read = (source: string, bindingFormat?: ValueFormat, part?: ValuePart): unknown => {
-    if (!form || !perValue) return getPath(preprocessed, renderDataPath(preprocessed, source))
-    const effective = mergeFormats(format, bindingFormat)
-    if (part !== undefined) {
-      const declared = bindingDeclaration(form, source)!
-      return printValuePart(formatterFor(formatter, effective), declared.kind, getPath(data, renderDataPath(data, source)), part, declared.path, { ...(effective?.phone && { phone: effective.phone }) })
-    }
-    const options = formatFieldOptions(effective, { choices: 'value' })
-    if (bindingFormat?.case !== undefined) delete options.case
-    return formatValueAt(data, form, formatterFor(formatter, effective), source, options)
-  }
-  const layerCasedPart = (part: string, definition: FormField | undefined): string =>
-    format?.case === 'upper' && !CASE_KEEPING_TYPES.has(definition?.type ?? '') ? part.toLocaleUpperCase(caseLocale(undefined)) : part
-  const caseLocale = (bindingFormat: ValueFormat | undefined) => formatterFor(formatter, mergeFormats(format, bindingFormat)).locale
-  const bindingCase = (value: unknown, bindingFormat: ValueFormat | undefined): unknown =>
-    bindingFormat?.case === undefined ? value : bindingCased(value, bindingFormat, caseLocale(bindingFormat))
-  const printTemplate = bindingTemplatePrinter({ data, form, formatter, format, expressions })
-  assertListBindingCapacity(form, data, parsed)
+  const layer = layerValues({ form, bindings, formatter, overlays, format })
+  const values = layer.of(data, expressions)
   const model = await PdfModel.load(template)
   const fonts = PdfFontSet.create(model, { font, layerFont })
   let droppedXfa = false
-  const shouldFill = parsed.length > 0 || Boolean(form?.fields && Object.keys(form.fields).length > 0)
 
-  if (shouldFill) {
+  if (layer.fills) {
     // Ordinary PDFs can still receive coordinate overlays without AcroForm fields.
     const acroFormData = acroFields(model)
 
     const byName = new Map((acroFormData?.fields ?? []).map((field) => [field.name, field]))
-    const unmatched = parsed.map(({ field }) => field).filter((pdfName) => !byName.has(pdfName))
+    const unmatched = layer.parsed.map(({ field }) => field).filter((pdfName) => !byName.has(pdfName))
     if (unmatched.length > 0) {
       throw new PdfBindingKeyError(unmatched, [...byName.keys()])
     }
@@ -224,47 +292,21 @@ async function renderPdfWithValues({
       droppedXfa = acroForm.entries.delete('XFA')
       model.markUpdated(acroRef ?? catalogRef)
       if (model.dict(catalogRef)?.entries.delete('NeedsRendering')) model.markUpdated(catalogRef)
-      // Bindings given, even none, replace filling PDF fields by field id.
-      if (bindings) {
-        for (const binding of parsed) {
-          const { field: pdfName, parts, format: bindingFormat, part: valuePart } = binding
-          const field = byName.get(pdfName)
-          if (binding.template) {
-            assign(field, printTemplate(binding), model, fonts)
-            continue
-          }
-          const { path, qualifier } = parts[0]!
-          if (qualifier !== undefined) {
-            const value = getPath(data, renderDataPath(data, parts[0]!.source))
-            if (typeof value === 'boolean') assign(field, value, model, fonts)
-            else if (Array.isArray(value)) assign(field, value.includes(qualifier), model, fonts)
-            else if (fieldDefinition(form, path)?.type === 'enum') assign(field, String(value) === qualifier, model, fonts)
-            else {
-              const index = splitPartIndex(qualifier)
-              if (index !== undefined && value !== null && value !== undefined) {
-                const definition = fieldDefinition(form, path)
-                const part = splitPart(definition, value, index, definition ? `fields.${path}` : renderDataPath(data, parts[0]!.source))
-                if (part) assign(field, layerCasedPart(part, definition), model, fonts)
-              }
-            }
-            continue
-          }
-          assign(field, bindingCase(read(parts[0]!.source, bindingFormat, valuePart), bindingFormat), model, fonts)
-        }
-      } else if (form) {
-        for (const [name, definition] of Object.entries(form.fields ?? {}) as [string, FormField][]) {
-          if (definition.type === 'fieldset') continue
-          if (perValue && !byName.has(name)) continue
-          const value = perValue
-            ? read(name) ?? data[name]
-            : (preprocessed.fields as Record<string, unknown> | undefined)?.[name] ?? preprocessed[name]
-          assign(byName.get(name), value, model, fonts)
+      for (const bound of layer.bound) {
+        const field = byName.get(bound.field)
+        if (!field) continue
+        const value = bound.value(values)
+        if (value === null || value === undefined) continue
+        try {
+          setAcroFieldValue(model, fonts, field, assignedValue(field, value))
+        } catch (error) {
+          throw error instanceof PdfFieldFillError ? error.withPaths(bound.paths) : error
         }
       }
     }
   }
 
-  applyPdfOverlays(model, overlays, (path) => read(path), fonts)
+  applyPdfOverlays(model, overlays, (path) => values.read(path), fonts)
   fonts.finish()
   return droppedXfa ? model.rewrite() : model.save()
 }

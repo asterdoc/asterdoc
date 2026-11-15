@@ -359,7 +359,7 @@ export class PdfFontSet {
         subject,
         'unsupported-script',
         { script },
-        `the value contains ${script} script, which needs glyph shaping that PDF form filling and overlays do not do. ` +
+        `the value contains ${script} script, which needs glyph shaping that PDF form filling and overlays do not do, whatever the font. ` +
           'Render documents in this script from a React composition layer.',
       )
     }
@@ -384,9 +384,9 @@ export class PdfFontSet {
       'missing-glyph',
       { character },
       (uncovered
-        ? `no available font can draw "${character}" (${code}).`
-        : `no single available font can draw every character of the value; the first font lacks "${character}" (${code}).`) +
-        ' Declare a font that covers the value on the PDF layer, or supply one at render time.',
+        ? `no available font can draw "${character}" (${code}). Declare a font that has this character`
+        : `no single available font can draw every character of the value; the first font lacks "${character}" (${code}). Declare a font that has every character of the value`) +
+        ' on the PDF layer of the artifact: "font": { "path": "<file>.ttf" }. The SDK can also take a font for one render: pdfRenderer({ font }).',
     )
   }
 

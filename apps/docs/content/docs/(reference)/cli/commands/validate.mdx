@@ -50,6 +50,8 @@ A form's PDF layer `bindings` map AcroForm field names (keys) to Asterdoc paths 
 
 For a form's PDF layer, each binding to a text field is checked at the bound field's length limit. A typical value of that length that cannot fit the box at 6 points, an option value that cannot fit, or more characters than a comb field has boxes is an error naming the layer, the PDF field, the artifact path, and the limit. When only the widest value (all `W`) overflows, or a bound text field has no `maxLength` or `pattern`, it is a warning. See [Checking bindings before filling](/sdk/renderers/pdf#checking-bindings-before-filling).
 
+The values of each test in the form's `tests` are also printed, without drawing, with the fonts of each PDF layer: the layer's declared `font`, the form's own font for the field, and Helvetica. A test value with a character that none of them can draw, or in a script that needs shaping, is an error naming the layer, the test, the PDF field, the artifact path, and the character or the script. A render of that data would fail with the same message. Declare a `font` on the PDF layer that has the character, or change the test value. See [Fonts](/sdk/renderers/pdf#fonts).
+
 ### Layer references
 
 Each of these is an error that names the layer, slot, or role at fault. Render or seal would fail on each one:

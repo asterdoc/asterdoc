@@ -12,7 +12,9 @@ import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type { Bindings, FileLayer, Form, Resolver } from '@asterdoc/types'
 import { isPdfMimeType } from '@asterdoc/schemas'
 import { parseBinding, PdfBindingSyntaxError, resolveLayerBindings } from '@asterdoc/render'
-import { checkPdfBindingFit, findPdfLabelCollisions, inspectAcroFormFields, type PdfBindingFitIssue, type PdfFieldInfo } from '@asterdoc/render/pdf'
+import { checkPdfBindingFit, findPdfLabelCollisions, inspectAcroFormFields, pdfFontCheck, type PdfBindingFitIssue, type PdfFieldFillError, type PdfFieldInfo } from '@asterdoc/render/pdf'
+import { form as formApi } from '@/artifacts/form/form'
+import { testDrafts } from '@/artifacts/form/form-tests'
 
 /** A validation issue with the severity the validation model gives it. */
 export interface LayerValidationIssue extends StandardSchemaV1.Issue {
@@ -81,6 +83,48 @@ function templateFieldIssues(layerKey: string, layer: FileLayer, fields: readonl
   return issues
 }
 
+function refusedOnce(refused: readonly PdfFieldFillError[]): PdfFieldFillError[] {
+  const reported: PdfFieldFillError[] = []
+  for (const error of refused) {
+    const paths = error.paths ?? []
+    const repeats = reported.some((earlier) => {
+      const known = earlier.paths ?? []
+      const samePaths = known.length === paths.length && known.every((path) => paths.includes(path))
+      const sameCause = earlier.character === error.character && earlier.script === error.script && known.every((path) => paths.includes(path))
+      return samePaths || (known.length > 0 && sameCause)
+    })
+    if (!repeats) reported.push(error)
+  }
+  return reported
+}
+
+async function testValueFontIssues(form: Form, resolver: Resolver, layerKeys: readonly string[]): Promise<LayerValidationIssue[]> {
+  const tests = form.tests ?? []
+  if (tests.length === 0 || layerKeys.length === 0) return []
+  const draftOf = testDrafts(formApi.from(form, { resolver }))
+  const checks = new Map(layerKeys.map((key) => [key, pdfFontCheck()]))
+  const issues: LayerValidationIssue[] = []
+  for (const test of tests) {
+    const draft = draftOf(test)
+    if (!draft.success) continue
+    for (const [key, renderer] of checks) {
+      let refused: PdfFieldFillError[]
+      try {
+        refused = await draft.data.render({ layer: key, renderer })
+      } catch {
+        checks.delete(key)
+        continue
+      }
+      issues.push(...refusedOnce(refused).map((error) => ({
+        message: `Layer "${key}", test "${test.name}": a render of the values of this test fails. ${error.message}`,
+        path: ['layers', key, 'bindings', error.field],
+        severity: 'error' as const,
+      })))
+    }
+  }
+  return issues
+}
+
 /**
  * Check every file-backed PDF layer of a form: each binding key must name an
  * AcroForm field of the template, a template binding must fill a text field
@@ -90,11 +134,15 @@ function templateFieldIssues(layerKey: string, layer: FileLayer, fields: readonl
  * value that cannot fit are errors; a text
  * field with no length bound, and labels the format prints that reading the
  * PDF back cannot tell apart, are warnings.
+ * Each test of the form is then rendered without drawing: a value of a test
+ * that the fonts of the layer cannot draw is an error naming the layer, the
+ * test, the PDF field and the artifact path.
  * A template that cannot be read is skipped: `validateFileReferences` reports it.
  */
 export async function validatePdfLayers(form: Form, resolver: Resolver): Promise<LayerValidationIssue[]> {
   const layers = form.layers ?? {}
   const issues: LayerValidationIssue[] = []
+  const checked: string[] = []
   for (const [key, layer] of Object.entries(layers)) {
     if (layer.kind !== 'file' || !isPdfMimeType(layer.mimeType)) continue
     const fileLayer = layer as FileLayer
@@ -127,6 +175,7 @@ export async function validatePdfLayers(form: Form, resolver: Resolver): Promise
         path: bindings ? ['layers', key, 'bindings', collision.field] : ['layers', key, 'format'],
         severity: 'warning' as const,
       })))
+      checked.push(key)
     } catch (error) {
       issues.push({
         message: `Layer "${key}" could not be checked: ${error instanceof Error ? error.message : String(error)}`,
@@ -135,5 +184,6 @@ export async function validatePdfLayers(form: Form, resolver: Resolver): Promise
       })
     }
   }
+  issues.push(...await testValueFontIssues(form, resolver, checked))
   return issues
 }

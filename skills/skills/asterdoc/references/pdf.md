@@ -289,7 +289,17 @@ Each value uses the first font that can draw all of it: a font passed at render 
 "font": { "path": "fonts/NotoSans-Regular.ttf" }
 ```
 
-Only PDF layers declare a `font`. A character no font can draw fails with `PdfFieldFillError` (`reason: "missing-glyph"`, `character`). Scripts that need shaping (Arabic, Hebrew, Devanagari, Thai, and others) fail with `reason: "unsupported-script"`. For those documents, compose the output with the `asterdoc-react` skill. An unreadable or non-embeddable font fails with `PdfFontError`.
+Only PDF layers declare a `font`. A character no font can draw fails with `PdfFieldFillError` (`reason: "missing-glyph"`, `character`). The error names the PDF field (`field`) and the artifact paths it prints (`paths`):
+
+```text
+Cannot fill PDF field "form1[0].Page1[0].NativeName[0]" with fields.nameInNativeAlphabet: no available font can draw "王" (U+738B). Declare a font that has this character on the PDF layer of the artifact: "font": { "path": "<file>.ttf" }. The SDK can also take a font for one render: pdfRenderer({ font }).
+```
+
+Correct it with a `font` on the PDF layer that has the character. `asterdoc render` has no font option; only the SDK can pass a font at render time.
+
+`asterdoc validate` finds this before the first render: it prints the values of each test in `tests` with the fonts of each PDF layer, and each value they cannot draw is an error that names the layer, the test, the PDF field and the path. When a form takes names in other scripts, write a test with such a name.
+
+Scripts that need shaping (Arabic, Hebrew, Devanagari, Thai, and others) fail with `reason: "unsupported-script"`, whatever the font. For those documents, compose the output with the `asterdoc-react` skill. An unreadable or non-embeddable font fails with `PdfFontError`.
 
 ## Money
 

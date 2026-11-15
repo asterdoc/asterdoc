@@ -309,6 +309,10 @@ export function bindingDataPath(path: string): string {
   return trimmed.startsWith('fields.') ? trimmed.slice('fields.'.length) : trimmed
 }
 
+export function artifactPath(source: string): string {
+  return renderDataPath({ fields: {} }, source)
+}
+
 /** The path used to read a binding from canonical render data. */
 export function renderDataPath(data: Record<string, unknown>, path: string): string {
   const trimmed = path.trim()
