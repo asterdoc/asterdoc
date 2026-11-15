@@ -138,7 +138,7 @@ function rowLines(target: FillBatchTarget, printed: OptionSets): string[] {
 function targetLines(target: FillBatchTarget, pages: number[] | undefined, printed: OptionSets): string[] {
   const details: Array<[string, string | undefined]> = [
     ['shape', target.shape],
-    ['prints', target.prints === undefined ? undefined : `${target.prints.join(', ')} (the form prints these: give each one)`],
+    ['prints', target.prints === undefined ? undefined : `${target.prints.join(', ')} (the form prints these: give each one${target.type === 'any' ? ' that the kind of the party has' : ''})`],
     ['format', target.format],
     ['limits', constraintText(target)],
     ['list', target.kind === 'party' && target.item !== undefined ? `this role takes a list: write an array with one ${target.item} object for each party` : undefined],

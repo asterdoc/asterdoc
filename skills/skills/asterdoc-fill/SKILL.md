@@ -97,5 +97,6 @@ Run the CLI as `asterdoc`, or as `npx asterdoc` where it is not installed.
 | A fact longer than `maxLength` | The form's own short form: an abbreviated street type, or the continuation field the description names |
 | `rows: one object for each row, with these fields:` | An array with one object for each row, with the field names listed under it: `[{ "familyName": "Quintero", "givenName": "Elena" }]` |
 | `(party, person)` | An object under `parties.<role>`, with `name` and each member on its `prints` line: `firstName`, `middleName`, `lastName` |
+| `(party, any)` | The party is a person or an organization. Write the shape of its kind. A person gives `name` and the name parts on the `prints` line. An organization gives `name` and `legalName`; with `name` alone it is read as a person |
 
 `unknown command 'next'` means the CLI is older than this skill: run `npx asterdoc@latest data next ...`.

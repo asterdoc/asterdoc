@@ -251,6 +251,8 @@ Only a required target is marked, with `[required]`; every other target is optio
 
 A list whose rows are objects prints the fields of a row under `rows`, each with its type, options and limits. In `--json`, they are in the `rows` of the list.
 
+A party that can be a person or an organization prints both shapes, and an `input` line that says how the kind is read: an organization gives `legalName` next to `name`, and a party with no organization member is read as a person.
+
 `Problems in the data` lists each value the form refuses. `Rules not met yet` lists the rules that fail. `Warnings` lists values the form accepts but that are probably wrong. `Waiting` counts the targets that can open after more answers.
 
 `--json` gives the same data as one object: `complete`, `problems`, `rules`, `summary`, `open`, `waiting` and `warnings`. Each entry of `open` is in full, and has `conditional: true` when an answer opened it.

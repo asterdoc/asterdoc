@@ -85,6 +85,54 @@ describe('a party whose name prints', () => {
 	})
 })
 
+describe('a party that can be a person or an organization, on a PDF layer that prints the name parts and the legal name', () => {
+	const EITHER = { petitioner: { label: 'Petitioner', partyType: 'any', min: 1, max: 1 } }
+	const BOXES = { family: 'parties.petitioner.lastName', given: 'parties.petitioner.firstName', company: 'parties.petitioner.legalName' }
+	const NONE = 'The "pdf" layer prints this party\'s name from lastName, firstName and legalName, and the party gives none of them. Its name would not print. Give them next to name.'
+
+	test('prints an organization that gives its legal name', () => {
+		const draft = draftOf({ pdf: pdf(BOXES) }, { petitioner: { name: 'Larkmoor Foods', legalName: 'Larkmoor Foods LLC' } }, EITHER)
+		expect(draft.getFillState().unprintedNames).toEqual([])
+		expect(draft.getFillBatch().complete).toBe(true)
+		expect(draft.isValid()).toBe(true)
+	})
+
+	test('prints a person who gives the name parts', () => {
+		const draft = draftOf({ pdf: pdf(BOXES) }, { petitioner: { name: 'Elena Quintero', firstName: 'Elena', lastName: 'Quintero' } }, EITHER)
+		expect(draft.getFillState().unprintedNames).toEqual([])
+		expect(draft.isValid()).toBe(true)
+	})
+
+	test('refuses a party that gives only a full name', () => {
+		const draft = draftOf({ pdf: pdf(BOXES) }, { petitioner: { name: 'Larkmoor Foods' } }, EITHER)
+		expect(draft.validate().errors).toEqual([{ field: 'parties.petitioner', message: NONE }])
+	})
+
+	test('refuses an organization that gives no legal name', () => {
+		const draft = draftOf({ pdf: pdf(BOXES) }, { petitioner: { name: 'Larkmoor Foods', taxId: '49-3306157' } }, EITHER)
+		expect(draft.getFillState().unprintedNames).toEqual([{ role: 'petitioner', index: 0, listed: false, layer: 'pdf', members: ['lastName', 'firstName', 'legalName'] }])
+		expect(draft.isValid()).toBe(false)
+	})
+})
+
+describe('an organization on a PDF layer that prints only the legal name', () => {
+	const COMPANY = { payee: { label: 'Payee', partyType: 'organization', min: 1, max: 1 } }
+	const BOX = { payee: 'parties.payee.legalName' }
+
+	test('is refused when it gives a name and no legal name', () => {
+		const draft = draftOf({ pdf: pdf(BOX) }, { payee: { name: 'Larkmoor Foods', taxId: '49-3306157' } }, COMPANY)
+		expect(draft.validate().errors).toEqual([
+			{ field: 'parties.payee', message: 'The "pdf" layer prints this party\'s name from legalName, and the party gives no value for it. Its name would not print. Give it next to name.' },
+		])
+	})
+
+	test('is accepted when it gives the legal name', () => {
+		const draft = draftOf({ pdf: pdf(BOX) }, { payee: { name: 'Larkmoor Foods', legalName: 'Larkmoor Foods LLC' } }, COMPANY)
+		expect(draft.getFillState().unprintedNames).toEqual([])
+		expect(draft.isValid()).toBe(true)
+	})
+})
+
 describe('the members of a party that a PDF layer prints', () => {
 	test('are listed on the open party target of a fill batch, in binding order', () => {
 		const batch = form.from(definition({ pdf: pdf({ ...SPLIT_NAME, title: 'parties.client.title' }) }) as never).fill({ fields: {} } as never).getFillBatch()

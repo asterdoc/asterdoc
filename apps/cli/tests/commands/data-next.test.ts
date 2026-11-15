@@ -223,6 +223,41 @@ describe('asterdoc data next', () => {
     })
   })
 
+  describe('with a party that can be a person or an organization, on a PDF layer that prints the name parts and the legal name', () => {
+    const fields = { isAttorney: false, name: 'Nadia Calloway', status: 'am_not' }
+    const boxes = { family: 'parties.client.lastName', given: 'parties.client.firstName', company: 'parties.client.legalName' }
+
+    beforeEach(async () => {
+      await write('appearance.json', {
+        ...appearance,
+        parties: { client: { label: 'Client', partyType: 'any', min: 1, max: 1 } },
+        layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: 'appearance.pdf', bindings: boxes } },
+        defaultLayer: 'pdf',
+      })
+    })
+
+    it('gives both shapes, says how the kind is read, and asks only for the printed members that the kind has', async () => {
+      const text = (await runCli(['data', 'next', formFile])).stdout
+      expect(text).toMatch(/\n {2}\[required\] client \(party, any[^\n]*\): Client\n {6}shape: person: \{[^\n]*firstName[^\n]*\} or organization: \{[^\n]*legalName[^\n]*\}\n/)
+      expect(text).toContain('      prints: lastName, firstName, legalName (the form prints these: give each one that the kind of the party has)\n')
+      expect(text).toContain('      input: The members say which kind the party is. For an organization give `legalName` next to `name`')
+    })
+
+    it('is complete for an organization that gives its legal name, and names an organization that gives only a name as a problem', async () => {
+      const company = await next({ fields, parties: { client: { name: 'Larkmoor Foods', legalName: 'Larkmoor Foods LLC' } } })
+      expect(company.problems).toEqual([])
+      expect(company.complete).toBe(true)
+      const nameOnly = await next({ fields, parties: { client: { name: 'Larkmoor Foods' } } })
+      expect(nameOnly.complete).toBe(false)
+      expect(nameOnly.problems).toEqual([
+        {
+          path: 'parties.client',
+          message: 'The "pdf" layer prints this party\'s name from lastName, firstName and legalName, and the party gives none of them. Its name would not print. Give them next to name.',
+        },
+      ])
+    })
+  })
+
   it('stops on a value the form refuses and names the field, without a batch', async () => {
     const output = await next({ fields: { status: 'maybe' } })
     expect(output.complete).toBe(false)

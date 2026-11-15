@@ -1,6 +1,7 @@
 import type { Form, FormField } from '@asterdoc/types'
 import { describeCompositeShape } from '@/inference/composite-shapes'
 import { fieldAtSegments } from '@/logic/shared/sensitive-values'
+import { ORGANIZATION_MEMBERS } from '@/primitives/party'
 import { fieldInputGuidance } from '@/validation/input-guidance'
 import { notApplicableProblems } from './engine'
 import { printedPartyMembers, unprintedNameProblems } from './printed-names'
@@ -85,10 +86,13 @@ function fieldTarget(form: Form, item: FillItemState): FillBatchTarget {
 	return field === undefined ? base : { ...base, ...fieldDetails(field) }
 }
 
+const EITHER_KIND = `The members say which kind the party is. For an organization give \`legalName\` next to \`name\`, with the text of \`name\` when it has no other registered name. A party with none of ${ORGANIZATION_MEMBERS.slice(0, -1).join(', ')} and ${ORGANIZATION_MEMBERS[ORGANIZATION_MEMBERS.length - 1]!} is read as a person.`
+
 function partyTarget(form: Form, item: FillItemState): FillBatchTarget {
 	const party = form.parties?.[item.key]
-	const type = party?.partyType === 'organization' ? 'organization' : 'person'
-	const shape = describeCompositeShape(type)
+	const either = party?.partyType === 'any'
+	const kinds = either ? ['person', 'organization'] : [party?.partyType === 'organization' ? 'organization' : 'person']
+	const shapes = kinds.flatMap((kind) => describeCompositeShape(kind) ?? [])
 	const prints = printedPartyMembers(form, item.key)
 	const max = party?.max ?? 1
 	return {
@@ -98,9 +102,10 @@ function partyTarget(form: Form, item: FillItemState): FillBatchTarget {
 		type: party?.partyType ?? 'person',
 		...(typeof party?.label === 'string' ? { label: party.label } : {}),
 		...(typeof party?.description === 'string' ? { description: party.description } : {}),
-		...(party?.partyType !== 'any' && shape !== null ? { shape } : {}),
+		...(shapes.length > 0 ? { shape: shapes.join(' or ') } : {}),
+		...(either ? { input: EITHER_KIND } : {}),
 		...(prints.length > 0 ? { prints } : {}),
-		...(max > 1 ? { item: type, constraints: { maxItems: max } } : {}),
+		...(max > 1 ? { item: kinds.join(' or '), constraints: { maxItems: max } } : {}),
 	}
 }
 

@@ -9,8 +9,10 @@ import type { StandardSchemaV1 } from '@standard-schema/spec';
 import type { Party, Person, Organization, RuntimeParty } from '@asterdoc/types';
 import { validatePerson, validateOrganization, type Validator } from '@/validation/validators';
 
-/** Organization-specific property names (not present on Person). */
-const ORG_KEYS = new Set(['legalName', 'domicile', 'entityType', 'entityId', 'taxId']);
+/** The members only an Organization has. A party that gives any of them is read as an Organization. */
+export const ORGANIZATION_MEMBERS = ['legalName', 'domicile', 'entityType', 'entityId', 'taxId'] as const;
+
+const ORG_KEYS = new Set<string>(ORGANIZATION_MEMBERS);
 
 function hasOrganizationKey(value: object): boolean {
   return Object.keys(value).some(k => ORG_KEYS.has(k));

@@ -2,15 +2,16 @@
  * Names a PDF layer prints from members a party does not give.
  *
  * A person carries `name`, and optionally `firstName`, `middleName` and
- * `lastName`. A PDF layer that binds its boxes to the split members prints
- * nothing for a party that gives only `name`. This module finds those parties.
+ * `lastName`. An organization carries `name`, and optionally `legalName`. A
+ * PDF layer that binds its boxes to some of these members prints no name for
+ * a party that gives none of the bound ones. This module finds those parties.
  */
 
 import type { Form } from '@asterdoc/types'
 import { parseBindings, resolveLayerBindings, type LayerBindingsSpec } from '@asterdoc/render'
 import type { FillBatchProblem, FillState, UnprintedPartyName } from './types'
 
-const NAME_MEMBERS = new Set(['name', 'firstName', 'middleName', 'lastName'])
+const NAME_MEMBERS = new Set(['name', 'firstName', 'middleName', 'lastName', 'legalName'])
 
 interface PrintedMember {
 	layer: string

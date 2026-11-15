@@ -154,6 +154,33 @@ describe('fillBatch', () => {
 		expect(target('landlord').constraints).toBeUndefined()
 	})
 
+	test('gives both shapes for a party that can be a person or an organization, and says how the kind is read', () => {
+		const petition = form({
+			kind: 'form',
+			name: 'petition',
+			version: '1.0.0',
+			fields: { basis: { type: 'text', label: 'Basis' } },
+			parties: {
+				petitioner: { label: 'Petitioner', partyType: 'any', min: 1, max: 1 },
+				sponsors: { label: 'Sponsors', partyType: 'any', min: 0, max: 3 },
+				preparer: { label: 'Preparer', partyType: 'person', min: 0, max: 1 },
+				employer: { label: 'Employer', partyType: 'organization', min: 0, max: 1 },
+			},
+		} as any)
+		const batch = petition.fill().getFillBatch()
+		const target = (key: string) => batch.open.find((entry) => entry.key === key)!
+		expect(target('petitioner').type).toBe('any')
+		expect(target('petitioner').shape).toMatch(/^person: \{.*firstName.*\} or organization: \{.*legalName.*\}$/)
+		expect(target('petitioner').input).toBe(
+			'The members say which kind the party is. For an organization give `legalName` next to `name`, with the text of `name` when it has no other registered name. A party with none of legalName, domicile, entityType, entityId and taxId is read as a person.',
+		)
+		expect(target('sponsors').item).toBe('person or organization')
+		expect(target('preparer').shape).toMatch(/^person: \{[^}]*\}$/)
+		expect(target('preparer').input).toBeUndefined()
+		expect(target('employer').shape).toMatch(/^organization: \{.*legalName.*\}$/)
+		expect(target('employer').input).toBeUndefined()
+	})
+
 	test('says how to write the number of a phone', () => {
 		const contact = form({ kind: 'form', name: 'contact', version: '1.0.0', fields: { phone: { type: 'phone', label: 'Telephone' }, email: { type: 'email', label: 'Email' } } } as any)
 		const batch = contact.fill().getFillBatch()
