@@ -4,6 +4,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -50,8 +51,8 @@ describe('CLI General Commands', () => {
       expect(result.stdout).toContain('--no-telemetry')
     })
 
-    it('prints the update notice after asynchronous command output', async () => {
-      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-update-order-'))
+    const runWithPendingUpdateNotice = async (terminalStreams: ('stdout' | 'stderr')[]) => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-update-notice-'))
       const home = path.join(root, 'home')
       const preload = path.join(root, 'tty.mjs')
       try {
@@ -60,21 +61,49 @@ describe('CLI General Commands', () => {
           path.join(home, '.asterdoc', 'update-check.json'),
           JSON.stringify({ lastChecked: Date.now(), latestVersion: '99.0.0' }),
         )
-        await fs.writeFile(preload, "Object.defineProperty(process.stdout, 'isTTY', { value: true })\n")
+        await fs.writeFile(
+          preload,
+          terminalStreams.map((stream) => `Object.defineProperty(process.${stream}, 'isTTY', { value: true })\n`).join(''),
+        )
+        await fs.writeFile(
+          path.join(root, 'form.json'),
+          JSON.stringify({
+            $schema: ASTERDOC_SCHEMA_URL,
+            name: 'notice-form',
+            version: '1.0.0',
+            title: 'Notice form',
+            kind: 'form',
+            fields: { name: { type: 'text', label: 'Name' } },
+          }),
+        )
 
-        const result = await executeCliCommand(['cache', 'info'], {
+        return await executeCliCommand(['validate', 'form.json', '--json'], {
           cwd: root,
           target: 'dist',
           nodeArgs: ['--import', preload],
           env: { HOME: home, CI: undefined, ASTERDOC_NO_UPDATE_CHECK: undefined, NO_COLOR: '1' },
         })
-        expect(result.exitCode).toBe(0)
-        expect(result.stdout.indexOf('Cache Statistics')).toBeLessThan(
-          result.stdout.indexOf('Update available'),
-        )
       } finally {
         await fs.rm(root, { recursive: true, force: true })
       }
+    }
+
+    it('prints the update notice on stderr and leaves stdout to the JSON output', async () => {
+      const result = await runWithPendingUpdateNotice(['stdout', 'stderr'])
+
+      expect(result.exitCode).toBe(0)
+      expect(JSON.parse(result.stdout)).toMatchObject({ ok: true })
+      expect(result.stdout).not.toContain('Update available')
+      expect(result.stderr).toContain('Update available: ')
+      expect(result.stderr).toContain('99.0.0')
+    })
+
+    it('prints no update notice when stderr is not a terminal', async () => {
+      const result = await runWithPendingUpdateNotice(['stdout'])
+
+      expect(result.exitCode).toBe(0)
+      expect(JSON.parse(result.stdout)).toMatchObject({ ok: true })
+      expect(result.stderr).not.toContain('Update available')
     })
 
     it('should list all available commands', async () => {

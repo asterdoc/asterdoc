@@ -98,7 +98,8 @@ export function createRegistryCommand(): Command {
             console.error(kleur.red(`When using a single argument, it must be a valid URL.`))
             console.error(kleur.gray('Usage: asterdoc registry add <url>'))
             console.error(kleur.gray('   or: asterdoc registry add <namespace> <url>'))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
 
           url = parsedUrl.origin + parsedUrl.pathname.replace(/\/$/, '')
@@ -119,7 +120,8 @@ export function createRegistryCommand(): Command {
             } else {
               console.error(kleur.red(error instanceof Error ? error.message : String(error)))
             }
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
           spinner.succeed(`Found registry: ${kleur.bold(index.name)}`)
 
@@ -137,7 +139,8 @@ export function createRegistryCommand(): Command {
             })
             if (!confirmed) {
               console.log(kleur.yellow('Cancelled.'))
-              process.exit(1)
+              process.exitCode = 1
+              return
             }
             namespace = normalizeNamespace(confirmed)
           } else {
@@ -152,7 +155,8 @@ export function createRegistryCommand(): Command {
           new URL(url)
         } catch {
           console.error(kleur.red(`Invalid URL: ${url}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Check if we're in a project
@@ -179,7 +183,8 @@ export function createRegistryCommand(): Command {
             })
             if (action === 'cancel' || action === undefined) {
               console.log(kleur.yellow('Cancelled.'))
-              process.exit(1)
+              process.exitCode = 1
+              return
             }
             if (action === 'rename') {
               const { newName } = await prompts({
@@ -191,7 +196,8 @@ export function createRegistryCommand(): Command {
               })
               if (!newName) {
                 console.log(kleur.yellow('Cancelled.'))
-                process.exit(1)
+                process.exitCode = 1
+                return
               }
               namespace = normalizeNamespace(newName)
             }
@@ -216,7 +222,8 @@ export function createRegistryCommand(): Command {
 
         if (options.global && options.project) {
           console.error(kleur.red('Cannot specify both --global and --project'))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         if (options.global) {
@@ -225,7 +232,8 @@ export function createRegistryCommand(): Command {
           if (!projectRoot) {
             console.error(kleur.red(`${PROJECT_REQUIRED_MESSAGE} Cannot use --project flag.`))
             console.error(kleur.gray('Use --global to save to global config, or run from a project directory.'))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
           target = 'project'
         } else if (options.yes) {
@@ -259,7 +267,7 @@ export function createRegistryCommand(): Command {
         trackRegistryAdd(url, { hasHeaders: Object.keys(options.header).length > 0 })
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -275,7 +283,8 @@ export function createRegistryCommand(): Command {
       try {
         if (options.global && options.project) {
           console.error(kleur.red('Cannot specify both --global and --project'))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Check if we're in a project
@@ -295,7 +304,8 @@ export function createRegistryCommand(): Command {
           } else if (options.project) {
             if (!projectRoot) {
               console.error(kleur.red(`${PROJECT_REQUIRED_MESSAGE} Cannot use --project flag.`))
-              process.exit(1)
+              process.exitCode = 1
+              return
             }
             target = 'project'
           } else {
@@ -332,7 +342,8 @@ export function createRegistryCommand(): Command {
         } else if (options.project) {
           if (!projectRoot) {
             console.error(kleur.red(`${PROJECT_REQUIRED_MESSAGE} Cannot use --project flag.`))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
           scope = 'project'
         }
@@ -377,7 +388,7 @@ export function createRegistryCommand(): Command {
         }
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -419,7 +430,7 @@ export function createRegistryCommand(): Command {
         }
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -459,7 +470,7 @@ export function createRegistryCommand(): Command {
             })
             if (!overwrite) {
               console.log(kleur.yellow('Cancelled.'))
-              process.exit(0)
+              return
             }
           } else {
             console.log(kleur.yellow(`${REGISTRY_CONFIG_FILE} already exists, overwriting...`))
@@ -479,7 +490,7 @@ export function createRegistryCommand(): Command {
           })
           if (!name) {
             console.log(kleur.yellow('Cancelled.'))
-            process.exit(0)
+            return
           }
           registryName = name
         }
@@ -492,7 +503,8 @@ export function createRegistryCommand(): Command {
           const suggested = slugify(registryName)
           if (!suggested) {
             console.error(kleur.red(`Invalid registry name: "${registryName}". Must be a lowercase slug (a-z, 0-9, hyphens).`))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
           if (options.yes) {
             console.log(kleur.yellow(`Auto-corrected registry name: "${registryName}" → "${suggested}"`))
@@ -514,7 +526,7 @@ export function createRegistryCommand(): Command {
               })
               if (!custom) {
                 console.log(kleur.yellow('Cancelled.'))
-                process.exit(0)
+                return
               }
               registryName = custom
             } else {
@@ -577,7 +589,7 @@ export function createRegistryCommand(): Command {
         console.log(kleur.gray('  2. Compile registry with: asterdoc registry compile'))
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -616,7 +628,8 @@ export function createRegistryCommand(): Command {
           } else {
             console.error(kleur.red(error instanceof Error ? error.message : String(error)))
           }
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
         spinner.stop()
 
@@ -667,7 +680,7 @@ export function createRegistryCommand(): Command {
       } catch (error) {
         spinner.fail('Failed')
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -690,7 +703,8 @@ export function createRegistryCommand(): Command {
         if (!(await storage.exists(configPath))) {
           console.error(kleur.red(`Registry config not found: ${configPath}`))
           console.error(kleur.gray('Run "asterdoc registry make" to create one.'))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
         const config = await readRegistryConfig(storage, configPath)
         const configDir = storage.dirname(configPath)
@@ -698,7 +712,8 @@ export function createRegistryCommand(): Command {
         const fullArtifactPath = storage.getAbsolutePath(artifactPath)
         if (!(await storage.exists(fullArtifactPath))) {
           console.error(kleur.red(`Artifact not found: ${fullArtifactPath}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Security: the artifact must be in the config's folder or below it
@@ -707,7 +722,8 @@ export function createRegistryCommand(): Command {
           console.error(kleur.red(`Security error: Artifact must be at the same level or below ${REGISTRY_CONFIG_FILE}`))
           console.error(kleur.gray(`Config: ${configPath}`))
           console.error(kleur.gray(`Artifact: ${fullArtifactPath}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         let release
@@ -715,7 +731,8 @@ export function createRegistryCommand(): Command {
           release = await loadSourceRelease(storage, configDir, source)
         } catch (error) {
           console.error(kleur.red(`Cannot add ${source}: ${error instanceof Error ? error.message : String(error)}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         if (config.sources.includes(source)) {
@@ -734,7 +751,8 @@ export function createRegistryCommand(): Command {
         if (conflicts.length > 0) {
           console.error(kleur.red(`Cannot add ${source}:`))
           for (const conflict of conflicts) console.error(kleur.red(`  • ${conflict}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         const sources = [...config.sources, source].sort((a, b) => a.localeCompare(b))
@@ -744,7 +762,7 @@ export function createRegistryCommand(): Command {
         console.log(kleur.gray(`Catalog now has ${sources.length} source file(s)`))
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -764,7 +782,8 @@ export function createRegistryCommand(): Command {
         const configPath = storage.getAbsolutePath(options.config)
         if (!(await storage.exists(configPath))) {
           console.error(kleur.red(`Registry config not found: ${configPath}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
         const config = await readRegistryConfig(storage, configPath)
         const configDir = storage.dirname(configPath)
@@ -783,7 +802,8 @@ export function createRegistryCommand(): Command {
           for (const release of loaded.releases) {
             console.error(kleur.gray(`  - ${describeSourceRelease(release)} (${release.source})`))
           }
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         if (!options.yes) {
@@ -795,7 +815,7 @@ export function createRegistryCommand(): Command {
           })
           if (!confirm) {
             console.log(kleur.yellow('Cancelled.'))
-            process.exit(0)
+            return
           }
         }
 
@@ -821,7 +841,7 @@ export function createRegistryCommand(): Command {
         console.log(kleur.gray(`Catalog now has ${sources.length} source file(s)`))
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -840,7 +860,8 @@ export function createRegistryCommand(): Command {
         const registryPath = storage.getAbsolutePath(options.registry)
         if (!(await storage.exists(registryPath))) {
           console.error(kleur.red(`Registry not found: ${registryPath}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         let data: unknown
@@ -848,7 +869,8 @@ export function createRegistryCommand(): Command {
           data = JSON.parse(await storage.readFile(registryPath))
         } catch (error) {
           console.error(kleur.red(`Invalid JSON in ${registryPath}: ${error instanceof Error ? error.message : String(error)}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         const checked = checkRegistryManifest(data)
@@ -857,7 +879,8 @@ export function createRegistryCommand(): Command {
           for (const issue of checked.issues) {
             console.error(kleur.red(`  • ${issue}`))
           }
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
         const registryData = checked.manifest
 
@@ -900,7 +923,7 @@ export function createRegistryCommand(): Command {
         }
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -924,7 +947,8 @@ export function createRegistryCommand(): Command {
         if (!(await storage.exists(configPath))) {
           console.error(kleur.red(`Registry config not found: ${configPath}`))
           console.error(kleur.gray('Run "asterdoc registry make" to create one.'))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         const configDir = storage.dirname(configPath)
@@ -978,7 +1002,7 @@ export function createRegistryCommand(): Command {
       } catch (error) {
         spinner.fail('Compilation failed')
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -997,14 +1021,16 @@ export function createRegistryCommand(): Command {
         if (!artifactRef) {
           console.error(kleur.red(`Invalid artifact reference: ${artifact}`))
           console.error(kleur.gray('Expected format: @namespace/artifact-name'))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Find project root
         const projectRoot = await findRepoRoot()
         if (!projectRoot) {
           console.error(kleur.red(PROJECT_REQUIRED_MESSAGE))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Load project config and lock file
@@ -1015,14 +1041,16 @@ export function createRegistryCommand(): Command {
         if (!lockFileManager.isInstalled(artifactRef.full)) {
           console.error(kleur.red(`Artifact not installed: ${artifact}`))
           console.error(kleur.gray("Run 'asterdoc add " + artifact + "' to install it."))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Get lock file info
         const lockedInfo = lockFileManager.getArtifact(artifactRef.full)
         if (!lockedInfo) {
           console.error(kleur.red(`Could not read lock info for: ${artifact}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Read the artifact file
@@ -1037,7 +1065,8 @@ export function createRegistryCommand(): Command {
           artifactContent = definition.artifact as unknown as Record<string, unknown>
         } catch {
           console.error(kleur.red(`Could not read artifact file: ${lockedInfo.path}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Output format
@@ -1098,7 +1127,7 @@ export function createRegistryCommand(): Command {
         }
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

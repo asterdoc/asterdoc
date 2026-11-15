@@ -5,6 +5,7 @@ import { checkForUpdate, printUpdateNotice } from './utils/update-notifier.js'
 import { brandColorBold, VERSION } from './constants.js'
 import { configureGroupedHelp, type CommandGroup } from './utils/help-formatter.js'
 import { commandEntries } from './command-map.js'
+import { CliExit } from './utils/exit.js'
 
 // Configure proxy from env vars before any fetch calls
 initProxy()
@@ -63,31 +64,37 @@ if (entry) {
 }
 
 if (firstPositional && !entry) {
-	program.error(`error: unknown command '${firstPositional}'`)
-}
+	process.stderr.write(`error: unknown command '${firstPositional}'\n`)
+	process.exitCode = 1
+} else {
+	// Handle unknown commands
+	program.on('command:*', (operands) => {
+		console.error(kleur.red(`error: unknown command '${operands[0]}'`))
+		console.log()
+		console.log(
+			kleur.gray(
+				`Run ${kleur.white('asterdoc -h')} to see a list of available commands.`,
+			),
+		)
+		process.exitCode = 1
+	})
 
-// Handle unknown commands
-program.on('command:*', (operands) => {
-	console.error(kleur.red(`error: unknown command '${operands[0]}'`))
-	console.log()
-	console.log(
-		kleur.gray(
-			`Run ${kleur.white('asterdoc -h')} to see a list of available commands.`,
-		),
-	)
-	process.exit(1)
-})
+	// Bridge --no-telemetry flag to env var before commands run
+	program.hook('preAction', () => {
+		if (program.opts().telemetry === false) {
+			process.env.ASTERDOC_TELEMETRY_DISABLED = '1'
+		}
+	})
 
-// Bridge --no-telemetry flag to env var before commands run
-program.hook('preAction', () => {
-	if (program.opts().telemetry === false) {
-		process.env.ASTERDOC_TELEMETRY_DISABLED = '1'
+	try {
+		await program.parseAsync(args, { from: 'user' })
+	} catch (error) {
+		if (error instanceof CliExit) {
+			process.exitCode = error.exitCode
+		} else {
+			process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
+			process.exitCode = 1
+		}
 	}
-})
-
-try {
-	await program.parseAsync(args, { from: 'user' })
 	printUpdateNotice()
-} catch (error) {
-	program.error(error instanceof Error ? error.message : String(error))
 }

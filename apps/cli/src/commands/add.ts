@@ -22,6 +22,7 @@ import { collectHeader } from '../utils/cli-helpers.js'
 import { join } from 'node:path'
 import { serializeArtifactFile } from '../utils/artifact-file.js'
 import { writeTypedOutput } from '../utils/typed-output.js'
+import { CliExit } from '../utils/exit.js'
 
 interface InstallArtifactOpts {
   registry: ResolvedRegistry
@@ -117,7 +118,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
         spinner.fail(`Failed to fetch ${artifactFull}`)
         console.error(kleur.red(`Artifact not found: ${artifactFull}`))
         console.error(kleur.gray(`Registry: ${registry.baseUrl}`))
-        process.exit(1)
+        throw new CliExit(1)
       }
 
       const resolution = resolveRegistryRelease(summary, { edition: opts.edition, version: opts.version })
@@ -125,7 +126,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
         spinner.fail(`Failed to resolve ${requested}`)
         console.error(kleur.red(describeRegistryReleaseFailure(resolution.failure)))
         console.error(kleur.gray(`Registry: ${registry.baseUrl}`))
-        process.exit(1)
+        throw new CliExit(1)
       }
       release = resolution.release
 
@@ -134,6 +135,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
       resolvedUrl = fetched.url
     }
   } catch (error) {
+    if (error instanceof CliExit) throw error
     spinner.fail(`Failed to fetch ${requested}`)
     if (error instanceof RegistryFetchError && error.statusCode === 404) {
       console.error(kleur.red(`Artifact not found: ${requested}`))
@@ -144,7 +146,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
         console.error(kleur.gray('Nothing was installed. Consider contacting the registry maintainer.'))
       }
     }
-    process.exit(1)
+    throw new CliExit(1)
   }
 
   // The installed release: the manifest's, or the artifact's own for an exact URL.
@@ -162,7 +164,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
   } catch (error) {
     console.error(kleur.red(error instanceof Error ? error.message : String(error)))
     console.error(kleur.gray(`Nothing was installed: this SDK cannot read the schema version the registry serves ${artifactFull} at.`))
-    process.exit(1)
+    throw new CliExit(1)
   }
 
   // Core owns artifact structure validation.
@@ -176,7 +178,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
       console.error(kleur.red(`  • ${location}: ${issue.message}`))
     }
     console.error(kleur.gray('Nothing was installed. Consider contacting the registry maintainer.'))
-    process.exit(1)
+    throw new CliExit(1)
   }
 
   const validation = validateDownloadedArtifact(registryItem as unknown as Record<string, unknown>, artifactName)
@@ -190,7 +192,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
     console.error()
     console.error(kleur.yellow('The artifact from the registry may be malformed or corrupted.'))
     console.error(kleur.gray('Consider contacting the registry maintainer.'))
-    process.exit(1)
+    throw new CliExit(1)
   }
 
   if (validation.warnings.length > 0) {
@@ -218,7 +220,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
   const sanitizedArtifactPath = sanitizePath(namespaceDir, artifactFileName)
   if (!sanitizedArtifactPath) {
     console.error(kleur.red('Invalid artifact name (path traversal detected)'))
-    process.exit(1)
+    throw new CliExit(1)
   }
 
   // Download and verify every file the artifact brings with it before anything
@@ -333,7 +335,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
       console.error(kleur.red(`  • ${failure.label} (${failure.path}): ${failure.cause}`))
     }
     console.error(kleur.gray('Nothing was installed. Try again, or contact the registry maintainer if it keeps failing.'))
-    process.exit(1)
+    throw new CliExit(1)
   }
 
   await storage.mkdir(namespaceDir, true)
@@ -471,7 +473,8 @@ export function createAddCommand(): Command {
       try {
         if (options.output && !['json', 'yaml', 'typed', 'ts'].includes(options.output)) {
           console.error(kleur.red(`Invalid output format: ${options.output}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
         // 0. A known item name is a document component, installed through the
         // shadcn CLI. Everything else is an artifact, which is always
@@ -495,7 +498,8 @@ export function createAddCommand(): Command {
                   `(${COMPONENT_ITEMS.join(', ')}); an artifact reference is added one at a time.`,
               ),
             )
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
 
           // One `addComponents` call per name, not one combined shadcn
@@ -514,7 +518,7 @@ export function createAddCommand(): Command {
             }
             if (code !== 0) exitCode = code
           }
-          if (exitCode !== 0) process.exit(exitCode)
+          if (exitCode !== 0) process.exitCode = exitCode
           return
         }
 
@@ -525,7 +529,7 @@ export function createAddCommand(): Command {
             registry: options.registry,
             dryRun: options.dryRun,
           })
-          if (code !== 0) process.exit(code)
+          if (code !== 0) process.exitCode = code
           return
         }
 
@@ -538,7 +542,8 @@ export function createAddCommand(): Command {
           console.error(kleur.red(`"${artifact}" is not a document component.`))
           console.error(kleur.gray(`To add an artifact, name its registry: asterdoc add @registry/${artifact}`))
           console.error(kleur.gray(`Document components: ${COMPONENT_ITEMS.join(', ')}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         if (!parsed && !nsOnly) {
@@ -549,7 +554,8 @@ export function createAddCommand(): Command {
           console.error(kleur.gray('  @namespace              (browse all artifacts)'))
           console.error(kleur.gray('  https://registry.example.com/r/artifact.json (direct URL)'))
           console.error(kleur.gray(`  field                   (document component: ${COMPONENT_ITEMS.join(', ')})`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // 2. Find project root
@@ -557,7 +563,8 @@ export function createAddCommand(): Command {
         if (!projectRoot) {
           console.error(kleur.red(PROJECT_REQUIRED_MESSAGE))
           console.error(kleur.gray("Run 'asterdoc init' to initialize a project first."))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Load project config
@@ -674,9 +681,10 @@ export function createAddCommand(): Command {
           spinner,
         })
       } catch (error) {
+        if (error instanceof CliExit) throw error
         spinner.fail('Failed')
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

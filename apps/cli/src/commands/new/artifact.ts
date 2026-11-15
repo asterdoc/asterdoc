@@ -20,6 +20,7 @@ import {
 } from '../../utils/templates.js'
 import { showArtifactDetails, writeFile } from '../../utils/file-writer.js'
 import { collect } from '../../utils/cli-helpers.js'
+import { CliExit } from '../../utils/exit.js'
 
 export type ArtifactKind = 'form' | 'document' | 'checklist' | 'bundle'
 export interface ArtifactOptions {
@@ -42,7 +43,7 @@ const FIELD_ID = /^[A-Za-z_][A-Za-z0-9_]*$/
 
 function cancel(): never {
   console.log('\n' + kleur.yellow('Cancelled.') + '\n')
-  process.exit(0)
+  throw new CliExit(0)
 }
 
 function onCancel(): boolean {
@@ -146,8 +147,9 @@ export function createArtifactCommand(kind: ArtifactKind): Command {
   return command.action(async (name: string, options: ArtifactOptions) => {
     try { await create(kind, name, options) }
     catch (error) {
+      if (error instanceof CliExit) throw error
       console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-      process.exit(1)
+      process.exitCode = 1
     }
   })
 }

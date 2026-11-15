@@ -129,10 +129,11 @@ export function createCheckCommand(): Command {
       } catch (error) {
         if (error instanceof MissingPeerError) {
           console.error(kleur.red(error.message))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
         console.error(kleur.red(`Error: ${error instanceof Error ? error.message : String(error)}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

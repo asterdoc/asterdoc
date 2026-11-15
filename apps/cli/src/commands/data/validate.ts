@@ -42,7 +42,7 @@ export function createValidateCommand(): Command {
           if (!options.silent) {
             console.error(kleur.red(`Error: Expected form artifact, but received kind "${kind}".`))
           }
-          process.exit(1)
+          process.exitCode = 1
           return
         }
 
@@ -78,13 +78,13 @@ export function createValidateCommand(): Command {
           }
         }
 
-        process.exit(result.success ? 0 : 1)
+        process.exitCode = result.success ? 0 : 1
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         if (!options.silent) {
           console.error(kleur.red(`Error: ${message}`))
         }
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

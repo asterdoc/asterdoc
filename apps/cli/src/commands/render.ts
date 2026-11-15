@@ -192,11 +192,11 @@ export function createRenderCommand(): Command {
           console.error(kleur.yellow(`Draft: the data is not complete. ${draftOpen.length === 1 ? 'This is' : 'These are'} still open:`))
           for (const line of draftOpen) console.error(`  - ${line}`)
         }
-        if (checked && !readBackPasses(checked)) process.exit(1)
+        if (checked && !readBackPasses(checked)) process.exitCode = 1
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

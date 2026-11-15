@@ -59,7 +59,7 @@ export function createCacheCommand(): Command {
       } catch (error) {
         spinner.fail('Failed to clear cache')
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -96,7 +96,7 @@ export function createCacheCommand(): Command {
         }
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -136,7 +136,7 @@ export function createCacheCommand(): Command {
       } catch (error) {
         spinner.fail('Failed to invalidate cache')
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -202,7 +202,7 @@ export function createCacheCommand(): Command {
         }
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
@@ -245,7 +245,7 @@ export function createCacheCommand(): Command {
       } catch (error) {
         spinner.fail('Failed to reset cache configuration')
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

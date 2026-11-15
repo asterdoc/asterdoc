@@ -80,7 +80,7 @@ export function createValidateCommand(): Command {
       const scopeFlags = [options.schemaOnly, options.checksumOnly].filter(Boolean)
       if (scopeFlags.length > 1) {
         console.error(kleur.red('Error: --schema-only and --checksum-only are mutually exclusive.'))
-        process.exit(1)
+        process.exitCode = 1
         return
       }
 
@@ -124,7 +124,7 @@ export function createValidateCommand(): Command {
         }
       }
 
-      process.exit(ok ? 0 : 1)
+      process.exitCode = ok ? 0 : 1
     })
 
   return validate

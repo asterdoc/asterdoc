@@ -151,11 +151,11 @@ export function createMigrateCommand(): Command {
             kleur.gray(`  (schema version ${SCHEMA_VERSION})`),
         )
         if (dryRun) console.log(kleur.gray('Dry run: no files were written.'))
-        if (failed > 0) process.exit(1)
+        if (failed > 0) process.exitCode = 1
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

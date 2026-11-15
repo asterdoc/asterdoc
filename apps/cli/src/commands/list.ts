@@ -26,7 +26,8 @@ export function createListCommand(): Command {
         const projectRoot = await findRepoRoot()
         if (!projectRoot) {
           console.error(kleur.red(PROJECT_REQUIRED_MESSAGE))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Load project config and lock file
@@ -42,7 +43,8 @@ export function createListCommand(): Command {
           if (!validKinds.includes(options.kind)) {
             console.error(kleur.red(`Invalid kind: ${options.kind}`))
             console.error(kleur.gray(`Valid kinds: ${validKinds.join(', ')}`))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
 
           artifacts = artifacts.filter(({ info }) => info.kind === options.kind)
@@ -95,7 +97,7 @@ export function createListCommand(): Command {
         }
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

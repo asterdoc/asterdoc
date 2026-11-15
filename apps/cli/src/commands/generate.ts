@@ -40,14 +40,16 @@ export function createGenerateCommand(): Command {
           if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
             console.error(kleur.gray('File does not exist'))
           }
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         try {
           if (ext !== '.json' && ext !== '.yaml' && ext !== '.yml') {
             console.error(kleur.red(`Unsupported file extension: ${ext}`))
             console.error(kleur.gray('Supported extensions: .json, .yaml, .yml'))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
           let candidate: Record<string, unknown>
           try {
@@ -55,24 +57,28 @@ export function createGenerateCommand(): Command {
           } catch (error) {
             console.error(kleur.red(`Could not parse file: ${file}`))
             console.error(kleur.gray(error instanceof Error ? error.message : String(error)))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
           if (!candidate.kind || typeof candidate.kind !== 'string') {
             console.error(kleur.red('File does not appear to be a valid artifact'))
             console.error(kleur.gray('Missing or invalid "kind" field'))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
           const validKinds = ['form', 'document', 'checklist', 'bundle']
           if (!validKinds.includes(candidate.kind)) {
             console.error(kleur.red(`Invalid artifact kind: ${candidate.kind}`))
             console.error(kleur.gray(`Expected one of: ${validKinds.join(', ')}`))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
           artifact = loadValidatedArtifact(content).artifact
         } catch (error) {
           console.error(kleur.red(`Could not load valid artifact: ${file}`))
           console.error(kleur.gray(error instanceof Error ? error.message : String(error)))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // 3. Determine output format
@@ -80,7 +86,8 @@ export function createGenerateCommand(): Command {
         if (format !== 'typed' && format !== 'ts') {
           console.error(kleur.red(`Invalid output format: ${format}`))
           console.error(kleur.gray('Expected: typed or ts'))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // 4. Generate and write output file(s)
@@ -138,7 +145,7 @@ export function createGenerateCommand(): Command {
       } catch (error) {
         console.error(kleur.red('Failed to generate types'))
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

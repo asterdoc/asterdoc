@@ -100,7 +100,7 @@ export function createVersionCommand(): Command {
         // Check if version changed
         if (newVersion === currentVersion) {
           console.log(kleur.gray(`Version unchanged: ${currentVersion}`))
-          process.exit(0)
+          return
         }
 
         // Update artifact with new version
@@ -114,7 +114,7 @@ export function createVersionCommand(): Command {
         console.log(kleur.gray(`Updated: ${file}`))
       } catch (error: any) {
         console.error(kleur.red(`Error: ${error.message || String(error)}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

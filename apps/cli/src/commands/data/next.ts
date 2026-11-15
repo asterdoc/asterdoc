@@ -281,11 +281,10 @@ export function createNextCommand(): Command {
         } else {
           printText({ formName: form.name, formTarget, dataTarget: options.data, full: options.full === true, result, source })
         }
-        process.exit(0)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

@@ -37,7 +37,8 @@ export function createShowCommand(): Command {
         // Check file exists
         if (!(await fileExists(filePath))) {
           console.error(kleur.red(`File not found: ${artifactPath}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Read file content
@@ -190,7 +191,7 @@ export function createShowCommand(): Command {
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

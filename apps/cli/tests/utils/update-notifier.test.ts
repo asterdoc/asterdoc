@@ -26,6 +26,7 @@ describe('update-notifier', () => {
 	let cacheFile: string
 	let originalEnv: NodeJS.ProcessEnv
 	let originalIsTTY: boolean | undefined
+	let originalStderrIsTTY: boolean | undefined
 
 	beforeEach(async () => {
 		tempDir = await fs.mkdtemp(join(tmpdir(), 'asterdoc-update-test-'))
@@ -33,12 +34,14 @@ describe('update-notifier', () => {
 		mockHome.value = tempDir
 		originalEnv = { ...process.env }
 		originalIsTTY = process.stdout.isTTY
+		originalStderrIsTTY = process.stderr.isTTY
 
 		// Reset mocks
 		vi.restoreAllMocks()
 
 		// Default: pretend we're in a TTY, not CI
 		Object.defineProperty(process.stdout, 'isTTY', { value: true, configurable: true })
+		Object.defineProperty(process.stderr, 'isTTY', { value: true, configurable: true })
 		delete process.env.CI
 		delete process.env.ASTERDOC_NO_UPDATE_CHECK
 		delete process.env.ASTERDOC_CLI_PACKAGE
@@ -50,6 +53,10 @@ describe('update-notifier', () => {
 		process.env = originalEnv
 		Object.defineProperty(process.stdout, 'isTTY', {
 			value: originalIsTTY,
+			configurable: true,
+		})
+		Object.defineProperty(process.stderr, 'isTTY', {
+			value: originalStderrIsTTY,
 			configurable: true,
 		})
 		vi.resetModules()
@@ -112,6 +119,22 @@ describe('update-notifier', () => {
 			expect(fetchSpy).not.toHaveBeenCalled()
 		})
 
+		it('skips check when stderr is not a TTY', async () => {
+			Object.defineProperty(process.stderr, 'isTTY', {
+				value: false,
+				configurable: true,
+			})
+			vi.resetModules()
+
+			const fetchSpy = vi.spyOn(globalThis, 'fetch')
+			const { checkForUpdate } = await import('../../src/utils/update-notifier.js')
+
+			checkForUpdate()
+			await new Promise((r) => setTimeout(r, 50))
+
+			expect(fetchSpy).not.toHaveBeenCalled()
+		})
+
 		it.each([
 			['@asterdoc/cli when run directly', undefined, '@asterdoc/cli'],
 			['asterdoc when run through the shim', 'asterdoc', 'asterdoc'],
@@ -151,145 +174,111 @@ describe('update-notifier', () => {
 	})
 
 	describe('printUpdateNotice', () => {
-		it('prints notice when cache has newer version', async () => {
-			const cache = { lastChecked: Date.now(), latestVersion: '0.2.0' }
-			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
-			await fs.writeFile(cacheFile, JSON.stringify(cache))
-
-			// We need to test the print logic directly since it reads from a fixed path.
-			// Instead, test the logic by importing and verifying semver comparison.
-			const semver = await import('semver')
-			expect(semver.default.gt('0.2.0', '0.1.3')).toBe(true)
-		})
-
-		it('does not print when cache version equals current', async () => {
-			const semver = await import('semver')
-			expect(semver.default.gt('0.1.3', '0.1.3')).toBe(false)
-		})
-
-		it('does not print when cache version is older', async () => {
-			const semver = await import('semver')
-			expect(semver.default.gt('0.1.0', '0.1.3')).toBe(false)
-		})
-
-		it('skips notice when VERSION is dev', async () => {
-			mockVersion.value = 'dev'
-			vi.resetModules()
-
-			const consoleSpy = vi.spyOn(console, 'log')
-			const { printUpdateNotice } = await import('../../src/utils/update-notifier.js')
-
-			printUpdateNotice()
-
-			expect(consoleSpy).not.toHaveBeenCalled()
-		})
-
-		it('skips notice when CI env var is set', async () => {
-			process.env.CI = 'true'
-			vi.resetModules()
-
-			const consoleSpy = vi.spyOn(console, 'log')
-			const { printUpdateNotice } = await import('../../src/utils/update-notifier.js')
-
-			printUpdateNotice()
-
-			expect(consoleSpy).not.toHaveBeenCalled()
-		})
-
-		it('prints notice for a newer cached version when no opt-out is set', async () => {
+		const writeNewerVersionCache = async (): Promise<void> => {
 			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
 			await fs.writeFile(cacheFile, JSON.stringify({ lastChecked: Date.now(), latestVersion: '0.2.0' }))
-			vi.resetModules()
+		}
 
-			const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+		const printAndCapture = async (): Promise<{ stderr: string; stdout: string }> => {
+			vi.resetModules()
+			const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+			const stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
+			const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 			const { printUpdateNotice } = await import('../../src/utils/update-notifier.js')
 
 			printUpdateNotice()
 
-			const output = consoleSpy.mock.calls.flat().join('\n')
-			expect(output).toContain('0.2.0')
-			expect(output).toContain('npm i -g @asterdoc/cli')
+			const captured = {
+				stderr: stderrSpy.mock.calls.map(([chunk]) => String(chunk)).join(''),
+				stdout: [
+					...stdoutSpy.mock.calls.map(([chunk]) => String(chunk)),
+					...logSpy.mock.calls.flat().map(String),
+				].join(''),
+			}
+			stderrSpy.mockRestore()
+			stdoutSpy.mockRestore()
+			logSpy.mockRestore()
+			return captured
+		}
+
+		it('prints the notice on stderr and nothing on stdout', async () => {
+			await writeNewerVersionCache()
+
+			const output = await printAndCapture()
+
+			expect(output.stderr).toContain('Update available: 0.1.3 \u2192 0.2.0')
+			expect(output.stderr).toContain('npm i -g @asterdoc/cli')
+			expect(output.stdout).toBe('')
 		})
 
 		it('tells a shim user to update the shim package', async () => {
 			process.env.ASTERDOC_CLI_PACKAGE = 'asterdoc'
-			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
-			await fs.writeFile(cacheFile, JSON.stringify({ lastChecked: Date.now(), latestVersion: '0.2.0' }))
-			vi.resetModules()
+			await writeNewerVersionCache()
 
-			const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-			const { printUpdateNotice } = await import('../../src/utils/update-notifier.js')
+			const output = await printAndCapture()
 
-			printUpdateNotice()
-
-			const output = consoleSpy.mock.calls.flat().join('\n')
-			expect(output).toContain('npm i -g asterdoc')
-			expect(output).not.toContain('@asterdoc/cli')
+			expect(output.stderr).toContain('npm i -g asterdoc')
+			expect(output.stderr).not.toContain('@asterdoc/cli')
 		})
 
-		it('skips notice when ASTERDOC_NO_UPDATE_CHECK is set', async () => {
-			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
-			await fs.writeFile(cacheFile, JSON.stringify({ lastChecked: Date.now(), latestVersion: '0.2.0' }))
+		it('prints nothing when stderr is not a terminal', async () => {
+			Object.defineProperty(process.stderr, 'isTTY', { value: false, configurable: true })
+			await writeNewerVersionCache()
+
+			expect(await printAndCapture()).toEqual({ stderr: '', stdout: '' })
+		})
+
+		it('prints nothing when stdout is not a terminal', async () => {
+			Object.defineProperty(process.stdout, 'isTTY', { value: false, configurable: true })
+			await writeNewerVersionCache()
+
+			expect(await printAndCapture()).toEqual({ stderr: '', stdout: '' })
+		})
+
+		it('prints nothing when VERSION is dev', async () => {
+			mockVersion.value = 'dev'
+			await writeNewerVersionCache()
+
+			expect(await printAndCapture()).toEqual({ stderr: '', stdout: '' })
+		})
+
+		it('prints nothing when the CI env var is set', async () => {
+			process.env.CI = 'true'
+			await writeNewerVersionCache()
+
+			expect(await printAndCapture()).toEqual({ stderr: '', stdout: '' })
+		})
+
+		it('prints nothing when ASTERDOC_NO_UPDATE_CHECK is set', async () => {
 			process.env.ASTERDOC_NO_UPDATE_CHECK = '1'
-			vi.resetModules()
+			await writeNewerVersionCache()
 
-			const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-			const { printUpdateNotice } = await import('../../src/utils/update-notifier.js')
-
-			printUpdateNotice()
-
-			expect(consoleSpy).not.toHaveBeenCalled()
+			expect(await printAndCapture()).toEqual({ stderr: '', stdout: '' })
 		})
 
 		it('ignores the retired OFM_NO_UPDATE_CHECK name', async () => {
-			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
-			await fs.writeFile(cacheFile, JSON.stringify({ lastChecked: Date.now(), latestVersion: '0.2.0' }))
 			process.env.OFM_NO_UPDATE_CHECK = '1'
-			vi.resetModules()
+			await writeNewerVersionCache()
 
-			const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-			const { printUpdateNotice } = await import('../../src/utils/update-notifier.js')
-
-			printUpdateNotice()
-
-			expect(consoleSpy.mock.calls.flat().join('\n')).toContain('0.2.0')
+			expect((await printAndCapture()).stderr).toContain('0.2.0')
 		})
 
-		it('skips notice when stdout is not a TTY', async () => {
-			Object.defineProperty(process.stdout, 'isTTY', {
-				value: false,
-				configurable: true,
-			})
-			vi.resetModules()
+		it('prints nothing when the cached version is not newer', async () => {
+			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
+			await fs.writeFile(cacheFile, JSON.stringify({ lastChecked: Date.now(), latestVersion: '0.1.3' }))
 
-			const consoleSpy = vi.spyOn(console, 'log')
-			const { printUpdateNotice } = await import('../../src/utils/update-notifier.js')
-
-			printUpdateNotice()
-
-			expect(consoleSpy).not.toHaveBeenCalled()
+			expect(await printAndCapture()).toEqual({ stderr: '', stdout: '' })
 		})
 
-		it('handles missing cache file gracefully', async () => {
-			vi.resetModules()
-
-			const consoleSpy = vi.spyOn(console, 'log')
-			const { printUpdateNotice } = await import('../../src/utils/update-notifier.js')
-
-			// Should not throw
-			expect(() => printUpdateNotice()).not.toThrow()
-			expect(consoleSpy).not.toHaveBeenCalled()
+		it('prints nothing when the cache file is missing', async () => {
+			expect(await printAndCapture()).toEqual({ stderr: '', stdout: '' })
 		})
 
-		it('handles malformed cache file gracefully', async () => {
-			// Write garbage to the real cache location to test error handling
-			vi.resetModules()
+		it('prints nothing when the cache file is malformed', async () => {
+			await fs.mkdir(join(tempDir, '.asterdoc'), { recursive: true })
+			await fs.writeFile(cacheFile, '{not json')
 
-			const consoleSpy = vi.spyOn(console, 'log')
-			const { printUpdateNotice } = await import('../../src/utils/update-notifier.js')
-
-			// Should not throw even with bad data
-			expect(() => printUpdateNotice()).not.toThrow()
+			expect(await printAndCapture()).toEqual({ stderr: '', stdout: '' })
 		})
 	})
 

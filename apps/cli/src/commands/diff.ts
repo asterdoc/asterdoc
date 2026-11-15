@@ -9,6 +9,7 @@ import {
   parseAndValidateArtifact,
   fileExists,
 } from '../utils/project.js'
+import { CliExit } from '../utils/exit.js'
 
 /** Exit statuses follow the POSIX `diff` convention. */
 const EXIT_IDENTICAL = 0
@@ -30,7 +31,7 @@ export function createDiffCommand(): Command {
     .option('--name-only', 'Print the paths of the files when they differ (no content)')
     .addHelpText('after', '\nExit status: 0 if the files are identical, 1 if they differ, 2 on error.')
     .exitOverride((err) => {
-      process.exit(err.exitCode === 0 ? EXIT_IDENTICAL : EXIT_ERROR)
+      throw new CliExit(err.exitCode === 0 ? EXIT_IDENTICAL : EXIT_ERROR)
     })
     .action(async (file1: string, file2: string, options) => {
       try {

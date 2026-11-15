@@ -59,7 +59,7 @@ export function createInspectCommand(): Command {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

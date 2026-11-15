@@ -47,7 +47,7 @@ export function createTemplateCommand(): Command {
           if (!options.silent) {
             console.error(kleur.red(`Error: Expected form artifact, but received kind "${kind}".`))
           }
-          process.exit(1)
+          process.exitCode = 1
           return
         }
 
@@ -61,7 +61,6 @@ export function createTemplateCommand(): Command {
           if (!options.silent) {
             console.log(kleur.yellow('Form has no fields or annexes. Nothing to generate.'))
           }
-          process.exit(0)
           return
         }
 
@@ -99,7 +98,7 @@ export function createTemplateCommand(): Command {
         if (!options.silent) {
           console.error(kleur.red(`Error: ${message}`))
         }
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

@@ -2,7 +2,7 @@
  * CLI Update Notifier
  *
  * Non-blocking update check that runs at most once per 24 hours.
- * Prints a one-line notice after command output when a newer version is available.
+ * Prints a one-line notice on stderr after command output when a newer version is available.
  * Gracefully handles the package not being on npm yet (silent no-op).
  */
 
@@ -29,6 +29,7 @@ function shouldSkipCheck(): boolean {
 	if (process.env.CI) return true
 	if (process.env.ASTERDOC_NO_UPDATE_CHECK) return true
 	if (!process.stdout.isTTY) return true
+	if (!process.stderr.isTTY) return true
 	return false
 }
 
@@ -113,12 +114,10 @@ export function printUpdateNotice(): void {
 		const cache = JSON.parse(content) as UpdateCache
 
 		if (cache.latestVersion && semver.gt(cache.latestVersion, VERSION)) {
-			console.log()
-			console.log(
-				kleur.yellow(
-					`Update available: ${VERSION} \u2192 ${cache.latestVersion}  Run: npm i -g ${CLI_PACKAGE}`,
-				),
+			const notice = kleur.yellow(
+				`Update available: ${VERSION} \u2192 ${cache.latestVersion}  Run: npm i -g ${CLI_PACKAGE}`,
 			)
+			process.stderr.write(`\n${notice}\n`)
 		}
 	} catch {
 		// Cache missing or unreadable — silent

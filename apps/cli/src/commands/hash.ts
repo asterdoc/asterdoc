@@ -24,7 +24,7 @@ export function createHashCommand(): Command {
         // Validate algorithm
         if (algorithm !== 'sha256') {
           console.error(kleur.red(`Unsupported algorithm: ${algorithm}. Only sha256 is supported.`))
-          process.exit(1)
+          process.exitCode = 1
           return
         }
 
@@ -48,12 +48,10 @@ export function createHashCommand(): Command {
         } else {
           console.log(checksum)
         }
-
-        process.exit(0)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

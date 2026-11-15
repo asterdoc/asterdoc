@@ -179,7 +179,7 @@ asterdoc search lease
 
 ## Update check
 
-Once a day, the CLI checks npm for a newer version of `asterdoc` and prints a one-line notice after the command output, with the command to update it. The check is skipped when `CI` is set or output is not a terminal.
+Once a day, the CLI checks npm for a newer version of `asterdoc` and prints a one-line notice on stderr after the command output, with the command to update it. The notice never goes to stdout. The check is skipped when `CI` is set or when stdout or stderr is not a terminal.
 
 To turn it off:
 

@@ -115,6 +115,14 @@ describe('CLI New Command', () => {
       expect(JSON.parse(await fs.readFile(file, 'utf8')).kind).toBe('form')
     })
 
+    it('ends with exit code 0 and no error text when the prompts are cancelled', async () => {
+      const result = await executeCliCommand(['new', 'form', 'cancelled'], { cwd: tempDir, input: ['\x03'] })
+      expect(result.stdout).toContain('Cancelled.')
+      expect(result.stderr).toBe('')
+      expect(result.exitCode).toBe(0)
+      expect(await fs.readdir(tempDir)).toEqual([])
+    })
+
     it.each([
       ['bad slug', ['--slug', 'Bad Slug']],
       ['bad version', ['--artifact-version', 'banana']],

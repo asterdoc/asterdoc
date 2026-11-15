@@ -15,12 +15,13 @@ import { runCli as executeCliCommand } from '../setup/spawn-cli'
  * in `/tmp` has no `@asterdoc/react` above it.
  */
 
+import { spawn } from 'node:child_process'
 import { promises as fs } from 'node:fs'
 import { createServer as createTcpServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { clientModule, manifestModule, previewModule, stylesheetModule } from '../../src/commands/dev/harness.js'
 import { layerPresentation, unresolvedPathMessage } from '../../src/commands/dev/messages.js'
@@ -30,6 +31,7 @@ import { projectAliases, servableRoots, serverOrigin, startDevServer } from '../
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const FIXTURES = path.resolve(__dirname, '../fixtures/dev')
+const BUILT_CLI = path.resolve(__dirname, '../../dist/index.js')
 
 describe('CLI dev command', () => {
   it('is listed among the commands', async () => {
@@ -422,6 +424,32 @@ describe('the running dev server', () => {
       await server.close()
     }
   }, 30_000)
+
+  it.skipIf(process.platform === 'win32')('ends with exit code 0 when an interrupt signal follows a page request', async () => {
+    const port = await availablePort()
+    const child = spawn(process.execPath, [BUILT_CLI, 'dev', path.join(FIXTURES, 'paired'), '--port', String(port)], {
+      env: { ...process.env, ASTERDOC_NO_UPDATE_CHECK: '1', ASTERDOC_TELEMETRY_DISABLED: '1' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    })
+    let stdout = ''
+    child.stdout.setEncoding('utf8').on('data', (chunk: string) => { stdout += chunk })
+    child.stderr.resume()
+    const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
+      child.on('exit', (code, signal) => resolve({ code, signal }))
+    })
+
+    try {
+      await vi.waitFor(() => expect(stdout).toContain(`http://127.0.0.1:${port}`), { timeout: 20_000, interval: 100 })
+      expect((await fetch(`http://127.0.0.1:${port}/`)).status).toBe(200)
+
+      child.kill('SIGINT')
+
+      const stillRunning = new Promise<string>((resolve) => setTimeout(() => resolve('still running after 10 s'), 10_000))
+      expect(await Promise.race([exited, stillRunning])).toEqual({ code: 0, signal: null })
+    } finally {
+      child.kill('SIGKILL')
+    }
+  }, 40_000)
 })
 
 async function availablePort(): Promise<number> {

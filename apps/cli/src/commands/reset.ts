@@ -186,7 +186,7 @@ export function createResetCommand(): Command {
       } catch (error) {
         spinner.fail('Reset failed')
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

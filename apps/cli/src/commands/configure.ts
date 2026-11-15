@@ -47,7 +47,8 @@ export function createConfigureCommand(): Command {
         currentConfig = await configManager.loadGlobalConfig()
       } catch (error) {
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
+        return
       }
 
       // Track new values

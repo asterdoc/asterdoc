@@ -56,7 +56,8 @@ export function createInitCommand(): Command {
             console.log(kleur.gray('Example:'))
             console.log(kleur.white('  asterdoc init --yes --name "My Project"'))
             console.log()
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
 
           projectTitle = options.name
@@ -141,7 +142,8 @@ export function createInitCommand(): Command {
             console.log(kleur.red('✗ asterdoc.json already exists in this directory'))
             console.log(kleur.gray(`  ${configPath}`))
             console.log()
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
         } catch (_error) {
           // File doesn't exist, which is fine
@@ -165,7 +167,8 @@ export function createInitCommand(): Command {
             console.log()
             console.log(kleur.white('  asterdoc init --yes --nested --name <name>'))
             console.log()
-            process.exit(1)
+            process.exitCode = 1
+            return
           } else {
             // Interactive mode: prompt user
             console.log()
@@ -185,7 +188,7 @@ export function createInitCommand(): Command {
               console.log()
               console.log(kleur.gray('Initialization cancelled.'))
               console.log()
-              process.exit(0)
+              return
             }
             allowNested = true
           }
@@ -274,7 +277,7 @@ export function createInitCommand(): Command {
           console.log()
           console.log(kleur.yellow('Cancelled. Nothing was created.'))
           console.log()
-          process.exit(0)
+          return
         }
         // Re-throw other errors
         throw error

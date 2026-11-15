@@ -594,6 +594,14 @@ describe('asterdoc add (registry integration)', () => {
     expect(result.stderr).toContain('not found')
   }, 30000)
 
+  it('reports an artifact that the registry does not list once and exits 1', async () => {
+    const result = await executeCliCommand(['add', '@acme/nonexistent'], { cwd: tempDir })
+    expect(result.exitCode).toBe(1)
+    expect(result.stderr.match(/Artifact not found: @acme\/nonexistent/g)).toHaveLength(1)
+    expect(result.stderr.match(/Failed/g)).toHaveLength(1)
+    expect(result.stderr).not.toContain('Exit with code')
+  }, 30000)
+
   const locked = async (ref: string): Promise<Record<string, unknown>> =>
     JSON.parse(await fs.readFile(join(tempDir, '.asterdoc', 'lock.json'), 'utf8')).artifacts[ref]
   const installed = async (name: string): Promise<Record<string, unknown>> =>

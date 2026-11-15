@@ -30,7 +30,8 @@ export function createDetachCommand(): Command {
         const { raw, sourcePath } = await readTextInput(resolvedTarget)
         if (!sourcePath) {
           console.error(kleur.red('Cannot detach from artifact from stdin. Please specify a file path.'))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         const { stored: parsed } = parseArtifactFile(raw)
@@ -43,7 +44,8 @@ export function createDetachCommand(): Command {
             const location = issue.path?.length ? issue.path.map(String).join('.') : 'root'
             console.error(`  - ${location}: ${issue.message}`)
           }
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         const artifact = parsed as Artifact
@@ -72,7 +74,7 @@ export function createDetachCommand(): Command {
 
         if (allKeys.length === 0) {
           console.log(kleur.yellow('This artifact has no layers or content references to detach.'))
-          process.exit(0)
+          return
         }
 
         // Resolve the argument — accept layer names, "instructions", or "agent-instructions"
@@ -82,7 +84,8 @@ export function createDetachCommand(): Command {
           if (options.yes) {
             console.error(kleur.red('Target name required in non-interactive mode.'))
             console.error(kleur.gray(`Available: ${allKeys.join(', ')}`))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
 
           // Interactive: let user select from layers + content refs
@@ -119,7 +122,7 @@ export function createDetachCommand(): Command {
 
           if (!selected) {
             console.log(kleur.yellow('\nCancelled.'))
-            process.exit(0)
+            return
           }
           targetKey = selected
         }
@@ -127,7 +130,8 @@ export function createDetachCommand(): Command {
         if (!targetKey || !allKeys.includes(targetKey)) {
           console.error(kleur.red(`"${targetKey}" not found.`))
           console.error(kleur.gray(`Available: ${allKeys.join(', ')}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         const isContentRef = targetKey in contentRefMap
@@ -184,13 +188,13 @@ export function createDetachCommand(): Command {
 
           if (!confirm) {
             console.log(kleur.yellow('Cancelled.'))
-            process.exit(0)
+            return
           }
         }
 
         if (options.dryRun) {
           console.log(kleur.yellow('Dry run: No changes written to file.'))
-          process.exit(0)
+          return
         }
 
         // Apply removal
@@ -212,7 +216,7 @@ export function createDetachCommand(): Command {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

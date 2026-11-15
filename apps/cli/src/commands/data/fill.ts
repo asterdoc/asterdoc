@@ -250,7 +250,7 @@ export function createFillCommand(): Command {
         if (!isForm(artifact)) {
           const kind = artifact.kind
           console.error(kleur.red(`Error: Expected form artifact, but received kind "${kind}".`))
-          process.exit(1)
+          process.exitCode = 1
           return
         }
 
@@ -259,7 +259,6 @@ export function createFillCommand(): Command {
         // Interactive mode prompts for fields only; a form without fields has nothing to prompt for.
         if (!options.data && (!form.fields || Object.keys(form.fields).length === 0)) {
           console.log(kleur.yellow('Form has no fields. Nothing to fill.'))
-          process.exit(0)
           return
         }
 
@@ -273,7 +272,7 @@ export function createFillCommand(): Command {
           if (!validationResult.success) {
             console.error(kleur.red('Data validation failed:'))
             printPayloadErrors(validationResult.errors, validationResult.ruleErrors)
-            process.exit(1)
+            process.exitCode = 1
             return
           }
 
@@ -304,7 +303,7 @@ export function createFillCommand(): Command {
           if (!validationResult.success) {
             console.error(kleur.red('Data validation failed:'))
             printPayloadErrors(validationResult.errors, validationResult.ruleErrors)
-            process.exit(1)
+            process.exitCode = 1
             return
           }
           data = validationResult.data
@@ -337,13 +336,12 @@ export function createFillCommand(): Command {
           console.log()
           console.log(kleur.yellow('Cancelled.'))
           console.log()
-          process.exit(0)
           return
         }
 
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

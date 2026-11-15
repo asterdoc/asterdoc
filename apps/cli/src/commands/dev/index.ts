@@ -73,7 +73,8 @@ export function createDevCommand(): Command {
 
 				if (compositions.length === 0) {
 					console.error(kleur.red(NOTHING_FOUND))
-					process.exit(1)
+					process.exitCode = 1
+					return
 				}
 
 				if (!existsSync(resolve(root, 'components/asterdoc/pages.tsx'))) {
@@ -106,11 +107,12 @@ export function createDevCommand(): Command {
 			} catch (error) {
 				if (error instanceof MissingPeerError) {
 					console.error(kleur.red(error.message))
-					process.exit(1)
+					process.exitCode = 1
+					return
 				}
 				const message = error instanceof Error ? error.message : String(error)
 				console.error(kleur.red(`Error: ${message}`))
-				process.exit(1)
+				process.exitCode = 1
 			}
 		})
 
@@ -124,8 +126,7 @@ const DEFAULT_PORT_NUMBER = Number(DEFAULT_PORT)
 function portNumber(value: string): number {
 	const port = Number(value)
 	if (!Number.isInteger(port) || port <= 0 || port > 65535) {
-		console.error(kleur.red(`Error: --port must be a port number, not "${value}".`))
-		process.exit(1)
+		throw new Error(`--port must be a port number, not "${value}".`)
 	}
 	return port
 }

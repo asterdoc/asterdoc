@@ -46,7 +46,8 @@ export function createAttachCommand(): Command {
         const { raw, baseDir, sourcePath } = await readTextInput(resolvedTarget)
         if (!sourcePath) {
           console.error(kleur.red('Cannot attach to artifact from stdin. Please specify a file path.'))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         const { stored: parsed } = parseArtifactFile(raw)
@@ -59,7 +60,8 @@ export function createAttachCommand(): Command {
             const location = issue.path?.length ? issue.path.map(String).join('.') : 'root'
             console.error(`  - ${location}: ${issue.message}`)
           }
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         const artifact = parsed as Artifact
@@ -72,13 +74,15 @@ export function createAttachCommand(): Command {
           fileStats = await storage.stat(absoluteFilePath)
         } catch {
           console.error(kleur.red(`File not found: ${fileTarget}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         if (!fileStats.isFile) {
           const kind = fileStats.isDirectory ? 'a directory' : 'not a regular file'
           console.error(kleur.red(`Cannot attach ${fileTarget}: it is ${kind}. Attach a file instead.`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         if (!sanitizePath(baseDir, absoluteFilePath)) {
@@ -89,7 +93,8 @@ export function createAttachCommand(): Command {
                 'Copy the file there first, then attach the copy.',
             ),
           )
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // Compute relative path from artifact directory
@@ -114,7 +119,8 @@ export function createAttachCommand(): Command {
         const validTargets: AttachTarget[] = ['layer', 'instructions', 'agent-instructions']
         if (!validTargets.includes(target)) {
           console.error(kleur.red(`Invalid --as value: "${target}". Must be one of: ${validTargets.join(', ')}`))
-          process.exit(1)
+          process.exitCode = 1
+          return
         }
 
         // ContentRef mode: attach as instructions or agentInstructions
@@ -145,7 +151,7 @@ export function createAttachCommand(): Command {
             })
             if (!confirm) {
               console.log(kleur.yellow('Cancelled.'))
-              process.exit(0)
+              return
             }
           }
 
@@ -163,7 +169,7 @@ export function createAttachCommand(): Command {
 
           if (options.dryRun) {
             console.log(kleur.yellow('Dry run: No changes written to file.'))
-            process.exit(0)
+            return
           }
 
           // Set the field
@@ -225,7 +231,7 @@ export function createAttachCommand(): Command {
           })
           if (!inputName) {
             console.log(kleur.yellow('\nCancelled.'))
-            process.exit(0)
+            return
           }
           layerName = inputName.trim()
 
@@ -255,7 +261,8 @@ export function createAttachCommand(): Command {
           // Check for duplicate
           if (existingLayers.includes(layerName)) {
             console.error(kleur.red(`Layer "${layerName}" already exists. Use --name to specify a different name.`))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
         }
 
@@ -287,7 +294,7 @@ export function createAttachCommand(): Command {
 
         if (options.dryRun) {
           console.log(kleur.yellow('Dry run: No changes written to file.'))
-          process.exit(0)
+          return
         }
 
         // Add layer to artifact
@@ -304,7 +311,7 @@ export function createAttachCommand(): Command {
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

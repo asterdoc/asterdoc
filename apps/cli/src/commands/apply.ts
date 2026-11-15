@@ -175,10 +175,11 @@ export function createApplyCommand(): Command {
             console.log('')
             if (allOk) {
               console.log('All patches can be applied successfully')
-              process.exit(0)
+              return
             } else {
               console.log('Some patches cannot be applied (conflicts detected)')
-              process.exit(1)
+              process.exitCode = 1
+              return
             }
           }
 
@@ -198,7 +199,7 @@ export function createApplyCommand(): Command {
               }
               console.log('')
             }
-            process.exit(0)
+            return
           }
 
           const conflicts = results.filter(({ result }) => result === false)
@@ -214,7 +215,8 @@ export function createApplyCommand(): Command {
             console.log('  - Ensure working tree matches patch context')
             console.log('  - Try applying on the version the patch was created from')
             console.log('  - Resolve conflicts manually if needed')
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
 
           const applied: string[] = []
@@ -283,7 +285,7 @@ export function createApplyCommand(): Command {
         } catch (error: unknown) {
           const message = error instanceof Error ? error.message : String(error)
           console.error(kleur.red(`Error: ${message}`))
-          process.exit(1)
+          process.exitCode = 1
         }
       }
     )

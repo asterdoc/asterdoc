@@ -84,11 +84,11 @@ export function createExtractCommand(): Command {
         } else {
           process.stdout.write(json)
         }
-        process.exit(failed ? 1 : 0)
+        process.exitCode = failed ? 1 : 0
       } catch (error) {
         const { code, message } = errorOf(error)
         console.error(kleur.red(`Error${code === 'extract_error' ? '' : ` (${code})`}: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

@@ -69,7 +69,8 @@ export function createSearchCommand(): Command {
           if (!validKinds.includes(options.kind)) {
             console.error(kleur.red(`Invalid kind: ${options.kind}`))
             console.error(kleur.gray(`Valid kinds: ${validKinds.join(', ')}`))
-            process.exit(1)
+            process.exitCode = 1
+            return
           }
         }
 
@@ -161,7 +162,7 @@ export function createSearchCommand(): Command {
       } catch (error) {
         spinner.fail('Search failed')
         console.error(kleur.red(error instanceof Error ? error.message : String(error)))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 

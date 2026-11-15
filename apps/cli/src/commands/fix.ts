@@ -47,7 +47,6 @@ export function createFixCommand(): Command {
 
         if (potentialChanges.length === 0) {
           console.log(kleur.green('✓ No changes needed. All checksums are valid.'))
-          process.exit(0)
           return
         }
 
@@ -62,7 +61,6 @@ export function createFixCommand(): Command {
 
         if (options.dryRun) {
           console.log(kleur.yellow('\nDry run: No changes written to file.'))
-          process.exit(0)
           return
         }
 
@@ -100,7 +98,6 @@ export function createFixCommand(): Command {
 
         if (willChange.length === 0) {
           console.log(kleur.yellow('\nNo changes approved. Exiting.'))
-          process.exit(0)
           return
         }
 
@@ -117,11 +114,10 @@ export function createFixCommand(): Command {
         await writeArtifactEdit(outputStorage, sourcePath, raw, artifact)
 
         console.log(kleur.green(`\n✓ Fixed artifact written to: ${artifactTarget}`))
-        process.exit(0)
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exit(1)
+        process.exitCode = 1
       }
     })
 
