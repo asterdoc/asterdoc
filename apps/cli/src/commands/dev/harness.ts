@@ -335,7 +335,6 @@ body {
  */
 export function manifestModule(entries: readonly DiscoveredComposition[]): string {
 	const rows = entries.map((entry) => {
-		const sample = entry.samples[0]
 		const samples = entry.samples.map((source) => `{
       relative: ${JSON.stringify(source.relative)},
       exportName: ${JSON.stringify(source.exportName)},

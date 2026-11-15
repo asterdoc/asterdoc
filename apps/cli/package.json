@@ -43,7 +43,7 @@
     "prebuild": "pnpm run clean",
     "pack:dry": "pnpm run build && npm pack --dry-run",
     "prepublishOnly": "pnpm run build",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
     "check": "pnpm lint && pnpm check-types",
     "pretest": "pnpm --dir ../../.. exec turbo run build --filter=@asterdoc/cli",

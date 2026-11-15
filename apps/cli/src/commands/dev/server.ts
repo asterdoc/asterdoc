@@ -478,7 +478,7 @@ function fontsAreLocal(plan: PageBreakPlan | undefined, root: string, origin: st
 		const source = font.source
 		if (source.startsWith('data:')) continue
 		if (/^https?:/i.test(source)) {
-			try { if (new URL(source).origin === origin) continue } catch {}
+			if (URL.canParse(source) && new URL(source).origin === origin) continue
 			return false
 		}
 		const file = fileFor(root, source)
