@@ -103,6 +103,27 @@ function printTable(fields: PdfFieldInfo[], sourcePath?: string): void {
 
   console.log(kleur.cyan(`Fields from ${sourcePath ?? 'stdin'}:`))
   console.log(formatTable(['Name', 'Type', 'Required', 'Multi-line', 'Value'], rows))
+  for (const line of optionLines(fields)) console.log(line)
+}
+
+function optionLines(fields: PdfFieldInfo[]): string[] {
+  const withOptions = fields.filter((field) => field.options !== undefined && field.options.length > 0)
+  if (withOptions.length === 0) return []
+  const first = new Map<string, string>()
+  const lines = ['', kleur.cyan('Options (the value the PDF stores = the text it shows):')]
+  for (const field of withOptions) {
+    const options = field.options!
+    const key = JSON.stringify(options)
+    const same = first.get(key)
+    if (same !== undefined) {
+      lines.push(`  ${field.name}: the same as ${same}`)
+      continue
+    }
+    first.set(key, field.name)
+    lines.push(`  ${field.name}:`)
+    for (const { value, label } of options) lines.push(`    ${JSON.stringify(value)}${label === value ? '' : ` = ${label}`}`)
+  }
+  return lines
 }
 
 function printSummary(fields: PdfFieldInfo[], sourcePath?: string): void {

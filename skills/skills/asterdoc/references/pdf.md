@@ -15,6 +15,8 @@ A PDF layer is a file layer with `"mimeType": "application/pdf"`. This file cove
 
 `asterdoc inspect` is the source of truth for field names, types, and boxes. Copy every name from its output; the visible label differs from the field name.
 
+For a dropdown or a radio group, `options` lists each option as `{ value, label }`: the value the PDF stores and the text it shows. Give the bound enum field the stored value as its `value` and the shown text as its `label`. A fill writes the value as it is, so an enum whose value is the shown text prints a value the PDF does not have.
+
 ```bash
 npx asterdoc inspect form.pdf --summary                                       # counts by type
 npx asterdoc inspect form.pdf --format json --include-signatures > fields.json

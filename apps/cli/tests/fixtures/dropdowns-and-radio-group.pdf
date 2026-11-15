@@ -1,0 +1,53 @@
+%PDF-1.5
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm 11 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << >> /Annots [4 0 R 5 0 R 6 0 R 7 0 R 9 0 R 10 0 R] >>
+endobj
+4 0 obj
+<< /FT /Tx /T (name) /Subtype /Widget /Rect [20 270 200 284] /P 3 0 R >>
+endobj
+5 0 obj
+<< /FT /Ch /Ff 131072 /T (status) /Subtype /Widget /Rect [20 252 200 266] /P 3 0 R /Opt [[(F1) (F1 - STUDENT - ACADEMIC)] [(B2) (B2 - VISITOR FOR PLEASURE)]] >>
+endobj
+6 0 obj
+<< /FT /Ch /Ff 131072 /T (priorStatus) /Subtype /Widget /Rect [20 234 200 248] /P 3 0 R /Opt [[(F1) (F1 - STUDENT - ACADEMIC)] [(B2) (B2 - VISITOR FOR PLEASURE)]] >>
+endobj
+7 0 obj
+<< /FT /Ch /Ff 131072 /T (state) /Subtype /Widget /Rect [20 216 200 230] /P 3 0 R /Opt [(CA) (OH)] >>
+endobj
+8 0 obj
+<< /FT /Btn /Ff 49152 /T (filing) /V /Off /Kids [9 0 R 10 0 R] >>
+endobj
+9 0 obj
+<< /Subtype /Widget /Parent 8 0 R /Rect [20 198 200 212] /P 3 0 R /AS /Off /AP << /N << /Off null /single null >> >> >>
+endobj
+10 0 obj
+<< /Subtype /Widget /Parent 8 0 R /Rect [20 180 200 194] /P 3 0 R /AS /Off /AP << /N << /Off null /joint null >> >> >>
+endobj
+11 0 obj
+<< /Fields [4 0 R 5 0 R 6 0 R 7 0 R 8 0 R] >>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000009 00000 n 
+0000000075 00000 n 
+0000000132 00000 n 
+0000000267 00000 n 
+0000000355 00000 n 
+0000000531 00000 n 
+0000000712 00000 n 
+0000000829 00000 n 
+0000000910 00000 n 
+0000001045 00000 n 
+0000001180 00000 n 
+trailer
+<< /Size 12 /Root 1 0 R >>
+startxref
+1242
+%%EOF

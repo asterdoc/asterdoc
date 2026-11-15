@@ -7,20 +7,22 @@ import { compressedCheckboxPdf, pagePdf, textFieldsPdf } from './pdf-fixtures'
 
 const fixtures = ['pet-addendum.pdf', 'pet-addendum-2.pdf']
 
+const SPECIES = ['bird', 'dog', 'cat', 'fish', 'turtle'].map((value) => ({ value, label: value }))
+
 const expectedFields = {
   'pet-addendum.pdf': [
     { name: 'name', type: 'text', value: '', required: false, rect: [72, 648, 288, 668], maxLen: 100, multiline: false },
     { name: 'weight', type: 'text', value: '', required: false, rect: [72, 612, 288, 632], maxLen: 100, multiline: false },
-    { name: 'species', type: 'dropdown', value: ['fish'], required: false, rect: [72, 576, 288, 596] },
+    { name: 'species', type: 'dropdown', value: ['fish'], options: SPECIES, required: false, rect: [72, 576, 288, 596] },
     { name: 'hasVaccination', type: 'checkbox', value: false, required: false, rect: [72, 540, 92, 560] },
   ],
   'pet-addendum-2.pdf': [
     { name: 'pet_name', type: 'text', value: '', required: false, page: 1, rect: [72, 648, 288, 668], maxLen: 100, multiline: false },
     { name: 'petWeight', type: 'text', value: '', required: false, page: 1, rect: [72, 612, 288, 632], maxLen: 100, multiline: false },
-    { name: 'SPECIES', type: 'dropdown', value: ['dog'], required: false, page: 1, rect: [72, 576, 288, 596] },
+    { name: 'SPECIES', type: 'dropdown', value: ['dog'], options: SPECIES, required: false, page: 1, rect: [72, 576, 288, 596] },
     { name: 'is_vaccinated', type: 'checkbox', value: false, required: true, page: 1, rect: [72, 540, 92, 560] },
   ],
-} as const
+}
 
 describe('PDF renderer behavior', () => {
 	it('fills fixed AcroForm slots from lists and lists of lists using bracket bindings', async () => {

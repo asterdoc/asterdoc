@@ -1,15 +1,25 @@
 import type { BinaryContent, Bindings } from '@asterdoc/types'
 import { parseBindings } from '../layer-bindings'
-import { acroFields, textFieldDrawing, textValue, type PdfFieldType } from './acroform'
+import { acroFields, choiceOptions, radioStates, textFieldDrawing, textValue, type PdfFieldType } from './acroform'
 import { documentPages } from './page-tree'
 import { isDict, isRef, PdfModel } from './syntax'
 
 export type { PdfFieldType } from './acroform'
 
+/** One option of a dropdown, a list box or a radio group. */
+export interface PdfFieldOption {
+  /** The value the PDF stores for the option. A binding must write this value. */
+  value: string
+  /** The text a viewer shows for the option. For a radio group it is the value. */
+  label: string
+}
+
 export interface PdfFieldInfo {
   name: string
   type: PdfFieldType
   value?: string | boolean | string[]
+  /** For a dropdown, a list box or a radio group: its options, in the order of the PDF. */
+  options?: PdfFieldOption[]
   required?: boolean
   page?: number
   rect?: [number, number, number, number]
@@ -85,10 +95,15 @@ export async function inspectAcroFormFields(
     const pageRef = widget?.entries.get('P')
     const page = isRef(pageRef) ? pages.get(pageRef.object) : undefined
 
+    const choices = type === 'dropdown'
+      ? choiceOptions(model, field).map(({ value, display }) => ({ value, label: display }))
+      : type === 'radio' ? radioStates(model, field).map((state) => ({ value: state, label: state })) : undefined
+
     result.push({
       name: field.name,
       type,
       value: fieldValue,
+      ...(choices && { options: choices }),
       required: type === 'text' || type === 'checkbox' || type === 'dropdown' || type === 'radio'
         ? (flags & 2) !== 0
         : undefined,

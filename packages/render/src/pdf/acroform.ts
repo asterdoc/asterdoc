@@ -166,6 +166,11 @@ export function acroFields(model: PdfModel): AcroForm | undefined {
   }
 }
 
+/** The on state of each widget of a radio group, in widget order, each one once. */
+export function radioStates(model: PdfModel, field: AcroField): string[] {
+  return [...new Set(field.widgets.map((widget) => onState(model, widget)))]
+}
+
 function onState(model: PdfModel, widget: AcroWidget): string {
   const appearance = model.dict(widget.dict.entries.get('AP'))
   const normal = model.dict(appearance?.entries.get('N'))
@@ -253,7 +258,7 @@ function textAppearance(model: PdfModel, fonts: PdfFontSet, field: AcroField, wi
 }
 
 /** Each option's export value and the text a viewer displays for it. */
-function choiceOptions(model: PdfModel, field: AcroField): Array<{ value: string; display: string }> {
+export function choiceOptions(model: PdfModel, field: AcroField): Array<{ value: string; display: string }> {
   const options = model.resolve(field.dict.entries.get('Opt'))
   if (!Array.isArray(options)) return []
   return options.flatMap((option) => {

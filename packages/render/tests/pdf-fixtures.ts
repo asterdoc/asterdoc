@@ -207,7 +207,8 @@ export type AcroFormFixtureField =
   | { kind: 'text'; name: string; value?: string; valueBytes?: number[] }
   | { kind: 'checkbox'; name: string; onState?: string; checked?: boolean }
   | { kind: 'radio'; name: string; states: string[]; selected?: string }
-  | { kind: 'choice'; name: string; options: string[]; value?: string }
+  /** An option is one text, stored and shown, or a pair of the stored value and the shown text. */
+  | { kind: 'choice'; name: string; options: Array<string | [string, string]>; value?: string }
 
 export interface AcroFormFixtureOptions {
   /** Declare the file encrypted in its trailer, as a password-protected PDF does. */
@@ -265,7 +266,7 @@ export function acroFormPdf(fields: AcroFormFixtureField[], options: AcroFormFix
     } else {
       const id = next++
       const value = field.value === undefined ? '' : ` /V ${textToken(field.value)}`
-      const opts = field.options.map(textToken).join(' ')
+      const opts = field.options.map((option) => typeof option === 'string' ? textToken(option) : `[${textToken(option[0])} ${textToken(option[1])}]`).join(' ')
       objects.push({ id, body: `<< /FT /Ch /Ff 131072 /T ${textToken(field.name)} /Subtype /Widget /Rect ${rect()} /P 3 0 R /Opt [${opts}]${value} >>` })
       roots.push(id)
       widgets.push(id)

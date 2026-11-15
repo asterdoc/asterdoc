@@ -44,6 +44,40 @@ describe('CLI inspect command', () => {
     }
   })
 
+  describe('for a PDF with dropdowns and a radio group', () => {
+    const pdf = path.join(fixturesDir, 'dropdowns-and-radio-group.pdf')
+
+    it('gives in JSON the value each option stores and the text it shows', async () => {
+      const result = await executeCliCommand(['inspect', pdf, '--format', 'json'])
+      expect(result.exitCode, result.stderr).toBe(0)
+      const fields = JSON.parse(result.stdout) as Array<{ name: string; options?: Array<{ value: string; label: string }> }>
+      const options = (name: string) => fields.find((field) => field.name === name)!.options
+      expect(options('status')).toEqual([
+        { value: 'F1', label: 'F1 - STUDENT - ACADEMIC' },
+        { value: 'B2', label: 'B2 - VISITOR FOR PLEASURE' },
+      ])
+      expect(options('state')).toEqual([{ value: 'CA', label: 'CA' }, { value: 'OH', label: 'OH' }])
+      expect(options('filing')).toEqual([{ value: 'single', label: 'single' }, { value: 'joint', label: 'joint' }])
+      expect(options('name')).toBeUndefined()
+    })
+
+    it('lists the options under the table, a repeated list once', async () => {
+      const result = await executeCliCommand(['inspect', pdf])
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(result.stdout).toContain('Options (the value the PDF stores = the text it shows):')
+      expect(result.stdout).toContain('  status:\n    "F1" = F1 - STUDENT - ACADEMIC\n    "B2" = B2 - VISITOR FOR PLEASURE\n')
+      expect(result.stdout).toContain('  priorStatus: the same as status\n')
+      expect(result.stdout).toContain('  state:\n    "CA"\n    "OH"\n')
+      expect(result.stdout).toContain('  filing:\n    "single"\n    "joint"\n')
+    })
+
+    it('prints no option section when no listed field has options', async () => {
+      const result = await executeCliCommand(['inspect', pdf, '--filter', 'name'])
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(result.stdout).not.toContain('Options (')
+    })
+  })
+
   describe('inspect options', () => {
     let tempDir: string
 

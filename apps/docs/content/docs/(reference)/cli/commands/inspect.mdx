@@ -84,6 +84,21 @@ Fields from /Users/you/my-project/form-template.pdf:
 
 `Multi-line` is `yes` or `no` for a text field and empty for any other field. In `--format json`, a text field has a `multiline` boolean. A [binding template](/guides/pdf-layers#several-values-in-one-field) may hold a line break only for a multi-line field; a single-line field prints it as a space, and `asterdoc validate` reports an error.
 
+For a dropdown, a list box or a radio group, the command lists the options under the table: the value the PDF stores, then the text it shows when the two differ. A list that repeats is printed once.
+
+```
+Options (the value the PDF stores = the text it shows):
+  status:
+    "F1" = F1 - STUDENT - ACADEMIC
+    "B2" = B2 - VISITOR FOR PLEASURE
+  prior_status: the same as status
+  filing:
+    "single"
+    "joint"
+```
+
+In `--format json`, such a field has `options`, an array of `{ value, label }`. A fill writes the value it is given into the field, so the `value` of each option of the bound enum field must be the stored value, not the shown text.
+
 Summary format:
 
 ```json
