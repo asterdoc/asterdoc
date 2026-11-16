@@ -4,6 +4,61 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-16
+
+0.13 lets one PDF field print several values with a binding template, and adds a batch fill path for agents: `fillBatch()`, `asterdoc data next`, `render --draft` and `render --check`, and the new asterdoc-fill skill. It adds schema version 2026-11-12. Artifacts on older schema versions keep loading: the SDK upgrades them in memory, and turns each comma-joined binding into a template.
+
+### Highlights
+
+- A PDF binding can be a template (`{ template: "{{fields.city}}, {{fields.state}} {{fields.zip}}" }`) with format modifiers, `{{#if}}` and `{{#unless}}` blocks, and line breaks for a multi-line field. Fill, the fit check and extraction read it.
+- `fillBatch(form, state)` and `draft.getFillBatch()` describe each target open now, with its label, type, options, shape, format and limits, and report unmet rules. `asterdoc data next` prints the same batch, with the PDF page of each field.
+- `asterdoc render --draft` renders data that is not complete and lists what is open. `asterdoc render --check` reads the PDF back and compares it with the data.
+- A new skill, asterdoc-fill, teaches an agent the fill loop: `data next`, write a batch, repeat, check the data against the facts, render.
+- `validate()` names values given for fields that do not apply, and parties whose name a PDF layer does not print. Before, such a form rendered with the value printed, or with the name empty.
+- `validateLayers()` checks each test value of a form against the fonts of its PDF layers. A value that no font can draw names the artifact path it comes from.
+- `asterdoc inspect` lists the options of a dropdown and of a radio group: the value the PDF stores and the text it shows.
+
+### Breaking changes
+
+#### Schemas
+
+- Schema 2026-11-12 refuses a comma-joined PDF binding such as `"city, state"`. Write a template binding. An artifact on 2026-11-10 or earlier loads with each joined binding turned into the template that prints the same text; `npx asterdoc migrate <file>` rewrites the file.
+
+#### Core
+
+- `validate()` reports a value given for a field hidden by a condition that is not met (`notApplicable`), and a party whose name a PDF layer does not print (`unprintedNames`). `prepareForSigning()`, `seal()` and `asterdoc render` refuse such a form. `fill()` still accepts it. Remove the value, or give the name members the layer prints (such as `firstName` and `lastName`, or `legalName`).
+- `validateLayers()` reports a test value that the fonts of a PDF layer cannot draw. Set the layer's `font`, or change the test value.
+
+### Upgrading from 0.12
+
+1. Run `npx asterdoc migrate <file>` on each artifact you store on 2026-11-10 or earlier. This step is optional: older dates load upgraded in memory.
+2. Run `npx asterdoc validate` on your artifacts and fix each `notApplicable`, `unprintedNames` and font report.
+
+### Core
+
+- `fillBatch()` and `draft.getFillBatch()`: the targets open now, the count that waits behind unfilled answers, unmet rules, values that do not apply and names that do not print.
+- A form that renders a payload computes its defs, so a PDF box bound to a def no longer prints empty.
+- A party that can be a person or an organization is read as a person when it gives only `name`; an organization that gives `legalName` prints on a layer that binds `legalName`.
+- `PdfFieldFillError` holds `paths`, the artifact paths the field prints, and its message names them.
+
+### Render
+
+- PDF template bindings, and `pdfBindingPages()` in `@asterdoc/render/pdf`, the page each bound field prints on.
+- The font advice of a fill error names the `font` of the PDF layer first.
+
+### CLI
+
+- `asterdoc data next <form> [--data <file>] [--layer <name>] [--full] [--json]`.
+- `asterdoc render --draft` and `asterdoc render --check`.
+- `asterdoc inspect` lists dropdown and radio options and shows which text fields are multi-line.
+- A command writes all its output to a pipe before the process ends. Before, output over 64 KB to a pipe was cut on macOS with exit code 0.
+- The update notice goes to stderr, and only when stderr is a terminal.
+
+### Skills
+
+- New asterdoc-fill skill.
+- The asterdoc skill (0.13.0) describes template bindings and schema 2026-11-12.
+
 ## [0.12.0] - 2026-11-10
 
 0.12 lets a form choose how each value prints: a country as its code or its name, a phone in one of several styles, an identifier with or without its mask, any part of a date, phone or amount. It adds check-digit rules, sensitive values, test cases inside artifacts, and verified template checksums, and a new schema version, 2026-11-10. Artifacts on older schema versions keep loading: the SDK upgrades them in memory.

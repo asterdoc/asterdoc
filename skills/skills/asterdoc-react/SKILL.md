@@ -10,7 +10,7 @@ description: >
   filling a PDF template, or signing after the seal, use the asterdoc skill.
 metadata:
   author: asterdoc
-  version: "0.12.0"
+  version: "0.13.0"
   tags: asterdoc, react, composition, pdf, pagination, registry, seal
   license: MIT
 allowed-tools: "Bash(npx:*) Bash(node:*) Bash(pnpm:*) Bash(asterdoc:*) Read Write Edit Glob Grep"

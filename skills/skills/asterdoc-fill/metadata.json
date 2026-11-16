@@ -1,6 +1,6 @@
 {
   "name": "asterdoc-fill",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "author": "asterdoc",
   "date": "2026-11-11",
   "abstract": "Fill an existing Asterdoc form from the facts at hand with the asterdoc CLI, in passes: asterdoc data next lists the fields open now with how to write each value, the agent writes them in one batch, and repeats until the form is complete; then it renders the PDF and reads the values back. For agents that fill forms, not for authoring artifacts.",

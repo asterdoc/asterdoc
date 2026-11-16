@@ -6,7 +6,7 @@ description: >
   Authoring or changing an artifact is the asterdoc skill.
 metadata:
   author: asterdoc
-  version: "0.12.0"
+  version: "0.13.0"
   tags: asterdoc, cli, forms, fill, pdf
   license: MIT
 allowed-tools: "Bash Read Write Edit"

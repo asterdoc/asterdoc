@@ -95,6 +95,24 @@ for (const issue of state.issues) {
 
 When a visibility or requiredness condition fails, the form's logic cannot be resolved. The rules are not run, `rules.valid` is `false` with no errors, and `issues` says why.
 
+### Filling in batches
+
+`draft.getFillBatch()` describes every target that is open now, so a filler can write all of them in one pass. Each pass opens the next level of conditional fields. `fillBatch(form, state)` gives the same result from a `FillState`. `asterdoc data next` prints it.
+
+```ts
+let draft = form.fill()
+
+while (true) {
+  const batch = draft.getFillBatch()
+  if (batch.complete) break
+
+  const answers = await collectAnswers(batch.open)
+  draft = draft.update(answers)
+}
+```
+
+`batch.waiting.count` is the number of hidden targets that can still open, and `batch.waiting.on` lists the open targets they wait on.
+
 ## API
 
 ### FillState
@@ -115,6 +133,41 @@ Returned by `draft.getFillState()`.
   { name: 'unprintedNames', type: 'UnprintedPartyName[]', description: 'Parties whose name a PDF layer does not print. Each entry has the `role`, the `index` of the party, the `layer`, and the name `members` that layer prints' },
   { name: 'candidates', type: 'FillTarget[]', description: 'Available fill targets in dependency order, with required targets before optional targets by default and declaration order breaking ties' },
   { name: 'next', type: 'FillTarget | null', description: 'First candidate — convenience shorthand for candidates[0]' },
+]} />
+
+### FillBatch
+
+Returned by `draft.getFillBatch()` and `fillBatch(form, state)`.
+
+<PropertiesTable properties={[
+  { name: 'complete', type: 'boolean', description: 'No required target is open, every rule passes, every value given applies and every party\'s name prints' },
+  { name: 'summary', type: 'FillStateSummary', description: 'Progress summary, as in FillState' },
+  { name: 'open', type: 'FillBatchTarget[]', description: 'Visible, unfilled targets: required first, in dependency order' },
+  { name: 'waiting', type: '{ count: number; on: string[] }', description: 'Hidden targets that can still open, and the open targets they wait on' },
+  { name: 'rules', type: '{ errors: FillBatchRule[]; warnings: FillBatchRule[] }', description: 'Failed rules by severity, each with its `ruleId`, `message` and `paths`' },
+  { name: 'issues', type: 'FillBatchProblem[]', description: 'Conditions or computed values that could not be evaluated' },
+  { name: 'notApplicable', type: 'FillBatchProblem[]', description: 'Values given for targets that do not apply, each with the condition that hides it' },
+  { name: 'unprintedNames', type: 'FillBatchProblem[]', description: 'Parties whose name a PDF layer does not print, each with the members the layer prints' },
+]} />
+
+### FillBatchTarget
+
+<PropertiesTable properties={[
+  { name: 'kind', type: 'FillTargetKind', description: 'field, party or annex' },
+  { name: 'key', type: 'string', description: 'Field path, party role, or annex id' },
+  { name: 'required', type: 'boolean', description: 'The target must have a value' },
+  { name: 'label', type: 'string', description: 'The label', isOptional: true },
+  { name: 'description', type: 'string', description: 'The description', isOptional: true },
+  { name: 'type', type: 'string', description: 'Field type, or the party type for a party', isOptional: true },
+  { name: 'shape', type: 'string', description: 'The object shape of a composite value, such as an address or a person', isOptional: true },
+  { name: 'input', type: 'string', description: 'How to enter the value, when the type needs a note (place codes, masks)', isOptional: true },
+  { name: 'options', type: '{ value: string | number | boolean; label?: string }[]', description: 'The allowed values of an enum or multiselect', isOptional: true },
+  { name: 'format', type: 'string', description: 'The value format of a date, datetime or time', isOptional: true },
+  { name: 'constraints', type: 'Record<string, string | number | boolean>', description: 'The limits the value must keep, such as min, max, maxLength, pattern or mask', isOptional: true },
+  { name: 'item', type: 'string', description: 'The type of each row of a list, or of each party of a role that takes more than one party', isOptional: true },
+  { name: 'rows', type: 'FillBatchTarget[]', description: 'The fields of each row of a list whose rows are objects', isOptional: true },
+  { name: 'prints', type: 'string[]', description: 'The members of a party that a PDF layer of the form prints, such as `firstName` and `lastName`', isOptional: true },
+  { name: 'conditional', type: 'boolean', description: 'The target is open because of a `visible` condition on it or on a field above it', isOptional: true },
 ]} />
 
 ### FillStateSummary
