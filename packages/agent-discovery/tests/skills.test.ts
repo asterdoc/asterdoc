@@ -84,6 +84,37 @@ describe("the public skills", () => {
   });
 });
 
+const UNRELEASED_HOSTS = /\b(?:mcp|api)\.asterdoc\.com\b/;
+
+function unreleasedHostMentions(files: { path: string; content: Uint8Array }[]): string[] {
+  return files
+    .filter((file) => UNRELEASED_HOSTS.test(new TextDecoder().decode(file.content)))
+    .map((file) => file.path);
+}
+
+describe("unreleased Platform hosts", () => {
+  it("appear in no file of a published skill or in the index", () => {
+    const { index, read } = publish(publicSkills, "unreleased");
+    expect(JSON.stringify(index)).not.toMatch(UNRELEASED_HOSTS);
+    for (const skill of index.skills) {
+      expect(unreleasedHostMentions(readArchive(read(skill.url))), skill.name).toEqual([]);
+    }
+  });
+
+  it("are caught in any file of a skill", () => {
+    const skills = fixtureSkill("hosts", {
+      "SKILL.md": manifest("hosts", "Connect to the server at mcp.asterdoc.com."),
+      "references/guide.md": "Call https://api.asterdoc.com/v1 with a key.\n",
+      "references/other.md": "Read docs.asterdoc.com.\n",
+    });
+    const { index, read } = publish(skills, "hosts");
+    expect(unreleasedHostMentions(readArchive(read(index.skills[0]!.url))).sort()).toEqual([
+      "SKILL.md",
+      "references/guide.md",
+    ]);
+  });
+});
+
 describe("verification", () => {
   it("fails on a digest that does not match the delivered bytes", () => {
     const { read } = publish(fixtureSkill("demo", { "SKILL.md": manifest("demo"), "references/guide.md": "# Guide\n" }), "digest");

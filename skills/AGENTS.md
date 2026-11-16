@@ -8,7 +8,7 @@ The official agent skills for [Asterdoc](https://asterdoc.com), the documents-as
 
 Three skills:
 
-- `skills/asterdoc/`: authoring, filling, validating, rendering and sealing artifacts on every surface (TypeScript SDK, `asterdoc` CLI, raw JSON/YAML, AI agent tools, hosted MCP), plus the authoring workflow.
+- `skills/asterdoc/`: authoring, filling, validating, rendering and sealing artifacts on every surface (TypeScript SDK, `asterdoc` CLI, raw JSON/YAML, AI agent tools), plus the authoring workflow.
 - `skills/asterdoc-fill/`: filling an existing form from facts with the `asterdoc` CLI, in passes driven by `asterdoc data next`. For agents that fill forms; it links nothing and stays one file.
 - `skills/asterdoc-react/`: composing, checking, previewing, rendering and sealing documents written in React with `@asterdoc/react` and `@asterdoc/react-pdf`.
 
@@ -24,7 +24,7 @@ Three skills:
     │   ├── metadata.json
     │   └── references/
     │       # Surface refs
-    │       ├── sdk.md, cli.md, schemas.md, ai-tools.md, mcp.md
+    │       ├── sdk.md, cli.md, schemas.md, ai-tools.md
     │       # Topic refs
     │       ├── artifacts.md, fields.md, parties.md, annexes.md, logic.md,
     │       ├── layers.md, templates.md, pdf.md, rendering.md, formatting.md,
@@ -44,7 +44,7 @@ Three skills:
 
 ## Reference categories (`asterdoc`)
 
-`asterdoc` spans five surfaces, so its references split three ways. `asterdoc-react` covers one surface and keeps a flat set of topic references; do not force it into these categories.
+`asterdoc` spans four surfaces, so its references split three ways. `asterdoc-react` covers one surface and keeps a flat set of topic references; do not force it into these categories.
 
 | Category | Purpose | Examples |
 |---|---|---|

@@ -1,15 +1,15 @@
 ---
 name: ai-tools
-description: Give your own AI agent Asterdoc tools with @asterdoc/ai-tools and its adapters (@asterdoc/ai-sdk, @asterdoc/mastra, @asterdoc/tanstack-ai). The ten operations, source modes, snake_case wire format, execute functions, the fill loop, config and security, and how it differs from the hosted MCP server.
+description: Give your own AI agent Asterdoc tools with @asterdoc/ai-tools and its adapters (@asterdoc/ai-sdk, @asterdoc/mastra, @asterdoc/tanstack-ai). The ten operations, source modes, snake_case wire format, execute functions, the fill loop, and config and security.
 metadata:
   tags: ai-tools, ai-sdk, vercel, mastra, tanstack-ai, agent, tools, fill, get_fill_state, update_fill, render, extract, candidates, display, snake_case
 ---
 
 # AI tools in your own code
 
-**Contents:** [Packages](#packages) · [The ten operations](#the-ten-operations) · [Sources](#sources) · [Wire format](#wire-format) · [The fill loop](#the-fill-loop) · [Conversational input](#conversational-input) · [Adapters](#adapters) · [Config and security](#config-and-security) · [Limits](#limits) · [Differences from MCP](#differences-from-mcp)
+**Contents:** [Packages](#packages) · [The ten operations](#the-ten-operations) · [Sources](#sources) · [Wire format](#wire-format) · [The fill loop](#the-fill-loop) · [Conversational input](#conversational-input) · [Adapters](#adapters) · [Config and security](#config-and-security) · [Limits](#limits)
 
-The AI packages are npm libraries. The tools run in your own process, with no Asterdoc account; they make network calls only to fetch artifacts by URL or registry. When a chat client connects to the hosted server instead, load [mcp.md](./mcp.md).
+The AI packages are npm libraries. The tools run in your own process, with no Asterdoc account; they make network calls only to fetch artifacts by URL or registry.
 
 ## Packages
 
@@ -120,7 +120,7 @@ const doc = await executeRender({ ...source, data: second.data, layer: 'markdown
 
 `update_fill` also takes `clear: ['fields.weight']` and `reset: ['fields.weight']` (schema-qualified paths). Use `validate_input` to check one answer before it goes into the draft.
 
-To start from a filled PDF, call `extract` and pass its `data` to `fill`. The report is the SDK's ([filling.md § Extract from a filled PDF](./filling.md#extract-from-a-filled-pdf)). Each `recovered` entry carries `lossy`; confirm a `lossy: true` value with the person ([pdf.md § Read a filled PDF back](./pdf.md#read-a-filled-pdf-back)). `extract` reads AcroForm fields; for a flattened or scanned PDF, use the hosted `extract` ([mcp.md § Execution](./mcp.md#execution)).
+To start from a filled PDF, call `extract` and pass its `data` to `fill`. The report is the SDK's ([filling.md § Extract from a filled PDF](./filling.md#extract-from-a-filled-pdf)). Each `recovered` entry carries `lossy`; confirm a `lossy: true` value with the person ([pdf.md § Read a filled PDF back](./pdf.md#read-a-filled-pdf-back)). `extract` reads AcroForm fields only; a flattened or scanned PDF has none to read.
 
 ## Conversational input
 
@@ -246,15 +246,4 @@ Bound model-facing output with `maxOutputBytes`. Use `presentation.max_bytes` on
 | `fill`, `get_fill_state`, `update_fill` | Forms and checklists only. |
 | `render` | Forms, documents and checklists (render a bundle with the SDK). Text, markdown, HTML, PDF and DOCX layers; React (`text/tsx`) layers render with the `asterdoc-react` skill. Binary output is base64. |
 | `extract` | Fillable (AcroForm) PDFs with layer `bindings`. Pass `layer` when the artifact has more than one PDF layer. |
-| All | To seal, use the SDK ([sealing.md](./sealing.md)) or the MCP `seal` tool. |
-
-## Differences from MCP
-
-| | AI packages | MCP server ([mcp.md](./mcp.md)) |
-|---|---|---|
-| Runs | In your process | Hosted at `https://mcp.asterdoc.com/mcp` |
-| Auth | Your own config (`fetch` headers) | OAuth or `x-api-key`, per organization |
-| Artifact lookup | Inline JSON, URL, or registry URL | Inline JSON, an Asterdoc Platform coordinate (`@org/repo/artifact`), or `registry_url` + name |
-| Tools only here | `inspect_artifact`, `validate_input`, `get_fill_state`, `update_fill`, local `extract` | `list_artifacts`, `search`, e-signature, payments, account reads, billed extraction and sealing |
-| Validate and fill names | `validate_artifact`, `fill` | `validate`, `fill` |
-| Render output | Inline only | Short download link (default) or inline |
+| All | To seal, use the SDK ([sealing.md](./sealing.md)). |

@@ -50,7 +50,11 @@ The SDK and every framework package need Node.js 20 or newer. The AI integration
 | [`@asterdoc/sessions`](/sdk/sessions) | Event-sourced form-completion sessions |
 | [`@asterdoc/render`](/sdk/renderers) | The MIME-selected `createLayerRenderer()` entry point, plus the PDF placement helpers `locate`, `locator`, and `extractFieldsFromPdf` |
 
+<PlatformOnly>
+
 The SDK also exports `hostedSealAdapter`, which converts non-PDF layers through the hosted converter when you seal.
+
+</PlatformOnly>
 
 Install `@asterdoc/render` directly when you import its format subpaths
 (`@asterdoc/render/text`, `/pdf`, `/docx`) or want rendering as an explicit

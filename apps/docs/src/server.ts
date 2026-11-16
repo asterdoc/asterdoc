@@ -1,14 +1,10 @@
 import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
 import { env } from "cloudflare:workers";
 
-import {
-  DOCS_ORIGIN,
-  handleDiscoveryRequest,
-  withHomepageLinks,
-} from "@asterdoc/agent-discovery";
 import { getLLMText } from "@/lib/get-llm-text";
 import { createDocsHandler } from "@/lib/docs-delivery";
-import { redirectMovedPage } from "@/lib/moved-pages";
+import { createDocsEntry } from "@/lib/docs-entry";
+import { platformApiDocsEnabled } from "@/lib/docs-features";
 import { source } from "@/lib/source";
 
 function notFound(request: Request): Response {
@@ -48,11 +44,5 @@ const docs = createDocsHandler({
 });
 
 export default createServerEntry({
-  fetch: async (request) =>
-    handleDiscoveryRequest(request, DOCS_ORIGIN) ??
-    redirectMovedPage(request) ??
-    withHomepageLinks(request, await docs(request), {
-      href: "/llms.txt",
-      type: "text/plain",
-    }),
+  fetch: createDocsEntry({ platformApi: platformApiDocsEnabled, docs }),
 });

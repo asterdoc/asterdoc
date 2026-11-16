@@ -133,6 +133,13 @@ describe("homepageLinks", () => {
       '</llms.txt>; rel="describedby"; type="text/plain"; title="Reading index"',
     ]);
   });
+
+  it("leaves out the catalog for a host that does not serve it", () => {
+    expect(homepageLinks({ href: "/llms.txt", type: "text/plain" }, { apiCatalog: false })).toEqual([
+      '</.well-known/agent-skills/index.json>; rel="describedby"; type="application/json"; title="Agent Skills index"',
+      '</llms.txt>; rel="describedby"; type="text/plain"; title="Reading index"',
+    ]);
+  });
 });
 
 describe("withHomepageLinks", () => {
@@ -143,6 +150,12 @@ describe("withHomepageLinks", () => {
     const response = withHomepageLinks(at("/"), original, { href: "/llms.txt", type: "text/plain" });
     expect(response.headers.get("Link")).toContain('</index.md>; rel="alternate"');
     expect(response.headers.get("Link")).toContain('rel="api-catalog"');
+  });
+
+  it("adds no catalog link when the host does not serve the catalog", () => {
+    const response = withHomepageLinks(at("/"), new Response("<html>"), { href: "/llms.txt", type: "text/plain" }, { apiCatalog: false });
+    expect(response.headers.get("Link")).toContain('title="Agent Skills index"');
+    expect(response.headers.get("Link")).not.toContain("api-catalog");
   });
 
   it("leaves other paths and failures alone", () => {

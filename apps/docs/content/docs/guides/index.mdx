@@ -5,8 +5,6 @@ ogTitle: Asterdoc Guides
 ogDescription: Step-by-step guides for building forms, documents, checklists, bundles, and packets
 ---
 
-import { platformApiDocsEnabled } from '../../../src/lib/docs-features'
-
 Step-by-step guides for working with Asterdoc.
 
 | Guide | Description |
@@ -24,8 +22,14 @@ Step-by-step guides for working with Asterdoc.
 | [Sealing](/guides/sealing-and-conversion) | Prepare a canonical PDF, its hash, and its signature fields for signing |
 | [Packets](/guides/packets) | Merge a bundle's parts into one PDF and seal it for signing |
 
-{platformApiDocsEnabled ? <p><a href="/guides/hosted-sealing-and-conversion">Hosted Sealing</a> — Seal and convert documents with the Asterdoc Platform API.</p> : null}
+<PlatformOnly>
 
-{platformApiDocsEnabled ? <p><a href="/guides/platform-access">Platform access</a> — Choose organization roles and API-key permissions for document content.</p> : null}
+## Platform guides
 
-{platformApiDocsEnabled ? <p><a href="/guides/registry-versions">Registry versions</a>: Deprecate, yank, or delete a version you published.</p> : null}
+| Guide | Description |
+|-------|-------------|
+| [Hosted sealing](/guides/hosted-sealing-and-conversion) | Seal and convert documents with the Asterdoc Platform API |
+| [Platform access](/guides/platform-access) | Choose organization roles and API-key permissions for document content |
+| [Registry versions](/guides/registry-versions) | Deprecate, yank, or delete a version you published |
+
+</PlatformOnly>

@@ -6,7 +6,7 @@ Agent skills for [Asterdoc](https://asterdoc.com), the documents-as-code framewo
 
 | Skill | Use it for |
 |---|---|
-| [asterdoc](skills/asterdoc/) | Authoring, filling, validating, rendering and sealing artifacts with the TypeScript SDK, the `asterdoc` CLI, raw JSON/YAML, the AI agent tools, or the hosted MCP server. Includes a staged workflow for creating a form or converting a PDF form. |
+| [asterdoc](skills/asterdoc/) | Authoring, filling, validating, rendering and sealing artifacts with the TypeScript SDK, the `asterdoc` CLI, raw JSON/YAML, or the AI agent tools. Includes a staged workflow for creating a form or converting a PDF form. |
 | [asterdoc-fill](skills/asterdoc-fill/) | Filling an existing form from the facts at hand with the `asterdoc` CLI: `asterdoc data next` gives the fields open now, the agent writes them in one batch per pass, then renders and checks the PDF. For agents that fill forms rather than author them. |
 | [asterdoc-react](skills/asterdoc-react/) | Composing, checking, previewing, rendering and sealing documents written in React with `@asterdoc/react` and `@asterdoc/react-pdf`. |
 
@@ -50,7 +50,7 @@ skills/
     SKILL.md            # Manifest: rules, package map, dispatch
     metadata.json
     references/
-      sdk.md cli.md schemas.md ai-tools.md mcp.md          # Surfaces
+      sdk.md cli.md schemas.md ai-tools.md                 # Surfaces
       artifacts.md fields.md parties.md annexes.md logic.md  # Topics
       layers.md templates.md pdf.md rendering.md formatting.md
       instructions.md filling.md sealing.md essentials.md

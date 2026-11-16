@@ -15,16 +15,6 @@ function contentPages(): string[] {
     .map((file) => file.split(path.sep).join("/"));
 }
 
-/** Pages whose text links `slug`, as a docs URL. */
-function pagesLinking(pages: Record<string, string>, slug: string): string[] {
-  const link = new RegExp(
-    `(?:\\]\\(|href=["'])/${slug}(?:[/#?]|["')])`,
-  );
-  return Object.entries(pages)
-    .filter(([, text]) => link.test(text))
-    .map(([file]) => file);
-}
-
 const files = [
   {
     type: "page",
@@ -94,33 +84,6 @@ describe("gated-off content glob", () => {
   test("is the glob source.config.ts compiles when the pages are gated off", () => {
     const config = readFileSync(path.resolve(__dirname, "../source.config.ts"), "utf8");
     expect(config).toMatch(/:\s*\[DOCS_FILES_WITHOUT_PLATFORM_API\]/);
-  });
-});
-
-describe("gated platform API pages", () => {
-  test("only platform API pages link another gated page", () => {
-    const pages = Object.fromEntries(
-      contentPages()
-        .filter((file) => !PLATFORM_API_PAGES.includes(file as typeof PLATFORM_API_PAGES[number]))
-        .map((file) => [file, readFileSync(path.join(CONTENT_DIR, file), "utf8")]),
-    );
-
-    for (const page of PLATFORM_API_PAGES) {
-      const gatedSlug = page.replace(/\.mdx$/, "");
-      expect(pagesLinking(pages, gatedSlug)).toEqual(["guides/index.mdx"]);
-    }
-    expect(pages["guides/index.mdx"]).toContain("platformApiDocsEnabled ?");
-  });
-
-  test("finds a link to a gated page", () => {
-    const gatedSlug = PLATFORM_API_PAGES[0].replace(/\.mdx$/, "");
-    const pages = {
-      "sdk/index.mdx": `See [Hosted sealing](/${gatedSlug}).`,
-      "sdk/other.mdx": `See [Hosted sealing](/${gatedSlug}#adapter).`,
-      "sdk/plain.mdx": "No link here.",
-    };
-
-    expect(pagesLinking(pages, gatedSlug)).toEqual(["sdk/index.mdx", "sdk/other.mdx"]);
   });
 });
 

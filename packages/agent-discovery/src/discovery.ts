@@ -97,23 +97,36 @@ export interface ReadingIndex {
   type: string;
 }
 
+/** Which homepage links a host advertises. */
+export interface HomepageLinkOptions {
+  /** Link the API catalog. A host that does not serve the catalog sets this to false. Defaults to true. */
+  apiCatalog?: boolean;
+}
+
 /**
- * Link header values for a host's homepage: the API catalog, the agent skills
- * index and the reading index.
+ * Link header values for a host's homepage: the API catalog (unless
+ * `options.apiCatalog` is false), the agent skills index and the reading index.
  */
-export function homepageLinks(readingIndex: ReadingIndex): string[] {
+export function homepageLinks(readingIndex: ReadingIndex, options: HomepageLinkOptions = {}): string[] {
   return [
-    `<${API_CATALOG_PATH}>; rel="api-catalog"; type="${LINKSET_MEDIA_TYPE}"`,
+    ...(options.apiCatalog === false
+      ? []
+      : [`<${API_CATALOG_PATH}>; rel="api-catalog"; type="${LINKSET_MEDIA_TYPE}"`]),
     `<${SKILLS_INDEX_PATH}>; rel="describedby"; type="application/json"; title="Agent Skills index"`,
     `<${readingIndex.href}>; rel="describedby"; type="${readingIndex.type}"; title="Reading index"`,
   ];
 }
 
 /** Add the homepage Link headers to a successful response for `/`. Other responses pass through. */
-export function withHomepageLinks(request: Request, response: Response, readingIndex: ReadingIndex): Response {
+export function withHomepageLinks(
+  request: Request,
+  response: Response,
+  readingIndex: ReadingIndex,
+  options: HomepageLinkOptions = {},
+): Response {
   if (new URL(request.url).pathname !== "/" || response.status !== 200) return response;
   const next = new Response(response.body, response);
-  for (const link of homepageLinks(readingIndex)) next.headers.append("Link", link);
+  for (const link of homepageLinks(readingIndex, options)) next.headers.append("Link", link);
   return next;
 }
 

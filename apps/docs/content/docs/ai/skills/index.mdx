@@ -9,7 +9,7 @@ Asterdoc ships two agent skills. A skill is a reference package that teaches an 
 
 | Skill | Use it for |
 |---|---|
-| `asterdoc` | Authoring, filling, validating, rendering, and sealing artifacts with the TypeScript SDK, the `asterdoc` CLI, raw JSON/YAML, the AI agent tools, or the hosted MCP server |
+| `asterdoc` | Authoring, filling, validating, rendering, and sealing artifacts with the TypeScript SDK, the `asterdoc` CLI, raw JSON/YAML, or the AI agent tools |
 | [`asterdoc-react`](/ai/skills/asterdoc-react) | Composing, checking, previewing, rendering, and sealing documents written in React with `@asterdoc/react` and `@asterdoc/react-pdf` |
 
 Install `asterdoc-react` on its own when composing documents in React is the only Asterdoc work in play. Install both when you also author the artifacts.
@@ -20,11 +20,11 @@ The `asterdoc` skill has three kinds of references:
 
 | Kind | Files | What they cover |
 |---|---|---|
-| **Surface** | `sdk`, `cli`, `schemas`, `ai-tools`, `mcp` | How to work on each surface: TypeScript SDK, `asterdoc` CLI, raw JSON/YAML, AI agent tools in your own code, hosted MCP |
+| **Surface** | `sdk`, `cli`, `schemas`, `ai-tools` | How to work on each surface: TypeScript SDK, `asterdoc` CLI, raw JSON/YAML, AI agent tools in your own code |
 | **Topic** | `artifacts`, `fields`, `parties`, `annexes`, `logic`, `layers`, `templates`, `pdf`, `rendering`, `formatting`, `instructions`, `filling`, `sealing`, `essentials` | Concepts that apply on every surface |
 | **Workflow** | `workflow-author-form` | A staged pipeline for creating a form from requirements or converting a PDF form |
 
-The skill activates when the assistant sees Asterdoc work: `@asterdoc/*` imports, the `asterdoc` CLI, JSON/YAML artifacts, the AI tool packages, or `mcp.asterdoc.com`.
+The skill activates when the assistant sees Asterdoc work: `@asterdoc/*` imports, the `asterdoc` CLI, JSON/YAML artifacts, or the AI tool packages.
 
 ## Installation
 
@@ -64,6 +64,8 @@ The skill activates when the assistant sees Asterdoc work: `@asterdoc/*` imports
 
 An agent with no clone of the repository can read the skills from `https://docs.asterdoc.com/.well-known/agent-skills/index.json`, which follows the [Agent Skills discovery index](https://github.com/cloudflare/agent-skills-discovery-rfc). Each entry gives a `.tar.gz` archive with `SKILL.md` and every reference, and a `sha256` digest of the archive bytes to check before use. The same index is served at `https://asterdoc.com/.well-known/agent-skills/index.json`.
 
+<PlatformOnly>
+
 ## Pairing with MCP
 
 The skills and the hosted MCP server do different jobs:
@@ -76,6 +78,8 @@ The skills and the hosted MCP server do different jobs:
 | **Best for** | Writing code, designing artifacts, debugging | Browsing the registry, rendering live artifacts |
 
 To give your own agent Asterdoc tools in code, use the [AI tool packages](/ai) instead of MCP.
+
+</PlatformOnly>
 
 ## Source
 

@@ -25,7 +25,7 @@ import { a } from "@asterdoc/sdk";
 import { createFsResolver } from "@asterdoc/resolvers/fs";
 ```
 
-`@asterdoc/sdk` is the umbrella. It re-exports all of `@asterdoc/core`, `@asterdoc/format` and `@asterdoc/sessions`, plus `createLayerRenderer` (render's MIME-selected renderer factory), `hostedSealAdapter`, the placement helpers (`locate`, `locator`, `extractFieldsFromPdf`) and `expr` (the `@asterdoc/expr` namespace). Import each package only from the paths in its `exports`:
+`@asterdoc/sdk` is the umbrella. It re-exports all of `@asterdoc/core`, `@asterdoc/format` and `@asterdoc/sessions`, plus `createLayerRenderer` (render's MIME-selected renderer factory), the placement helpers (`locate`, `locator`, `extractFieldsFromPdf`) and `expr` (the `@asterdoc/expr` namespace). Import each package only from the paths in its `exports`:
 
 | Package | Import paths | Install it when |
 |---------|--------------|-----------------|

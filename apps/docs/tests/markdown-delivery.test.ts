@@ -211,6 +211,7 @@ describe("docs delivery", () => {
 });
 
 const docsUrl = process.env.AUDIT_DOCS_URL;
+const platformApiDocs = process.env.ASTERDOC_DOCS_PLATFORM_API === "true";
 describe.skipIf(!docsUrl)("built documentation delivery", () => {
   async function inventory(): Promise<string[]> {
     const sitemap = await (await fetch(new URL("/sitemap.xml", docsUrl))).text();
@@ -277,30 +278,50 @@ describe.skipIf(!docsUrl)("built documentation delivery", () => {
     );
   });
 
-  test("keeps unpublished pages hidden in every representation", async () => {
+  test("keeps the platform pages hidden in every representation unless the platform docs are on", async () => {
     for (const slug of PLATFORM_API_PAGES.map((page) => page.replace(/\.mdx$/, ""))) {
       const responses = await Promise.all([
         fetch(new URL(`/${slug}.md`, docsUrl)),
         fetch(new URL(`/${slug}/`, docsUrl), { headers: { Accept: "text/markdown" } }),
         fetch(new URL(`/${slug}/`, docsUrl)),
       ]);
-      expect(responses.map((response) => response.status), slug).toEqual([404, 404, 404]);
+      const status = platformApiDocs ? 200 : 404;
+      expect(responses.map((response) => response.status), slug).toEqual([status, status, status]);
     }
   });
 
-  test("serves discovery documents and complete skills, and 404s absent ones", async () => {
+  test("serves the Platform discovery documents only with the platform docs on", async () => {
     const catalog = await fetch(new URL("/.well-known/api-catalog", docsUrl), {
       headers: { Accept: "application/linkset+json" },
     });
-    expect(catalog.status).toBe(200);
-    expect(catalog.headers.get("content-type")).toContain("application/linkset+json");
     const card = await fetch(new URL("/.well-known/mcp/server-card.json", docsUrl));
-    expect(card.status).toBe(200);
+    const llms = await (await fetch(new URL("/llms.txt", docsUrl))).text();
+    const skillsPage = await (await fetch(new URL("/ai/skills.md", docsUrl))).text();
+    const home = await fetch(new URL("/", docsUrl));
+    if (platformApiDocs) {
+      expect(catalog.status).toBe(200);
+      expect(catalog.headers.get("content-type")).toContain("application/linkset+json");
+      expect(card.status).toBe(200);
+      expect(llms).toContain("/.well-known/api-catalog");
+      expect(llms).toContain("/.well-known/mcp/server-card.json");
+      expect(skillsPage).toContain("## Pairing with MCP");
+      expect(home.headers.get("link")).toContain('rel="api-catalog"');
+    } else {
+      expect(catalog.status).toBe(404);
+      expect(card.status).toBe(404);
+      expect(llms).not.toMatch(/api-catalog|server-card|MCP/);
+      expect(skillsPage).not.toMatch(/\bMCP\b|mcp\.asterdoc\.com/i);
+      expect(home.headers.get("link")).not.toContain("api-catalog");
+    }
+  });
+
+  test("serves complete skills that name no unreleased host, and 404s absent documents", async () => {
 
     const index = (await (await fetch(new URL("/.well-known/agent-skills/index.json", docsUrl))).json()) as {
       skills: { name: string; url: string; digest: string }[];
     };
-    expect(index.skills.map((skill) => skill.name)).toEqual(["asterdoc", "asterdoc-react"]);
+    expect(index.skills.map((skill) => skill.name)).toEqual(["asterdoc", "asterdoc-fill", "asterdoc-react"]);
+    expect(JSON.stringify(index)).not.toMatch(/(?:mcp|api)\.asterdoc\.com/);
     for (const skill of index.skills) {
       const archive = Buffer.from(await (await fetch(new URL(skill.url, docsUrl))).arrayBuffer());
       expect(`sha256:${createHash("sha256").update(archive).digest("hex")}`).toBe(skill.digest);

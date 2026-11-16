@@ -83,17 +83,8 @@ signable.signatureMap      // provider-neutral PDF coordinates
 Non-PDF layers need a **converter**: a `SealAdapter` that turns the rendered
 document into PDF bytes and nothing else. Placement is not the converter's
 job — core locates anchors and markers itself with the built-in locator, so a
-pure byte converter works with zero configuration:
-
-```ts
-import { hostedSealAdapter } from '@asterdoc/sdk'
-
-const signable = await draft.seal({
-  adapter: hostedSealAdapter({ apiKey }),
-})
-```
-
-A custom converter is one honest function:
+pure byte converter works with zero configuration. A converter is one
+honest function:
 
 ```ts
 import type { SealAdapter } from '@asterdoc/sdk'
@@ -103,7 +94,23 @@ const adapter: SealAdapter = {
     return { pdf: await myHtmlToPdf(document.content) }
   },
 }
+
+const signable = await draft.seal({ adapter })
 ```
+
+<PlatformOnly>
+
+Or convert through the hosted converter:
+
+```ts
+import { hostedSealAdapter } from '@asterdoc/sdk'
+
+const signable = await draft.seal({
+  adapter: hostedSealAdapter({ apiKey }),
+})
+```
+
+</PlatformOnly>
 
 If an adapter does resolve placements itself (returning a complete
 `signatureMap`), core respects it and skips the locator. Pass `locate` to

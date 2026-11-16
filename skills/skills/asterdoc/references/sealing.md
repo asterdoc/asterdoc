@@ -1,13 +1,13 @@
 ---
 name: sealing
-description: The one signing lifecycle for forms. Signers and signatories, signature slots, seal and prepareSeal (local PDF, SealAdapter, hostedSealAdapter), capture, finalize, signatureMap and canonicalPdfHash, and packets with sealBundle and mergePdfs.
+description: The one signing lifecycle for forms. Signers and signatories, signature slots, seal and prepareSeal (local PDF, SealAdapter), capture, finalize, signatureMap and canonicalPdfHash, and packets with sealBundle and mergePdfs.
 metadata:
-  tags: sealing, signing, seal, prepareSeal, SealAdapter, hostedSealAdapter, signatureMap, canonicalPdfHash, capture, finalize, witnesses, packets, sealBundle, mergePdfs
+  tags: sealing, signing, seal, prepareSeal, SealAdapter, signatureMap, canonicalPdfHash, capture, finalize, witnesses, packets, sealBundle, mergePdfs
 ---
 
 # Sealing and signing
 
-**Contents:** [Lifecycle](#lifecycle) · [1. Declare slots](#1-declare-slots) · [2. Bind signers](#2-bind-signers) · [3. Seal](#3-seal) · [4. Capture](#4-capture) · [5. Finalize](#5-finalize) · [Packets](#packets) · [Hosted sealing](#hosted-sealing)
+**Contents:** [Lifecycle](#lifecycle) · [1. Declare slots](#1-declare-slots) · [2. Bind signers](#2-bind-signers) · [3. Seal](#3-seal) · [4. Capture](#4-capture) · [5. Finalize](#5-finalize) · [Packets](#packets)
 
 Sealing turns a filled draft into the document a signer signs: one flattened, canonical PDF, its SHA-256 hash (`canonicalPdfHash`), and a `signatureMap` that says where each signer signs. Placement and hashing always run in your process, so the result is verifiable. A signing ceremony (your e-sign provider, or your own UI) then captures signatures against that map.
 
@@ -27,7 +27,7 @@ signable ── capture* ── finalize() ──► executed
 
 To store a form in any phase and load it back, see [filling.md § Persist and resume](./filling.md#persist-and-resume).
 
-Import everything from `@asterdoc/sdk` (it re-exports `@asterdoc/core`). `hostedSealAdapter` exists only in `@asterdoc/sdk`. `mergePdfs` comes from `@asterdoc/render/pdf`.
+Import everything from `@asterdoc/sdk` (it re-exports `@asterdoc/core`). `mergePdfs` comes from `@asterdoc/render/pdf`.
 
 ## 1. Declare slots
 
@@ -153,20 +153,6 @@ const adapter: SealAdapter = {
 }
 
 const signable = await draft.setTargetLayer('summary').seal({ adapter })
-```
-
-Or use Asterdoc's hosted converter. It calls `POST https://api.asterdoc.com/v1/exec/convert` with your API key and is billed per page:
-
-```typescript
-import { hostedSealAdapter, HostedConversionError } from '@asterdoc/sdk'
-
-const signable = await draft.setTargetLayer('summary').seal({
-  adapter: hostedSealAdapter({
-    apiKey: process.env.ASTERDOC_API_KEY!,
-    timeoutMs: 30_000, // per request
-  }),
-})
-// A failed conversion throws HostedConversionError with .status and .bodyExcerpt.
 ```
 
 For `flow` slots, core renders twice: a pass with invisible markers that it locates in the converted PDF, then a clean pass that becomes the canonical document. If the markers move a line wrap between the passes, the seal fails instead of placing a field in the wrong spot.
@@ -344,7 +330,3 @@ import { mergePdfs } from '@asterdoc/render/pdf'
 
 const merged = await mergePdfs([firstPdfBytes, secondPdfBytes]) // Uint8Array
 ```
-
-## Hosted sealing
-
-Without the SDK, seal through the platform: the MCP `seal` tool ([mcp.md](./mcp.md)) or `POST /v1/exec/seal`. Both fill the artifact and return the canonical PDF, the signature map and the hash. They create no envelope. `data` holds only `fields`, `parties` and `annexes`; pass `signers` (`{ "signer-1": { "person": { "name": "Ada" } } }`) and `signatories` (`{ "<role>": { "<role>-0": [{ "signer_id": "signer-1" }] } }`) beside it so each slot maps to a signer. The MCP `create_envelope` tool seals and sends signing invitations in one call.

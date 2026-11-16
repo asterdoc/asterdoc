@@ -3,7 +3,7 @@ name: asterdoc
 description: >
   Asterdoc artifacts (forms, documents, checklists, bundles): author, fill,
   validate, render, and seal them with @asterdoc/sdk, the asterdoc CLI, JSON/YAML
-  files, @asterdoc/ai-tools, or the mcp.asterdoc.com server. Use when creating a
+  files, or @asterdoc/ai-tools. Use when creating a
   form or converting a PDF form, binding PDF fields or reading a filled PDF,
   writing defs, rules, conditions, or templates, filling a form step by step,
   signing or sealing, giving an agent Asterdoc tools, using a ready-made W-9,
@@ -11,8 +11,8 @@ description: >
   React, use asterdoc-react.
 metadata:
   author: asterdoc
-  version: "0.12.0"
-  tags: asterdoc, sdk, cli, schemas, ai-tools, mcp, forms, pdf, signing, rendering
+  version: "0.13.0"
+  tags: asterdoc, sdk, cli, schemas, ai-tools, forms, pdf, signing, rendering
   license: MIT
 allowed-tools: "Bash(npx:*) Bash(node:*) Read Write Edit Glob Grep"
 ---
@@ -41,7 +41,7 @@ Install `@asterdoc/sdk`. It re-exports `core`, `format`, and `sessions`; exposes
 
 | Package | Use it for |
 |---------|-----------|
-| `@asterdoc/sdk` | Define, load, fill, validate, render and seal artifacts; `hostedSealAdapter` |
+| `@asterdoc/sdk` | Define, load, fill, validate, render and seal artifacts |
 | `@asterdoc/resolvers` | Load layer files: `@asterdoc/resolvers/fs`, `@asterdoc/resolvers/http`, `@asterdoc/resolvers/memory` (no root export) |
 | `@asterdoc/essentials` | Finished forms: W-9, 1099, 4506-T, I-9, ACH ([essentials.md](./references/essentials.md)) |
 | `@asterdoc/ai-tools` + `@asterdoc/ai-sdk` / `mastra` / `tanstack-ai` | Asterdoc tools for your own agent |
@@ -60,10 +60,7 @@ Load the reference for the user's surface. Load each relevant reference when sur
 | Running `asterdoc` commands | [references/cli.md](./references/cli.md) |
 | Editing artifact JSON or YAML by hand | [references/schemas.md](./references/schemas.md) |
 | Giving their own agent Asterdoc tools (AI SDK, Mastra, TanStack AI) | [references/ai-tools.md](./references/ai-tools.md) |
-| Using the hosted MCP server at `mcp.asterdoc.com` | [references/mcp.md](./references/mcp.md) |
 | Writing a `.tsx`/`.jsx` document or a `text/tsx` layer | the `asterdoc-react` skill |
-
-The AI tool packages and the MCP server are different tool sets with different names.
 
 ## Topics
 

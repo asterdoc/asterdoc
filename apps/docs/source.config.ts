@@ -8,15 +8,19 @@ import {
   stringifyMdxComponent,
 } from "./src/lib/markdown-components";
 import { remarkSchemaVersion } from './src/lib/schema-version';
-import { DOCS_FILES_WITHOUT_PLATFORM_API } from "./src/lib/docs-features";
+import {
+  DOCS_FILES_WITHOUT_PLATFORM_API,
+  remarkPlatformOnly,
+} from "./src/lib/docs-features";
+
+const platformApiDocs = process.env.ASTERDOC_DOCS_PLATFORM_API === "true";
 
 export const docs = defineDocs({
   dir: "content/docs",
   docs: {
-    files:
-      process.env.ASTERDOC_DOCS_PLATFORM_API === "true"
-        ? ["**/*.{md,mdx}"]
-        : [DOCS_FILES_WITHOUT_PLATFORM_API],
+    files: platformApiDocs
+      ? ["**/*.{md,mdx}"]
+      : [DOCS_FILES_WITHOUT_PLATFORM_API],
     schema: pageSchema.extend({
       ogTitle: z.string().optional(),
       ogDescription: z.string().optional(),
@@ -33,7 +37,10 @@ export const docs = defineDocs({
 
 export default defineConfig({
   mdxOptions: {
-    remarkPlugins: [remarkSchemaVersion],
+    remarkPlugins: [
+      [remarkPlatformOnly, { enabled: platformApiDocs }],
+      remarkSchemaVersion,
+    ],
   },
   plugins: [lastModified()],
 });

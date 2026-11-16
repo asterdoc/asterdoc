@@ -65,3 +65,31 @@ export function filterDocsFiles<T extends DocsFile>(
     return [file];
   });
 }
+
+export const PLATFORM_ONLY_ELEMENT = "PlatformOnly";
+
+interface MdastNode {
+  type: string;
+  name?: string | null;
+  children?: MdastNode[];
+}
+
+function isPlatformOnly(node: MdastNode): boolean {
+  return (
+    (node.type === "mdxJsxFlowElement" || node.type === "mdxJsxTextElement") &&
+    node.name === PLATFORM_ONLY_ELEMENT
+  );
+}
+
+function gatePlatformOnly(node: MdastNode, enabled: boolean): void {
+  if (!node.children) return;
+  node.children = node.children.flatMap((child) => {
+    if (isPlatformOnly(child) && !enabled) return [];
+    gatePlatformOnly(child, enabled);
+    return isPlatformOnly(child) ? (child.children ?? []) : [child];
+  });
+}
+
+export function remarkPlatformOnly(options: { enabled: boolean }) {
+  return (tree: MdastNode) => gatePlatformOnly(tree, options.enabled);
+}
