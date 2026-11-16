@@ -425,6 +425,7 @@ const schema = {
           "originator": {
             "id": "originator-0",
             "name": "Example Lender LLC",
+            "legalName": "Example Lender LLC",
             "entityType": "llc"
           },
           "accountHolder": {

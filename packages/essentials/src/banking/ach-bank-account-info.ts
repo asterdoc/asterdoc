@@ -508,6 +508,7 @@ const schema = {
           "requestor": {
             "id": "requestor-0",
             "name": "Example Payer LLC",
+            "legalName": "Example Payer LLC",
             "entityType": "llc"
           },
           "accountHolder": {
