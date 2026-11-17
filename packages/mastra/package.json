@@ -115,7 +115,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@mastra/core": "1.64.0",
+    "@mastra/core": "catalog:",
     "@asterdoc/core": "workspace:*",
     "@asterdoc/eslint-config": "workspace:*",
     "@asterdoc/typescript-config": "workspace:*",
