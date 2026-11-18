@@ -214,43 +214,7 @@ export function jsonSchemaToZod(jsonSchema: Record<string, unknown>): z.ZodType 
 	return z.unknown()
 }
 
-/**
- * Apply defaults from JSON Schema to data
- */
-export function applyDefaults(
-	data: Record<string, unknown>,
-	jsonSchema: Record<string, unknown>
-): Record<string, unknown> {
-	return applyDefaultsToValue(data, jsonSchema) as Record<string, unknown>
-}
-
-function applyDefaultsToValue(value: unknown, jsonSchema: Record<string, unknown>): unknown {
-	if (jsonSchema.type === 'array') {
-		const items = jsonSchema.items
-		if (!Array.isArray(value) || !isRecordSchema(items)) return value
-		return value.map((item) => applyDefaultsToValue(item, items))
-	}
-
-	const properties = jsonSchema.properties as Record<string, Record<string, unknown>> | undefined
-	if (!properties || !isRecordValue(value)) return value
-
-	const result = { ...value }
-	for (const [key, propSchema] of Object.entries(properties)) {
-		if (result[key] === undefined && 'default' in propSchema) {
-			result[key] = deepClone(propSchema.default)
-		} else if (result[key] !== undefined) {
-			result[key] = applyDefaultsToValue(result[key], propSchema)
-		}
-	}
-
-	return result
-}
-
 function isRecordValue(value: unknown): value is Record<string, unknown> {
-	return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function isRecordSchema(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
@@ -339,14 +303,12 @@ export function mapZodIssuesToValidationErrors(
  *
  * @param form - The form definition (artifact schema)
  * @param data - The data payload to validate
- * @param options.applyDefaults Whether to apply schema defaults. Defaults to true;
- * set false for ordinary updates that must preserve omitted values.
  * @returns Validation result with success status, data, and errors
  */
 export function validateFormData<F extends Form>(
 	form: F,
 	data: Record<string, unknown>,
-	options: { applyDefaults?: boolean; locale?: string; mode?: CanonicalizationMode } = {},
+	options: { locale?: string; mode?: CanonicalizationMode } = {},
 ): ValidationResult<InferFormPayload<F>> {
 	// Compile the form to a JSON Schema
 	const jsonSchema = compile(options.mode === 'progressive' ? progressiveForm(form) : form)
@@ -354,12 +316,6 @@ export function validateFormData<F extends Form>(
 	// Deep clone data to avoid mutating the original
 	// Handle null/undefined gracefully by defaulting to empty object
 	let dataCopy = data != null ? deepClone(data) : {}
-
-	// Apply defaults for complete fills and parsing. Progressive updates can
-	// opt out so an ordinary patch never restores omitted defaulted values.
-	if (options.applyDefaults !== false) {
-		dataCopy = applyDefaults(dataCopy, jsonSchema)
-	}
 
 	if (isRecordValue(dataCopy) && isRecordValue(dataCopy.fields)) {
 		const canonical = canonicalizeFieldValues(form.fields, dataCopy.fields, {

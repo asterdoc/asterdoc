@@ -116,7 +116,9 @@ describe('shared AI tool contract', () => {
 		const incomplete = await executeFill({ source: 'artifact', artifact: formArtifact, data: { fields: {}, parties: { tenant } } })
 		expect(incomplete.accepted).toBe(true)
 		expect(incomplete.complete).toBe(false)
-		expect(incomplete.data).toMatchObject({ fields: { city: 'New York' }, parties: { tenant: { id: 'tenant-0', name: 'Alice Tenant' } } })
+		expect(incomplete.data).toMatchObject({ fields: {}, parties: { tenant: { id: 'tenant-0', name: 'Alice Tenant' } } })
+		expect(incomplete.data?.fields).not.toHaveProperty('city')
+		expect(incomplete.values).toMatchObject({ fields: { city: 'New York' }, parties: { tenant: { id: 'tenant-0', name: 'Alice Tenant' } } })
 
 		const filled = await executeFill({
 			source: 'artifact',
@@ -125,7 +127,8 @@ describe('shared AI tool contract', () => {
 		})
 		expect(filled.accepted).toBe(true)
 		expect(filled.complete).toBe(true)
-		expect(filled.data).toMatchObject({ fields: { name: 'Application', city: 'New York' }, parties: { tenant: { id: 'tenant-0' } }, annexes: { identity: { name: 'id.pdf' } } })
+		expect(filled.data).toMatchObject({ fields: { name: 'Application' }, parties: { tenant: { id: 'tenant-0' } }, annexes: { identity: { name: 'id.pdf' } } })
+		expect(filled.values).toMatchObject({ fields: { name: 'Application', city: 'New York' } })
 		const rendered = await executeRender({ source: 'artifact', artifact: formArtifact, data: filled.data, evaluation_context: filled.evaluation_context })
 		expect(rendered.success).toBe(true)
 		expect(rendered.content).toContain('Application / Alice Tenant / New York')
@@ -162,7 +165,9 @@ describe('shared AI tool contract', () => {
 			evaluation_context: context,
 		})
 		expect(result.accepted).toBe(true)
-		expect(result.data).toMatchObject({ fields: { name: 'Updated application', city: 'New York' }, parties: { tenant: { id: 'tenant-0' } }, annexes: { identity: { name: 'id.pdf' } } })
+		expect(result.data).toMatchObject({ fields: { name: 'Updated application' }, parties: { tenant: { id: 'tenant-0' } }, annexes: { identity: { name: 'id.pdf' } } })
+		expect(result.data?.fields).not.toHaveProperty('city')
+		expect(result.values).toMatchObject({ fields: { name: 'Updated application', city: 'New York' }, parties: { tenant: { id: 'tenant-0' } }, annexes: { identity: { name: 'id.pdf' } } })
 		expect(result.evaluation_context).toEqual(context)
 	})
 

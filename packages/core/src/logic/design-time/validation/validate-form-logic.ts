@@ -28,6 +28,7 @@ import {
   type LogicValidationOptions,
 } from './shared'
 import { defsDependencyExpressions } from '../../shared/defs-dependencies'
+import { defaultCycleIssues } from './default-cycles'
 
 /** Whether a payment amount is an expression object rather than fixed Money. */
 function isMoneyExpression(
@@ -534,6 +535,10 @@ export function validateFormDefs(
   // Validate field expressions (recursive for fieldsets)
   if (collectAllErrors || issues.length === 0) {
     validateFieldExpressions(form.fields, ['fields'], validVariables, issues, collectAllErrors)
+  }
+
+  if (collectAllErrors || issues.length === 0) {
+    issues.push(...defaultCycleIssues(form))
   }
 
   // Validate annex expressions

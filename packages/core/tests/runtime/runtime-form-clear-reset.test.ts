@@ -41,16 +41,17 @@ describe('DraftForm clear and reset', () => {
 		})
 	})
 
-	test('clears a defaulted value and keeps it absent across unrelated updates until reset', async () => {
-		const draft = (await createFormWithDefaults()).fill({ fields: { title: 'Custom', count: 1 } } as never)
+	test('clear leaves a defaulted field empty, and reset brings its default back', async () => {
+		const draft = (await createFormWithDefaults()).fill({ fields: { title: 'Custom', count: 1, settings: { note: 'Keep' } } } as never)
 		const cleared = draft.clear('fields.title')
+		const reset = cleared.reset('fields.title')
 
 		expect(cleared.fields).not.toHaveProperty('title')
-		const updated = cleared.update({ fields: { count: 2 } } as never)
-		expect(updated.fields).not.toHaveProperty('title')
-
-		const reset = updated.reset('fields.title')
+		expect(cleared.givenFields.title).toBeNull()
+		expect(cleared.update({ fields: { count: 2 } } as never).fields).not.toHaveProperty('title')
 		expect(reset.fields.title).toBe('Untitled')
+		expect(draft.reset('fields.title').fields.title).toBe('Untitled')
+		expect(cleared.update({ fields: { title: 'Again' } } as never).fields.title).toBe('Again')
 	})
 
 	test('clears and resets nested fieldsets and list item paths', async () => {
@@ -58,15 +59,13 @@ describe('DraftForm clear and reset', () => {
 			fields: { settings: { enabled: true, note: 'Keep' }, rows: [{ label: 'First', value: 7 }] },
 		} as never)
 
-		const clearedNested = draft.clear('fields.settings.enabled')
-		expect(clearedNested.fields.settings).toEqual({ note: 'Keep' })
-		const resetNested = clearedNested.reset('fields.settings.enabled')
-		expect(resetNested.fields.settings).toEqual({ enabled: false, note: 'Keep' })
-
-		const clearedListValue = resetNested.clear('fields.rows[0].label')
-		expect(clearedListValue.fields.rows).toEqual([{ value: 7 }])
-		const resetListValue = clearedListValue.reset('fields.rows[0].label')
-		expect(resetListValue.fields.rows).toEqual([{ label: 'Row', value: 7 }])
+		expect(draft.clear('fields.settings.enabled').fields.settings).toEqual({ note: 'Keep' })
+		expect(draft.clear('fields.settings.enabled').reset('fields.settings.enabled').fields.settings).toEqual({ enabled: false, note: 'Keep' })
+		expect(draft.clear('fields.settings').fields).not.toHaveProperty('settings')
+		expect(draft.reset('fields.settings').fields.settings).toEqual({ enabled: false })
+		expect(draft.clear('fields.rows[0].label').fields.rows).toEqual([{ value: 7 }])
+		expect(draft.reset('fields.rows[0].label').fields.rows).toEqual([{ label: 'Row', value: 7 }])
+		expect(draft.clear('fields.rows[0]').fields.rows).toEqual([])
 	})
 
 	test('reset does not invent list rows and annex reset removes the stored value', async () => {

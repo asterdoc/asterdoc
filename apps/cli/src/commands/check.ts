@@ -326,7 +326,7 @@ async function explicitData(value: string, form: Form, baseDir: string): Promise
   if (!result.success) {
     throw new Error(formatPayloadErrors(result.errors, result.ruleErrors).join('\n'))
   }
-  const normalized = result.data
+  const normalized = result.values
   return {
     fields: normalized.fields as DocumentData['fields'],
     parties: (normalized.parties as DocumentData['parties']) ?? {},

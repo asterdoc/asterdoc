@@ -22,15 +22,20 @@ type RuleValidationResult = FormValidationResult['rules']['errors'][number]
 /** The payload the SDK holds after a successful fill. */
 export type FilledPayload = Pick<FormData, 'fields' | 'parties' | 'annexes'>
 
+export interface FilledDraft {
+  data: FilledPayload
+  values: FilledPayload
+}
+
 export type PayloadValidationResult =
-  | { success: true; data: FilledPayload }
+  | ({ success: true } & FilledDraft)
   | { success: false; errors: ValidationError[]; ruleErrors: RuleValidationResult[] }
 
 type PayloadFailure = Extract<PayloadValidationResult, { success: false }>
 
 /** The payload of a draft: complete or not, each value in it was accepted. */
 export type DraftValidationResult =
-  | { success: true; data: FilledPayload; open: string[] }
+  | ({ success: true; open: string[] } & FilledDraft)
   | PayloadFailure
 
 function fillFailure(error: Error): PayloadFailure {
@@ -38,12 +43,16 @@ function fillFailure(error: Error): PayloadFailure {
   return { success: false, errors: [{ field: 'root', message: error.message }], ruleErrors: [] }
 }
 
-function filledPayload(draft: DraftForm<Form>): FilledPayload {
+function payloadOf(draft: DraftForm<Form>, fields: Record<string, unknown>): FilledPayload {
   return {
-    fields: draft.fields,
+    fields,
     ...(Object.keys(draft.parties).length > 0 && { parties: draft.parties }),
     ...(Object.keys(draft.annexes).length > 0 && { annexes: draft.annexes }),
   }
+}
+
+function filledDraft(draft: DraftForm<Form>): FilledDraft {
+  return { data: payloadOf(draft, draft.givenFields), values: payloadOf(draft, draft.fields) }
 }
 
 /** The faults a fill batch finds in the values given: more values do not correct them. */
@@ -62,7 +71,7 @@ export function validateFormPayload(instance: FormInstance<Form>, payload: Recor
     return { success: false, errors: result.errors, ruleErrors: result.rules.errors }
   }
 
-  return { success: true, data: filledPayload(draft) }
+  return { success: true, ...filledDraft(draft) }
 }
 
 const TARGET_ROOTS = { field: 'fields', party: 'parties', annex: 'annexes' } as const
@@ -89,7 +98,7 @@ export function validateDraftPayload(instance: FormInstance<Form>, payload: Reco
   const openTargets = new Set(batch.open.filter((target) => target.required).map((target) => `${TARGET_ROOTS[target.kind]}.${target.key}`))
   const faults = result.errors.filter((error) => !openTargets.has(error.field))
   if (faults.length > 0) return { success: false, errors: faults, ruleErrors: [] }
-  return { success: true, data: filledPayload(draft), open: result.valid ? [] : formatPayloadErrors(result.errors, result.rules.errors) }
+  return { success: true, ...filledDraft(draft), open: result.valid ? [] : formatPayloadErrors(result.errors, result.rules.errors) }
 }
 
 /** Print validation errors and failed rules, one per line. */

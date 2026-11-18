@@ -256,8 +256,9 @@ describe('lease-agreement fixture', () => {
     }
     const result = await executeFill({ source: 'artifact' as const, artifact, base_url: FIXTURES_URL, data: partialData }, fixtureFiles)
     expect(result.accepted).toBe(true)
-    expect(result.data!.fields.petsAllowed).toBe(false)
-    expect(result.data!.fields.smokingAllowed).toBe(false)
+    expect(result.values!.fields.petsAllowed).toBe(false)
+    expect(result.values!.fields.smokingAllowed).toBe(false)
+    expect(result.data!.fields).not.toHaveProperty('petsAllowed')
   })
 
   it('accepts a partial draft when required fields are omitted', async () => {

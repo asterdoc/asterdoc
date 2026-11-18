@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.asterdoc.com/2026-11-06.json",
+  "kind": "form",
+  "name": "check-cli-default-image",
+  "version": "1.0.0",
+  "title": "Check CLI default image fixture",
+  "fields": {
+    "name": { "type": "text", "label": "Name", "required": true, "visible": true },
+    "logo": { "type": "text", "label": "Logo", "default": "https://example.com/default-logo.png" }
+  },
+  "layers": {
+    "composition": {
+      "kind": "file",
+      "mimeType": "text/tsx",
+      "path": "default-image-composition.tsx",
+      "title": "Composition"
+    }
+  }
+}

@@ -5,7 +5,7 @@ ogTitle: fill — Asterdoc AI Tools
 ogDescription: Apply seed data to an Asterdoc form or checklist and report acceptance separately from completeness
 ---
 
-Starts a draft of a form or checklist from seed data and applies defaults. The result reports two things separately: `accepted` says the supplied values passed validation, and `complete` says the draft meets every requirement. A draft does not need to be complete to be updated or rendered.
+Starts a draft of a form or checklist from seed data. A form field that applies and has no value gets its declared default; a field hidden by a `visible` condition that is not met gets none. The output keeps the two apart: `data` holds only the values given, and `values` adds the defaults. Pass `data` to the next call, so a default stays a default: it goes away when a later patch hides its field, and a field that a later patch shows gets its default. The result reports two things separately: `accepted` says the supplied values passed validation, and `complete` says the draft meets every requirement. A draft does not need to be complete to be updated or rendered.
 
 <Callout type="info">
   Only forms and checklists can be filled. A document or bundle returns an `unsupported_artifact` error.
@@ -29,7 +29,8 @@ Party IDs follow the pattern `<role>-<index>`, such as `tenant-0`.
 | `accepted` | `boolean` | Whether the supplied values passed validation |
 | `complete` | `boolean` | Whether the draft meets every requirement |
 | `artifact_kind` | `"form" \| "checklist"` | Artifact kind |
-| `data` | `object` | The full draft payload, with defaults applied. Pass it to [`update_fill`](/ai-tools/update-fill), [`get_fill_state`](/ai-tools/get-fill-state), or [`render`](/ai-tools/render). |
+| `data` | `object` | The draft payload with the values given, without defaults. Pass it to [`update_fill`](/ai-tools/update-fill), [`get_fill_state`](/ai-tools/get-fill-state), or [`render`](/ai-tools/render). |
+| `values` | `object` | Form only. The values the form holds: the given values and the default of each field that applies. Read these to confirm or show the form. Do not pass them back as `data`. |
 | `display` | `object` | Words for each stored country and region code, keyed by path: `"fields.client_address.region": "Ontario, Canada"`. Confirm values to the person with these, not with a bare code. Absent when no value stores a code |
 | `evaluation_context` | `object` | The fixed context of the draft, such as `asOf`. Pass it to the next call. |
 | `errors` | [`ToolError[]`](/ai-tools#errors) | One entry per rejected value |

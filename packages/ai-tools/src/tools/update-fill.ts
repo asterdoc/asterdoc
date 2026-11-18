@@ -1,6 +1,6 @@
 import type { AsterdocToolsConfig } from '../config'
 import { UpdateFillInputSchema, type UpdateFillInput, type UpdateFillOutput } from '../contracts'
-import { artifactKind, asChecklistPayload, asFormPayload, contextOptions, contextSnapshot, formDraftPayload } from '../artifact'
+import { artifactKind, asChecklistPayload, asFormPayload, contextOptions, contextSnapshot, formDraftPayload, formDraftValues } from '../artifact'
 import { loadToolForm, artifactFileResolver } from '../form-loader'
 import { errorFromUnknown, validationErrors } from '../errors'
 import { resolveSource } from '../resolve-source'
@@ -11,6 +11,7 @@ type FormDraftLike = {
 	reset: (path: string) => FormDraftLike
 	isValid: () => boolean
 	fields: Record<string, unknown>
+	givenFields: Record<string, unknown>
 	parties: Record<string, unknown>
 	annexes: Record<string, unknown>
 	signers: Record<string, unknown>
@@ -44,6 +45,7 @@ export async function executeUpdateFill(
 				complete: draft.isValid(),
 				artifact_kind: 'form',
 				data: formDraftPayload(draft),
+				values: formDraftValues(draft),
 				...(Object.keys(display).length > 0 && { display }),
 				evaluation_context: contextSnapshot(draft.context),
 			}

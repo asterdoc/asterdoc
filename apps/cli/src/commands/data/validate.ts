@@ -72,7 +72,7 @@ export function createValidateCommand(): Command {
             form: formTarget,
             dataSource: dataSourceDesc,
             ...(result.success
-              ? { data: result.data, ...(options.renderCheck !== undefined && { layer: options.renderCheck, renderProblems }) }
+              ? { data: result.data, values: result.values, ...(options.renderCheck !== undefined && { layer: options.renderCheck, renderProblems }) }
               : { errors: result.errors, ...(result.ruleErrors.length > 0 && { ruleErrors: result.ruleErrors }) }),
           }
           console.log(JSON.stringify(output, null, 2))

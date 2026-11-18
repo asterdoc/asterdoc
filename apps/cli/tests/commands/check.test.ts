@@ -118,6 +118,16 @@ describe('CLI check command', () => {
     expect(result.exitCode).toBe(0)
   }, 30000)
 
+  it('checks explicit --data with the defaults of the fields that apply', async () => {
+    const artifact = path.join(fixturesDir, 'default-image-artifact.json')
+    const defaulted = await executeCliCommand(['check', artifact, '--data', JSON.stringify({ fields: { name: 'Ada' } })])
+    const given = await executeCliCommand(['check', artifact, '--data', JSON.stringify({ fields: { name: 'Ada', logo: 'data:image/png;base64,iVBORw0KGgo=' } })])
+
+    expect(defaulted.exitCode).toBe(1)
+    expect(defaulted.stdout).toContain('https://example.com/default-logo.png')
+    expect(given.stdout).not.toContain('https://example.com/default-logo.png')
+  }, 30000)
+
   it('discovers sample data from a sibling *.sample.ts file', async () => {
     // The composition itself exports no `sample`; only the sibling
     // `sample-sibling-composition.sample.ts` file does. Its one row names a

@@ -130,7 +130,7 @@ asterdoc data fill <file> --out <file> [options]
 
 | Option | Description |
 |--------|-------------|
-| `--out <file>` | Output file path, format detected from extension (required) |
+| `--out <file>` | Output file path, format detected from extension (required). The file holds the values given, without defaults, so it fills again with each default still a default |
 | `--data <pathOrJson>` | Data payload: file path, `-` for stdin, or inline JSON. Skips the prompts |
 | `--json` | Force JSON output format |
 | `--yaml` | Force YAML output format |
@@ -195,7 +195,7 @@ asterdoc data validate <form-file> <data> [options]
 
 | Option | Description |
 |--------|-------------|
-| `--json` | Output a machine-readable JSON result |
+| `--json` | Output a machine-readable JSON result: `data` holds the values given, and `values` adds the default of each field that applies |
 | `--silent` | Suppress console output (exit code only) |
 | `--render-check <layer>` | Also check that valid data renders on this layer |
 

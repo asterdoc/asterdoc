@@ -354,11 +354,14 @@ describe('fill-state', () => {
 			expect(updated.fields.profile).toEqual({ firstName: 'Ada', lastName: 'Lovelace' })
 		})
 
-		test('rejects null instead of treating it as a deletion sentinel', async () => {
+		test('takes null as the choice to leave a field empty, and refuses null at a path the form does not declare', async () => {
 			const f = await createNestedForm()
 			const draft = (await f).fill({ fields: { profile: { firstName: 'Ada' } } } as any)
+			const emptied = draft.update({ fields: { profile: null } } as any)
 
-			expect(() => draft.update({ fields: { profile: null } } as any)).toThrow()
+			expect(emptied.fields).not.toHaveProperty('profile')
+			expect(emptied.givenFields).toEqual({ profile: null })
+			expect(() => draft.update({ fields: { nickname: null } } as any)).toThrow('unknown field "nickname"')
 		})
 
 		test('recursively merges primitive object field values', async () => {

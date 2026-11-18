@@ -44,7 +44,7 @@ Draft mutators are immutable: reassign `update()`, `clear()`, `reset()`, and `se
 | Start, no throw | `form.safeFill(seed?, options?)` | `{ success: true, data: DraftForm }` or `{ success: false, error }` |
 | Change | `draft.update(patch)` | `DraftForm` (throws `FormValidationError`) |
 | Change, no throw | `draft.safeUpdate(patch)` | Same result shape as `safeFill` |
-| Remove a value | `draft.clear("fields.<path>")` | `DraftForm` |
+| Leave a field empty | `draft.clear("fields.<path>")` | `DraftForm` |
 | Restore a default | `draft.reset("fields.<path>")` | `DraftForm` |
 | Ask what is open | `draft.getFillState()` | `FillState` |
 | Ask if complete | `draft.validate()` | `{ valid, errors, rules }` |
@@ -59,7 +59,7 @@ let draft = lease.fill(
 ```
 
 - The seed is optional and may be partial. Supplied values are validated at once; omitted ones stay open.
-- A field with a `default` gets it when the seed omits it, required or not.
+- A field with a `default` has it while the field applies and no value is given, required or not. A field hidden by its `visible` condition, or by a fieldset above it, has none. The draft finds the defaults again after each change, so a field that `update()` hides loses its default and one that `update()` shows gets it.
 - Seed keys: `fields`, `parties`, and `annexes`. Any other top-level key fails, naming it; a key that matches a declared party role says party data belongs under `parties.<role>`. To register signers, call `addSigner`/`addSignatory` on the draft ([sealing.md](./sealing.md)) instead of seeding them through `fill()`.
 - `context.asOf` fixes the clock for `today()` and `now()` ([logic.md § Dates and the clock](./logic.md#dates-and-the-clock)). Set it for reproducible date logic and tests.
 - `fill()` also checks the form's logic. A bad reference throws `Invalid form definition: Unknown variable: ...`.
@@ -81,9 +81,9 @@ if (!result.success) console.error(result.error.message); // "Form data validati
 | Object (address, money, fieldset) | Deep-merged into the stored value |
 | List | Replaces the stored list |
 | Party role | Replaces the role's parties. `update()` assigns ids `<role>-<index>`. |
-| `null` | Rejected. Use `clear()`. |
+| `null` | The field is left empty on purpose, as `clear()` does: it gets no default. |
 
-`clear()` and `reset()` take a schema path: `fields.<id>`, a nested path such as `fields.employer.since`, or `annexes.<id>`. `reset()` restores the declared default, or removes the value when there is none. An unknown path throws `Invalid form path "fields.<id>": unknown field "<id>".`
+`clear()` and `reset()` take a schema path: `fields.<id>`, a nested path such as `fields.employer.since`, or `annexes.<id>`. `clear()` leaves a field empty on purpose: it gets no default, through later changes too, and a cleared required field is missing. `reset()` removes the value given or the choice to leave it empty, so a field that applies has its declared default again. `givenFields` and `toJSON()` hold a cleared field as `null`. An unknown path throws `Invalid form path "fields.<id>": unknown field "<id>".`
 
 `setParty(role, party)`, `addParty(role, party)`, `removeParty(role, index)` and `setAnnex(id, attachment)` are shortcuts for role and annex patches. Each returns a new draft. `removeParty` renumbers the later parties and keeps their signatories.
 
@@ -148,7 +148,7 @@ if (!check.success) console.error(check.errors[0].message); // "Invalid input: e
 
 A refused value also carries `code` and `candidates` when the engine converts it ([fields.md § Input refusals](./fields.md#input-refusals)).
 
-`form.parseData(payload)` and `form.safeParseData(payload)` check a **complete** submission. Missing required fields fail there, so use them on the final payload only.
+`form.parseData(payload, { context })` and `form.safeParseData(payload, { context })` check a **complete** submission, the payload `fill()` takes, as `fill(payload, { context }).validate()` decides. Missing required fields fail there, so use them on the final payload only.
 
 ## Conversational input
 
@@ -205,7 +205,7 @@ Preview a draft with blanks marked before it is complete: `await draft.render({ 
 
 ## Persist and resume
 
-`toJSON()` on a runtime instance returns plain data: phase, definition, values, clock, signers, captures. Store it and rebuild the instance with the matching function.
+`toJSON()` on a runtime instance returns plain data: phase, definition, values, clock, signers, captures. A draft's `defaulted` lists the field keys whose value is a default, so the resumed draft still drops a default when its field stops applying. To store answers and fill again later, store `draft.givenFields`, not `draft.fields`: `fields` includes the defaults, and filling from it turns each default into a given value. The AI tools return the two as `data` and `values` for the same reason. Store it and rebuild the instance with the matching function.
 
 ```typescript
 import { runtimeFormFromJSON } from "@asterdoc/sdk";

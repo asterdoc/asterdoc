@@ -310,8 +310,14 @@ export interface DraftFormJSON<F = unknown> {
 	phase: 'draft';
 	/** The embedded form definition. */
 	form: F;
-	/** Field values keyed by field identifier. */
+	/** Field values keyed by field identifier: the given values and the defaults that apply. A field left empty on purpose is `null`. */
 	fields: Record<string, unknown>;
+	/**
+	 * The keys in `fields`, such as `rows[0].label`, whose value is a default
+	 * and not a given value. A restored draft gives these fields no value of
+	 * its own, so a default goes away when its field stops applying.
+	 */
+	defaulted?: string[];
 	/** Party data keyed by role identifier. */
 	parties: Record<string, RuntimeParty | RuntimeParty[]>;
 	/** Annex data keyed by annex identifier. */

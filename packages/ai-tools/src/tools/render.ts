@@ -1,8 +1,9 @@
+import type { ValidationError } from '@asterdoc/core'
 import type { AsterdocToolsConfig } from '../config'
 import { RenderInputSchema, type RenderInput, type RenderOutput } from '../contracts'
-import { artifactKind, asChecklistPayload, asFormPayload, boundedPresentation, contextOptions, encodeOutput } from '../artifact'
+import { artifactKind, asChecklistPayload, asFormPayload, boundedPresentation, contextOptions, encodeOutput, formDraftValues } from '../artifact'
 import { loadToolForm, artifactFileResolver } from '../form-loader'
-import { errorFromUnknown, validationErrors } from '../errors'
+import { errorFromUnknown, renderProblemErrors, validationErrors } from '../errors'
 import { resolveSource } from '../resolve-source'
 
 function selectedLayer(artifact: Record<string, unknown>, requested: string | undefined): { key?: string; mime_type?: string; kind?: string } {
@@ -89,9 +90,9 @@ export async function executeRender(
 		const resolver = artifactFileResolver(artifact, base_url, config)
 
 		if (isForm(artifact)) {
-			if (!normalized.blank && !hasValues(normalized.data)) return missingData('form')
 			const instance = await loadToolForm(artifact, base_url, config)
 			const result = instance.safeFill(asFormPayload(normalized.data) as never, contextOptions(normalized.evaluation_context))
+			if (!normalized.blank && !hasValues(result.success ? formDraftValues(result.data) : normalized.data)) return missingData('form')
 			if (!result.success) return { success: false, artifact_kind: 'form', errors: validationErrors(result.error), error: errorFromUnknown(result.error, 'validation_error') }
 			const content = await result.data.render(renderOptions)
 			return outputResult('form', content, layer.mime_type, normalized.presentation)
@@ -115,8 +116,9 @@ export async function executeRender(
 		return { success: false, ...(kind ? { artifact_kind: kind } : {}), error: { code: 'unsupported_artifact', message: 'Rendering supports form, document, and checklist artifacts.' } }
 	} catch (error) {
 		if (error instanceof Error && error.name === 'RenderRefusedError') {
-			const { problems } = error as Error & { problems: unknown }
-			return { success: false, artifact_kind: 'form', errors: validationErrors(problems), error: { code: 'render_refused', message: error.message } }
+			const { renderProblemReport } = await import('@asterdoc/core')
+			const { problems } = error as Error & { problems: readonly ValidationError[] }
+			return { success: false, artifact_kind: 'form', errors: renderProblemErrors(problems.map(renderProblemReport)), error: { code: 'render_refused', message: error.message } }
 		}
 		return { success: false, error: errorFromUnknown(error, 'render_error') }
 	}

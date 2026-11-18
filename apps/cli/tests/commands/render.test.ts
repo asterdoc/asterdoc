@@ -522,7 +522,8 @@ describe('CLI render command', () => {
     let tempDir: string
     let outFile: string
 
-    const pet = (bindings: Record<string, unknown>) => ({
+    const pet = (bindings: Record<string, unknown>, extra: Record<string, unknown> = {}) => ({
+      ...extra,
       $schema: ASTERDOC_SCHEMA_URL,
       kind: 'form',
       name: 'pet',
@@ -541,11 +542,12 @@ describe('CLI render command', () => {
     })
     const data = JSON.stringify({ fields: { name: 'Milo Rex', weight: 5.5, species: 'cat' } })
 
-    const render = async (bindings: Record<string, unknown>, ...flags: string[]) => {
+    const renderWith = async (definition: Record<string, unknown>, ...flags: string[]) => {
       const formFile = path.join(tempDir, 'pet.json')
-      await fs.writeFile(formFile, JSON.stringify(pet(bindings)))
+      await fs.writeFile(formFile, JSON.stringify(definition))
       return executeCliCommand(['render', formFile, ...flags])
     }
+    const render = async (bindings: Record<string, unknown>, ...flags: string[]) => renderWith(pet(bindings), ...flags)
 
     beforeEach(async () => {
       tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'asterdoc-render-check-'))
@@ -583,6 +585,16 @@ describe('CLI render command', () => {
       expect(result.stdout).toContain('0 values equal the data, 1 cannot be read.')
       expect(result.stdout).toContain('    - name: The PDF fields that carry this path hold different values.')
       expect(existsSync(outFile)).toBe(true)
+    })
+
+    it('exits 0 for a checkbox bound to a computed value, which is not read back', async () => {
+      const definition = pet(
+        { pet_name: 'fields.name', is_vaccinated: 'defs.heavy' },
+        { defs: { heavy: { type: 'boolean', value: 'fields.weight > 5' } } },
+      )
+      const result = await renderWith(definition, '--data', data, '--out', outFile, '--check', '--format', 'json')
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(JSON.parse(result.stdout)).toMatchObject({ success: true, check: { passed: true, equal: 1, unreadable: [] } })
     })
 
     it('gives the result in the summary with --format json', async () => {

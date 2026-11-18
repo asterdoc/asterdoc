@@ -1,6 +1,6 @@
 import type { AsterdocToolsConfig } from '../config'
 import { FillInputSchema, type FillInput, type FillOutput } from '../contracts'
-import { artifactKind, contextOptions, contextSnapshot, formDraftPayload, asChecklistPayload, asFormPayload } from '../artifact'
+import { artifactKind, contextOptions, contextSnapshot, formDraftPayload, formDraftValues, asChecklistPayload, asFormPayload } from '../artifact'
 import { loadToolForm, artifactFileResolver } from '../form-loader'
 import { errorFromUnknown, validationErrors } from '../errors'
 import { resolveSource } from '../resolve-source'
@@ -33,6 +33,7 @@ export async function executeFill(
 				complete: draft.isValid(),
 				artifact_kind: 'form',
 				data: formDraftPayload(draft),
+				values: formDraftValues(draft),
 				...(Object.keys(display).length > 0 && { display }),
 				evaluation_context: contextSnapshot(draft.context),
 			}

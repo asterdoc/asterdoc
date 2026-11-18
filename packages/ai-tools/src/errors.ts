@@ -1,4 +1,5 @@
 import { ZodError } from 'zod'
+import type { RenderProblemReport } from '@asterdoc/core'
 import type { ToolError } from './contracts'
 
 type Candidates = NonNullable<ToolError['candidates']>
@@ -71,6 +72,17 @@ export function errorFromUnknown(error: unknown, fallbackCode = 'execution_error
 	}
 	return toolError(fallbackCode, error instanceof Error ? error.message : 'Unknown tool error')
 }
+export function renderProblemErrors(reports: readonly RenderProblemReport[]): ToolError[] {
+	return reports.map(({ path, keyword, code, message, layer, pdf_field }) => ({
+		code,
+		message,
+		path: path.split('.'),
+		keyword,
+		layer,
+		...(pdf_field !== undefined && { pdf_field }),
+	}))
+}
+
 export function validationErrors(error: unknown): ToolError[] {
 	const errors = Array.isArray(error)
 		? error

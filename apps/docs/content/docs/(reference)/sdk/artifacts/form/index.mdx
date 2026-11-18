@@ -196,8 +196,8 @@ Returns a `FormInstance` with the following properties and methods:
   { name: 'annexes', type: 'Record<string, FormAnnex> | undefined', description: 'Annex slot definitions' },
   { name: 'allowAdditionalAnnexes', type: 'boolean | undefined', description: 'Allow ad-hoc annexes' },
   { name: 'parties', type: 'Record<string, FormParty> | undefined', description: 'Party role definitions' },
-  { name: 'parseData', type: '(data: Record<string, unknown>) => InferFormPayload', description: 'Validate data against form (throws on error)', isMethod: true },
-  { name: 'safeParseData', type: '(data: Record<string, unknown>) => ValidationResult', description: 'Validate data (returns result object)', isMethod: true },
+  { name: 'parseData', type: '(data: Record<string, unknown>, options?: FillOptions) => InferFormPayload', description: 'Validate complete data, the payload `fill()` takes, as `fill(data, options).validate()` does, and return it with the defaults that apply (throws on error). `options.context` sets the clock for `today()` and `now()`', isMethod: true },
+  { name: 'safeParseData', type: '(data: Record<string, unknown>, options?: FillOptions) => ValidationResult', description: 'Validate complete data (returns result object)', isMethod: true },
   { name: 'validateFieldInput', type: "(input: { fieldPath: string | string[]; value: unknown; locale?: string; owner?: unknown; input?: 'canonical' | 'formatted' }) => ProgressiveValidationResult<unknown>", description: 'Validate one field input at fields.<path> and return the value as it is stored. `locale` adds country names in that language; `owner` is the address a `codes: true` member is written into; `input` says how a partial masked value is written (default `canonical`)', isMethod: true },
   { name: 'validateFieldsPatch', type: '(fields: unknown) => ProgressiveValidationResult<Record<string, unknown>>', description: 'Validate a partial fields patch without requiring unrelated fields', isMethod: true },
   { name: 'validatePartyInput', type: '(input: { roleId: string; index?: number; value: unknown }) => ProgressiveValidationResult<{ roleId; index; party }>', description: 'Validate one party input and normalize runtime party id', isMethod: true },
@@ -269,7 +269,7 @@ resolver for the form's file layers:
 
 ## Data Validation
 
-FormInstance provides Zod-style methods for validating data:
+FormInstance provides Zod-style methods for validating complete data. A field gets its default when it applies, and is required only when its `required` condition holds for the data, as in `validate()`. A value given for a field that does not apply is refused:
 
 ```ts
 // Throws FormValidationError if validation fails
@@ -482,7 +482,7 @@ Each entry's `status` is one of:
 
 - `recovered`: the value was read back and is in `data`. `lossy` is `true` when the format it was printed with drops detail, so the value may differ from the one filled.
 - `empty`: the PDF fields are empty. An unchecked box counts as empty, because it cannot be told apart from an unanswered one.
-- `not_recoverable`: the value cannot be mapped back. A template binding that writes several values into one box is read back only when its text splits into the template's values in exactly one way. When it splits more than one way, such as a street line with an optional unit, or the template prints a computed value, extraction does not guess; `reason` says why and the raw text is in `sources`.
+- `not_recoverable`: the value cannot be mapped back. A box bound to a computed value (`defs.<name>`) is `not_recoverable` when it holds a value and `empty` when it does not, whatever the kind of box: text, checkbox, radio group or dropdown. A template binding that writes several values into one box is read back only when its text splits into the template's values in exactly one way. When it splits more than one way, such as a street line with an optional unit, or the template prints a computed value, extraction does not guess; `reason` says why and the raw text is in `sources`.
 - `unparseable`: the text does not parse into the field's type, does not match the binding's template, or two PDF fields that carry the path disagree.
 
 Direct bindings, enum checkboxes, radio groups, dropdowns, and split fields are reversed exactly. Text is parsed back into the field's type: the formatter's own output for enums, numbers, percentages, dates, and money, as well as plain values a person might type, such as `1234.50` or a date in the locale's numeric order. A money amount needs its currency symbol, or a binding to its `amount` alone. On a layer that prints money without a symbol (`format: { money: { currencyDisplay: 'none' } }`), the amount is read in the currency the field declares; a field with no `currency` is `unparseable`. On a layer that declares a date pattern (`format: { date: { pattern: 'DD/MM/YYYY' } }`), a date is read by that pattern, not by the locale's order. A binding object's own `format` reads its value back the same way. A structured value written into one box, such as a whole address, is `not_recoverable`; bind its parts to recover them.
@@ -505,6 +505,18 @@ The `fill()` method returns a `DraftForm` that follows the form lifecycle:
 
 ### DraftForm
 
+#### Defaults
+
+A draft holds the values you give. A field's declared `default` is its value while the field applies and you give no value for it. A field applies when its `visible` condition and the conditions of every fieldset and list above it are met, for the current fields, parties and context. The draft finds the defaults again after each change, so:
+
+- A field that `update()`, `setParty()` or another change hides loses its default, and `validate()` does not report it. A value you gave for that field stays and is reported as not applicable.
+- A field that a change shows gets its default. A required field with a default counts as answered, and its default prints.
+- A fieldset that applies gets the defaults of its members without a given object. A hidden fieldset gets no object.
+- A default that hides or shows another field changes that field's default too. A default must not decide, through `visible` conditions or computed values, whether its own field applies: artifact validation refuses such a loop and names the fields, and `fill()` refuses the form.
+- `clear(path)` leaves a field empty on purpose. The draft keeps that choice as a given value, so the default does not come back. A cleared required field is missing; a cleared field that a change hides is not reported as not applicable. `reset(path)` removes the choice, and the default applies again. In `givenFields`, in `toJSON()` and in a `fill()` or `update()` payload, the choice is `null`.
+
+`fields`, `toJSON()`, the fill state, `validate()`, `render()`, `prepareForSigning()` and `seal()` all read these values. `prepareForSigning()` and `seal()` keep them as the frozen data. `toJSON()` lists the keys whose value is a default in `defaulted`, so `runtimeFormFromJSON()` restores a draft that tells its defaults from its given values.
+
 Created by `form.fill()`. Mutable data and signer configuration.
 
 <PropertiesTable properties={[
@@ -516,6 +528,8 @@ Created by `form.fill()`. Mutable data and signer configuration.
   { name: 'signatories', type: 'Record<string, Record<string, PartySignatory[]>>', description: 'Signatories by role/party' },
   { name: 'targetLayer', type: 'string', description: 'Current rendering layer' },
   { name: 'runtimeState', type: 'FormRuntimeState', description: 'Evaluated logic state' },
+  { name: 'fields', type: 'Record<string, unknown>', description: 'Field values: the given values and the defaults of the fields that apply' },
+  { name: 'givenFields', type: 'Record<string, unknown>', description: 'The field values given, without defaults, with `null` for each field cleared on purpose. Fill a new draft from these, not from `fields`, so a default stays a default' },
   { name: 'getField', type: '(fieldId: string) => T | undefined', description: 'Get a field value', isMethod: true },
   { name: 'getAllFields', type: '() => Record<string, unknown>', description: 'Get all field values', isMethod: true },
   { name: 'getParty', type: '(roleId: string) => RuntimeParty | RuntimeParty[] | undefined', description: 'Get party for role', isMethod: true },
@@ -527,8 +541,8 @@ Created by `form.fill()`. Mutable data and signer configuration.
   { name: 'addSignatory', type: '(roleId, partyId, signatory) => DraftForm', description: 'Link a registered signer to a filled party. Throws for an unknown party or a signer already linked to it', isMethod: true },
   { name: 'update', type: '(patch: Partial<Payload>) => DraftForm', description: 'Merge a patch into current data and return a new DraftForm', isMethod: true },
   { name: 'safeUpdate', type: '(patch: Partial<Payload>) => SafeFillResult', description: 'Safely merge a patch (returns result object)', isMethod: true },
-  { name: 'clear', type: '(path: FormPath) => DraftForm', description: 'Remove a field or annex value', isMethod: true },
-  { name: 'reset', type: '(path: FormPath) => DraftForm', description: 'Restore a declared default or remove the value', isMethod: true },
+  { name: 'clear', type: '(path: FormPath) => DraftForm', description: 'Leave a field empty on purpose: it gets no default, through later changes too. A cleared required field is missing. On an annex or a list row, remove it', isMethod: true },
+  { name: 'reset', type: '(path: FormPath) => DraftForm', description: 'Remove the value given, or the choice to leave the field empty, so the default applies again while the field applies', isMethod: true },
   { name: 'getFillState', type: '(options?: FillTargetOptions) => FillState', description: 'Compute full fill state: open/blocked/done items, candidates, progress summary', isMethod: true },
   { name: 'getNextFillTarget', type: '(options?: FillTargetOptions) => FillTarget | null', description: 'Get the next recommended fill target, or null if all required are done', isMethod: true },
   { name: 'getAvailableFillTargets', type: '(options?: FillTargetOptions) => FillTarget[]', description: 'Get available fill targets in dependency order, required before optional by default', isMethod: true },
@@ -538,7 +552,7 @@ Created by `form.fill()`. Mutable data and signer configuration.
   { name: 'seal', type: '(options?: SealOptions) => Promise<SignableForm>', description: 'Render, place signature fields, flatten, and hash the target layer for formal e-signing. See [Seal options](#seal-options)', isMethod: true },
   { name: 'prepareSeal', type: '(options?: SealOptions) => Promise<SealPreparation>', description: 'Resolve the signature map and the converted PDF it describes, without flattening, hashing, or changing phase. Requires a layer with `signatures`', isMethod: true },
   { name: 'render', type: '(options?: RuntimeFormRenderOptions) => Promise<Output>', description: 'Render with embedded data', isMethod: true },
-  { name: 'toJSON', type: '() => DraftFormJSON', description: 'Serialize to JSON', isMethod: true },
+  { name: 'toJSON', type: '() => DraftFormJSON', description: 'Serialize to JSON. `fields` holds the given values and the defaults that apply; `defaulted` lists the keys of the defaults', isMethod: true },
   { name: 'toYAML', type: '() => string', description: 'Serialize to YAML', isMethod: true },
   { name: 'clone', type: '() => DraftForm', description: 'Create an exact copy', isMethod: true },
 ]} />

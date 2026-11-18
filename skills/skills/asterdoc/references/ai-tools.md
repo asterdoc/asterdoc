@@ -71,7 +71,7 @@ Tools return failures in the result instead of throwing. Check `accepted` / `val
 
 ## The fill loop
 
-`fill` starts a draft and `update_fill` changes it. The tools keep no state: the draft is the `data` the tool returns. Pass that `data` and the returned `evaluation_context` into the next call. `evaluation_context` fixes the clock (`today()`, `now()`) for the whole draft ([logic.md § Dates and the clock](./logic.md#dates-and-the-clock)).
+`fill` starts a draft and `update_fill` changes it. The tools keep no state: the draft is the `data` the tool returns. Pass that `data` and the returned `evaluation_context` into the next call. For a form, `data` holds only the values given; `values` adds the default of each field that applies. Read `values` to confirm the form with the person, and never pass it back as `data`, or each default turns into a given value that is refused once its field stops applying. `evaluation_context` fixes the clock (`today()`, `now()`) for the whole draft ([logic.md § Dates and the clock](./logic.md#dates-and-the-clock)).
 
 | Output | Meaning |
 |--------|---------|

@@ -100,7 +100,7 @@ export function createRenderCommand(): Command {
             if (options.draft) {
               const draft = validateDraftPayload(formInstance, payload)
               if (!draft.success) throw new Error(formatPayloadErrors(draft.errors, draft.ruleErrors).join('\n'))
-              normalizedData = draft.data
+              normalizedData = draft.values
               draftOpen = draft.open
             } else {
               const validationResult = validateFormPayload(formInstance, payload)
@@ -109,7 +109,7 @@ export function createRenderCommand(): Command {
                 const draftRenders = validateDraftPayload(formInstance, payload).success
                 throw new Error([...lines, ...(draftRenders ? [DRAFT_HINT] : [])].join('\n'))
               }
-              normalizedData = validationResult.data
+              normalizedData = validationResult.values
             }
           }
 

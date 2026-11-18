@@ -806,31 +806,28 @@ function exportValues(reader: Reader): Reader {
   return values
 }
 
+function holdsValue(state: FieldState): boolean {
+  switch (state.field.type) {
+    case 'checkbox': return state.on === true
+    case 'radio': return state.on === true && state.raw !== undefined
+    case 'dropdown': return state.selected !== undefined && state.selected.length > 0
+    default: return state.raw !== undefined
+  }
+}
+
 function readDirect(state: FieldState, target: Target, reader: Reader): Reading {
+  if (!holdsValue(state)) return { kind: 'empty' }
+  if (target.kind === 'fixed') return { kind: 'not_recoverable', reason: target.reason }
   const { field } = state
   if (field.type === 'checkbox') {
-    const isBoolean = target.kind === 'field' ? target.field.type === 'boolean' : false
-    if (!isBoolean) {
-      return state.on
-        ? { kind: 'unparseable', reason: 'A checkbox can only be read back into a yes or no field.' }
-        : { kind: 'empty' }
-    }
-    // An unchecked box cannot be told apart from an unanswered one.
-    return state.on ? { kind: 'value', value: true, lossy: false } : { kind: 'empty' }
+    const isBoolean = target.kind === 'field' && target.field.type === 'boolean'
+    return isBoolean
+      ? { kind: 'value', value: true, lossy: false }
+      : { kind: 'unparseable', reason: 'A checkbox can only be read back into a yes or no field.' }
   }
-  if (field.type === 'radio') {
-    if (!state.on || state.raw === undefined) return { kind: 'empty' }
-    const parsed = parseTarget(state.raw, target, exportValues(reader))
-    return readingOf(parsed)
-  }
-  if (field.type === 'dropdown') {
-    if (!state.selected || state.selected.length === 0) return { kind: 'empty' }
-    const raw = state.selected.join(', ')
-    const parsed = parseTarget(raw, target, exportValues(reader))
-    return readingOf(parsed)
-  }
+  if (field.type === 'radio') return readingOf(parseTarget(state.raw!, target, exportValues(reader)))
+  if (field.type === 'dropdown') return readingOf(parseTarget(state.selected!.join(', '), target, exportValues(reader)))
   if (state.raw === undefined) return { kind: 'empty' }
-  if (target.kind === 'fixed') return { kind: 'not_recoverable', reason: target.reason }
   if (target.kind === 'field' && target.field.type === 'person' && reader.familyFirst) {
     return { kind: 'not_recoverable', reason: 'The name is printed family-first in one box, which cannot be split back into its parts; bind the name parts by sub-path to read them back.' }
   }

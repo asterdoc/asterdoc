@@ -45,7 +45,7 @@ import type {
 	RendererExpressions,
 } from '@asterdoc/types'
 import { createLayerRenderer, resolveLayerBindings } from '@asterdoc/render'
-import { loadFormPrint, printErrors, RenderRefusedError, type FormPrint } from './print'
+import { loadEachLayerPrint, loadFormPrint, printErrors, RenderRefusedError, type FormPrint } from './print'
 import type { SchemaVersion } from '@asterdoc/schemas'
 import { migratedFromOf, originFor, restoreDefinition, storedDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
 import { digestOf } from '@/integrity/digest'
@@ -85,7 +85,7 @@ import { evaluatePartyRequiredness } from '@/validation/party'
 import { runFormTests, type FormTestReport } from './form-tests'
 import { formSensitivity } from '@/logic/shared/sensitive-values'
 import { TemplateError } from '@asterdoc/render/text'
-import { canonicalizationError, canonicalizeFieldValue, canonicalizeFieldValues } from '@/validation/canonicalize'
+import { canonicalizationError, canonicalizeFieldValues } from '@/validation/canonicalize'
 import { toYAML } from '@/serialization/serialization'
 import { deepClone, deepReadonlyClone } from '@/utils/clone'
 import {
@@ -129,6 +129,7 @@ import type {
 import { computeFillState, getAvailableFillTargets, getNextFillTarget, notApplicableProblems } from '@/fill-state/engine'
 import { unprintedNameProblems } from '@/fill-state/printed-names'
 import { fillBatch } from '@/fill-state/batch'
+import { effectiveFieldValues, emptyKeys, givenFieldValues, withEmpties, withoutEmpties } from './effective-values'
 import {
 	captureRuntimeContext,
 	restoreRuntimeContext,
@@ -398,18 +399,47 @@ function resolveFormPath(form: Form, path: string): ResolvedFormPath {
 	return { section, segments: segments.slice(1), definition }
 }
 
-function getValueAtPath(root: Record<string, unknown>, segments: FormPathSegment[]): unknown {
-	let current: unknown = root
-	for (const segment of segments) {
-		if (Array.isArray(current)) {
-			if (typeof segment !== 'number' || segment < 0 || segment >= current.length) return undefined
-			current = current[segment]
+function pathEntersValue(formDef: Form, key: string): boolean {
+	let fields: Readonly<Record<string, FormField>> | undefined = formDef.fields
+	let field: FormField | undefined
+	for (const segment of parseFormPath(key)) {
+		if (typeof segment === 'number') {
+			if (field?.type !== 'list') return false
+			field = field.item
+			fields = field.type === 'fieldset' ? field.fields : undefined
 			continue
 		}
-		if (!isMergeRecord(current) || typeof segment !== 'string') return undefined
-		current = current[segment]
+		if (field !== undefined && field.type !== 'fieldset') return field.type !== 'list'
+		field = fields?.[segment]
+		if (field === undefined) return false
+		fields = field.type === 'fieldset' ? field.fields : undefined
 	}
-	return current
+	return false
+}
+
+function emptyFieldKeys(formDef: Form, fields: unknown): string[] {
+	const keys = emptyKeys(fields)
+	const errors = keys.flatMap((key) => {
+		try {
+			resolveFormPath(formDef, `fields.${key}`)
+			return []
+		} catch (error) {
+			const reason = error instanceof Error ? error.message : String(error)
+			const message = pathEntersValue(formDef, key)
+				? `null leaves a whole field empty, so it is accepted only for a field or a fieldset member, not for a part of a value. ${reason}`
+				: reason
+			return [{ field: `fields.${key}`, message }]
+		}
+	})
+	if (errors.length > 0) throw new FormValidationError(errors)
+	return keys
+}
+
+function fieldKeyOf(segments: readonly FormPathSegment[]): string {
+	return segments.reduce<string>(
+		(key, segment) => (typeof segment === 'number' ? `${key}[${segment}]` : key ? `${key}.${segment}` : segment),
+		'',
+	)
 }
 
 function deleteValueAtPath(root: Record<string, unknown>, segments: FormPathSegment[]): void {
@@ -436,70 +466,6 @@ function deleteValueAtPath(root: Record<string, unknown>, segments: FormPathSegm
 	if (isMergeRecord(current) && typeof target === 'string') {
 		delete current[target]
 	}
-}
-
-function setValueAtPath(root: Record<string, unknown>, segments: FormPathSegment[], value: unknown): void {
-	if (segments.length === 0) return
-	if (value === undefined) {
-		deleteValueAtPath(root, segments)
-		return
-	}
-
-	let current: unknown = root
-	for (let index = 0; index < segments.length - 1; index += 1) {
-		const segment = segments[index]!
-		const nextSegment = segments[index + 1]!
-		if (Array.isArray(current)) {
-			if (typeof segment !== 'number' || segment < 0 || segment >= current.length) return
-			current = current[segment]
-			continue
-		}
-		if (!isMergeRecord(current) || typeof segment !== 'string') return
-		if (current[segment] === undefined) {
-			// A missing fieldset can be materialized for a nested reset, but a
-			// missing list must never invent a row.
-			if (typeof nextSegment === 'number') return
-			current[segment] = {}
-		}
-		current = current[segment]
-	}
-
-	const target = segments[segments.length - 1]!
-	if (Array.isArray(current)) {
-		if (typeof target === 'number' && target >= 0 && target < current.length) {
-			current[target] = value
-		}
-		return
-	}
-	if (isMergeRecord(current) && typeof target === 'string') {
-		current[target] = value
-	}
-}
-
-function resetFieldValue(field: FormField, current: unknown): unknown {
-	if (field.type === 'fieldset') {
-		const currentFields = isMergeRecord(current) ? current : {}
-		const resetFields: Record<string, unknown> = {}
-		for (const [fieldId, child] of Object.entries(field.fields)) {
-			const value = resetFieldValue(child, currentFields[fieldId])
-			if (value !== undefined) resetFields[fieldId] = value
-		}
-		return Object.keys(resetFields).length > 0 ? resetFields : undefined
-	}
-
-	if (field.type === 'list') {
-		if (!Array.isArray(current)) return undefined
-		const resetItems = current
-			.map((item) => resetFieldValue(field.item, item))
-			.filter((item): item is Exclude<typeof item, undefined> => item !== undefined)
-		return resetItems.length > 0 ? resetItems : undefined
-	}
-
-	if ('default' in field && field.default !== undefined) {
-		const canonical = canonicalizeFieldValue(field, deepClone(field.default), { mode: 'progressive' })
-		return canonical.success ? canonical.value : deepClone(field.default)
-	}
-	return undefined
 }
 
 // ============================================================================
@@ -691,14 +657,13 @@ function assertKnownPayloadKeys(formDef: Form, payload: unknown): void {
 function validateCompleteFormData(
 	formDef: Form,
 	data: CompleteFormData,
-	options?: { applyDefaults?: boolean; context?: RuntimeContext },
+	options?: { context?: RuntimeContext },
 ): CompleteFormData {
 	// Schema validation checks every supplied value, but does not decide which
 	// values are required. That decision comes from the evaluated runtime state.
 	const result = validateFormData(
 		makeRuntimeOptionalForm(formDef),
 		data as unknown as Record<string, unknown>,
-		options,
 	)
 	if (!result.success) {
 		throw new FormValidationError(result.errors)
@@ -831,13 +796,13 @@ export interface FormInstance<F extends Form> extends ArtifactMethods<F> {
 	 * Validates data payload against this form.
 	 * @throws FormValidationError if validation fails
 	 */
-	parseData(data: Record<string, unknown>): InferFormPayload<F>
+	parseData(data: Record<string, unknown>, options?: FillOptions): InferFormPayload<F>
 
 	/**
 	 * Validates data payload against this form.
 	 * Returns a result object instead of throwing.
 	 */
-	safeParseData(data: Record<string, unknown>): ValidationResult<InferFormPayload<F>>
+	safeParseData(data: Record<string, unknown>, options?: FillOptions): ValidationResult<InferFormPayload<F>>
 
 	/**
 	 * Validate a single field input against a `fields.<path>` schema.
@@ -934,8 +899,15 @@ interface RuntimeFormBase<F extends Form> {
 	/** Target layer key */
 	readonly targetLayer: string
 
-	/** Field values */
+	/** Field values: the given values and the defaults of the fields that apply. */
 	readonly fields: Record<string, unknown>
+
+	/**
+	 * The field values the caller gave, without defaults. Fill a new draft from
+	 * these, not from `fields`, so a default stays a default. Equal to `fields`
+	 * once the form leaves the draft phase.
+	 */
+	readonly givenFields: Record<string, unknown>
 
 	/** Party data indexed by role ID. Each party carries its `<role>-<index>` id. */
 	readonly parties: Record<string, RuntimeParty | RuntimeParty[]>
@@ -1117,14 +1089,17 @@ export interface DraftForm<F extends Form> extends RuntimeFormBase<F> {
 	safeUpdate(patch: ProgressiveFormPayload<F>): SafeFillResult<F>
 
 	/**
-	 * Remove the stored value at a schema-qualified field or annex path.
+	 * Leave the field at a schema-qualified path empty on purpose: the draft
+	 * keeps the choice as `null`, so the field gets no default. An annex or a
+	 * list row is removed.
 	 * @throws Error if the path is not present in the form definition.
 	 */
 	clear(path: FormPath<F>): DraftForm<F>
 
 	/**
-	 * Restore declared defaults at a schema-qualified field or annex path.
-	 * Defaultless targets are removed and existing list rows are never invented.
+	 * Remove the value given, or the choice to leave the field empty, at a
+	 * schema-qualified field or annex path, so the declared default applies
+	 * again while the field applies.
 	 * @throws Error if the path is not present in the form definition.
 	 */
 	reset(path: FormPath<F>): DraftForm<F>
@@ -1481,7 +1456,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 	// Runtime state is owned by the instance. Guarded mutation methods create a
 	// new instance, so cloning at this boundary prevents aliases from the
 	// caller's input or a previous instance from bypassing those methods.
-	const fieldValues = deepClone(fieldsInput)
+	const givenFields = deepClone(fieldsInput)
 	const partyValues = deepClone(partiesInput)
 	const annexValues = deepClone(annexesInput)
 	const signerValues = deepClone(signersInput)
@@ -1493,9 +1468,18 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 	const canonicalPdfBytes =
 		canonicalPdfBytesInput === undefined ? undefined : ownCanonicalPdfBytes(canonicalPdfBytesInput)
 	const integrity = integrityInput === undefined ? undefined : deepClone(integrityInput)
+	const effective = phase === 'draft'
+		? effectiveFieldValues(formDef, givenFields, {
+			parties: partyValues,
+			witnesses,
+			signing: signingStateOf(captures, attestations),
+			context,
+		})
+		: { fields: givenFields, stored: givenFields, defaulted: [] }
+	const fieldValues = effective.fields
 	config = {
 		...config,
-		fields: fieldValues,
+		fields: givenFields,
 		parties: partyValues,
 		annexes: annexValues,
 		signers: signerValues,
@@ -1512,6 +1496,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 	// the value type permits it. Internal rendering, validation, and transitions
 	// continue to use the private values above.
 	const fieldsView = deepReadonlyClone(fieldValues)
+	const givenFieldsView = phase === 'draft' ? deepReadonlyClone(givenFields) : fieldsView
 	const partiesView = deepReadonlyClone(partyValues)
 	const annexesView = deepReadonlyClone(annexValues)
 	const signersView = deepReadonlyClone(signerValues)
@@ -1559,6 +1544,25 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		if (phase !== 'draft') {
 			throw new Error(`Cannot ${operation}: form is in ${phase} phase (only draft phase allows modifications)`)
 		}
+	}
+
+	const withGivenChange = (path: string, empty: boolean): DraftForm<F> => {
+		const resolved = resolveFormPath(formDef, path)
+		let nextFields = deepClone(givenFields)
+		const nextAnnexes = deepClone(annexValues)
+		const last = resolved.segments[resolved.segments.length - 1]
+		if (empty && resolved.section === 'fields' && typeof last === 'string') {
+			nextFields = withEmpties(nextFields, [fieldKeyOf(resolved.segments)])
+		} else {
+			deleteValueAtPath(resolved.section === 'fields' ? nextFields : nextAnnexes, resolved.segments)
+		}
+		return createRuntimeForm({
+			...config,
+			fields: nextFields,
+			annexes: nextAnnexes,
+			phase: 'draft',
+			executedAt: undefined,
+		})
 	}
 
 	const ensureSignable = (operation: string): void => {
@@ -1940,6 +1944,9 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		get fields() {
 			return fieldsView
 		},
+		get givenFields() {
+			return givenFieldsView
+		},
 		get parties() {
 			return partiesView
 		},
@@ -2221,14 +2228,16 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			const patchParties = (patch as Record<string, unknown>).parties
 			const patchAnnexes = (patch as Record<string, unknown>).annexes as Record<string, unknown> | undefined
 
-			let validatedFields = mergePatchValues(fieldValues, patchFields)
+			let validatedFields = mergePatchValues(givenFields, patchFields)
 			let validatedParties = mergePatchValues(partyValues, patchParties)
 			let validatedAnnexes = mergePatchValues(annexValues, patchAnnexes)
 
 			if (patchFields !== undefined) {
-				const fieldResult = validateProgressiveFieldsPatch(formDef, patchFields, { current: fieldValues })
+				const empties = emptyFieldKeys(formDef, patchFields)
+				const presentFields = isMergeRecord(patchFields) ? withoutEmpties(patchFields) : patchFields
+				const fieldResult = validateProgressiveFieldsPatch(formDef, presentFields, { current: withoutEmpties(givenFields) })
 				if (!fieldResult.success) throw new FormValidationError(fieldResult.errors)
-				validatedFields = mergePatchValues(fieldValues, fieldResult.value)
+				validatedFields = withEmpties(mergePatchValues(givenFields, fieldResult.value), empties)
 			}
 			if (patchParties !== undefined) {
 				const partyResult = validateProgressivePartiesPatch(formDef, patchParties)
@@ -2265,40 +2274,12 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 
 		clear(path: FormPath<F>): DraftForm<F> {
 			ensureDraft('clear')
-			const resolved = resolveFormPath(formDef, path)
-			const nextFields = deepClone(fieldValues)
-			const nextAnnexes = deepClone(annexValues)
-			const target = resolved.section === 'fields' ? nextFields : nextAnnexes
-			deleteValueAtPath(target, resolved.segments)
-
-			return createRuntimeForm({
-				...config,
-				fields: nextFields,
-				annexes: nextAnnexes,
-				phase: 'draft',
-				executedAt: undefined,
-			})
+			return withGivenChange(path, true)
 		},
 
 		reset(path: FormPath<F>): DraftForm<F> {
 			ensureDraft('reset')
-			const resolved = resolveFormPath(formDef, path)
-			const nextFields = deepClone(fieldValues)
-			const nextAnnexes = deepClone(annexValues)
-			const target = resolved.section === 'fields' ? nextFields : nextAnnexes
-			const current = getValueAtPath(target, resolved.segments)
-			const value = resolved.section === 'fields'
-				? resetFieldValue(resolved.definition as FormField, current)
-				: undefined
-			setValueAtPath(target, resolved.segments, value)
-
-			return createRuntimeForm({
-				...config,
-				fields: nextFields,
-				annexes: nextAnnexes,
-				phase: 'draft',
-				executedAt: undefined,
-			})
+			return withGivenChange(path, false)
 		},
 
 		getFillState(options?: FillTargetOptions): FillState {
@@ -2745,6 +2726,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			assertComplete()
 			return createRuntimeForm({
 				...config,
+				fields: fieldValues,
 				phase: 'signable',
 				captures: [],
 				witnesses: [],
@@ -2771,6 +2753,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			const sealed = (signatureMap: SigningField[], canonical: CanonicalPdf) =>
 				createRuntimeForm({
 					...config,
+					fields: fieldValues,
 					phase: 'signable',
 					captures: [],
 					witnesses: [],
@@ -2933,7 +2916,8 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 				return {
 					phase: 'draft',
 					form: deepClone(storedForm()),
-					fields: deepClone(fieldValues),
+					fields: deepClone(effective.stored),
+					...(effective.defaulted.length > 0 && { defaulted: [...effective.defaulted] }),
 					parties: deepClone(partyValues),
 					annexes: deepClone(annexValues),
 					signers: deepClone(signerValues),
@@ -3038,9 +3022,10 @@ export async function runtimeFormFromJSON<F extends Form>(
 	const print = await loadFormPrint(definition, options)
 	// Type assertion needed because TypeScript can't narrow the config type based on json.phase alone
 	// The RuntimeFormJSON union already constrains the valid combinations
+	const fields = canonicalRehydratedFields(definition, json.fields, json.phase)
 	const config = {
 		form: definition,
-		fields: canonicalRehydratedFields(definition, json.fields, json.phase),
+		fields: json.phase === 'draft' && fields !== undefined ? givenFieldValues(fields, json.defaulted ?? []) : fields,
 		parties: normalizeRehydratedParties(definition, json.parties),
 		annexes: json.annexes,
 		signers: json.signers,
@@ -3093,16 +3078,46 @@ function createFormInstance<F extends Form>(
 		allowAdditionalAnnexes: formDef.allowAdditionalAnnexes as FormInstance<F>['allowAdditionalAnnexes'],
 		parties: formDef.parties as FormInstance<F>['parties'],
 
-		parseData(data: Record<string, unknown>): InferFormPayload<F> {
-			const result = instance.safeParseData(data)
+		parseData(data: Record<string, unknown>, options?: FillOptions): InferFormPayload<F> {
+			const result = instance.safeParseData(data, options)
 			if (!result.success) {
 				throw new FormValidationError(result.errors)
 			}
 			return result.data
 		},
 
-			safeParseData(data: Record<string, unknown>): ValidationResult<InferFormPayload<F>> {
-				return validateFormData(formDef, data) as ValidationResult<InferFormPayload<F>>
+			safeParseData(data: Record<string, unknown>, options?: FillOptions): ValidationResult<InferFormPayload<F>> {
+				const failed = (errors: ValidationError[]) => ({ success: false, data: null, errors }) as ValidationResult<InferFormPayload<F>>
+				let context: RuntimeContext
+				let empties: string[]
+				try {
+					context = captureRuntimeContext(options)
+					empties = emptyFieldKeys(formDef, data?.fields)
+				} catch (error) {
+					if (error instanceof FormValidationError) return failed(error.errors)
+					return failed([{ field: 'context', message: error instanceof Error ? error.message : String(error) }])
+				}
+				const rawParties = isMergeRecord(data?.parties) ? data.parties : {}
+				const partyResult = Object.keys(rawParties).length > 0 ? validateProgressivePartiesPatch(formDef, rawParties) : { success: true as const, value: {} }
+				if (!partyResult.success) return failed(partyResult.errors)
+				const present = {
+					...data,
+					...(isMergeRecord(data?.fields) && { fields: withoutEmpties(data.fields) }),
+					...(Object.keys(rawParties).length > 0 && { parties: partyResult.value }),
+				}
+				const checked = validateFormData(makeRuntimeOptionalForm(formDef), present)
+				if (!checked.success) return checked as ValidationResult<InferFormPayload<F>>
+				const payload = checked.data as unknown as Partial<CompleteFormData>
+				const parties = payload.parties ?? {}
+				const given = withEmpties(payload.fields ?? {}, empties)
+				const fields = effectiveFieldValues(formDef, given, { parties, context }).fields
+				try {
+					const parsed = validateCompleteFormData(formDef, { fields, parties, annexes: payload.annexes ?? {} }, { context })
+					return { success: true, data: parsed as unknown as InferFormPayload<F>, errors: null }
+				} catch (error) {
+					if (error instanceof FormValidationError) return { success: false, data: null, errors: error.errors }
+					throw error
+				}
 			},
 
 			validateFieldInput(input: FieldInputValidationInput): ProgressiveValidationResult<unknown> {
@@ -3142,9 +3157,6 @@ function createFormInstance<F extends Form>(
 				parties: undefined,
 				annexes: undefined,
 			} as Form
-			const defaultedFields = validateFormData(fieldsOnlyForm, { fields }, { applyDefaults: true, mode: 'progressive' })
-			if (!defaultedFields.success) throw new FormValidationError(defaultedFields.errors)
-			let validatedFields = (defaultedFields.data as { fields?: Record<string, unknown> }).fields ?? {}
 			let validatedParties: Record<string, RuntimeParty | RuntimeParty[]> = {}
 			let validatedAnnexes: Record<string, Attachment> = {}
 			if (Object.keys(parties as Record<string, unknown>).length > 0) {
@@ -3152,6 +3164,11 @@ function createFormInstance<F extends Form>(
 				if (!partyResult.success) throw new FormValidationError(partyResult.errors)
 				validatedParties = partyResult.value
 			}
+			const empties = emptyFieldKeys(formDef, fields)
+			const presentFields = isMergeRecord(fields) ? withoutEmpties(fields) : fields
+			const fieldResult = validateFormData(fieldsOnlyForm, { fields: presentFields }, { mode: 'progressive' })
+			if (!fieldResult.success) throw new FormValidationError(fieldResult.errors)
+			const validatedFields = withEmpties((fieldResult.data as { fields?: Record<string, unknown> }).fields ?? {}, empties)
 			if (Object.keys(annexes as Record<string, unknown>).length > 0) {
 				const annexResult = validateProgressiveAnnexesPatch(formDef, annexes)
 				if (!annexResult.success) throw new FormValidationError(annexResult.errors)
@@ -3706,6 +3723,15 @@ type FormAPI = {
 		options?: ArtifactInstanceOptions,
 	): Promise<{ success: true; data: FormInstance<T & { kind: 'form' }> } | { success: false; error: Error }>
 	safeLoad(input: unknown, options?: ArtifactInstanceOptions): Promise<{ success: true; data: FormInstance<Form> } | { success: false; error: Error }>
+}
+
+export async function loadFormEachLayer(
+	input: Form,
+	options?: ArtifactInstanceOptions,
+): Promise<{ instance: FormInstance<Form>; layers: readonly string[]; failures: ReadonlyMap<string, Error> }> {
+	const { definition, origin } = readForm(input, options)
+	const { print, failures } = await loadEachLayerPrint(definition, options)
+	return { instance: createFormInstance(definition, options, origin, print), layers: [...print.profiles.keys()], failures }
 }
 
 async function loadForm<const T extends FormInput>(input: T, options?: ArtifactInstanceOptions): Promise<FormInstance<T & { kind: 'form' }>> {

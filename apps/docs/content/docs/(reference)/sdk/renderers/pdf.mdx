@@ -341,7 +341,7 @@ bindings: {
 
 ### Reading bindings back
 
-[Extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) reverses simple, nested, enum checkbox, and split bindings exactly. A template field is read back when its text splits into the template's values in exactly one way: `Boston, MA 02110` with `{{fields.city}}, {{fields.state}} {{fields.zip}}` is recovered. Text that splits more than one way, or a template that prints a computed value, is reported as not recoverable, and text that does not match the template is unparseable. A value printed through a format is read back through it; a format that drops detail, such as `case: upper` or `money.fractionDigits: 0`, marks the recovered value `lossy`. See [Reading a filled PDF back](/guides/value-formatting#reading-a-filled-pdf-back).
+[Extraction](/sdk/artifacts/form#extracting-data-from-a-filled-pdf) reverses simple, nested, enum checkbox, and split bindings exactly. A template field is read back when its text splits into the template's values in exactly one way: `Boston, MA 02110` with `{{fields.city}}, {{fields.state}} {{fields.zip}}` is recovered. Text that splits more than one way, a template that prints a computed value, and a filled box of any kind bound to a computed value are reported as not recoverable, and text that does not match the template is unparseable. A value printed through a format is read back through it; a format that drops detail, such as `case: upper` or `money.fractionDigits: 0`, marks the recovered value `lossy`. See [Reading a filled PDF back](/guides/value-formatting#reading-a-filled-pdf-back).
 
 ## Automatic Serialization
 

@@ -144,6 +144,33 @@ describe('CLI Data Commands', () => {
       expect(result.exitCode).toBe(0)
     })
 
+    it('accepts data that leaves a hidden field with a default unset, and refuses a value given for it', async () => {
+      const formPath = path.join(tempDir, 'hidden-default.json')
+      await fs.writeFile(formPath, JSON.stringify({
+        $schema: ASTERDOC_SCHEMA_URL,
+        kind: 'form',
+        name: 'hidden-default',
+        version: '1.0.0',
+        title: 'Hidden default',
+        fields: {
+          shipping: { type: 'boolean', label: 'Shipping' },
+          carrier: { type: 'text', label: 'Carrier', default: 'Post', visible: 'fields.shipping == true' },
+        },
+      }))
+      const unset = path.join(tempDir, 'unset.json')
+      const given = path.join(tempDir, 'given.json')
+      await fs.writeFile(unset, JSON.stringify({ fields: { shipping: false } }))
+      await fs.writeFile(given, JSON.stringify({ fields: { shipping: false, carrier: 'Courier' } }))
+
+      const accepted = await executeCliCommand(['data', 'validate', formPath, unset, '--json'])
+      expect(accepted.exitCode, accepted.stderr).toBe(0)
+      expect(JSON.parse(accepted.stdout).success).toBe(true)
+
+      const refused = await executeCliCommand(['data', 'validate', formPath, given])
+      expect(refused.exitCode).toBe(1)
+      expect(refused.stderr).toContain('fields.carrier: A value is given, but this field does not apply.')
+    })
+
     it('should fail for non-existent data file', async () => {
       const formPath = path.join(fixturesDir, 'pet-addendum.yaml')
 
@@ -512,6 +539,31 @@ describe('CLI Data Commands', () => {
       const written = JSON.parse(await fs.readFile(outPath, 'utf-8'))
       expect(written).toEqual({ fields: { hasPet: false }, parties: { tenant } })
     })
+
+    it('data fill writes the values given without defaults, and data validate --json shows the values with them', async () => {
+      const formPath = path.join(tempDir, 'defaults.json')
+      await fs.writeFile(formPath, JSON.stringify({
+        $schema: ASTERDOC_SCHEMA_URL,
+        kind: 'form',
+        name: 'defaults',
+        version: '1.0.0',
+        title: 'Defaults',
+        fields: {
+          mode: { type: 'enum', label: 'Mode', enum: [{ value: 'short' }, { value: 'full' }] },
+          detail: { type: 'text', label: 'Detail', default: 'Standard', visible: "fields.mode == 'full'" },
+        },
+      }))
+      const outPath = path.join(tempDir, 'given.json')
+      const payload = JSON.stringify({ fields: { mode: 'full' } })
+
+      const filled = await executeCliCommand(['data', 'fill', formPath, '--out', outPath, '--data', payload])
+      const validated = await executeCliCommand(['data', 'validate', formPath, payload, '--json'])
+
+      expect(filled.exitCode, filled.stderr).toBe(0)
+      expect(JSON.parse(await fs.readFile(outPath, 'utf-8'))).toEqual({ fields: { mode: 'full' } })
+      expect(JSON.parse(validated.stdout)).toMatchObject({ success: true, data: { fields: { mode: 'full' } }, values: { fields: { mode: 'full', detail: 'Standard' } } })
+      expect(JSON.parse(validated.stdout).data.fields).not.toHaveProperty('detail')
+    })
   })
 
   describe('data extract', () => {
@@ -586,6 +638,73 @@ describe('CLI Data Commands', () => {
       expect(result.exitCode).toBe(1)
       expect(result.stderr).toContain('no_form_fields')
       expect(result.stdout).toBe('')
+    })
+
+    async function renderAndExtract(definition: Record<string, unknown>, data: Record<string, unknown>, name: string) {
+      const formPath = path.join(tempDir, `${name}.json`)
+      const pdfPath = path.join(tempDir, `${name}.pdf`)
+      await fs.writeFile(formPath, JSON.stringify(definition))
+      await fs.copyFile(path.join(fixturesDir, 'pet-addendum-bindings.pdf'), path.join(tempDir, 'pet-addendum-bindings.pdf'))
+      const rendered = await executeCliCommand(['render', formPath, '--data', JSON.stringify(data), '--out', pdfPath])
+      expect(rendered.exitCode, rendered.stderr).toBe(0)
+      const extracted = await executeCliCommand(['data', 'extract', formPath, pdfPath])
+      expect(extracted.exitCode, extracted.stderr).toBe(0)
+      const output = JSON.parse(extracted.stdout) as { data: { fields: Record<string, unknown> }; report: { entries: Array<{ path: string; status: string; reason?: string }> } }
+      return { data: output.data, entry: (entryPath: string) => output.report.entries.find((entry) => entry.path === entryPath) }
+    }
+
+    const computedForm = {
+      ...extractForm,
+      defs: { heavy: { type: 'boolean', value: 'fields.weight > 5' } },
+      layers: {
+        pdf: {
+          ...extractForm.layers.pdf,
+          bindings: { pet_name: 'name', petWeight: 'weight', is_vaccinated: 'defs.heavy' },
+        },
+      },
+    }
+
+    it('reports a checkbox bound to a computed value as not_recoverable when checked and empty when not', async () => {
+      const checked = await renderAndExtract(computedForm, { fields: { name: 'Rex', weight: 9 } }, 'heavy')
+      const unchecked = await renderAndExtract(computedForm, { fields: { name: 'Tom', weight: 3 } }, 'light')
+
+      expect(checked.entry('defs.heavy')).toMatchObject({ status: 'not_recoverable', reason: 'Computed values are derived from other data, not read back.' })
+      expect(unchecked.entry('defs.heavy')).toMatchObject({ status: 'empty' })
+      expect(checked.data).toEqual({ fields: { name: 'Rex', weight: 9 } })
+    })
+
+    const defaultedForm = {
+      ...extractForm,
+      fields: {
+        species: { type: 'enum', label: 'Species', required: true, enum: [{ value: 'dog' }, { value: 'cat' }] },
+        name: { type: 'text', label: 'Name', required: true, default: 'Kitty', visible: "fields.species == 'cat'" },
+        weight: { type: 'number', label: 'Weight' },
+      },
+      layers: { pdf: { ...extractForm.layers.pdf, bindings: { pet_name: 'name', petWeight: 'weight' } } },
+    }
+
+    it('render --draft --check prints and compares the default of a field that applies', async () => {
+      const formPath = path.join(tempDir, 'draft-defaults.json')
+      const pdfPath = path.join(tempDir, 'draft-defaults.pdf')
+      await fs.writeFile(formPath, JSON.stringify(defaultedForm))
+      await fs.copyFile(path.join(fixturesDir, 'pet-addendum-bindings.pdf'), path.join(tempDir, 'pet-addendum-bindings.pdf'))
+
+      const result = await executeCliCommand(['render', formPath, '--data', JSON.stringify({ fields: { species: 'cat' } }), '--out', pdfPath, '--draft', '--check', '--format', 'json'])
+
+      expect(result.exitCode, result.stderr).toBe(0)
+      expect(JSON.parse(result.stdout)).toMatchObject({ success: true, check: { passed: true, equal: 1 } })
+      const extracted = JSON.parse((await executeCliCommand(['data', 'extract', formPath, pdfPath])).stdout) as { data: { fields: Record<string, unknown> } }
+      expect(extracted.data.fields).toMatchObject({ name: 'Kitty' })
+    })
+
+    it('prints the default of a required field that applies, and nothing for one that does not', async () => {
+      const cat = await renderAndExtract(defaultedForm, { fields: { species: 'cat', weight: 3 } }, 'cat')
+      const dog = await renderAndExtract(defaultedForm, { fields: { species: 'dog', weight: 3 } }, 'dog')
+
+      expect(cat.entry('name')).toMatchObject({ status: 'recovered' })
+      expect(cat.data.fields).toMatchObject({ name: 'Kitty' })
+      expect(dog.entry('name')).toMatchObject({ status: 'empty' })
+      expect(dog.data.fields).not.toHaveProperty('name')
     })
   })
 })

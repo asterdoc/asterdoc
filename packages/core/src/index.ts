@@ -65,10 +65,12 @@ export {
   UnboundResolverError,
   LayerReadError,
   RenderRefusedError,
+  renderProblemReport,
   // Unified namespace
   a,
 } from "./artifacts";
 
+export type { RenderProblemReport } from "./artifacts";
 export type {
   // Form types
   FormInstance,

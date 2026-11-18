@@ -6,6 +6,7 @@
 
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import type { Form, Resolver } from '@asterdoc/types'
+import { PdfBindingKeyError } from '@asterdoc/render'
 import { validateFileTemplates } from '@/logic/design-time/validation/validate-templates'
 import { hasTemplateLayers, validate } from '@/validation/artifact'
 import { validateFileReferences } from '@/validation/file-references'
@@ -13,21 +14,22 @@ import { validatePdfLayers, type LayerValidationIssue } from '@/validation/pdf-l
 import { validatePlaceFormats } from '@/validation/place-definitions'
 import { validateValueFormats } from '@/validation/value-formats'
 import type { ValidateOptions } from '@/types'
-import { form as formApi } from './form/form'
+import { loadFormEachLayer } from './form/form'
 import { testDrafts } from './form/form-tests'
 
-async function testValueIssues(form: Form, options: { resolver: Resolver }): Promise<LayerValidationIssue[]> {
+type LayerLoad = Awaited<ReturnType<typeof loadFormEachLayer>>
+
+function testValueIssues(form: Form, loaded: LayerLoad): LayerValidationIssue[] {
   const tests = form.tests ?? []
   if (tests.length === 0) return []
-  const loaded = await formApi.safeLoad(form, options)
-  if (!loaded.success) return []
-  const draftOf = testDrafts(loaded.data)
+  const layers = loaded.layers
+  const draftOf = testDrafts(loaded.instance)
   const issues: LayerValidationIssue[] = []
   for (const test of tests) {
     const reported = new Set<string>()
     const draft = draftOf(test)
     if (!draft.success || !draft.data.isValid()) continue
-    const problems = Object.keys(form.layers ?? {}).flatMap((layer) => draft.data.renderProblems(layer))
+    const problems = layers.flatMap((layer) => draft.data.renderProblems(layer))
     for (const error of problems) {
       if (error.layer === undefined) continue
       const once = `${error.layer}\u0000${error.field}`
@@ -43,34 +45,38 @@ async function testValueIssues(form: Form, options: { resolver: Resolver }): Pro
   return issues
 }
 
-function defaultPath(field: string): string[] {
-  const [root, ...rest] = field.split('.')
-  if (root !== 'fields' || rest.length === 0 || rest.some((segment) => /^\d+$/.test(segment))) return []
-  return ['fields', ...rest.flatMap((segment, index) => (index === 0 ? [segment] : ['fields', segment])), 'default']
+function issuePath(field: string): string[] {
+  return field.split(/[.[\]]+/).filter((segment) => segment.length > 0)
 }
 
-function emptyFieldsets(fields: Form['fields']): Record<string, unknown> {
-  const values: Record<string, unknown> = {}
-  for (const [key, field] of Object.entries(fields ?? {})) {
-    if (field.type === 'fieldset') values[key] = emptyFieldsets(field.fields)
+function noValueIssues(loaded: LayerLoad): LayerValidationIssue[] {
+  const layers = loaded.layers
+  if (layers.length === 0) return []
+  const draft = loaded.instance.safeFill({} as never)
+  if (!draft.success) {
+    return [{ message: `The form with no values given could not be filled: ${draft.error.message}`, path: ['fields'], severity: 'error' }]
   }
-  return values
+  return layers.flatMap((layer) => draft.data.renderProblems(layer).map((error): LayerValidationIssue => ({
+    message: `Layer "${layer}", with no values given: ${error.message.replace(/^Layer "[^"]*": /, '')}`,
+    path: issuePath(error.field),
+    severity: 'error',
+  })))
 }
 
-async function defaultValueIssues(form: Form, options: { resolver: Resolver }, layers: readonly string[]): Promise<LayerValidationIssue[]> {
-  const loaded = await formApi.safeLoad(form, options)
-  if (!loaded.success) return []
-  const withFieldsets = loaded.data.safeFill({ fields: emptyFieldsets(form.fields) } as never)
-  const draft = withFieldsets.success ? withFieldsets : loaded.data.safeFill({ fields: {} } as never)
-  if (!draft.success) return []
-  return layers.flatMap((layer) => draft.data.renderProblems(layer).map((error): LayerValidationIssue => {
-    const path = defaultPath(error.field)
-    return {
-      message: `Layer "${layer}", the default of ${error.field}: the layer cannot print it. ${error.message.replace(/^Layer "[^"]*": /, '')}`,
-      path: path.length > 0 ? path : ['layers', layer],
-      severity: 'error',
-    }
-  }))
+type ReportedIssue = { path?: ReadonlyArray<unknown>; severity?: string }
+
+function sameCause(issue: ReportedIssue, layer: string, error: Error): boolean {
+  const path = issue.path ?? []
+  if ((issue.severity ?? 'error') !== 'error' || path[0] !== 'layers' || path[1] !== layer) return false
+  if (path.length === 2) return true
+  return error instanceof PdfBindingKeyError && (path[2] === 'bindings' || path[2] === 'bindingsFrom')
+}
+
+function unreadLayerIssues(loaded: LayerLoad, reported: readonly ReportedIssue[]): LayerValidationIssue[] {
+  return [...loaded.failures].flatMap(([layer, error]): LayerValidationIssue[] => {
+    if (reported.some((issue) => sameCause(issue, layer, error))) return []
+    return [{ message: `Layer "${layer}" cannot be read for the render check: ${error.message}`, path: ['layers', layer], severity: 'error' }]
+  })
 }
 
 /** Options for {@link validateLayers}. */
@@ -120,8 +126,9 @@ function readOnce(resolver: Resolver): Resolver {
  *   whose data is valid, as the render check of the test's draft reports
  *   them: no overflow, comb, mask or font problem. A test whose data is not
  *   valid shows an unhappy path and is not rendered;
- * - for a form, that each PDF layer can print the defaults of its fields, as
- *   a render of a form with no values given prints them;
+ * - for a form, the render check of each PDF layer on the form with no values
+ *   given, holding every default that applies then, and every constant text
+ *   a layer prints. A layer that cannot be read for it is an error;
  * - for a form, that a stored value a layer prints with a country or region
  *   format normalizes; a default that does not is a warning.
  * - for a form, a warning for each layer or PDF binding that prints person
@@ -146,9 +153,11 @@ export async function validateLayers<T = unknown>(
   const templateIssues = validateOptions.logic === false || !hasTemplateLayers(artifact) ? [] : await validateFileTemplates(artifact, reader)
   const isForm = hasTemplateLayers(artifact) && artifact.kind === 'form'
   const pdfLayers = isForm ? await validatePdfLayers(artifact as unknown as Form, reader) : { issues: [], checked: [] }
-  const testFonts = isForm && pdfLayers.checked.length > 0 ? await testValueIssues(artifact as unknown as Form, { resolver: reader }) : []
-  const defaults = isForm && pdfLayers.checked.length > 0 ? await defaultValueIssues(artifact as unknown as Form, { resolver: reader }, pdfLayers.checked) : []
-  const pdf = [...pdfLayers.issues, ...testFonts, ...defaults]
+  const loaded = isForm ? await loadFormEachLayer(artifact as unknown as Form, { resolver: reader }) : undefined
+  const unread = loaded ? unreadLayerIssues(loaded, [...fileIssues, ...pdfLayers.issues]) : []
+  const testFonts = loaded ? testValueIssues(artifact as unknown as Form, loaded) : []
+  const defaults = loaded ? noValueIssues(loaded) : []
+  const pdf = [...pdfLayers.issues, ...unread, ...testFonts, ...defaults]
   const errors = [...fileIssues, ...templateIssues, ...pdf.filter((issue) => issue.severity === 'error')]
   const places = hasTemplateLayers(artifact) && artifact.kind === 'form' ? validatePlaceFormats(artifact as unknown as Form) : []
   const formats = hasTemplateLayers(artifact) && artifact.kind === 'form' ? validateValueFormats(artifact as unknown as Form) : []

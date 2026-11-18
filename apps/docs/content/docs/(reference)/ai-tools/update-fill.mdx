@@ -15,10 +15,10 @@ Takes a [source](/ai-tools#sources) plus:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `data` | `object` | Yes | The current draft payload, usually `data` from the last `fill` or `update_fill` |
+| `data` | `object` | Yes | The current draft payload: `data` from the last `fill` or `update_fill`, never `values` |
 | `patch` | `object` | No | Values to merge, in the same shape as `data` |
-| `clear` | `string[]` | No | Paths to empty, such as `fields.weight`, `annexes.<id>`, or `items.<id>` for a checklist |
-| `reset` | `string[]` | No | Paths to set back to their declared default. A path with no default is emptied. |
+| `clear` | `string[]` | No | Paths to empty, such as `fields.weight`, `annexes.<id>`, or `items.<id>` for a checklist. A cleared form field stays empty: `data` holds it as `null`, and it gets no default in later calls |
+| `reset` | `string[]` | No | Paths to set back to their declared default. A path with no default is emptied |
 | `evaluation_context` | `object` | No | The draft's `evaluation_context` |
 
 A path that the artifact does not declare fails the call.
@@ -30,7 +30,8 @@ A path that the artifact does not declare fails the call.
 | `accepted` | `boolean` | Whether the update was applied |
 | `complete` | `boolean` | Whether the updated draft meets every requirement |
 | `artifact_kind` | `"form" \| "checklist"` | Artifact kind |
-| `data` | `object` | The full updated draft payload |
+| `data` | `object` | The updated draft payload with the values given, without defaults. Pass it to the next call |
+| `values` | `object` | Form only. The values the form holds: the given values and the default of each field that applies. Read these to confirm or show the form. Do not pass them back as `data`. |
 | `display` | `object` | Words for each stored country and region code, keyed by path: `"fields.client_address.region": "Ontario, Canada"`. Confirm values to the person with these, not with a bare code. Absent when no value stores a code |
 | `evaluation_context` | `object` | The draft's fixed context |
 | `errors` | [`ToolError[]`](/ai-tools#errors) | One entry per rejected value |

@@ -159,7 +159,7 @@ export const ValidateInputValueSchema = withSourceFields(ValidateInputSelectorsS
 export type ValidateInputValue = z.infer<typeof ValidateInputValueSchema>
 
 export const FillDataSchema = JsonObjectSchema.describe(
-	'Form payload { fields, parties, annexes } or checklist item values. parties is keyed by role ID: a role with max 1 takes one party object, a role with max above 1 takes an array of party objects. A text field with a mask, such as ###-##-####, takes its value with or without the mask\'s separators and stores it without them.',
+	'Form payload { fields, parties, annexes } or checklist item values. parties is keyed by role ID: a role with max 1 takes one party object, a role with max above 1 takes an array of party objects. A text field with a mask, such as ###-##-####, takes its value with or without the mask\'s separators and stores it without them. A field set to null is left empty on purpose: it gets no default.',
 )
 
 export const FillInputSchema = withSourceFields({
@@ -176,7 +176,7 @@ export const FillStateInputSchema = withSourceFields({
 export type FillStateInput = z.infer<typeof FillStateInputSchema>
 
 export const UpdateFillInputSchema = withSourceFields({
-	data: FillDataSchema.describe('Current lossless form or checklist draft payload'),
+	data: FillDataSchema.describe('Current form or checklist draft payload: data from the last fill or update_fill, never values'),
 	patch: FillDataSchema.optional().describe('Values to merge into the current draft'),
 	clear: z.array(z.string().min(1)).optional().default([]).describe('Schema-qualified paths to clear'),
 	reset: z.array(z.string().min(1)).optional().default([]).describe('Schema-qualified paths to reset'),
@@ -216,6 +216,9 @@ export const ToolErrorSchema = z.object({
 	message: z.string(),
 	path: z.array(z.union([z.string(), z.number()])).optional(),
 	retryable: z.boolean().optional(),
+	keyword: z.literal('render').optional().describe('"render" for a value the layer cannot render, with layer and pdf_field'),
+	layer: z.string().optional().describe('For a render problem: the layer that cannot render the value'),
+	pdf_field: z.string().optional().describe('For a render problem: the PDF field that cannot hold the value'),
 	candidates: z
 		.array(PlaceCandidateSchema)
 		.optional()
@@ -303,7 +306,14 @@ export const FillOutputSchema = z.object({
 	accepted: z.boolean(),
 	complete: z.boolean(),
 	artifact_kind: z.enum(['form', 'document', 'bundle', 'checklist']).optional(),
-	data: z.record(z.string(), z.unknown()).optional(),
+	data: z
+		.record(z.string(), z.unknown())
+		.optional()
+		.describe('The draft payload to pass as data to the next fill, update_fill, get_fill_state, validate or render call. For a form it holds only the values given, never a default, so a default goes away when its field stops applying'),
+	values: z
+		.record(z.string(), z.unknown())
+		.optional()
+		.describe('Form only: the values the form holds, the given values and the default of each field that applies. Read these to confirm or show the form; do not pass them back as data'),
 	display: z
 		.record(z.string(), z.string())
 		.optional()

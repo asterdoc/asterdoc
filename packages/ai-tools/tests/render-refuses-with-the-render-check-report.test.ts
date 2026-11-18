@@ -48,7 +48,14 @@ describe('the render tool and the render check', () => {
 		expect(result).toMatchObject({
 			success: false,
 			error: { code: 'render_refused' },
-			errors: [expect.objectContaining({ code: 'unprintable', path: ['fields', 'name'], message: expect.stringContaining('does not fit at the minimum size') })],
+			errors: [{
+				code: 'unprintable',
+				keyword: 'render',
+				layer: 'pdf',
+				pdf_field: 'name',
+				path: ['fields', 'name'],
+				message: expect.stringContaining('does not fit at the minimum size'),
+			}],
 		})
 	})
 })

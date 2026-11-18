@@ -85,8 +85,8 @@ describe('executeFill', () => {
 
       expect(result.accepted).toBe(true)
       expect(result.complete).toBe(true)
-      expect(result.data).toBeDefined()
-      expect(result.data!.fields.status).toBe('pending')
+      expect(result.data!.fields).not.toHaveProperty('status')
+      expect(result.values!.fields.status).toBe('pending')
     })
   })
 

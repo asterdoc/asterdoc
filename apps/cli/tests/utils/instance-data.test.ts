@@ -149,10 +149,8 @@ describe('validateFormPayload annex values', () => {
       fields: {},
       annexes: { proof: { name: 'proof.pdf', mimeType: 'application/pdf' } },
     })
-    expect(result).toEqual({
-      success: true,
-      data: { fields: {}, annexes: { proof: { name: 'proof.pdf', mimeType: 'application/pdf' } } },
-    })
+    const payload = { fields: {}, annexes: { proof: { name: 'proof.pdf', mimeType: 'application/pdf' } } }
+    expect(result).toEqual({ success: true, data: payload, values: payload })
   })
 
   it('rejects a missing required annex and a null annex, as the SDK does', async () => {

@@ -32,21 +32,32 @@ export function asChecklistPayload(value: unknown): Record<string, boolean | str
 	return structuredClone(value) as Record<string, boolean | string>
 }
 
-export function formDraftPayload(draft: {
+type FormDraftView = {
 	fields: Record<string, unknown>
+	givenFields: Record<string, unknown>
 	parties: Record<string, unknown>
 	annexes: Record<string, unknown>
 	signers?: Record<string, unknown>
 	signatories?: Record<string, unknown>
-}): FormPayload {
+}
+
+function draftPayload(draft: FormDraftView, fields: Record<string, unknown>): FormPayload {
 	const payload: FormPayload = {
-		fields: structuredClone(draft.fields),
+		fields: structuredClone(fields),
 		parties: structuredClone(draft.parties),
 	}
 	if (Object.keys(draft.annexes).length > 0) payload.annexes = structuredClone(draft.annexes)
 	if (draft.signers && Object.keys(draft.signers).length > 0) payload.signers = structuredClone(draft.signers)
 	if (draft.signatories && Object.keys(draft.signatories).length > 0) payload.signatories = structuredClone(draft.signatories)
 	return payload
+}
+
+export function formDraftPayload(draft: FormDraftView): FormPayload {
+	return draftPayload(draft, draft.givenFields)
+}
+
+export function formDraftValues(draft: FormDraftView): FormPayload {
+	return draftPayload(draft, draft.fields)
 }
 
 export function contextSnapshot(value: unknown): Record<string, unknown> | undefined {
