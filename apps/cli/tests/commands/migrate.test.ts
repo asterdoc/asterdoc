@@ -138,6 +138,27 @@ describe('asterdoc migrate', () => {
     expect(await readFile(refused, 'utf8')).toBe(before)
   })
 
+  it('moves a 2026-11-12 form whose PDF layer declares its TrueType font as an object to 2026-11-17, font unchanged', async () => {
+    const font = { path: 'fonts/body.ttf', checksum: `sha256:${'a'.repeat(64)}` }
+    const file = path.join(dir, 'lettered.json')
+    await writeFile(file, JSON.stringify({
+      $schema: 'https://schema.asterdoc.com/2026-11-12.json',
+      kind: 'form',
+      name: 'lettered',
+      version: '1.0.0',
+      title: 'Lettered',
+      fields: { name: { type: 'text', label: 'Name' } },
+      layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: './lettered.pdf', font, bindings: { name: 'name' } } },
+    }, null, 2) + '\n')
+
+    const result = await run(['migrate', file], dir)
+
+    expect(result.exitCode, result.stderr).toBe(0)
+    const migrated = JSON.parse(await readFile(file, 'utf8'))
+    expect(migrated.$schema).toBe('https://schema.asterdoc.com/2026-11-17.json')
+    expect(migrated.layers.pdf.font).toEqual(font)
+  })
+
   it('moves a 2026-11-12 form to 2026-11-17, and refuses one that binds a phone areaCode with no countryCode', async () => {
     const contact = (bindings: Record<string, unknown>) => JSON.stringify({
       $schema: 'https://schema.asterdoc.com/2026-11-12.json',
@@ -161,7 +182,7 @@ describe('asterdoc migrate', () => {
     await writeFile(refused, before)
     const failure = await run(['migrate', refused], dir)
     expect(failure.exitCode).not.toBe(0)
-    expect(failure.stdout + failure.stderr).toContain('countryCode')
+    expect(failure.stdout + failure.stderr).toContain('Layer "pdf", binding "area": prints phone, but the part "areaCode" exists only for +1 numbers, and fields.phone accepts numbers of every plan; give the field "countryCode": "1".')
     expect(await readFile(refused, 'utf8')).toBe(before)
   })
 

@@ -76,7 +76,7 @@ Under this release, valid data never fails at render without warning. `validate(
 2. Where a caller relied on a render error for a value that does not fit, call `draft.renderProblems(layer)` before the render, or catch `RenderRefusedError`.
 3. Run `npx asterdoc validate` on your artifacts. For each print it names, add the `countryCode`, `currency` or `min` it asks for.
 4. For each valid test that `npx asterdoc validate` now says does not print, bound the field (a `maxLength` that fits the box), bind its parts, or change the test's values.
-5. Run `npx asterdoc migrate <file>` to write the new `$schema`. This step is optional: older dates load upgraded in memory.
+5. Run `npx asterdoc migrate <file>` to write the new `$schema`. This step is optional: older dates load upgraded in memory. A 2026-11-12 form that binds a phone `areaCode` or `subscriberNumber`, or prints a phone under `phone.region`, without the matching `countryCode` does not migrate silently: `migrate` and `validate` refuse it, name the field and the `countryCode` to add (step 3), and the form migrates once it has it.
 
 ### Core
 
