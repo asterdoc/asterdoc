@@ -1,6 +1,6 @@
 {
   "name": "@asterdoc/ai-sdk",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "Vercel AI SDK 7 adapter for Asterdoc document tools",
   "type": "module",
   "main": "./dist/index.js",

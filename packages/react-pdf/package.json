@@ -1,6 +1,6 @@
 {
   "name": "@asterdoc/react-pdf",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "description": "PDF rendering and composition checks for @asterdoc/react",
   "type": "module",
   "main": "./dist/index.js",
