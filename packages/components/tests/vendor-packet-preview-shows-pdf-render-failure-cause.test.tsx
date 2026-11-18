@@ -5,8 +5,10 @@ import { expect, it, vi } from "vitest";
 
 vi.mock("@asterdoc/essentials", () => ({
   w9: {
-    safeParseData: (data: unknown) => ({ success: true, data }),
-    fill: () => ({ render: () => Promise.reject(new Error("font table missing: Helvetica")) }),
+    load: async () => ({
+      safeParseData: (data: unknown) => ({ success: true, data }),
+      fill: () => ({ render: () => Promise.reject(new Error("font table missing: Helvetica")) }),
+    }),
   },
 }));
 

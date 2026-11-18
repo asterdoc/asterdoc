@@ -4,7 +4,7 @@
 import { describe, test, expect } from 'vitest'
 import { a, createAsterdocRuntime, fieldInputGuidance, placeDisplayNames, validate } from '@asterdoc/sdk'
 
-const form = a.form({
+const form = await a.form.load({
   name: 'codes-and-masks',
   fields: {
     birthCountry: { type: 'country', label: 'Country of birth' },
@@ -123,7 +123,7 @@ describe('Codes and masks guide', () => {
     })
 
     test('an incomplete value is mask_mismatch at validate and at render, and a placeholder in a progressive preview', async () => {
-      const masked = a.form({
+      const masked = await a.form.load({
         name: 'masked',
         fields: { ssn: { type: 'text', label: 'SSN', mask: '###-##-####' } },
         layers: { text: { kind: 'inline', mimeType: 'text/plain', text: '[{{ fields.ssn }}]' } },
@@ -134,23 +134,24 @@ describe('Codes and masks guide', () => {
       expect(await draft.render({ layer: 'text', progressive: {} })).toBe('[…]')
     })
 
-    test('a country default must be the code', () => {
-      expect(() => a.form({ name: 'bad-default', fields: { country: { type: 'country', label: 'Country', default: 'Canada' } } })).toThrow()
-      expect(a.form({ name: 'good-default', fields: { country: { type: 'country', label: 'Country', default: 'CA' } } }).fill({}).fields.country).toBe('CA')
+    test('a country default must be the code', async () => {
+      await expect(a.form.load({ name: 'bad-default', fields: { country: { type: 'country', label: 'Country', default: 'Canada' } } })).rejects.toThrow()
+      expect((await a.form.load({ name: 'good-default', fields: { country: { type: 'country', label: 'Country', default: 'CA' } } })).fill({}).fields.country).toBe('CA')
     })
 
-    test('a masked default is accepted in either form and stored canonical', () => {
+    test('a masked default is accepted in either form and stored canonical', async () => {
       const definition = (value: string) => ({
-        $schema: 'https://schema.asterdoc.com/2026-11-12.json',
+        $schema: 'https://schema.asterdoc.com/2026-11-17.json',
         kind: 'form' as const,
         name: 'masked-default',
         version: '1.0.0',
         fields: { ssn: { type: 'text' as const, label: 'SSN', mask: '###-##-####', default: value } },
       })
-      expect(a.form(definition('123-45-6789')).fill({}).fields.ssn).toBe('123456789')
-      expect(a.form(definition('123456789')).fill({}).fields.ssn).toBe('123456789')
+      expect((await a.form.load(definition('123-45-6789'))).fill({}).fields.ssn).toBe('123456789')
+      expect((await a.form.load(definition('123456789'))).fill({}).fields.ssn).toBe('123456789')
       expect(validate(definition('12-345')).issues?.[0]?.message).toContain('has a default that does not fit its mask')
-      expect(() => a.form(definition('12-345')).fill({})).toThrow('has a default that does not fit its mask')
+      const bad = await a.form.load(definition('12-345'))
+      expect(() => bad.fill({})).toThrow('has a default that does not fit its mask')
     })
   })
 
@@ -173,8 +174,8 @@ describe('Codes and masks guide', () => {
       })
     })
 
-    test('a session runtime keeps the code and candidates of a refusal', () => {
-      const runtime = createAsterdocRuntime(form.toJSON(), { locale: 'fr-FR' })
+    test('a session runtime keeps the code and candidates of a refusal', async () => {
+      const runtime = await createAsterdocRuntime(form.toJSON(), { locale: 'fr-FR' })
       expect(runtime.validateField('birthCountry', 'Allemagne')).toEqual({ ok: true, value: 'DE' })
       const refusal = runtime.validateField('birthCountry', 'Georgia')
       expect(refusal.ok).toBe(false)

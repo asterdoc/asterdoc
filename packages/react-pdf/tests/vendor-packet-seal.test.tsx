@@ -34,8 +34,9 @@ import { inspectPdf } from "@asterdoc/render/pdf";
 import { sealBundle } from "@asterdoc/core";
 
 /** The W-9's own sample vector, with a signatory bound to the taxpayer party. */
-function taxpayerDraft() {
-  const parsed = w9.safeParseData({
+async function taxpayerDraft() {
+  const form = await w9.load();
+  const parsed = form.safeParseData({
     parties: { taxpayer: { id: "taxpayer-0", name: "Dana Whitfield", firstName: "Dana", lastName: "Whitfield" } },
     fields: {
       taxClassification: "partnership",
@@ -52,7 +53,7 @@ function taxpayerDraft() {
     },
   } as never);
   if (!parsed.success) throw new Error("the W-9 vector should parse");
-  return w9
+  return form
     .fill(parsed.data)
     .addSigner("taxpayer-signer", { person: { name: "Dana Whitfield" } })
     .addSignatory("taxpayer", "taxpayer-0", { signerId: "taxpayer-signer" });
@@ -68,7 +69,7 @@ beforeAll(async () => {
   // exercised separately.
   annex = await insuranceCertificateFixture();
   packet = await sealVendorPacket({
-    taxpayer: taxpayerDraft(),
+    taxpayer: await taxpayerDraft(),
     insurance: annex,
   });
   pages = await pageTextRuns(packet.pdf);
@@ -136,7 +137,7 @@ describe("the checked-in annex", () => {
   }, 180_000);
 
   it("is what the packet uses when the caller supplies no annex", async () => {
-    const sealed = await sealVendorPacket({ taxpayer: taxpayerDraft() });
+    const sealed = await sealVendorPacket({ taxpayer: await taxpayerDraft() });
     const carried = sealed.parts.find((part) => part.key === VENDOR_PACKET_KEYS.insurance)!;
     expect(carried.attached).toBe(false);
     expect(carried.pageCount).toBe((await inspectPdf(annex)).pageCount);
@@ -204,7 +205,7 @@ describe("the packet has one signature map", () => {
     // Northgate signs the purchase order and certifies the W-9. That is one
     // company and, here, one person, but nothing in either artifact says so.
     const sealed = await sealVendorPacket({
-      taxpayer: taxpayerDraft(),
+      taxpayer: await taxpayerDraft(),
       insurance: annex,
       signers: {
         [`${VENDOR_PACKET_KEYS.purchaseOrder}/supplier-signer`]: "northgate-principal",
@@ -269,7 +270,7 @@ describe("an annex nobody can paint is still in the packet", () => {
       renderers: vendorPacketRenderers(),
       contents: {
         [VENDOR_PACKET_KEYS.purchaseOrder]: fillPurchaseOrderForSeal(),
-        [VENDOR_PACKET_KEYS.taxpayer]: taxpayerDraft(),
+        [VENDOR_PACKET_KEYS.taxpayer]: await taxpayerDraft(),
         [VENDOR_PACKET_KEYS.insurance]: {
           kind: "bytes",
           content: scan,

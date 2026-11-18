@@ -248,7 +248,8 @@ describe('codegen', () => {
 					{ kind: 'form', name: 'test' },
 					{ artifactKind: 'form', exportName: 'test' }
 				)
-				expect(result).toContain("import { a } from '@asterdoc/sdk';")
+				expect(result).toContain("import { a, type ArtifactInstanceOptions } from '@asterdoc/sdk';")
+				expect(jsonToTsModule({ kind: 'document', name: 'test' }, { artifactKind: 'document', exportName: 'test' })).toContain("import { a } from '@asterdoc/sdk';")
 			})
 		})
 
@@ -258,7 +259,8 @@ describe('codegen', () => {
 					{ kind: 'form', name: 'w9' },
 					{ artifactKind: 'form', exportName: 'w9' }
 				)
-				expect(result).toContain('export const w9 = a.form(schema);')
+				expect(result).toContain('export const w9 = schema;')
+				expect(result).toContain('export const loadW9 = (options?: ArtifactInstanceOptions) => a.form.load(schema, options);')
 			})
 
 			test('exports document artifact with correct builder', () => {
@@ -292,7 +294,7 @@ describe('codegen', () => {
 					{ kind: 'form', name: 'w9' },
 					{ artifactKind: 'form', exportName: 'w9' }
 				)
-				expect(result).toContain('export type W9Form = typeof w9;')
+				expect(result).toContain('export type W9Form = Awaited<ReturnType<typeof loadW9>>;')
 			})
 
 			test('exports payload type for forms', () => {
@@ -300,7 +302,7 @@ describe('codegen', () => {
 					{ kind: 'form', name: 'w9' },
 					{ artifactKind: 'form', exportName: 'w9' }
 				)
-				expect(result).toContain('export type W9Payload = Parameters<typeof w9.fill>[0];')
+				expect(result).toContain("export type W9Payload = Parameters<W9Form['fill']>[0];")
 			})
 
 			test('exports payload type for checklists', () => {
@@ -338,7 +340,7 @@ describe('codegen', () => {
 					{ artifactKind: 'form', exportName: 'w9' }
 				)
 				expect(result).toContain('/**')
-				expect(result).toContain('* W9 form artifact - ready to use')
+				expect(result).toContain('* The w9 form definition. Load it with loadW9() to fill it.')
 			})
 
 			test('includes JSDoc for type export', () => {
@@ -346,7 +348,7 @@ describe('codegen', () => {
 					{ kind: 'form', name: 'w9' },
 					{ artifactKind: 'form', exportName: 'w9' }
 				)
-				expect(result).toContain('* Type of the w9 form instance')
+				expect(result).toContain('* Type of the loaded w9 form instance')
 			})
 
 			test('includes JSDoc for payload type', () => {
@@ -379,8 +381,8 @@ describe('codegen', () => {
 				expect(result).toContain('} as const;')
 
 				// Should have exports
-				expect(result).toContain('export const simpleForm = a.form(schema);')
-				expect(result).toContain('export type SimpleFormForm = typeof simpleForm;')
+				expect(result).toContain('export const simpleForm = schema;')
+				expect(result).toContain('export type SimpleFormForm = Awaited<ReturnType<typeof loadSimpleForm>>;')
 			})
 		})
 
@@ -392,8 +394,8 @@ describe('codegen', () => {
 					{ kind: 'form', name: '1099-nec' },
 					{ artifactKind: 'form', exportName: '1099Nec' }
 				)
-				expect(result).toContain('export const _1099Nec = a.form(schema);')
-				expect(result).toContain('export type _1099NecForm = typeof _1099Nec;')
+				expect(result).toContain('export const _1099Nec = schema;')
+				expect(result).toContain('export type _1099NecForm = Awaited<ReturnType<typeof load_1099Nec>>;')
 				expect(result).not.toMatch(/export const 1099Nec/)
 			})
 
@@ -412,7 +414,8 @@ describe('codegen', () => {
 
 			test('leaves a valid export name untouched', () => {
 				const result = jsonToTsModule({ kind: 'form', name: 'w9' }, { artifactKind: 'form', exportName: 'w9' })
-				expect(result).toContain('export const w9 = a.form(schema);')
+				expect(result).toContain('export const w9 = schema;')
+				expect(result).toContain('export const loadW9 = (options?: ArtifactInstanceOptions) => a.form.load(schema, options);')
 			})
 		})
 	})

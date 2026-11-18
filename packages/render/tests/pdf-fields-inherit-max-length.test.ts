@@ -33,7 +33,7 @@ describe('PDF fields inherit MaxLen', () => {
       { id: 4, body: '<< /FT /Tx /T (free) /Subtype /Widget /Rect [20 20 120 40] /P 3 0 R >>' },
       { id: 5, body: '<< /Fields [4 0 R] >>' },
     ]))
-    expect(fields).toEqual([{ name: 'free', type: 'text', value: undefined, required: false, page: 1, rect: [20, 20, 120, 40], maxLen: null, multiline: false }])
+    expect(fields).toEqual([{ name: 'free', type: 'text', value: undefined, required: false, page: 1, rect: [20, 20, 120, 40], maxLen: null, multiline: false, widgets: [{ page: 1, rect: [20, 20, 120, 40] }] }])
   })
   it('inspect says which text fields print several lines', async () => {
     const fields = await inspectAcroFormFields(assemblePdf([

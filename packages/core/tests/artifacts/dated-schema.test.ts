@@ -21,37 +21,35 @@ describe('serialized artifacts carry the current dated $schema', () => {
 		expect(parseYaml(yaml)).toMatchObject({ $schema: ASTERDOC_SCHEMA_URL, kind: 'document', name: 'notice' })
 	})
 
-	test('an artifact read with the current address writes it back', () => {
-		const read = form.from({ $schema: ASTERDOC_SCHEMA_URL, kind: 'form', name: 'intake', fields: {} })
+	test('an artifact read with the current address writes it back', async () => {
+		const read = await form.load({ $schema: ASTERDOC_SCHEMA_URL, kind: 'form', name: 'intake', fields: {} })
 		expect(read.toJSON()).toMatchObject({ $schema: ASTERDOC_SCHEMA_URL })
 		expect(parseYaml(read.toYAML()).$schema).toBe(ASTERDOC_SCHEMA_URL)
 	})
 
-	test('an artifact with another address is refused, so nothing restamps it unmigrated', () => {
-		expect(() =>
-			form.from({ $schema: 'https://schema.asterdoc.com/schema.json', kind: 'form', name: 'intake', fields: {} }),
-		).toThrow(SchemaVersionError)
+	test('an artifact with another address is refused, so nothing restamps it unmigrated', async () => {
+		await expect(form.load({ $schema: 'https://schema.asterdoc.com/schema.json', kind: 'form', name: 'intake', fields: {} }),).rejects.toThrow(SchemaVersionError)
 	})
 
-	test('every artifact type declares an optional $schema string', () => {
+	test('every artifact type declares an optional $schema string', async () => {
 		expectTypeOf<Form['$schema']>().toEqualTypeOf<string | undefined>()
 		expectTypeOf<Document['$schema']>().toEqualTypeOf<string | undefined>()
 		expectTypeOf<Checklist['$schema']>().toEqualTypeOf<string | undefined>()
 		expectTypeOf<Bundle['$schema']>().toEqualTypeOf<string | undefined>()
-		const json: Form = form({ name: 'intake' }).toJSON()
+		const json: Form = (await form.load({ name: 'intake' })).toJSON()
 		expect(json.$schema).toBe(ASTERDOC_SCHEMA_URL)
 	})
 
-	test('includeSchema: false writes no $schema at all', () => {
-		const read = form.from({ $schema: ASTERDOC_SCHEMA_URL, kind: 'form', name: 'intake', fields: {} })
+	test('includeSchema: false writes no $schema at all', async () => {
+		const read = await form.load({ $schema: ASTERDOC_SCHEMA_URL, kind: 'form', name: 'intake', fields: {} })
 		expect(read.toJSON({ includeSchema: false })).not.toHaveProperty('$schema')
 		const yaml = read.toYAML({ includeSchema: false })
 		expect(yaml).not.toContain('$schema')
 	})
 
-	test('serializing leaves the input and the instance unchanged', () => {
+	test('serializing leaves the input and the instance unchanged', async () => {
 		const input = { $schema: ASTERDOC_SCHEMA_URL, kind: 'form' as const, name: 'intake', fields: {} }
-		const read = form.from(input)
+		const read = await form.load(input)
 		expect(read.toJSON({ includeSchema: false })).not.toHaveProperty('$schema')
 		expect(input.$schema).toBe(ASTERDOC_SCHEMA_URL)
 		expect(Object.keys(read.toJSON())[0]).toBe('$schema')

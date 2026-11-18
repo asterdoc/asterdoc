@@ -94,6 +94,13 @@ export interface LayerFont {
 }
 
 /**
+ * A standard PDF font an artifact may choose for a PDF layer or a binding:
+ * Helvetica, or Courier for monospace text. Every PDF viewer has them, so
+ * nothing is embedded; they draw the Windows Latin 1 characters.
+ */
+export type StandardPdfFont = "Helvetica" | "Courier";
+
+/**
  * How a layer or binding presents money values.
  *
  * Every choice left out stays with the level below: the layer's format under a
@@ -283,10 +290,11 @@ export interface FileLayer {
   /** Optional SHA-256 checksum for integrity verification. */
   checksum?: string;
   /**
-   * Font for filled values and overlay text. PDF layers only. It is tried
-   * after a font supplied at render time and before the form's own fonts.
+   * Font for filled values and overlay text. PDF layers only. A standard
+   * font name draws every field in it; a TrueType file is tried first, then
+   * each field's standard font.
    */
-  font?: LayerFont;
+  font?: LayerFont | StandardPdfFont;
   /**
    * How the layer prints values, over the formatter the caller renders with.
    * Only layers that print values declare one. It applies to this layer
@@ -330,6 +338,8 @@ export interface PathBinding {
    * amount's `units` or `cents`. Not on a `:` qualifier.
    */
   part?: ValuePart;
+  /** The standard font the field draws in, over the layer's font and the field's own. */
+  font?: StandardPdfFont;
   /** A binding object holds `path` or `template`, never both. */
   template?: never;
 }
@@ -353,6 +363,8 @@ export interface TemplateBinding {
    * field, the template's own text included.
    */
   format?: ValueFormat;
+  /** The standard font the field draws in, over the layer's font and the field's own. */
+  font?: StandardPdfFont;
   /** A binding object holds `path` or `template`, never both. */
   path?: never;
   /** A template takes no part; a placeholder does, as `{{fields.dob | part="year"}}`. */

@@ -35,8 +35,8 @@ const EXAMPLES = [
   { name: "invoice", spec: invoiceSpec, data: shortInvoiceData },
 ] as const;
 
-function evaluate(spec: unknown, fields: Record<string, unknown>) {
-  const form = a.form(spec as Parameters<typeof a.form>[0]);
+async function evaluate(spec: unknown, fields: Record<string, unknown>) {
+  const form = await a.form.load(spec);
   const draft = form.safeFill({ fields, parties: {} } as never);
   if (!draft.success) throw new Error(`the fill did not parse: ${draft.error.message}`);
   const state = draft.data.runtimeState;
@@ -45,24 +45,24 @@ function evaluate(spec: unknown, fields: Record<string, unknown>) {
 }
 
 describe.each(EXAMPLES)("the $name's computed money", ({ spec, data }) => {
-  it("evaluates before anything is answered, with no tax or total yet", () => {
-    const { resolved, issues, money } = evaluate(spec, {});
+  it("evaluates before anything is answered, with no tax or total yet", async () => {
+    const { resolved, issues, money } = await evaluate(spec, {});
     expect(issues).toEqual([]);
     expect(resolved).toBe(true);
     expect(money("tax")?.amount).toBeNull();
     expect(money("total")?.amount).toBeNull();
   });
 
-  it("evaluates with every answer but the tax rate, with no tax or total yet", () => {
+  it("evaluates with every answer but the tax rate, with no tax or total yet", async () => {
     const { taxRatePercent: _rate, ...rest } = data.fields;
-    const { resolved, money } = evaluate(spec, rest);
+    const { resolved, money } = await evaluate(spec, rest);
     expect(resolved).toBe(true);
     expect(money("tax")?.amount).toBeNull();
     expect(money("total")?.amount).toBeNull();
   });
 
-  it("computes tax and total once every input has landed", () => {
-    const { resolved, money } = evaluate(spec, data.fields);
+  it("computes tax and total once every input has landed", async () => {
+    const { resolved, money } = await evaluate(spec, data.fields);
     expect(resolved).toBe(true);
     const tax = Number(money("tax")?.amount);
     const total = Number(money("total")?.amount);
@@ -73,8 +73,8 @@ describe.each(EXAMPLES)("the $name's computed money", ({ spec, data }) => {
 });
 
 describe("the purchase order's totals", () => {
-  it("are the sample's exact figures", () => {
-    const { money } = evaluate(purchaseOrderSpec, purchaseOrderData.fields);
+  it("are the sample's exact figures", async () => {
+    const { money } = await evaluate(purchaseOrderSpec, purchaseOrderData.fields);
     expect(Number(money("subtotal")?.amount)).toBe(121_766);
     expect(Number(money("tax")?.amount)).toBeCloseTo(10_045.695, 3);
     expect(Number(money("total")?.amount)).toBeCloseTo(131_811.695, 3);

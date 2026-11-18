@@ -49,7 +49,7 @@ const pct = a.percentage.parse(userInput, { min: 0, max: 100 })
 ### Using with forms
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'discount',
   fields: {
     discountRate: { type: 'percentage', label: 'Discount Rate', min: 0, max: 50 },

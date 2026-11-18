@@ -39,7 +39,7 @@ const addressField = field.fieldset()
 
 ```ts
 // Object pattern
-const form = a.form({
+const form = await a.form.load({
   name: 'contact-form',
   fields: {
     name: { type: 'text', label: 'Name', required: true },
@@ -49,12 +49,12 @@ const form = a.form({
 })
 
 // Builder pattern
-const form = a.form()
+const form = await a.form.load(a.form()
   .name('contact-form')
   .field('name', field.text().label('Name').required().build())
   .field('email', field.email().label('Email').required().build())
   .field('age', field.number().label('Age').min(0).max(150).build())
-  .build()
+  .build())
 ```
 
 ## Field Types
@@ -297,7 +297,7 @@ All fields share these base properties:
 The `required` and `visible` properties can be expressions that reference defs keys or field values (`fields.<id>`):
 
 ```ts
-const form = a.form()
+const form = await a.form.load(a.form()
   .name('age-form')
   .def('isAdult', 'fields.age >= 18')
   .field('age', field.number().label('Age').required().build())
@@ -306,7 +306,7 @@ const form = a.form()
     .visible('isAdult')
     .required('isAdult')
     .build())
-  .build()
+  .build())
 ```
 
 `visible` and `required` compose into one effective status that cascades through fieldsets: a hidden fieldset hides its whole subtree, and a field is only required when it is also visible. A parent's `required` does not force its children. See [Logic](/concepts/logic) for the expression language.

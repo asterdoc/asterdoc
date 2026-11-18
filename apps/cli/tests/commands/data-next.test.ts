@@ -64,6 +64,27 @@ interface NextJson {
   pagesFrom?: { layer: string; path: string }
 }
 
+const blankPdf = [
+  '%PDF-1.4',
+  '1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj',
+  '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj',
+  '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >> endobj',
+  'trailer << /Root 1 0 R >>',
+  '%%EOF',
+].join('\n')
+
+const boxesPdf = (names: string[]) => [
+  '%PDF-1.4',
+  `1 0 obj << /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [${names.map((_, index) => `${index + 4} 0 R`).join(' ')}] >> >> endobj`,
+  '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj',
+  `3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [${names.map((_, index) => `${index + 4} 0 R`).join(' ')}] >> endobj`,
+  ...names.map((name, index) => `${index + 4} 0 obj << /FT /Tx /T (${name}) /Subtype /Widget /Rect [20 ${700 - index * 20} 300 ${714 - index * 20}] /P 3 0 R /DA (/Helv 10 Tf 0 g) >> endobj`),
+  'trailer << /Root 1 0 R >>',
+  '%%EOF',
+].join('\n')
+
+const NAME_BOXES = boxesPdf(['family', 'given', 'company'])
+
 describe('asterdoc data next', () => {
   let dir: string
   let formFile: string
@@ -197,6 +218,7 @@ describe('asterdoc data next', () => {
     }
 
     beforeEach(async () => {
+      await fs.writeFile(path.join(dir, 'appearance.pdf'), NAME_BOXES)
       await write('appearance.json', { ...appearance, layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: 'appearance.pdf', bindings: splitName } }, defaultLayer: 'pdf' })
     })
 
@@ -228,6 +250,7 @@ describe('asterdoc data next', () => {
     const boxes = { family: 'parties.client.lastName', given: 'parties.client.firstName', company: 'parties.client.legalName' }
 
     beforeEach(async () => {
+      await fs.writeFile(path.join(dir, 'appearance.pdf'), NAME_BOXES)
       await write('appearance.json', {
         ...appearance,
         parties: { client: { label: 'Client', partyType: 'any', min: 1, max: 1 } },
@@ -488,12 +511,9 @@ describe('asterdoc data next', () => {
       expect(Object.values(pagesOf(plain)).every((pages) => pages === undefined)).toBe(true)
 
       formFile = await write('appearance.json', withLayers({ pdf: pdfLayer('missing.pdf') }))
-      const missing = await next()
-      expect(missing.pagesFrom).toBeUndefined()
-      expect(keys(missing)).toContain('name')
-      const text = await runCli(['data', 'next', formFile])
-      expect(text.stdout).not.toContain('A page is where')
-      expect(text.stdout).toContain('[required] name (text): Full name')
+      const missing = await runCli(['data', 'next', formFile])
+      expect(missing.exitCode).toBe(1)
+      expect(missing.stderr).toContain('Layer "pdf" could not be read from "missing.pdf"')
     })
 
     it('with several PDF layers, reads the default layer, or the one --layer names', async () => {

@@ -1,19 +1,19 @@
 import { describe, expect, test } from 'vitest'
 import { bundle, document, form, runtimeBundleFromJSON } from '@/artifacts'
 
-function fixture() {
-	const formA = form()
+async function fixture() {
+	const formA = await form.load(form()
 		.name('form-a')
 		.version('1.0.0')
 		.title('Form A')
 		.fields({ name: { type: 'text', label: 'Name' } })
-		.build()
-	const formB = form()
+		.build())
+	const formB = await form.load(form()
 		.name('form-b')
 		.version('1.0.0')
 		.title('Form B')
 		.fields({ name: { type: 'text', label: 'Name' } })
-		.build()
+		.build())
 	const notes = document().name('notes').version('1.0.0').title('Notes').build()
 	const definition = bundle()
 		.name('packet')
@@ -31,8 +31,8 @@ function fixture() {
 
 describe('bundle content mutation', () => {
 	describe('updateContent on a signable bundle', () => {
-		test('accepts a signable instance of the declared kind, and the bundle finalizes', () => {
-			const { formB, signable } = fixture()
+		test('accepts a signable instance of the declared kind, and the bundle finalizes', async () => {
+			const { formB, signable } = (await fixture())
 			const updated = signable.updateContent('formB', formB.fill({ fields: { name: 'B2' } }).prepareForSigning())
 
 			expect(updated.phase).toBe('signable')
@@ -40,32 +40,32 @@ describe('bundle content mutation', () => {
 			expect(updated.finalize().phase).toBe('executed')
 		})
 
-		test('rejects a draft-phase instance at the call, naming the phase mismatch', () => {
-			const { formB, signable } = fixture()
+		test('rejects a draft-phase instance at the call, naming the phase mismatch', async () => {
+			const { formB, signable } = (await fixture())
 
 			expect(() => signable.updateContent('formB', formB.fill({ fields: { name: 'B2' } }))).toThrow(
 				'Cannot updateContent: content "formB" is a form in draft phase, but a signable bundle requires signable phase'
 			)
 		})
 
-		test('rejects a key the bundle does not declare', () => {
-			const { formB, signable } = fixture()
+		test('rejects a key the bundle does not declare', async () => {
+			const { formB, signable } = (await fixture())
 
 			expect(() => signable.updateContent('missing', formB.fill().prepareForSigning())).toThrow(
 				'Content key "missing" not found in bundle definition. Available keys: formA, formB'
 			)
 		})
 
-		test('rejects an instance of the wrong kind for the part', () => {
-			const { notes, signable } = fixture()
+		test('rejects an instance of the wrong kind for the part', async () => {
+			const { notes, signable } = (await fixture())
 
 			expect(() => signable.updateContent('formB', notes.prepare().finalize())).toThrow(
 				'Cannot updateContent: content "formB" must be a form instance, got a document'
 			)
 		})
 
-		test('rejects a value that is not a runtime instance', () => {
-			const { signable } = fixture()
+		test('rejects a value that is not a runtime instance', async () => {
+			const { signable } = (await fixture())
 			const notAnInstance = { phase: 'signable' } as unknown as Parameters<typeof signable.updateContent>[1]
 
 			expect(() => signable.updateContent('formB', notAnInstance)).toThrow(
@@ -75,8 +75,8 @@ describe('bundle content mutation', () => {
 	})
 
 	describe('draft bundle mutation', () => {
-		test('setContent and updateContents accept draft instances', () => {
-			const { formA, formB, draft } = fixture()
+		test('setContent and updateContents accept draft instances', async () => {
+			const { formA, formB, draft } = (await fixture())
 			const updated = draft
 				.setContent('formA', formA.fill({ fields: { name: 'A2' } }))
 				.updateContents({ formB: formB.fill({ fields: { name: 'B2' } }) })
@@ -85,16 +85,16 @@ describe('bundle content mutation', () => {
 			expect(updated.prepareForSigning().phase).toBe('signable')
 		})
 
-		test('setContent rejects a signable instance', () => {
-			const { formA, draft } = fixture()
+		test('setContent rejects a signable instance', async () => {
+			const { formA, draft } = (await fixture())
 
 			expect(() => draft.setContent('formA', formA.fill().prepareForSigning())).toThrow(
 				'Cannot setContent: content "formA" is a form in signable phase, but a draft bundle requires draft phase'
 			)
 		})
 
-		test('updateContents rejects an instance of the wrong kind', () => {
-			const { notes, draft } = fixture()
+		test('updateContents rejects an instance of the wrong kind', async () => {
+			const { notes, draft } = (await fixture())
 
 			expect(() => draft.updateContents({ formB: notes.prepare() })).toThrow(
 				'Cannot updateContents: content "formB" must be a form instance, got a document'
@@ -102,8 +102,8 @@ describe('bundle content mutation', () => {
 		})
 	})
 
-	test('prepare applies the same checks to its initial contents', () => {
-		const { formA, notes } = fixture()
+	test('prepare applies the same checks to its initial contents', async () => {
+		const { formA, notes } = (await fixture())
 		const definition = bundle().name('packet').version('1.0.0').title('Packet').inline('formA', formA).build()
 
 		expect(() => definition.prepare({ formA: formA.fill().prepareForSigning() })).toThrow(
@@ -117,10 +117,10 @@ describe('bundle content mutation', () => {
 		)
 	})
 
-	test('loading names the kind and phase of content a signable bundle cannot hold', () => {
-		const { formB, signable } = fixture()
+	test('loading names the kind and phase of content a signable bundle cannot hold', async () => {
+		const { formB, signable } = (await fixture())
 
-		expect(() => runtimeBundleFromJSON(signable.toJSON(), () => formB.fill())).toThrow(
+		await expect(runtimeBundleFromJSON(signable.toJSON(), () => formB.fill())).rejects.toThrow(
 			'Invalid signable bundle "packet": content "formA" is a form in draft phase, but an included member of a signable bundle requires signable phase'
 		)
 	})

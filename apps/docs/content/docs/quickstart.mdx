@@ -57,7 +57,7 @@ The examples use ES modules and top-level `await`. Set `"type": "module"` in `pa
 Let's define a simple purchase agreement with 2 parties and 3 fields. It will have a single layer that is a Markdown file.
 
 The `markdown` layer is file-backed, so its bytes come from a resolver. Bind
-one when you build the form — every instance you derive from it later
+one when you load the form. Every instance you derive from it later
 (`fill`, `render`, and so on) carries it.
 
 ```ts
@@ -66,25 +66,28 @@ import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: process.cwd() })
 
-const purchaseAgreement = a
-  .form()
-  .name('purchase-agreement') // required
-  .title('Purchase Agreement')
-  .version('1.0.0')
-  .parties({
-    buyer: a.party().label('Buyer').partyType('person').signature({ required: true }),
-    seller: a.party().label('Seller').partyType('person').signature({ required: true }),
-  })
-  .fields({
-    quantity: a.field.number().label('Quantity').required(),
-    price: a.field.money().label('Price').required(),
-    date: a.field.date().label('Date').required(),
-  })
-  .layers({
-    markdown: a.layer().file().mimeType('text/markdown').path('purchase-agreement.md'),
-  })
-  .defaultLayer('markdown')
-  .build({ resolver })
+const purchaseAgreement = await a.form.load(
+  a
+    .form()
+    .name('purchase-agreement') // required
+    .title('Purchase Agreement')
+    .version('1.0.0')
+    .parties({
+      buyer: a.party().label('Buyer').partyType('person').signature({ required: true }),
+      seller: a.party().label('Seller').partyType('person').signature({ required: true }),
+    })
+    .fields({
+      quantity: a.field.number().label('Quantity').required(),
+      price: a.field.money().label('Price').required(),
+      date: a.field.date().label('Date').required(),
+    })
+    .layers({
+      markdown: a.layer().file().mimeType('text/markdown').path('purchase-agreement.md'),
+    })
+    .defaultLayer('markdown')
+    .build(),
+  { resolver },
+)
 ```
 </Step>
 

@@ -37,12 +37,12 @@ import { createFsResolver } from "@asterdoc/resolvers/fs";
 
 ## Define an artifact
 
-Use the **object pattern** by default. One `a.form({...})` call keeps literal types for [type inference](#type-inference).
+Use the **object pattern** by default. One `await a.form.load({...})` call keeps literal types for [type inference](#type-inference).
 
 ```typescript
 import { a } from "@asterdoc/sdk";
 
-const lease = a.form({
+const lease = await a.form.load({
   name: "residential-lease",
   version: "1.0.0",
   title: "Residential Lease",
@@ -64,32 +64,32 @@ const lease = a.form({
 The **builder pattern** chains setters and ends with `.build()`. Its `.field()` and `.fields()` take plain objects, field builders, or a mix.
 
 ```typescript
-const lease = a.form()
+const lease = await a.form.load(a.form()
   .name("residential-lease")
   .fields({
     monthlyRent: a.field.money().label("Monthly rent").required(),
     notes: { type: "text", label: "Notes" },
   })
-  .build();
+  .build());
 ```
 
 | Constraint | Detail |
 |------------|--------|
-| Plain values in the object pattern | A field builder inside `a.form({...})` fails with `Invalid discriminator value`. Call `.build()` on it first, or use the builder pattern. |
+| Plain values in the object pattern | A field builder inside `a.form.load({...})` fails with `Invalid discriminator value`. Call `.build()` on it first, or use the builder pattern. |
 | Builder methods | `name`, `version`, `title`, `description`, `code`, `language`, `issuer`, `edition({ key, label, date?, effectiveFrom? })`, `metadata`, `instructions`, `agentInstructions`, `defs`/`def`, `rules`, `tests`, `field`/`fields`, `layers`/`layer`/`inlineLayer`/`fileLayer`, `defaultLayer`, `annex`/`annexes`, `allowAdditionalAnnexes`, `party`/`parties`, `build` |
 | Bundle registry items | `.registry(key, coordinate, include?)` takes `@org/repo/name[/edition][@version]` and stores `slug`, `edition` and `version` separately. A two-segment value such as `@acme/disclosure` throws. |
 | Other kinds | `a.document`, `a.checklist` and `a.bundle` take the same two patterns |
-| File layers | Pass the resolver at construction: `a.form(def, { resolver })`. `render()` takes no resolver. |
+| File layers | Pass the resolver at load: `await a.form.load(def, { resolver })`. `render()` takes no resolver. `a.form()` with an argument throws. |
 
 <!-- dep:C5 -->
 The form builder has `.rules()` and `.tests()` ([logic.md § Test cases](./logic.md#test-cases)). Field builder methods are in [fields.md § Field builder methods](./fields.md#field-builder-methods).
 
 <!-- dep:C2 -->
-`a.form()`, `a.form.from()` and the other kinds' entry points upgrade an earlier `$schema` in memory, take `strictSchema: true` to refuse it, and throw `SchemaVersionError` on a newer or unknown version.
+`a.form.load()` and the other kinds' entry points upgrade an earlier `$schema` in memory, take `strictSchema: true` to refuse it, and throw `SchemaVersionError` on a newer or unknown version.
 
 ## Load and migrate
 
-Load an artifact file with `load` (text) or `loadFromObject` (a parsed object). Both return the instance for the artifact's `kind` and apply the schema version rules: an earlier version is upgraded in memory and named in `migratedFrom`.
+Load an artifact with `await load(...)`: JSON or YAML text, or a parsed object. It returns the instance for the artifact's `kind` and applies the schema version rules: an earlier version is upgraded in memory and named in `migratedFrom`. A form is loaded with `form.load()`, which reads every PDF layer through the resolver, so a form whose PDF layer cannot be read does not load.
 
 ```typescript
 import { readFileSync } from "node:fs";
@@ -98,7 +98,7 @@ import { load, isFormInstance } from "@asterdoc/sdk";
 import { createFsResolver } from "@asterdoc/resolvers/fs";
 
 const file = "forms/lease.json";
-const artifact = load(readFileSync(file, "utf8"), {
+const artifact = await load(readFileSync(file, "utf8"), {
   resolver: createFsResolver({ root: dirname(file) }), // file-layer paths are relative to the artifact file
 });
 if (!isFormInstance(artifact)) throw new Error("expected a form");
@@ -106,10 +106,10 @@ if (!isFormInstance(artifact)) throw new Error("expected a form");
 
 | Function | Input | `$schema` rule | Failure |
 |----------|-------|----------------|---------|
-| `load(text, { resolver, strictSchema })` | JSON or YAML text | Required; earlier upgraded, unless `strictSchema` | Throws `LoadError` or `SchemaVersionError` |
-| `loadFromObject(obj, { resolver, strictSchema })` | Parsed object | Optional; earlier upgraded, unless `strictSchema` | Same |
-| `safeLoad`, `safeLoadFromObject` | Same | Same | Returns `{ success, data \| error }` |
-| `a.form.from(obj, { resolver, strictSchema })`, `a.form.safeFrom(...)` | Parsed form object | Optional; earlier upgraded, unless `strictSchema` | Throws `SchemaVersionError` or `Error("Invalid Form ...")` |
+| `await load(text, { resolver, strictSchema })` | JSON or YAML text | Required; earlier upgraded, unless `strictSchema` | Rejects with `LoadError` or `SchemaVersionError` |
+| `await load(obj, { resolver, strictSchema })` | Parsed object | Optional; earlier upgraded, unless `strictSchema` | Same |
+| `await safeLoad(...)` | Same | Same | Resolves to `{ success, data \| error }` |
+| `await a.form.load(obj, { resolver, strictSchema })`, `a.form.safeLoad(...)` | Form definition | Optional; earlier upgraded, unless `strictSchema` | Rejects with `SchemaVersionError`, `Error("Invalid Form ...")`, `UnboundResolverError`, `LayerReadError` or `LayerChecksumError` |
 
 A bundle takes no resolver (its members carry their own); passing one throws `BundleResolverError`. Narrow the result with `isFormInstance`, `isDocumentInstance`, `isChecklistInstance` or `isBundleInstance`. Use `createMemoryResolver({ contents: { "lease.pdf": bytes } })` from `@asterdoc/resolvers/memory` in a browser or a test.
 
@@ -127,7 +127,7 @@ const current = result.artifact; // result.status is "current" or "migrated"
 
 ## Check a definition
 
-`a.form({...})` checks structure only. Expressions (defs, rules, `visible`, `required`, template markers) are checked by `validate()` and again when you call `fill()`.
+`await a.form.load({...})` checks structure, and reads each PDF layer. Expressions (defs, rules, `visible`, `required`, template markers) are checked by `validate()` and again when you call `fill()`.
 
 ```typescript
 import { validate } from "@asterdoc/sdk";
@@ -210,7 +210,7 @@ const completed = draft.complete();                // throws "Missing required c
 A bundle orders other artifacts. Its phases are `draft → signable → executed`. The bundle shape and its expression context are in [artifacts.md](./artifacts.md#bundle).
 
 ```typescript
-const application = a.form({
+const application = await a.form.load({
   name: "loan-application",
   fields: { loanAmount: { type: "number", label: "Loan amount", required: true } },
   layers: { markdown: { kind: "inline", mimeType: "text/markdown", text: "Amount: {{fields.loanAmount}}" } },
@@ -266,7 +266,7 @@ type LeasePatch = ProgressiveFormPayload<typeof lease>;     // what fill() and u
 
 - Only a literal `required: true` makes a key required in `InferFormPayload`. An expression `required` gives an optional key.
 - In `InferFormPayload`, each party needs its `id` (`"<role>-<index>"`). `fill()` and `update()` assign ids, so a patch can leave them out.
-- Inference needs the literal definition. Define it in one `a.form({...})` call or end the builder chain with `.build()`.
+- Inference needs the literal definition. Define it in one `a.form.load({...})` call or end the builder chain with `.build()`.
 
 | Field type | TypeScript type |
 |------------|-----------------|
@@ -288,7 +288,7 @@ type LeasePatch = ProgressiveFormPayload<typeof lease>;     // what fill() and u
 | `SchemaVersionError: The artifact was written for schema version <v>` | Old `$schema` with `strictSchema: true` | `migrateArtifact` or `asterdoc migrate` |
 | `SchemaVersionError: ... newer than this SDK knows; update @asterdoc/core` | `$schema` from a later release | Update the Asterdoc packages |
 | `SchemaVersionError: The artifact has no $schema` | `load()` on a file with no `$schema` | Add the current `$schema`, or migrate with `--from` |
-| `Invalid Form at fields.<id>.type: Invalid discriminator value` | Unknown field type, or a builder inside `a.form({...})` | Use a schema type; call `.build()` on nested builders |
+| `Invalid Form at fields.<id>.type: Invalid discriminator value` | Unknown field type, or a builder inside `a.form.load({...})` | Use a schema type; call `.build()` on nested builders |
 | `Invalid form definition: Unknown variable: "defs.<name>"` | Defs are referenced by bare name | Write `<name>`, not `defs.<name>` ([logic.md](./logic.md)) |
 | `UnboundResolverError: Layer "<key>" is file-backed ("<path>") but ...` | A file layer rendered with no resolver | Pass `{ resolver }` when you construct or load the artifact |
 | `BundleResolverError` | A resolver passed to a bundle | Bind resolvers on the members |

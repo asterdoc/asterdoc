@@ -24,8 +24,8 @@ describe('Anchor mode seal with pure converters', () => {
 		convert: async () => ({ pdf: contractPdf }),
 	}
 
-	const buildDraft = (signatures: Record<string, SignatureSlot>) =>
-		form()
+	const buildDraft = async (signatures: Record<string, SignatureSlot>) =>
+		await (await form.load(form()
 			.name('witnessed-contract')
 			.version('1.0.0')
 			.title('Witnessed Contract')
@@ -39,7 +39,7 @@ describe('Anchor mode seal with pure converters', () => {
 				signatures,
 			})
 			.defaultLayer('md')
-			.build()
+			.build()))
 			.fill({
 				fields: { amount: 100 },
 				parties: { witness: { id: 'witness-0', name: 'Wanda Witness' } },
@@ -59,7 +59,7 @@ describe('Anchor mode seal with pure converters', () => {
 	const witnessAnchor = anchorSlot('Witnessed by:', 90, 12)
 
 	test('pure converter resolves anchors with zero configuration', async () => {
-		const sealed = await buildDraft(witnessAnchor).seal({ adapter: pureConverter })
+		const sealed = await (await buildDraft(witnessAnchor)).seal({ adapter: pureConverter })
 
 		expect(sealed.signatureMap).toHaveLength(1)
 		const field = sealed.signatureMap![0]!
@@ -77,19 +77,19 @@ describe('Anchor mode seal with pure converters', () => {
 	})
 
 	test('explicit locate option produces the same result as the default', async () => {
-		const sealed = await buildDraft(witnessAnchor).seal({
+		const sealed = await (await buildDraft(witnessAnchor)).seal({
 			adapter: pureConverter,
 			locate: locator(),
 		})
-		const defaulted = await buildDraft(witnessAnchor).seal({ adapter: pureConverter })
+		const defaulted = await (await buildDraft(witnessAnchor)).seal({ adapter: pureConverter })
 		expect(sealed.signatureMap).toEqual(defaulted.signatureMap)
 	})
 
 	test('offsets shift the anchor position by exactly the declared amount', async () => {
 		const noOffset = anchorSlot('Witnessed by:')
 		const [shifted, plain] = await Promise.all([
-			buildDraft(witnessAnchor).seal({ adapter: pureConverter }),
-			buildDraft(noOffset).seal({ adapter: pureConverter }),
+			(await buildDraft(witnessAnchor)).seal({ adapter: pureConverter }),
+			(await buildDraft(noOffset)).seal({ adapter: pureConverter }),
 		])
 		expect(shifted.signatureMap![0]!.x - plain.signatureMap![0]!.x).toBeCloseTo(90, 5)
 		expect(shifted.signatureMap![0]!.y - plain.signatureMap![0]!.y).toBeCloseTo(12, 5)
@@ -99,12 +99,12 @@ describe('Anchor mode seal with pure converters', () => {
 		const ambiguous = anchorSlot('Approved by manager')
 		// 'Approved by manager' appears three times in the fixture: guessing
 		// which one gets the signature box would silently misplace it.
-		await expect(buildDraft(ambiguous).seal({ adapter: pureConverter })).rejects.toThrow(/ambiguous/)
+		await expect((async () => (await buildDraft(ambiguous)).seal({ adapter: pureConverter }))()).rejects.toThrow(/ambiguous/)
 	})
 
 	test('missing anchor text fails loud', async () => {
 		const missing = anchorSlot('Text that is not in the document')
-		await expect(buildDraft(missing).seal({ adapter: pureConverter })).rejects.toThrow(/not found/)
+		await expect((async () => (await buildDraft(missing)).seal({ adapter: pureConverter }))()).rejects.toThrow(/not found/)
 	})
 
 	test('a locate override replaces the built-in locator, and the converter map is ignored', async () => {
@@ -124,7 +124,7 @@ describe('Anchor mode seal with pure converters', () => {
 					return { id: query.id, page: 3, x: 10, y: 20, width: 0, height: 0 }
 				}),
 		}
-		const sealed = await buildDraft(witnessAnchor).seal({ adapter: mappingAdapter, locate: fixedLocator })
+		const sealed = await (await buildDraft(witnessAnchor)).seal({ adapter: mappingAdapter, locate: fixedLocator })
 
 		expect(queried).toEqual(['Witnessed by:'])
 		expect(sealed.signatureMap).toEqual([

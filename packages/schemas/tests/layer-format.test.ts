@@ -236,9 +236,9 @@ describe("the MIME rules in the published JSON Schema", () => {
     expect(text).toEqual({ type: "string", minLength: 1, maxLength: 500, description: "Asterdoc path whose value fills the field (e.g., fields.name, parties.buyer.name)" });
     expect(path).toMatchObject({ type: "object", required: ["path"], additionalProperties: false });
     expect(path!.properties).toMatchObject({ template: { not: {} } });
-    expect(Object.keys(path!.properties!)).toEqual(["path", "format", "part", "template"]);
+    expect(Object.keys(path!.properties!)).toEqual(["path", "format", "part", "font", "template"]);
     expect(template).toMatchObject({ type: "object", required: ["template"], additionalProperties: false });
     expect(template!.properties).toMatchObject({ path: { not: {} }, part: { not: {} } });
-    expect(Object.keys(template!.properties!)).toEqual(["template", "format", "path", "part"]);
+    expect(Object.keys(template!.properties!)).toEqual(["template", "format", "font", "path", "part"]);
   });
 });

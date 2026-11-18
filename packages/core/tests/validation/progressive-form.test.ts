@@ -11,8 +11,8 @@ import {
 } from '@/validation'
 import { jsonSchemaToZod } from '@/validation/data'
 
-function createPetAddendumLikeForm(options?: { allowAdditionalAnnexes?: boolean }) {
-	return form()
+async function createPetAddendumLikeForm(options?: { allowAdditionalAnnexes?: boolean }) {
+	return await form.load(form()
 		.name('pet-addendum-like')
 		.version('1.0.0')
 		.title('Pet Addendum')
@@ -37,11 +37,11 @@ function createPetAddendumLikeForm(options?: { allowAdditionalAnnexes?: boolean 
 			petPhoto: { title: 'Pet photo', required: true },
 		})
 		.allowAdditionalAnnexes(options?.allowAdditionalAnnexes ?? false)
-		.build()
+		.build())
 }
 
-function createClosedObjectForm(name: string) {
-	return form()
+async function createClosedObjectForm(name: string) {
+	return await form.load(form()
 		.name(name)
 		.fields({
 			email: { type: 'text', required: false },
@@ -51,7 +51,7 @@ function createClosedObjectForm(name: string) {
 				fields: { nickname: { type: 'text', required: false } },
 			},
 		})
-		.build()
+		.build())
 }
 
 describe('progressive form validation', () => {
@@ -64,18 +64,18 @@ describe('progressive form validation', () => {
 	})
 
 	describe('closed object validation', () => {
-		test('rejects unknown top-level and nested keys across public validators', () => {
-			const closedForm = createClosedObjectForm('closed-object')
+		test('rejects unknown top-level and nested keys across public validators', async () => {
+			const closedForm = await createClosedObjectForm('closed-object')
 
-			const fullTopLevel = validateFormData(closedForm, { fields: { emial: 'alice@example.com' } })
-			const patchTopLevel = validateFieldsPatch(closedForm, { emial: 'alice@example.com' })
-			const fullNested = validateFormData(closedForm, {
+			const fullTopLevel = validateFormData((await closedForm), { fields: { emial: 'alice@example.com' } })
+			const patchTopLevel = validateFieldsPatch((await closedForm), { emial: 'alice@example.com' })
+			const fullNested = validateFormData((await closedForm), {
 				fields: { profile: { nicknmae: 'Alice' } },
 			})
-			const patchNested = validateFieldsPatch(closedForm, {
+			const patchNested = validateFieldsPatch((await closedForm), {
 				profile: { nicknmae: 'Alice' },
 			})
-			const fieldNested = validateFieldInput(closedForm, {
+			const fieldNested = validateFieldInput((await closedForm), {
 				fieldPath: 'profile',
 				value: { nicknmae: 'Alice' },
 			})
@@ -98,17 +98,17 @@ describe('progressive form validation', () => {
 			expect(fieldNested.errors?.[0]).toEqual(fullNested.errors?.[0])
 		})
 
-		test('accepts valid values through full, field, and patch validation', () => {
-			const closedForm = createClosedObjectForm('closed-object-valid')
+		test('accepts valid values through full, field, and patch validation', async () => {
+			const closedForm = await createClosedObjectForm('closed-object-valid')
 
-			const full = validateFormData(closedForm, {
+			const full = validateFormData((await closedForm), {
 				fields: { email: 'alice@example.com', profile: { nickname: 'Alice' } },
 			})
-			const field = validateFieldInput(closedForm, {
+			const field = validateFieldInput((await closedForm), {
 				fieldPath: 'profile',
 				value: { nickname: 'Alice' },
 			})
-			const patch = validateFieldsPatch(closedForm, {
+			const patch = validateFieldsPatch((await closedForm), {
 				email: 'alice@example.com',
 				profile: { nickname: 'Alice' },
 			})
@@ -148,8 +148,8 @@ describe('progressive form validation', () => {
 	})
 
 	describe('standalone field validators', () => {
-		test('keeps compiled constraints consistent across full, field, patch, and fill validation', () => {
-			const constraintForm = form().name('constraint-parity').fields({
+		test('keeps compiled constraints consistent across full, field, patch, and fill validation', async () => {
+			const constraintForm = await form.load(form().name('constraint-parity').fields({
 				text: { type: 'text' },
 				email: { type: 'email', minLength: 10, maxLength: 30 },
 				uuid: { type: 'uuid' },
@@ -165,7 +165,7 @@ describe('progressive form validation', () => {
 				choices: { type: 'multiselect', enum: [{ value: 'a' }, { value: 'b' }] },
 				identification: { type: 'identification', allowedTypes: ['passport'] },
 				money: { type: 'money' },
-			}).build()
+			}).build())
 
 			const validFields = {
 				text: 'plain text',
@@ -214,12 +214,12 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('enforces a number step and a money currency at fill', () => {
-			const paymentForm = form().name('payment').fields({
+		test('enforces a number step and a money currency at fill', async () => {
+			const paymentForm = await form.load(form().name('payment').fields({
 				amount: { type: 'number', min: 0, step: 0.01 },
 				fee: { type: 'money', currency: 'USD' },
 				anyFee: { type: 'money' },
-			}).build()
+			}).build())
 
 			expect(validateFieldInput(paymentForm, { fieldPath: 'amount', value: 19.99 }).success).toBe(true)
 			expect(validateFieldInput(paymentForm, { fieldPath: 'amount', value: 19.999 }).success).toBe(false)
@@ -231,10 +231,10 @@ describe('progressive form validation', () => {
 			expect(paymentForm.safeFill({ fields: { fee: { amount: 5, currency: 'GBP' } } } as never).success).toBe(false)
 		})
 
-		test('validates a bounded text field without constructing an invalid regex', () => {
-			const boundedForm = form().name('bounded-text').fields({
+		test('validates a bounded text field without constructing an invalid regex', async () => {
+			const boundedForm = await form.load(form().name('bounded-text').fields({
 				nickname: { type: 'text', minLength: 2, maxLength: 5 },
-			}).build()
+			}).build())
 
 			expect(() => validateFieldInput(boundedForm, {
 				fieldPath: 'nickname',
@@ -246,9 +246,9 @@ describe('progressive form validation', () => {
 			}).success).toBe(true)
 		})
 
-		test('validates enum input for a single field', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validateFieldInput(petForm, {
+		test('validates enum input for a single field', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validateFieldInput((await petForm), {
 				fieldPath: 'species',
 				value: 'cat',
 			})
@@ -259,9 +259,9 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('returns structured error for invalid enum value', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validateFieldInput(petForm, {
+		test('returns structured error for invalid enum value', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validateFieldInput((await petForm), {
 				fieldPath: 'species',
 				value: 'shark',
 			})
@@ -273,9 +273,9 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('validates nested fieldset path', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validateFieldInput(petForm, {
+		test('validates nested fieldset path', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validateFieldInput((await petForm), {
 				fieldPath: 'profile.nickname',
 				value: 'Toby',
 			})
@@ -283,26 +283,26 @@ describe('progressive form validation', () => {
 			expect(result.success).toBe(true)
 		})
 
-		test('validates bracket-indexed paths inside recursive lists', () => {
-			const listForm = form().name('matrix').fields({
+		test('validates bracket-indexed paths inside recursive lists', async () => {
+			const listForm = await form.load(form().name('matrix').fields({
 				matrix: { type: 'list', item: { type: 'list', item: { type: 'number', min: 0 } } },
-			}).build()
+			}).build())
 			expect(validateFieldInput(listForm, { fieldPath: 'matrix[0][1]', value: 4 }).success).toBe(true)
 			expect(validateFieldInput(listForm, { fieldPath: 'matrix[0][1]', value: -1 }).success).toBe(false)
 		})
 
-		test('validates partial field patch without requiring all required fields', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validateFieldsPatch(petForm, {
+		test('validates partial field patch without requiring all required fields', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validateFieldsPatch((await petForm), {
 				species: 'dog',
 			})
 
 			expect(result.success).toBe(true)
 		})
 
-		test('rejects unknown field in partial patch', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validateFieldsPatch(petForm, {
+		test('rejects unknown field in partial patch', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validateFieldsPatch((await petForm), {
 				unknownField: 'value',
 			})
 
@@ -315,9 +315,9 @@ describe('progressive form validation', () => {
 	})
 
 	describe('standalone party validators', () => {
-		test('normalizes party id from role/index', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validatePartyInput(petForm, {
+		test('normalizes party id from role/index', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validatePartyInput((await petForm), {
 				roleId: 'tenant',
 				value: { name: 'John Smith' },
 			})
@@ -329,9 +329,9 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('rejects an unknown key in party data by name', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validatePartyInput(petForm, {
+		test('rejects an unknown key in party data by name', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validatePartyInput((await petForm), {
 				roleId: 'tenant',
 				value: { name: 'John Smith', lastNam: 'Smith' },
 			})
@@ -343,9 +343,9 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('rejects role/index mismatch for single-party role', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validatePartyInput(petForm, {
+		test('rejects role/index mismatch for single-party role', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validatePartyInput((await petForm), {
 				roleId: 'tenant',
 				index: 1,
 				value: { name: 'John Smith' },
@@ -357,9 +357,9 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('rejects party id mismatch when explicit id is provided', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validatePartyInput(petForm, {
+		test('rejects party id mismatch when explicit id is provided', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validatePartyInput((await petForm), {
 				roleId: 'tenant',
 				index: 0,
 				value: { id: 'tenant-7', name: 'John Smith' },
@@ -371,9 +371,9 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('validates parties patch for array role and assigns ids', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validatePartiesPatch(petForm, {
+		test('validates parties patch for array role and assigns ids', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validatePartiesPatch((await petForm), {
 				witness: [{ name: 'Jane' }, { name: 'Alex' }],
 			})
 
@@ -388,9 +388,9 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('rejects object payload for multi-party role', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validatePartiesPatch(petForm, {
+		test('rejects object payload for multi-party role', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validatePartiesPatch((await petForm), {
 				witness: { name: 'Only one' },
 			})
 
@@ -400,9 +400,9 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('rejects array payload for single-party role and says to send one object', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validatePartiesPatch(petForm, {
+		test('rejects array payload for single-party role and says to send one object', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validatePartiesPatch((await petForm), {
 				tenant: [{ name: 'Jane Doe' }],
 			})
 
@@ -417,9 +417,9 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('accepts one object for single-party role', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validatePartiesPatch(petForm, { tenant: { name: 'Jane Doe' } })
+		test('accepts one object for single-party role', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validatePartiesPatch((await petForm), { tenant: { name: 'Jane Doe' } })
 
 			expect(result.success).toBe(true)
 			if (result.success) expect(result.value.tenant).toMatchObject({ id: 'tenant-0', name: 'Jane Doe' })
@@ -427,9 +427,9 @@ describe('progressive form validation', () => {
 	})
 
 	describe('standalone annex validators', () => {
-		test('validates known annex id', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validateAnnexInput(petForm, {
+		test('validates known annex id', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validateAnnexInput((await petForm), {
 				annexId: 'petPhoto',
 				value: { name: 'pet.pdf', mimeType: 'application/pdf' },
 			})
@@ -437,9 +437,9 @@ describe('progressive form validation', () => {
 			expect(result.success).toBe(true)
 		})
 
-		test('rejects unknown annex id when additional annexes are disabled', () => {
-			const petForm = createPetAddendumLikeForm()
-			const result = validateAnnexInput(petForm, {
+		test('rejects unknown annex id when additional annexes are disabled', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const result = validateAnnexInput((await petForm), {
 				annexId: 'unknownAnnex',
 				value: { any: 'value' },
 			})
@@ -450,9 +450,9 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('allows unknown annex id when additional annexes are enabled', () => {
-			const petForm = createPetAddendumLikeForm({ allowAdditionalAnnexes: true })
-			const result = validateAnnexesPatch(petForm, {
+		test('allows unknown annex id when additional annexes are enabled', async () => {
+			const petForm = await createPetAddendumLikeForm({ allowAdditionalAnnexes: true })
+			const result = validateAnnexesPatch((await petForm), {
 				customAnnex: { name: 'extra.pdf', mimeType: 'application/pdf' },
 			})
 
@@ -468,37 +468,37 @@ describe('progressive form validation', () => {
 			['an empty name', { name: '', mimeType: 'application/pdf' }],
 			['an unknown key', { name: 'pet.pdf', mimeType: 'application/pdf', url: 'https://example.com' }],
 			['a malformed checksum', { name: 'pet.pdf', mimeType: 'application/pdf', checksum: 'md5:abc' }],
-		])('rejects %s as an annex value, naming the annex', (_label, value) => {
-			const petForm = createPetAddendumLikeForm()
+		])('rejects %s as an annex value, naming the annex', async (_label, value) => {
+			const petForm = await createPetAddendumLikeForm()
 
-			const single = validateAnnexInput(petForm, { annexId: 'petPhoto', value })
+			const single = validateAnnexInput((await petForm), { annexId: 'petPhoto', value })
 			expect(single.success).toBe(false)
 			if (!single.success) {
 				expect(single.errors.length).toBeGreaterThan(0)
 				for (const error of single.errors) expect(error.field.startsWith('annexes.petPhoto')).toBe(true)
 			}
 
-			const patch = validateAnnexesPatch(petForm, { petPhoto: value })
+			const patch = validateAnnexesPatch((await petForm), { petPhoto: value })
 			expect(patch.success).toBe(false)
 			if (!patch.success) {
 				for (const error of patch.errors) expect(error.field.startsWith('annexes.petPhoto')).toBe(true)
 			}
 		})
 
-		test('accepts an Attachment with a checksum and returns it', () => {
-			const petForm = createPetAddendumLikeForm()
+		test('accepts an Attachment with a checksum and returns it', async () => {
+			const petForm = await createPetAddendumLikeForm()
 			const attachment = { name: 'pet.jpg', mimeType: 'image/jpeg', checksum: `sha256:${'a'.repeat(64)}` }
 
-			const single = validateAnnexInput(petForm, { annexId: 'petPhoto', value: attachment })
+			const single = validateAnnexInput((await petForm), { annexId: 'petPhoto', value: attachment })
 			expect(single).toEqual({ success: true, value: attachment, errors: null })
 
-			const patch = validateAnnexesPatch(petForm, { petPhoto: attachment })
+			const patch = validateAnnexesPatch((await petForm), { petPhoto: attachment })
 			expect(patch).toEqual({ success: true, value: { petPhoto: attachment }, errors: null })
 		})
 
-		test('checks additional annexes against the Attachment shape too', () => {
-			const petForm = createPetAddendumLikeForm({ allowAdditionalAnnexes: true })
-			const result = validateAnnexesPatch(petForm, { customAnnex: { any: 'value' } })
+		test('checks additional annexes against the Attachment shape too', async () => {
+			const petForm = await createPetAddendumLikeForm({ allowAdditionalAnnexes: true })
+			const result = validateAnnexesPatch((await petForm), { customAnnex: { any: 'value' } })
 
 			expect(result.success).toBe(false)
 			if (!result.success) {
@@ -506,11 +506,11 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('full payload validation checks annex values against the Attachment shape', () => {
-			const proofForm = form()
+		test('full payload validation checks annex values against the Attachment shape', async () => {
+			const proofForm = await form.load(form()
 				.name('annex-shape')
 				.annexes({ proof: { title: 'Proof', required: true } })
-				.build()
+				.build())
 
 			const valid = validateFormData(proofForm, {
 				fields: {},
@@ -528,12 +528,12 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('full payload validation accepts an additional annex when the form allows it, as an Attachment', () => {
-			const openForm = form()
+		test('full payload validation accepts an additional annex when the form allows it, as an Attachment', async () => {
+			const openForm = await form.load(form()
 				.name('open-annexes-declared')
 				.annexes({ proof: { title: 'Proof', required: true } })
 				.allowAdditionalAnnexes(true)
-				.build()
+				.build())
 			const proof = { name: 'proof.pdf', mimeType: 'application/pdf' }
 			const extra = { name: 'extra.pdf', mimeType: 'application/pdf' }
 
@@ -548,8 +548,8 @@ describe('progressive form validation', () => {
 			}
 		})
 
-		test('full payload validation accepts an additional annex on a form that declares no annexes', () => {
-			const openForm = form().name('open-annexes').allowAdditionalAnnexes(true).build()
+		test('full payload validation accepts an additional annex on a form that declares no annexes', async () => {
+			const openForm = await form.load(form().name('open-annexes').allowAdditionalAnnexes(true).build())
 
 			const valid = validateFormData(openForm, {
 				fields: {},
@@ -561,12 +561,12 @@ describe('progressive form validation', () => {
 			expect(invalid.success).toBe(false)
 		})
 
-		test('full payload validation rejects an additional annex when the form does not allow it', () => {
+		test('full payload validation rejects an additional annex when the form does not allow it', async () => {
 			for (const closedForm of [
-				createPetAddendumLikeForm(),
-				form().name('closed-annexes').build(),
+				await createPetAddendumLikeForm(),
+				await form.load(form().name('closed-annexes').build()),
 			]) {
-				const result = validateFormData(closedForm, {
+				const result = validateFormData((await closedForm), {
 					fields: {},
 					annexes: { customAnnex: { name: 'extra.pdf', mimeType: 'application/pdf' } },
 				})
@@ -575,15 +575,15 @@ describe('progressive form validation', () => {
 					expect(result.errors.some((error) => error.field.startsWith('annexes'))).toBe(true)
 				}
 			}
-			expect(validateAnnexInput(createPetAddendumLikeForm(), {
+			expect(validateAnnexInput((await createPetAddendumLikeForm()), {
 				annexId: 'customAnnex',
 				value: { name: 'extra.pdf', mimeType: 'application/pdf' },
 			}).success).toBe(false)
 		})
 
-		test('setAnnex rejects a value that is not an Attachment', () => {
-			const petForm = createPetAddendumLikeForm()
-			const draft = petForm.fill()
+		test('setAnnex rejects a value that is not an Attachment', async () => {
+			const petForm = await createPetAddendumLikeForm()
+			const draft = (await petForm).fill()
 
 			const next = draft.setAnnex('petPhoto', { name: 'pet.pdf', mimeType: 'application/pdf' })
 			expect(next.getAnnex('petPhoto')).toEqual({ name: 'pet.pdf', mimeType: 'application/pdf' })
@@ -593,16 +593,16 @@ describe('progressive form validation', () => {
 	})
 
 	describe('FormInstance convenience methods', () => {
-		test('delegates validateFieldInput and validatePartyInput', () => {
-			const petForm = createPetAddendumLikeForm()
+		test('delegates validateFieldInput and validatePartyInput', async () => {
+			const petForm = await createPetAddendumLikeForm()
 
-			const fieldResult = petForm.validateFieldInput({
+			const fieldResult = (await petForm).validateFieldInput({
 				fieldPath: 'species',
 				value: 'dog',
 			})
 			expect(fieldResult.success).toBe(true)
 
-			const partyResult = petForm.validatePartyInput({
+			const partyResult = (await petForm).validatePartyInput({
 				roleId: 'tenant',
 				value: { name: 'John Smith' },
 			})

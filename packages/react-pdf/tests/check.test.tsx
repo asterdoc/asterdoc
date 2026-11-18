@@ -50,7 +50,7 @@ const spec = {
   },
 } as const;
 
-const fixtureForm: Form = a.form(spec).toJSON() as Form;
+const fixtureForm: Form = (await a.form.load(spec)).toJSON() as Form;
 
 const fixtureData: DocumentData = { fields: { name: "Ada Lovelace" }, parties: {} };
 
@@ -73,7 +73,7 @@ const totalsSpec = {
   },
 } as const;
 
-const totalsForm: Form = a.form(totalsSpec).toJSON() as Form;
+const totalsForm: Form = (await a.form.load(totalsSpec)).toJSON() as Form;
 
 /** A composition whose only content is a `Totals` block over a money def. */
 const TotalsOverDef: ReactLayerComponent = ({ artifact, data }) => (

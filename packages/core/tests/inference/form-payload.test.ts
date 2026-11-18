@@ -204,16 +204,16 @@ describe('annex requiredness in the compiled payload schema', () => {
 		}
 	})
 
-	test('runtime validation requires a conditional annex only while its condition holds', () => {
+	test('runtime validation requires a conditional annex only while its condition holds', async () => {
 		const def = createForm()
 		const fieldsOf = (errors: { field: string }[]) => errors.map((error) => error.field)
 
-		expect(fieldsOf(def.fill({ fields: { treaty: false }, annexes: { always: proof } }).validate().errors)).toEqual([])
-		expect(fieldsOf(def.fill({ fields: { treaty: true }, annexes: { always: proof } }).validate().errors)).toEqual([
+		expect(fieldsOf((await formBuilder.load(def)).fill({ fields: { treaty: false }, annexes: { always: proof } }).validate().errors)).toEqual([])
+		expect(fieldsOf((await formBuilder.load(def)).fill({ fields: { treaty: true }, annexes: { always: proof } }).validate().errors)).toEqual([
 			'annexes.statement',
 		])
 		expect(
-			fieldsOf(def.fill({ fields: { treaty: true }, annexes: { always: proof, statement: proof } }).validate().errors),
+			fieldsOf((await formBuilder.load((await def))).fill({ fields: { treaty: true }, annexes: { always: proof, statement: proof } }).validate().errors),
 		).toEqual([])
 	})
 })

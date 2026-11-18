@@ -182,7 +182,13 @@ A binding object can also take `part`, to print one piece of a value as plain di
 }
 ```
 
-A part is never formatted as a whole value. Money is rounded half-expand to two decimals, then split: `1.999` prints `2` and `00`. A negative amount, a currency without two minor digits, and `areaCode` or `subscriberNumber` on a number outside +1 fail at render with `unsupported_part`. Under a `phone.region`, every phone part but `extension` refuses a number of another plan with `phone_region_mismatch`. Validation rejects a part the value's kind does not have, and a part on a `:` qualifier or a template. Reading the PDF back joins the parts only when every part the value needs is bound: a date's year, month and day; money's units and cents, in the currency the field declares; a phone's country code and national number, or a +1 number's area code and subscriber number. Otherwise the path is `not_recoverable`. A filled part that disagrees with the joined value, such as an area code beside another national number, makes it `unparseable`.
+A part is never formatted as a whole value. Money is rounded half-expand to two decimals, then split: `1.999` prints `2` and `00`. The bound field must hold only values the part can print, so a valid form's data always prints:
+
+- `areaCode` and `subscriberNumber` need a phone field with `"countryCode": "1"`.
+- Under a `phone.region`, every phone part but `extension`, and a whole phone under the `national` or `digits` style, need a phone field whose `countryCode` is the region's (`"1"` for `US`).
+- `units` and `cents` need a money field with a `currency` of two minor digits and `"min": 0`.
+
+Validation rejects a binding or a placeholder that breaks one of these, naming the field and what to add, and render refuses the layer before any value. Validation also rejects a part the value's kind does not have, and a part on a `:` qualifier or a template. Reading the PDF back joins the parts only when every part the value needs is bound: a date's year, month and day; money's units and cents, in the currency the field declares; a phone's country code and national number, or a +1 number's area code and subscriber number. Otherwise the path is `not_recoverable`. A filled part that disagrees with the joined value, such as an area code beside another national number, makes it `unparseable`.
 
 ### Template bindings
 

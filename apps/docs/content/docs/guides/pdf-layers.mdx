@@ -136,7 +136,7 @@ import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: '.' })
 
-const w9Form = a.form({
+const w9Form = await a.form.load({
   name: 'w9-tax-form',
   fields: {
     name: { type: 'text', label: 'Name', required: true },
@@ -244,46 +244,63 @@ writeFileSync('output/w9-filled.pdf', output)
 
 The output is a `Uint8Array` containing the filled PDF document with all AcroForm fields populated.
 Each value follows its field's own settings: font size, alignment, comb boxes, and multiline
-wrapping. The SSN parts land one digit per box. A value too long for its field fails with
-`PdfFieldFillError`, naming the field, rather than being clipped. See
+wrapping. The SSN parts land one digit per box.
+
+`draft.validate()` answers whether the data matches the artifact; it reads no
+layer. Whether valid data renders on the PDF layer is the layer's render check:
+`form.load()` read the PDF layer once, and `draft.renderProblems('pdf')` checks
+each value against it with the code rendering draws with. A value too long for
+its box, more characters than a comb field has boxes, or a character the
+field's font cannot draw is a problem (`code: 'unprintable'`) that names the
+layer, the PDF field and the path. A render runs the same check first and
+refuses with the same report, `RenderRefusedError`, before it draws. See
+[Rendering a layer](/sdk/artifacts/form#rendering-a-layer) and
 [Field appearance](/sdk/renderers/pdf#field-appearance).
 
-`asterdoc validate` finds these failures before any data is filled. It lays out
+`asterdoc validate` also checks the bindings before any data exists. It lays out
 a typical value at each bound field's length limit, so give every bound text
 field a `maxLength` (or a `pattern`) that its box can hold. See
 [Checking bindings before filling](/sdk/renderers/pdf#checking-bindings-before-filling).
 
-Latin-1 values fill in Helvetica with no font configuration. To fill names in
-Latin Extended, Greek, Cyrillic, or CJK scripts, declare a TrueType font on the
-PDF layer. The bound resolver reads it beside the PDF, and it is embedded in the
-output:
+Values draw in Helvetica, a standard PDF font every viewer has, whatever font
+the PDF field itself names. It draws the Windows Latin 1 characters. The artifact may choose Helvetica or Courier for the
+layer or for one binding, and the render check measures with that choice:
 
 ```ts
 pdf: {
   kind: 'file',
   mimeType: 'application/pdf',
   path: 'w9.pdf',
-  font: { path: 'fonts/NotoSans-Regular.ttf' },
+  font: 'Courier',
+  bindings: { ssn: { path: 'fields.ssn', font: 'Courier' } },
+}
+```
+
+A layer can also declare its own TrueType font, as a design choice. It is read
+beside the PDF and tried first:
+
+```ts
+pdf: {
+  kind: 'file',
+  mimeType: 'application/pdf',
+  path: 'w9.pdf',
+  font: { path: 'fonts/Corporate-Regular.ttf' },
   bindings: { /* ... */ },
 }
 ```
 
-A value with a character that no font of the layer can draw stops the render.
-The error names the PDF field, the artifact value it prints, and the character:
+A character the field's font cannot draw, such as Chinese, Cyrillic, Greek or
+Polish ł, is a render problem that names the PDF field, the artifact value it
+prints, and the character:
 
 ```text
-Cannot fill PDF field "form1[0].Page1[0].NativeName[0]" with fields.nameInNativeAlphabet: no available font can draw "王" (U+738B). Declare a font that has this character on the PDF layer of the artifact: "font": { "path": "<file>.ttf" }. The SDK can also take a font for one render: pdfRenderer({ font }).
+Layer "pdf": Cannot fill PDF field "form1[0].Page1[0].NativeName[0]" with fields.nameInNativeAlphabet: no available font can draw "Հ" (U+0540). The field draws in Helvetica, a standard PDF font with the Windows Latin 1 characters only. To print this character, declare a TrueType font that has it on the PDF layer of the artifact: "font": { "path": "<file>.ttf" }.
 ```
 
-To correct it, declare a font on the layer that has the character, as shown
-above. The `asterdoc render` command uses the fonts of the layer only. A host
-application that uses the SDK can also pass a font at render time.
-
-`asterdoc validate` finds this before the first render. It prints the values
-of each test in the artifact's `tests` with the fonts of each PDF layer, and
-reports each value that they cannot draw. The error names the layer, the test,
-the PDF field and the artifact path. So when a form takes names in other
-scripts, give it a test with such a name.
+`asterdoc validate` runs the render check on the values of each test in the
+artifact's `tests` whose data is valid, and names the layer, the test, the PDF
+field and the artifact path. A test whose data is not valid is not rendered. So when a form takes names in other scripts, give it a test with
+such a name.
 
 Scripts that need shaping, such as Arabic or Devanagari, are refused whatever
 the font; render those documents from a [React composition layer](/guides/react-layers). See
@@ -307,6 +324,18 @@ const draft = fillResult.data
 The city, state, and ZIP code box holds a template, and `Boston, MA 02110` splits into those three values in only one way, so the report marks them `recovered`. See [Several values in one field](#several-values-in-one-field) for when a template reads back, and [Extracting data from a filled PDF](/sdk/artifacts/form#extracting-data-from-a-filled-pdf).
 </Step>
 </Steps>
+
+## Lists
+
+Bind a list by row: `lines[0].amount`, `lines[1].amount`. Bind every row from the first, and the same members in each row. A row at or past `maxItems` never fills, so validation reports its bindings as dead. Give the list `maxItems` no larger than the rows the layer binds. With several PDF layers the layer with the fewest rows sets the limit, and a nested list takes the fewest inner rows under any outer row. Validation refuses a list that can hold more items than a layer prints, so valid data always fits its rows.
+
+```json
+"lines": {
+  "type": "list",
+  "maxItems": 2,
+  "item": { "type": "fieldset", "fields": { "amount": { "type": "money", "currency": "USD" } } }
+}
+```
 
 ## Several values in one field
 

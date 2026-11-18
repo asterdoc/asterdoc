@@ -180,7 +180,7 @@ describe("@asterdoc/core - README Examples", () => {
   });
 
   describe("Compose artifacts into bundles", () => {
-    test("creates bundle with multiple artifacts", () => {
+    test("creates bundle with multiple artifacts", async () => {
       const propertyAddress: AddressField = {
         type: "address",
         label: "Property Address",
@@ -247,12 +247,12 @@ describe("@asterdoc/core - README Examples", () => {
           {
             type: "inline",
             key: "residential",
-            artifact: residentialLease.toJSON({ includeSchema: false }),
+            artifact: (await a.form.load(residentialLease)).toJSON({ includeSchema: false }),
           },
           {
             type: "inline",
             key: "commercial",
-            artifact: commercialLease.toJSON({ includeSchema: false }),
+            artifact: (await a.form.load(commercialLease)).toJSON({ includeSchema: false }),
           },
           {
             type: "inline",
@@ -270,7 +270,7 @@ describe("@asterdoc/core - README Examples", () => {
   });
 
   describe("Extract TypeScript types from artifacts and validate", () => {
-    test("infers form data type and validates with correct data", () => {
+    test("infers form data type and validates with correct data", async () => {
       const leaseAgreement = a
         .form()
         .name("residential-lease-agreement")
@@ -306,10 +306,10 @@ describe("@asterdoc/core - README Examples", () => {
       };
 
       // Verify form is valid
-      expect(leaseAgreement.isValid()).toBe(true);
+      expect((await a.form.load(leaseAgreement)).isValid()).toBe(true);
 
       // Fill form with data
-      const filled = leaseAgreement.fill(data);
+      const filled = (await a.form.load((await (await leaseAgreement)))).fill(data);
       expect(filled).toBeDefined();
       expect(filled.fields).toBeDefined();
       expect(filled.getField("leaseId")).toBe(

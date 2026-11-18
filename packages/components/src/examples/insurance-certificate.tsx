@@ -65,7 +65,7 @@ export const insuranceCertificateSpec = {
 } as const;
 
 /** The parsed certificate form. */
-export const insuranceCertificate = a.form(insuranceCertificateSpec);
+export const insuranceCertificate = await a.form.load(insuranceCertificateSpec);
 
 /** The same artifact as a plain `Form`. */
 export const insuranceCertificateForm: Form = insuranceCertificate.toJSON() as Form;

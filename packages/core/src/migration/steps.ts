@@ -80,4 +80,10 @@ export const MIGRATION_STEPS: readonly MigrationStep[] = [
 		summary: 'Adds template bindings to PDF layers and removes comma-joined bindings; each joined binding becomes the template that prints the same text.',
 		apply: joinedBindingsToTemplates,
 	},
+	{
+		from: '2026-11-12',
+		to: '2026-11-17',
+		summary: 'Adds countryCode to phone fields, and the standard font names "Helvetica" and "Courier" as a PDF layer\'s font and a binding object\'s font. Nothing is added for you: a PDF binding to areaCode or subscriberNumber, or a phone.region format that refuses other plans, now needs the phone field to state its countryCode, and validate names the field and the code to add.',
+		apply: (artifact) => artifact,
+	},
 ]

@@ -1,6 +1,7 @@
 import type { AsterdocToolsConfig } from '../config'
 import { UpdateFillInputSchema, type UpdateFillInput, type UpdateFillOutput } from '../contracts'
-import { artifactKind, asChecklistPayload, asFormPayload, contextOptions, contextSnapshot, formDraftPayload, makeResolver } from '../artifact'
+import { artifactKind, asChecklistPayload, asFormPayload, contextOptions, contextSnapshot, formDraftPayload } from '../artifact'
+import { loadToolForm, artifactFileResolver } from '../form-loader'
 import { errorFromUnknown, validationErrors } from '../errors'
 import { resolveSource } from '../resolve-source'
 
@@ -23,10 +24,10 @@ export async function executeUpdateFill(
 ): Promise<UpdateFillOutput> {
 	try {
 		const normalized = UpdateFillInputSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject, placeDisplayNames } = await import('@asterdoc/core')
+		const { isChecklist, isForm, load, placeDisplayNames } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		if (isForm(artifact)) {
-			const instance = loadFromObject<'form'>(artifact, { resolver: makeResolver(base_url, config) })
+			const instance = await loadToolForm(artifact, base_url, config)
 			const initial = instance.safeFill(asFormPayload(normalized.data) as never, contextOptions(normalized.evaluation_context))
 			if (!initial.success) return { accepted: false, complete: false, artifact_kind: 'form', errors: validationErrors(initial.error), error: errorFromUnknown(initial.error, 'validation_error') }
 			let draft = initial.data as unknown as FormDraftLike
@@ -49,7 +50,7 @@ export async function executeUpdateFill(
 		}
 
 		if (isChecklist(artifact)) {
-			const instance = loadFromObject<'checklist'>(artifact, { resolver: makeResolver(base_url, config) })
+			const instance = await load<'checklist'>(artifact, { resolver: artifactFileResolver(artifact, base_url, config) })
 			const initial = instance.safeFill(asChecklistPayload(normalized.data) as never, contextOptions(normalized.evaluation_context))
 			if (!initial.success) return { accepted: false, complete: false, artifact_kind: 'checklist', errors: validationErrors(initial.error), error: errorFromUnknown(initial.error, 'validation_error') }
 			let draft = initial.data

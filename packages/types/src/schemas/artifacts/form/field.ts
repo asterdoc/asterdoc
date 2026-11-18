@@ -249,6 +249,13 @@ export interface RegionField extends BaseField {
 export interface PhoneField extends BaseField {
   /** Discriminator for phone field type. */
   type: "phone";
+  /**
+   * Country calling code a number must have, without `+`: `1` for the North
+   * American plan. A PDF binding to `areaCode` or `subscriberNumber` needs
+   * `1`; a `phone.region` format that refuses other plans needs its region's
+   * code. Omit to accept any plan.
+   */
+  countryCode?: string;
   /** Default value for the field. */
   default?: Phone;
 }

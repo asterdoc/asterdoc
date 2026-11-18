@@ -210,7 +210,8 @@ fields:
       const tsContent = await fs.readFile(tsFile, 'utf-8')
       expect(tsContent).toContain('const schema =')
       expect(tsContent).toContain('as const')
-      expect(tsContent).toContain('export const yamlForm = a.form(schema)')
+      expect(tsContent).toContain('export const yamlForm = schema;')
+      expect(tsContent).toContain('export const loadYamlForm = (options?: ArtifactInstanceOptions) => a.form.load(schema, options);')
 
       // JSON file should NOT be created (schema is embedded)
       const jsonFile = join(tempDir, 'yaml-form.json')
@@ -233,7 +234,7 @@ fields:
 
       const tsFile = join(tempDir, 'my-complex-form-name.ts')
       const tsContent = await fs.readFile(tsFile, 'utf-8')
-      expect(tsContent).toContain('export const myComplexFormName = a.form(schema)')
+      expect(tsContent).toContain('export const myComplexFormName = schema;')
     })
   })
 
@@ -246,7 +247,7 @@ fields:
       expect(result.exitCode).toBe(0)
 
       const tsContent = await fs.readFile(join(tempDir, 'form.ts'), 'utf-8')
-      expect(tsContent).toContain('a.form(schema)')
+      expect(tsContent).toContain('a.form.load(schema, options)')
       expect(tsContent).toContain('FPayload') // Forms get payload type named from the artifact
     })
 

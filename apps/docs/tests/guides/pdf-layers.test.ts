@@ -52,10 +52,10 @@ describe('PDF Layers Guide', () => {
   // Step 4: Define the Form with PDF Layer and Bindings
   // ============================================================================
 
-  describe('form with PDF layer and bindings', () => {
+  describe('form with PDF layer and bindings', async () => {
     const resolver = createFsResolver({ root: fixturesRoot })
 
-    const w9Form = a.form({
+    const w9Form = await a.form.load({
       name: 'w9-tax-form',
       fields: {
         name: { type: 'text', label: 'Name', required: true },

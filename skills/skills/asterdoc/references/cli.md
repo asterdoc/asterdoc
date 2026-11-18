@@ -223,7 +223,6 @@ asterdoc data fill lease-agreement.yaml --data sample.json --out filled.json  # 
 ```bash
 asterdoc render pet.yaml --data sample.json --out pet.pdf
 asterdoc render pet.yaml --data sample.json --layer markdown --out pet.md
-asterdoc render pet.yaml --data sample.json --bindings extra-bindings.json --out pet.pdf
 asterdoc render pet.yaml --data sample.json --dry-run --format json
 ```
 
@@ -231,7 +230,7 @@ asterdoc render pet.yaml --data sample.json --dry-run --format json
 - `--layer` defaults to `defaultLayer`, then the first declared layer. The layer MIME type picks the renderer.
 - Pass `--data` with a complete valid payload to fill values. Without it the raw layer renders unfilled, with no warning. Use SDK progressive rendering for an incomplete draft.
 - `--format json` shapes only the success message after `--out` and the `--dry-run` summary.
-- `--bindings` merges over a PDF layer's `bindings`; the CLI value wins. Any other layer refuses it.
+- A PDF layer fills from the `bindings` the artifact declares. To change a binding, edit the artifact.
 - React (`text/tsx`) layers require the SDK renderer described by the `asterdoc-react` skill.
 
 For render options and their SDK equivalents, load [rendering.md](./rendering.md).

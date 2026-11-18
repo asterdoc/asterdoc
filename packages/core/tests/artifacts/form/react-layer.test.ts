@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
+import { pdfFiles } from '../../support/pdf-files'
 import { checklist, document, form } from '@/artifacts'
 import {
 	InlineReactLayerError,
@@ -14,8 +15,8 @@ import type { Form, AsterdocRenderer, RendererLayer, RenderRequest } from '@aste
 
 const COMPOSITION_PATH = 'src/compositions/purchase-order.tsx'
 
-function purchaseOrder(mimeType = 'text/tsx') {
-	return form({
+async function purchaseOrder(mimeType = 'text/tsx') {
+	return await form.load({
 		kind: 'form',
 		name: 'purchase-order',
 		version: '1.0.0',
@@ -42,24 +43,22 @@ function recordingRenderer() {
 }
 
 describe('React layers dispatch by MIME type', () => {
-	test('validation rejects an inline layer of a React MIME type, naming the rule', () => {
+	test('validation rejects an inline layer of a React MIME type, naming the rule', async () => {
 		for (const mimeType of REACT_LAYER_MIME_TYPES) {
-			expect(() =>
-				form({
+			await expect(form.load({
 					kind: 'form',
 					name: 'purchase-order',
 					version: '1.0.0',
 					title: 'Purchase Order',
 					fields: { vendor: { type: 'text', label: 'Vendor' } },
 					layers: { composition: { kind: 'inline', mimeType, text: 'export default () => null' } },
-				} as never),
-			).toThrow(/React layers must be file layers/)
+				} as never),).rejects.toThrow(/React layers must be file layers/)
 		}
 	})
 
-	test('validation accepts a file layer of a React MIME type', () => {
+	test('validation accepts a file layer of a React MIME type', async () => {
 		for (const mimeType of REACT_LAYER_MIME_TYPES) {
-			const layers = (purchaseOrder(mimeType).toJSON() as Form).layers
+			const layers = ((await purchaseOrder(mimeType)).toJSON() as Form).layers
 			const layer = layers?.composition
 			if (!layer || layer.kind !== 'file') throw new Error('the composition layer is not a file layer')
 			expect(layer.mimeType).toBe(mimeType)
@@ -71,16 +70,16 @@ describe('React layers dispatch by MIME type', () => {
 		'a %s layer renders through the renderer registered for it',
 		async (mimeType) => {
 			const { renderer, seen } = recordingRenderer()
-			const definition = purchaseOrder(mimeType)
+			const definition = await purchaseOrder(mimeType)
 
-			await expect(
-				definition.render({ data: { fields: { vendor: 'Acme' } }, renderers: { [mimeType]: renderer } }),
-			).resolves.toBe('rendered purchase-order')
-			await expect(
-				definition
+			await expect((async () => 
+				(await definition).render({ data: { fields: { vendor: 'Acme' } }, renderers: { [mimeType]: renderer } })
+			)()).resolves.toBe('rendered purchase-order')
+			await expect((async () => 
+				(await definition)
 					.fill({ fields: { vendor: 'Acme' } })
-					.render({ renderers: { [mimeType]: renderer } }),
-			).resolves.toBe('rendered purchase-order')
+					.render({ renderers: { [mimeType]: renderer } })
+			)()).resolves.toBe('rendered purchase-order')
 
 			expect(seen).toHaveLength(2)
 			for (const template of seen) {
@@ -97,10 +96,10 @@ describe('React layers dispatch by MIME type', () => {
 
 	test('the registry is matched case-insensitively, as the built-in dispatch is', async () => {
 		const { renderer } = recordingRenderer()
-		const definition = purchaseOrder('text/tsx')
-		await expect(
-			definition.render({ data: { fields: {} }, renderers: { 'TEXT/TSX': renderer } }),
-		).resolves.toBe('rendered purchase-order')
+		const definition = await purchaseOrder('text/tsx')
+		await expect((async () => 
+			(await definition).render({ data: { fields: {} }, renderers: { 'TEXT/TSX': renderer } })
+		)()).resolves.toBe('rendered purchase-order')
 	})
 
 	test('an explicit renderer override still wins over the registry', async () => {
@@ -108,36 +107,36 @@ describe('React layers dispatch by MIME type', () => {
 		const render = vi.fn(async () => 'override output')
 		const override: AsterdocRenderer<RendererLayer, string> = { id: 'override', render }
 
-		await expect(
-			purchaseOrder().render({
+		await expect((async () => 
+			(await purchaseOrder()).render({
 				data: { fields: {} },
 				renderer: override,
 				renderers: { 'text/tsx': registered },
-			}),
-		).resolves.toBe('override output')
+			})
+		)()).resolves.toBe('override output')
 		expect(render).toHaveBeenCalledOnce()
 	})
 
 	test('a React layer with nothing registered fails naming the layer, the type and the option', async () => {
-		const definition = purchaseOrder()
-		await expect(definition.render({ data: { fields: {} } })).rejects.toThrow(UnregisteredLayerRendererError)
-		await expect(definition.render({ data: { fields: {} } })).rejects.toThrow(
+		const definition = await purchaseOrder()
+		await expect((async () => (await definition).render({ data: { fields: {} } }))()).rejects.toThrow(UnregisteredLayerRendererError)
+		await expect((async () => (await definition).render({ data: { fields: {} } }))()).rejects.toThrow(
 			/Layer "composition" has MIME type text\/tsx and no renderer is registered for it/,
 		)
-		await expect(definition.render({ data: { fields: {} } })).rejects.toThrow(/`renderers` option/)
-		await expect(definition.render({ data: { fields: {} } })).rejects.toThrow(
+		await expect((async () => (await definition).render({ data: { fields: {} } }))()).rejects.toThrow(/`renderers` option/)
+		await expect((async () => (await definition).render({ data: { fields: {} } }))()).rejects.toThrow(
 			/`reactLayerRenderers\(\{ baseDir \}\)` or `reactLayerRenderers\(\{ components \}\)` from @asterdoc\/react-pdf builds the entries/,
 		)
 	})
 
 	test('a registered renderer is not consulted for a layer of another type', async () => {
 		const { renderer, seen } = recordingRenderer()
-		const markdown = form()
+		const markdown = await form.load(form()
 			.name('invoice')
 			.fields({ customer: { type: 'text', label: 'Customer' } })
 			.inlineLayer('markdown', { mimeType: 'text/markdown', text: '# {{fields.customer}}' })
 			.defaultLayer('markdown')
-			.build()
+			.build())
 
 		await expect(
 			markdown.render({ data: { fields: { customer: 'Acme' } }, renderers: { 'text/tsx': renderer } }),
@@ -146,9 +145,9 @@ describe('React layers dispatch by MIME type', () => {
 	})
 
 	test('resolving layer content refuses a React layer instead of returning its source', async () => {
-		const definition = purchaseOrder()
+		const definition = await purchaseOrder()
 		await expect(
-			renderLayer(definition.layers, 'composition', { resolver: { read: async () => new Uint8Array() } }),
+			renderLayer((await definition).layers, 'composition', { resolver: { read: async () => new Uint8Array() } }),
 		).rejects.toThrow(UnregisteredLayerRendererError)
 	})
 
@@ -158,29 +157,27 @@ describe('React layers dispatch by MIME type', () => {
 		expect(isReactLayerMimeType('TEXT/TSX')).toBe(true)
 		expect(isReactLayerMimeType('Text/Jsx')).toBe(true)
 
-		expect(() =>
-			form({
+		await expect(form.load({
 				kind: 'form',
 				name: 'purchase-order',
 				version: '1.0.0',
 				title: 'Purchase Order',
 				fields: { vendor: { type: 'text', label: 'Vendor' } },
 				layers: { composition: { kind: 'inline', mimeType: 'TEXT/TSX', text: 'export default () => null' } },
-			} as never),
-		).toThrow(/React layers must be file layers/)
+			} as never),).rejects.toThrow(/React layers must be file layers/)
 
 		const { renderer, seen } = recordingRenderer()
-		const cased = purchaseOrder('Text/Jsx')
-		await expect(cased.render({ data: { fields: {} }, renderers: { 'text/jsx': renderer } })).resolves.toBe(
+		const cased = await purchaseOrder('Text/Jsx')
+		await expect((async () => (await cased).render({ data: { fields: {} }, renderers: { 'text/jsx': renderer } }))()).resolves.toBe(
 			'rendered purchase-order',
 		)
 		expect(seen[0]?.mimeType).toBe('Text/Jsx')
 
-		await expect(cased.render({ data: { fields: {} } })).rejects.toThrow(UnregisteredLayerRendererError)
+		await expect((async () => (await cased).render({ data: { fields: {} } }))()).rejects.toThrow(UnregisteredLayerRendererError)
 	})
 
-	test('reactLayersOf reports every React layer an artifact declares, in order', () => {
-		const artifact = form({
+	test('reactLayersOf reports every React layer an artifact declares, in order', async () => {
+		const artifact = (await form.load({
 			kind: 'form',
 			name: 'purchase-order',
 			version: '1.0.0',
@@ -193,7 +190,7 @@ describe('React layers dispatch by MIME type', () => {
 				signing: { kind: 'inline', mimeType: 'text/plain', text: 'sign here' },
 				printed: { kind: 'file', mimeType: 'application/pdf', path: 'order.pdf' },
 			},
-		} as never).toJSON() as Form
+		} as never, { resolver: pdfFiles() })).toJSON() as Form
 
 		expect(reactLayersOf(artifact)).toEqual([
 			{ key: 'composition', path: COMPOSITION_PATH, mimeType: 'text/tsx' },
@@ -202,7 +199,7 @@ describe('React layers dispatch by MIME type', () => {
 		expect(reactLayersOf({ layers: undefined })).toEqual([])
 	})
 
-	test('validation rejects a React layer on a document or checklist, naming the rule', () => {
+	test('validation rejects a React layer on a document or checklist, naming the rule', async () => {
 		const composition = { kind: 'file', mimeType: 'text/tsx', path: COMPOSITION_PATH }
 		const brochure = { kind: 'document', name: 'brochure', version: '1.0.0', title: 'Brochure', layers: { composition } }
 		const opening = {
@@ -218,7 +215,7 @@ describe('React layers dispatch by MIME type', () => {
 		expect(() => document(brochure as never)).toThrow(/Only a form can declare a React layer/)
 		expect(() => checklist(opening as never)).toThrow(/Only a form can declare a React layer/)
 		// The same layer on a form is valid.
-		expect(validate(purchaseOrder().toJSON()).issues).toBeUndefined()
+		expect(validate((await purchaseOrder()).toJSON()).issues).toBeUndefined()
 	})
 
 	test('validation leaves a document or checklist file layer of another MIME type alone', () => {

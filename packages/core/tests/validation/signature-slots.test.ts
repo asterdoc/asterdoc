@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest'
 import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 import type { SignatureSlot } from '@asterdoc/types'
 import { form, validate, validateLayers } from '@/index'
+import { pdfFiles } from '../support/pdf-files'
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
@@ -177,10 +178,10 @@ describe('validate() layer references', () => {
     ])
   })
 
-  it('leaves reference problems to seal when filling, so a draft still fills', () => {
+  it('leaves reference problems to seal when filling, so a draft still fills', async () => {
     const broken = artifact({ defaultLayer: 'nope', text: 'No signature lines.' })
     expect(validate(broken).issues).toHaveLength(3)
-    expect(() => form(broken as never).fill({ fields: { amount: 1 } })).not.toThrow()
+    expect((await form.load(broken as never, { resolver: pdfFiles() })).fill({ fields: { amount: 1 } })).toBeDefined()
   })
 
   it('skips reference checks when schema validation is off', () => {

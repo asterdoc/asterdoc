@@ -18,7 +18,7 @@ A layer is a **view** of an artifact. It combines a template with the artifact's
 Layers are not transformations—they don't change the artifact. They're representations: different ways of looking at the same source of truth.
 
 ```ts
-const form = a.form()
+const form = await a.form.load(a.form()
   .name("invoice")
   .fields({
     customer: { type: "text" },
@@ -33,7 +33,7 @@ Total: {{fields.total}}
     `),
     pdf: a.layer().file().mimeType("application/pdf").path("templates/invoice.pdf"),
   })
-  .build()
+  .build())
 ```
 
 ---
@@ -85,10 +85,13 @@ that same resolver, so render calls don't repeat it.
 ```ts
 import { createFsResolver } from "@asterdoc/resolvers/fs";
 
-const form = a.form()
-  .name("invoice")
-  // ...fields, layers...
-  .build({ resolver: createFsResolver({ root: "./templates" }) })
+const form = await a.form.load(
+  a.form()
+    .name("invoice")
+    // ...fields, layers...
+    .build(),
+  { resolver: createFsResolver({ root: "./templates" }) },
+)
 
 const output = await form.render({ layer: "pdf" })
 ```
@@ -147,13 +150,13 @@ entries for both `text/tsx` and `text/jsx`.
 import { reactLayerRenderers } from "@asterdoc/react-pdf";
 import Invoice from "./invoice.tsx";
 
-const form = a.form()
+const form = await a.form.load(a.form()
   .name("invoice")
   .fields({ customer: { type: "text" } })
   .layers({
     composition: a.layer().file().mimeType("text/tsx").path("./invoice.tsx"),
   })
-  .build()
+  .build())
 
 const pdf = await form.fill({ fields: { customer: "Acme" } }).render({
   layer: "composition",

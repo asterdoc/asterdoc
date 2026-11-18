@@ -63,6 +63,8 @@ export {
   renderLayer,
   resolveLayerKey,
   UnboundResolverError,
+  LayerReadError,
+  RenderRefusedError,
   // Unified namespace
   a,
 } from "./artifacts";
@@ -279,7 +281,6 @@ export {
   isPhone,
   // Validators
   validateForm,
-  validateFormData,
   canonicalizeFieldValue,
   placeDisplayNames,
   fieldInputGuidance,
@@ -489,7 +490,7 @@ export type {
 } from "@asterdoc/types";
 
 // Artifact union type and kind
-export type { Artifact } from "@asterdoc/types";
+export type { Artifact, StandardPdfFont } from "@asterdoc/types";
 export type ArtifactKind = "form" | "document" | "checklist" | "bundle";
 
 // ============================================================================
@@ -499,8 +500,6 @@ export type ArtifactKind = "form" | "document" | "checklist" | "bundle";
 export {
   load,
   safeLoad,
-  loadFromObject,
-  safeLoadFromObject,
   BundleResolverError,
   LoadError,
   // Type guards for artifact discrimination
@@ -555,8 +554,10 @@ export { DefinitionNotJsonError } from "./artifacts/shared/definition-origin";
 // UTILITIES
 // ============================================================================
 
-export { validateArtifact as validate, validateLayers } from "./validation";
-export type { LayerValidationIssue, ValidateLayersOptions, ValidateLayersResult } from "./validation";
+export { validateArtifact as validate } from "./validation";
+export type { LayerValidationIssue } from "./validation";
+export { validateLayers } from "./artifacts/validate-layers";
+export type { ValidateLayersOptions, ValidateLayersResult } from "./artifacts/validate-layers";
 export { buildTemplateTypeEnvironment } from "./logic/design-time/validation/validate-templates";
 export { isSensitiveField, redactDefsValues, redactedValue } from "./logic/shared/sensitive-values";
 export { parse } from "./serialization";

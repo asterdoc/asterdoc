@@ -989,9 +989,13 @@ const resolver = createMemoryResolver({ contents });
  *
  * A U.S. person gives this form to a requester to certify their legal name, federal tax classification, and Taxpayer Identification Number (SSN or EIN). The completed form is retained by the requester for information-return reporting and is not sent to the IRS.
  */
-export const w9 = Object.assign(a.form(schema, { resolver }), {
+export const w9 = {
   /** The raw form spec, exactly as released. */
   spec: schema,
-});
+  /** Reads the form's bundled layer files, for a host that loads the spec itself. */
+  resolver,
+  /** Load the form on its bundled files. */
+  load: () => a.form.load(schema, { resolver }),
+};
 
 export default w9;

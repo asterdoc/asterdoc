@@ -20,7 +20,7 @@ Pass the formatter to `render()`. Every value in the layer prints with it.
 ```typescript
 import { createFormatter, a } from "@asterdoc/sdk";
 
-const invoice = a.form({
+const invoice = await a.form.load({
   name: "invoice",
   fields: { total: { type: "money" }, due: { type: "date" } },
   layers: { text: { kind: "inline", mimeType: "text/plain", text: "Total: {{fields.total}}, due {{fields.due}}" } },

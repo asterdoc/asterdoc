@@ -4,7 +4,7 @@ import {
   renderLayer,
   resolveLayerKey,
   isForm,
-  form as formApi,
+  RenderRefusedError,
   type Artifact,
   type Layer,
   type Form,
@@ -16,15 +16,14 @@ import { readTextInput, resolveArtifactTarget } from '../utils/io.js'
 import { parseDataInput, toFormPayload } from '../utils/data-input.js'
 import { loadValidatedArtifact } from '../utils/artifact-file.js'
 import { createLayerRenderer } from '@asterdoc/render'
-import type { Bindings } from '@asterdoc/types'
-import { formatPayloadErrors, validateDraftPayload, validateFormPayload, type FilledPayload } from '../utils/validate-data.js'
+import { formatPayloadErrors, formatRenderProblems, validateDraftPayload, validateFormPayload, type FilledPayload } from '../utils/validate-data.js'
+import { loadFormFile } from '../utils/load-form.js'
 import { readBack, readBackLines, readBackPasses, type ReadBack } from '../utils/read-back.js'
 
 type OutputFormat = 'json' | 'pretty'
 
 interface RenderOptions {
   data?: string
-  bindings?: string
   out?: string
   format?: OutputFormat
   dryRun?: boolean
@@ -44,7 +43,6 @@ export function createRenderCommand(): Command {
     .argument('<artifact>', 'Artifact file (JSON/YAML) or "-" for stdin')
     .description('Render an artifact layer')
     .option('--data <pathOrJson>', 'Data payload: file path, "-" for stdin, or inline JSON (for field substitution)')
-    .option('--bindings <pathOrJson>', 'PDF layers only: AcroForm field bindings merged over the layer\'s own, each a path string, { path, format, part } or { template, format } (path to JSON/YAML or inline JSON)')
     .option('--out <file>', 'Write output to file (defaults to stdout)')
     .option('--format <style>', 'Summary format: pretty|json', 'pretty')
     .option('--layer <key>', 'Layer key to use (defaults to defaultLayer, else the first declared layer)')
@@ -92,40 +90,28 @@ export function createRenderCommand(): Command {
         let draftOpen: string[] = []
         let checked: ReadBack | undefined
 
-        // Parse bindings if provided
-        const parsedBindings = options.bindings
-          ? (await parseDataInput(options.bindings)).data as Bindings
-          : undefined
-
-        if (parsedBindings) {
-          if (!isForm(artifact)) {
-            throw new Error('The bindings render option is only supported for form artifacts.')
-          }
-        }
-
-        if ((options.data || parsedBindings) && isForm(artifact)) {
+        if (options.data && isForm(artifact)) {
           // Parse data from file, stdin, or inline JSON
           const parsedData = options.data ? await parseDataInput(options.data) : undefined
+          const formInstance = await loadFormFile(artifact as Form, baseDir)
           let normalizedData: FilledPayload | undefined
           if (parsedData) {
             const payload = toFormPayload(parsedData.data)
             if (options.draft) {
-              const draft = validateDraftPayload(artifact as Form, payload)
+              const draft = validateDraftPayload(formInstance, payload)
               if (!draft.success) throw new Error(formatPayloadErrors(draft.errors, draft.ruleErrors).join('\n'))
               normalizedData = draft.data
               draftOpen = draft.open
             } else {
-              const validationResult = validateFormPayload(artifact as Form, payload)
+              const validationResult = validateFormPayload(formInstance, payload)
               if (!validationResult.success) {
                 const lines = formatPayloadErrors(validationResult.errors, validationResult.ruleErrors)
-                const draftRenders = validateDraftPayload(artifact as Form, payload).success
+                const draftRenders = validateDraftPayload(formInstance, payload).success
                 throw new Error([...lines, ...(draftRenders ? [DRAFT_HINT] : [])].join('\n'))
               }
               normalizedData = validationResult.data
             }
           }
-
-          const formInstance = formApi.from(artifact as Form, { resolver })
 
           content = await formInstance.render({
             ...(layer.mimeType !== 'text/tsx' && layer.mimeType !== 'text/jsx'
@@ -133,7 +119,6 @@ export function createRenderCommand(): Command {
               : {}),
             ...(normalizedData && { data: normalizedData }),
             layer: layerKey,
-            bindings: parsedBindings,
           })
 
           if (options.check && normalizedData && typeof content !== 'string') {
@@ -194,9 +179,18 @@ export function createRenderCommand(): Command {
         }
         if (checked && !readBackPasses(checked)) process.exitCode = 1
       } catch (error) {
+        process.exitCode = 1
+        if (error instanceof RenderRefusedError) {
+          if (options.format === 'json') {
+            console.log(JSON.stringify({ success: false, layer: error.layer, renderProblems: error.problems }, null, 2))
+          } else {
+            console.error(kleur.red(`Error: the data is valid, but layer "${error.layer}" cannot render it:`))
+            for (const line of formatRenderProblems(error.problems)) console.error(`  - ${line}`)
+          }
+          return
+        }
         const message = error instanceof Error ? error.message : String(error)
         console.error(kleur.red(`Error: ${message}`))
-        process.exitCode = 1
       }
     })
 

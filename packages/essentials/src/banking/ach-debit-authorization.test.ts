@@ -59,23 +59,23 @@ const happyPathInputs = {
 } as const;
 
 describe("ach-debit-authorization", () => {
-  it("loads via a.form()", () => {
-    expect(achDebitAuthorization.isValid()).toBe(true);
+  it("loads via a.form.load()", async () => {
+    expect((await achDebitAuthorization.load()).isValid()).toBe(true);
   });
 
-  it("accepts the bundled passing vector (llm.scenario.one-time-individual-happy-path)", () => {
-    const result = achDebitAuthorization.safeFill(happyPathInputs as any);
+  it("accepts the bundled passing vector (llm.scenario.one-time-individual-happy-path)", async () => {
+    const result = (await achDebitAuthorization.load()).safeFill(happyPathInputs as any);
     expect(result.success).toBe(true);
   });
 
-  it("passes its own test cases", () => {
-    const report = achDebitAuthorization.runTests();
+  it("passes its own test cases", async () => {
+    const report = (await achDebitAuthorization.load()).runTests();
     expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
     expect(report.results).toHaveLength(2);
   });
 
   it("renders the markdown layer on the bound resolver", async () => {
-    const result = achDebitAuthorization.safeFill(happyPathInputs as any);
+    const result = (await achDebitAuthorization.load()).safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");
     const output = await result.data.render({ layer: "markdown" });
     expect(typeof output).toBe("string");
@@ -83,7 +83,7 @@ describe("ach-debit-authorization", () => {
   });
 
   it("renders the PDF layer through the default renderer", async () => {
-    const result = achDebitAuthorization.safeFill(happyPathInputs as any);
+    const result = (await achDebitAuthorization.load()).safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");
     const output = await result.data.render({ layer: "pdf" });
     expect(output).toBeInstanceOf(Uint8Array);

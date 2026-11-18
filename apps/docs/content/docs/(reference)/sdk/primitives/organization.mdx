@@ -50,7 +50,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'vendor',
   fields: {
     company: { type: 'organization', label: 'Company Information' }

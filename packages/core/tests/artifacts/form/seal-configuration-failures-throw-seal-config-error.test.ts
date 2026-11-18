@@ -26,32 +26,32 @@ const base = () =>
 		.fields({ a: { type: 'text', label: 'A' } })
 
 test('no parties', async () => {
-	const d = base()
+	const d = (await form.load(base()
 		.inlineLayer('md', { mimeType: 'text/markdown', text: 'x' })
 		.defaultLayer('md')
-		.build()
+		.build()))
 		.fill({ fields: { a: 'x' } })
 	expect(await problemsOf(d.seal({ adapter }))).toEqual(['form has no parties'])
 })
 
 test('no bound party with a required signature', async () => {
 	// An organization with no signatory has no signer; a person would sign as itself.
-	const d = base()
+	const d = (await form.load(base()
 		.parties({ client: { label: 'Client', partyType: 'organization', signature: { required: true } } })
 		.inlineLayer('md', { mimeType: 'text/markdown', text: 'x' })
 		.defaultLayer('md')
-		.build()
+		.build()))
 		.fill({ fields: { a: 'x' }, parties: { client: { id: 'client-0', name: 'C', legalName: 'C LLC' } } })
 	const [problem] = await problemsOf(d.seal({ adapter }))
 	expect(problem).toMatch(/no party has a required signature/)
 })
 
 test('missing adapter on the undeclared-field path', async () => {
-	const d = base()
+	const d = (await form.load(base()
 		.parties({ client: { label: 'Client', partyType: 'person', signature: { required: true } } })
 		.inlineLayer('markdown', { mimeType: 'text/markdown', text: 'x' })
 		.defaultLayer('markdown')
-		.build()
+		.build()))
 		.fill({ fields: { a: 'x' }, parties: { client: { id: 'client-0', name: 'C' } } })
 		.addSigner('sg', { person: { name: 'C' } })
 		.addSignatory('client', 'client-0', { signerId: 'sg' })
@@ -59,20 +59,20 @@ test('missing adapter on the undeclared-field path', async () => {
 })
 
 test('prepareSeal on a layer with no signature slots', async () => {
-	const d = base()
+	const d = (await form.load(base()
 		.parties({ client: { label: 'Client', partyType: 'person', signature: { required: true } } })
 		.inlineLayer('md', { mimeType: 'text/markdown', text: 'x' })
 		.defaultLayer('md')
-		.build()
+		.build()))
 		.fill({ fields: { a: 'x' }, parties: { client: { id: 'client-0', name: 'C' } } })
 	expect(await problemsOf(d.prepareSeal({ adapter }))).toEqual(['layer "md" declares no signature slots (`signatures`)'])
 })
 
 test('an authoring problem is named before a missing converter', async () => {
-	const noParties = base()
+	const noParties = (await form.load((await (await (await (await (await (await (await (await (await (await (await (await (await (await (await base()
 		.inlineLayer('md', { mimeType: 'text/markdown', text: 'x' })
 		.defaultLayer('md')
-		.build()
+		.build())))))))))))))))))
 		.fill({ fields: { a: 'x' } })
 	expect(await problemsOf(noParties.seal())).toEqual(['form has no parties'])
 	expect(await problemsOf(noParties.prepareSeal())).toEqual(['layer "md" declares no signature slots (`signatures`)'])

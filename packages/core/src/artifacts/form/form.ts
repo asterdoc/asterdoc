@@ -42,8 +42,10 @@ import type {
 	FormData,
 	RuntimeFormJSON,
 	ArtifactEdition,
+	RendererExpressions,
 } from '@asterdoc/types'
-import { createLayerRenderer } from '@asterdoc/render'
+import { createLayerRenderer, resolveLayerBindings } from '@asterdoc/render'
+import { loadFormPrint, printErrors, RenderRefusedError, type FormPrint } from './print'
 import type { SchemaVersion } from '@asterdoc/schemas'
 import { migratedFromOf, originFor, restoreDefinition, storedDefinition, type DefinitionOrigin } from '@/artifacts/shared/definition-origin'
 import { digestOf } from '@/integrity/digest'
@@ -105,7 +107,7 @@ import { buildFormContext, evaluateFormDefs, evaluateFormRules } from '@/logic'
 import { buildTemplateExpressionContext } from '@/logic/runtime/evaluation/context-builder'
 import { signingStateOf } from '@/logic/runtime/evaluation/signing-state'
 import type { RuntimeFormRenderOptions, RenderOptions, RendererLayer } from '@/types'
-import { buildRendererLayer, refuseRequire, renderBindings, selectLayerRenderer } from '../shared/render-layer'
+import { buildRendererLayer, refuseRenderOptions, refuseRequire, selectLayerRenderer } from '../shared/render-layer'
 import type { ArtifactInstanceOptions } from '../shared/render-layer'
 import type { RendererRegistry } from '@/rendering/renderer-registry'
 import {
@@ -1018,9 +1020,21 @@ interface RuntimeFormBase<F extends Form> {
 	/**
 	 * Returns comprehensive validation result including rule details. A failed
 	 * rule explains the values it read, with sensitive values redacted unless
-	 * `explain.raw` is set.
+	 * `explain.raw` is set. It answers whether the data matches the artifact,
+	 * and reads no layer: `renderProblems` answers whether it renders.
 	 */
 	validate(options?: RuleEvaluationOptions): FormValidationResult
+	/**
+	 * What would stop the data from rendering on a layer, before any render:
+	 * a value too wide for its PDF field, longer than a comb, or with a
+	 * character no font draws. Each problem names the field, the layer and
+	 * the PDF field. A render of the layer runs this check first and refuses
+	 * with the same report (`RenderRefusedError`). A layer that is not a PDF
+	 * layer has no such problems.
+	 *
+	 * @param layer - The layer to check; defaults to the target layer.
+	 */
+	renderProblems(layer?: string, options?: { formatter?: Formatter }): ValidationError[]
 
 	// Serialization
 	render<Output = string | Uint8Array>(options?: RuntimeFormRenderOptions<Output>): Promise<Output>
@@ -1337,6 +1351,8 @@ interface RuntimeFormConfigBase<F extends Form> {
 	 * transition. See `ArtifactInstanceOptions`.
 	 */
 	resolver?: Resolver
+	/** The print profiles the form was loaded with, which the render check reads. */
+	print: FormPrint
 	origin?: DefinitionOrigin<F>
 	captures?: SignatureCapture[]
 	witnesses?: WitnessParty[]
@@ -1445,6 +1461,7 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		signatories: signatoriesInput,
 		targetLayer,
 		resolver,
+		print,
 		phase,
 		captures: capturesInput,
 		witnesses: witnessesInput,
@@ -1686,6 +1703,38 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 		}
 
 		return augmented
+	}
+
+	/**
+	 * The runtime `FormData` a render reads, and the expression context its
+	 * templates read: `fields` holds field values and nothing else, and
+	 * parties (with the signing records their marks are placed for),
+	 * annexes, signers, captures and computed values travel beside it.
+	 */
+	const renderPayload = (): { data: FormData; expressions: RendererExpressions } => {
+		const augmentedParties = augmentPartiesForRender()
+		const defsValuesObj: Record<string, unknown> = {}
+		for (const [k, v] of getRuntimeState().defsValues) {
+			defsValuesObj[k] = v
+		}
+		const data: FormData = {
+			fields: { ...fieldValues },
+			...(Object.keys(augmentedParties).length > 0 && { parties: augmentedParties }),
+			...(Object.keys(annexValues).length > 0 && { annexes: annexValues as Record<string, Attachment> }),
+			...(Object.keys(signerValues).length > 0 && { signers: signerValues }),
+			...(captures.length > 0 && { captures }),
+			...(Object.keys(defsValuesObj).length > 0 && { defs: defsValuesObj }),
+		}
+		const expressions = {
+			context: buildTemplateExpressionContext(formDef, {
+				fields: fieldValues,
+				parties: partyValues,
+				witnesses,
+				signing: signingStateOf(captures, attestations),
+				context,
+			}, augmentedParties),
+		}
+		return { data, expressions }
 	}
 
 	const augmentParty = (
@@ -2651,6 +2700,15 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			return { valid: errors.length === 0 && rules.valid, errors, rules }
 		},
 
+		renderProblems(layer?: string, options: { formatter?: Formatter } = {}): ValidationError[] {
+			const key = layer ?? targetLayer
+			if (!formDef.layers?.[key]) {
+				throw new Error(`Layer "${key}" not found. Available layers: ${Object.keys(formDef.layers ?? {}).join(', ')}`)
+			}
+			const { data, expressions } = renderPayload()
+			return printErrors(print, key, data, expressions, options.formatter)
+		},
+
 		// ============================================================================
 		// Layer Management
 		// ============================================================================
@@ -2820,9 +2878,9 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 				formatter,
 				progressive,
 				layer: layerKey,
-				bindings: optionsBindings,
 				require,
 			} = options
+			refuseRenderOptions(options, ['renderer', 'renderers', 'formatter', 'progressive', 'layer', 'require'], 'A form')
 
 			if (require !== undefined && require !== 'complete') {
 				throw new TypeError(`Unknown render option require: ${JSON.stringify(require)}; the one value is 'complete'.`)
@@ -2845,42 +2903,13 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 
 			const renderer = selectLayerRenderer<Output>(key, layerSpec, rendererOverride, renderers)
 
-			const bindings = renderBindings(formDef.layers, key, layerSpec, optionsBindings)
+			const bindings = resolveLayerBindings(formDef.layers, layerSpec)
 
-			const augmentedParties = augmentPartiesForRender()
-
-			// Build defs values object
-			const defsValuesObj: Record<string, unknown> = {}
-			for (const [k, v] of getRuntimeState().defsValues) {
-				defsValuesObj[k] = v
-			}
-
-			// The payload is the runtime `FormData`: `fields` holds field values and
-			// nothing else, and parties, annexes, signers, captures and computed
-			// values travel beside it, where a renderer reads them.
-			const data: FormData = {
-				fields: { ...fieldValues },
-				...(Object.keys(augmentedParties).length > 0 && { parties: augmentedParties }),
-				// Fill and setAnnex admit only attachments into an annex slot.
-				...(Object.keys(annexValues).length > 0 && { annexes: annexValues as Record<string, Attachment> }),
-				...(Object.keys(signerValues).length > 0 && { signers: signerValues }),
-				...(captures.length > 0 && { captures }),
-				...(Object.keys(defsValuesObj).length > 0 && { defs: defsValuesObj }),
-			}
+			const { data, expressions } = renderPayload()
+			const problems = printErrors(print, key, data, expressions, formatter)
+			if (problems.length > 0) throw new RenderRefusedError(key, problems)
 
 			const template = await buildRendererLayer(key, layerSpec, bindings, resolver, 'artifact')
-
-			// Templates read the expression context field logic reads, with the
-			// parties carrying the signing records their marks are placed for.
-			const expressions = {
-				context: buildTemplateExpressionContext(formDef, {
-					fields: fieldValues,
-					parties: partyValues,
-					witnesses,
-					signing: signingStateOf(captures, attestations),
-					context,
-				}, augmentedParties),
-			}
 
 			try {
 				return await renderer.render({
@@ -2960,10 +2989,11 @@ function createRuntimeForm<F extends Form>(config: RuntimeFormConfig<F>): Runtim
 			// The resolver is behavior, not data: it is carried across rather
 			// than cloned, because `structuredClone` cannot copy a function. The
 			// sealed PDF bytes are owned and immutable, so the clone shares them.
-			const { resolver: _bound, canonicalPdfBytes: sealedBytes, ...cloneable } = config
+			const { resolver: _bound, print: _loaded, canonicalPdfBytes: sealedBytes, ...cloneable } = config
 			return createRuntimeForm({
 				...structuredClone(cloneable),
 				resolver,
+				print,
 				canonicalPdfBytes: sealedBytes,
 			} as RuntimeFormConfig<F>)
 		},
@@ -3000,11 +3030,12 @@ function canonicalRehydratedFields(formDef: Form, fields: Record<string, unknown
  * A resolver is behavior, not data, so it is not in the JSON: bind it here to
  * give the rehydrated form its file-backed layers back.
  */
-export function runtimeFormFromJSON<F extends Form>(
+export async function runtimeFormFromJSON<F extends Form>(
 	json: RuntimeFormJSON<F>,
 	options?: ArtifactInstanceOptions,
-): RuntimeForm<F> {
+): Promise<RuntimeForm<F>> {
 	const { definition, origin } = restoreDefinition(json.form, options)
+	const print = await loadFormPrint(definition, options)
 	// Type assertion needed because TypeScript can't narrow the config type based on json.phase alone
 	// The RuntimeFormJSON union already constrains the valid combinations
 	const config = {
@@ -3016,6 +3047,7 @@ export function runtimeFormFromJSON<F extends Form>(
 		signatories: json.signatories,
 		targetLayer: json.targetLayer,
 		resolver: options?.resolver,
+		print,
 		origin,
 		phase: json.phase,
 		captures: 'captures' in json ? json.captures : [],
@@ -3039,8 +3071,9 @@ export function runtimeFormFromJSON<F extends Form>(
  */
 function createFormInstance<F extends Form>(
 	formDef: F,
-	options?: ArtifactInstanceOptions,
-	origin?: DefinitionOrigin<F>,
+	options: ArtifactInstanceOptions | undefined,
+	origin: DefinitionOrigin<F> | undefined,
+	print: FormPrint,
 ): FormInstance<F> {
 	const artifactMethods = withArtifactMethods(formDef, origin)
 	const resolver = options?.resolver
@@ -3137,6 +3170,7 @@ function createFormInstance<F extends Form>(
 				signatories: {},
 				targetLayer,
 				resolver,
+				print,
 				origin: originFor(origin, snapshot),
 				phase: 'draft',
 				context,
@@ -3168,8 +3202,8 @@ function createFormInstance<F extends Form>(
 				progressive,
 				data,
 				layer: layerKey,
-				bindings: optionsBindings,
 			} = options
+			refuseRenderOptions(options, ['renderer', 'renderers', 'formatter', 'progressive', 'data', 'layer', 'require'], 'A form definition')
 			const formData = data === undefined ? renderPayload(data) : withComputedDefs(formDef, renderPayload(data))
 
 			if (!formDef.layers) {
@@ -3188,7 +3222,7 @@ function createFormInstance<F extends Form>(
 
 			const renderer = selectLayerRenderer<Output>(key, layerSpec, rendererOverride, renderers)
 
-			const bindings = renderBindings(formDef.layers, key, layerSpec, optionsBindings)
+			const bindings = resolveLayerBindings(formDef.layers, layerSpec)
 
 			const template = await buildRendererLayer(key, layerSpec, bindings, resolver, 'artifact')
 
@@ -3200,6 +3234,8 @@ function createFormInstance<F extends Form>(
 					parties,
 				),
 			}
+			const problems = printErrors(print, key, formData, expressions, formatter)
+			if (problems.length > 0) throw new RenderRefusedError(key, problems)
 
 			try {
 				return await renderer.render({
@@ -3223,7 +3259,7 @@ function createFormInstance<F extends Form>(
 
 		clone(): FormInstance<F> {
 			const current = originFor(origin, formDef)
-			return createFormInstance(structuredClone(formDef), options, current)
+			return createFormInstance(structuredClone(formDef), options, current, print)
 		},
 	}
 
@@ -3328,14 +3364,14 @@ export interface FormBuilderInterface<
 		TAnnexes,
 		TAllowAdditionalAnnexes
 	>
-	build(options?: ArtifactInstanceOptions): FormInstance<
-		Omit<Form, 'fields' | 'parties' | 'annexes' | 'allowAdditionalAnnexes'> & {
-			fields: TFields
-			parties: TParties extends Record<string, never> ? undefined : TParties
-			annexes: TAnnexes extends Record<string, never> ? undefined : TAnnexes
-			allowAdditionalAnnexes: TAllowAdditionalAnnexes
-		}
-	>
+	/** The form definition the builder describes. Load it with `form.load()` to fill it. */
+	build(): Omit<Form, 'fields' | 'parties' | 'annexes' | 'allowAdditionalAnnexes'> & {
+		kind: 'form'
+		fields: TFields
+		parties: TParties extends Record<string, never> ? undefined : TParties
+		annexes: TAnnexes extends Record<string, never> ? undefined : TAnnexes
+		allowAdditionalAnnexes: TAllowAdditionalAnnexes
+	}
 }
 
 /**
@@ -3622,7 +3658,7 @@ function createFormBuilder<
 			>
 		},
 
-		build(options?: ArtifactInstanceOptions) {
+		build() {
 			const cleaned: Record<string, unknown> = { ...(_def as object) }
 			const fields = _def.fields as Record<string, Buildable<FormField>> | undefined
 			if (fields) {
@@ -3635,16 +3671,13 @@ function createFormBuilder<
 					delete cleaned[key]
 				}
 			}
-			const result = parseForm(cleaned)
-			return createFormInstance(
-				result as Omit<Form, 'fields' | 'parties' | 'annexes' | 'allowAdditionalAnnexes'> & {
-					fields: TFields
-					parties: TParties extends Record<string, never> ? undefined : TParties
-					annexes: TAnnexes extends Record<string, never> ? undefined : TAnnexes
-					allowAdditionalAnnexes: TAllowAdditionalAnnexes
-				},
-				options,
-			)
+			return parseForm(cleaned) as Omit<Form, 'fields' | 'parties' | 'annexes' | 'allowAdditionalAnnexes'> & {
+				kind: 'form'
+				fields: TFields
+				parties: TParties extends Record<string, never> ? undefined : TParties
+				annexes: TAnnexes extends Record<string, never> ? undefined : TAnnexes
+				allowAdditionalAnnexes: TAllowAdditionalAnnexes
+			}
 		},
 	}
 
@@ -3657,40 +3690,44 @@ function createFormBuilder<
 
 type FormAPI = {
 	(): FormBuilderInterface
-	<const T extends FormInput>(input: T, options?: ArtifactInstanceOptions): FormInstance<T & { kind: 'form' }>
-	from(input: unknown, options?: ArtifactInstanceOptions): FormInstance<Form>
-	safeFrom(
-		input: unknown,
+	/**
+	 * Load a form definition: the only way to get a form instance. Every PDF
+	 * layer is read once, with its font, into the profile the layer's render
+	 * check (`renderProblems`) reads, so a render refuses up front what it
+	 * cannot draw.
+	 *
+	 * @throws when the definition is invalid, or a PDF layer cannot be read.
+	 */
+	load<const T extends FormInput>(input: T, options?: ArtifactInstanceOptions): Promise<FormInstance<T & { kind: 'form' }>>
+	load(input: unknown, options?: ArtifactInstanceOptions): Promise<FormInstance<Form>>
+	/** {@link FormAPI.load}, with the failure as a result. */
+	safeLoad<const T extends FormInput>(
+		input: T,
 		options?: ArtifactInstanceOptions,
-	): { success: true; data: FormInstance<Form> } | { success: false; error: Error }
+	): Promise<{ success: true; data: FormInstance<T & { kind: 'form' }> } | { success: false; error: Error }>
+	safeLoad(input: unknown, options?: ArtifactInstanceOptions): Promise<{ success: true; data: FormInstance<Form> } | { success: false; error: Error }>
 }
 
-function formImpl(): FormBuilderInterface
-function formImpl<const T extends FormInput>(input: T, options?: ArtifactInstanceOptions): FormInstance<T & { kind: 'form' }>
-function formImpl<const T extends FormInput>(
-	input?: T,
-	options?: ArtifactInstanceOptions,
-): FormBuilderInterface | FormInstance<T & { kind: 'form' }> {
-	if (input !== undefined) {
-		const withKind = { ...input, kind: 'form' as const }
-		const { definition, origin } = readForm(withKind, options)
-		return createFormInstance(definition as T & { kind: 'form' }, options, origin as DefinitionOrigin<T & { kind: 'form' }> | undefined)
+async function loadForm<const T extends FormInput>(input: T, options?: ArtifactInstanceOptions): Promise<FormInstance<T & { kind: 'form' }>> {
+	const withKind = typeof input === 'object' && input !== null && !Array.isArray(input) && !('kind' in input) ? { ...input, kind: 'form' as const } : input
+	const { definition, origin } = readForm(withKind, options)
+	const print = await loadFormPrint(definition, options)
+	return createFormInstance(definition as T & { kind: 'form' }, options, origin as DefinitionOrigin<T & { kind: 'form' }> | undefined, print)
+}
+
+export const form: FormAPI = Object.assign((...args: unknown[]) => {
+	if (args.length > 0) {
+		throw new TypeError('form() takes no argument: it starts a form builder. To load a definition, call await form.load(definition, { resolver }).')
 	}
 	return createFormBuilder()
-}
-
-export const form: FormAPI = Object.assign(formImpl, {
-	from: (input: unknown, options?: ArtifactInstanceOptions): FormInstance<Form> => {
-		const { definition, origin } = readForm(input, options)
-		return createFormInstance(definition, options, origin)
-	},
-	safeFrom: (
-		input: unknown,
+}, {
+	load: loadForm,
+	safeLoad: async <const T extends FormInput>(
+		input: T,
 		options?: ArtifactInstanceOptions,
-	): { success: true; data: FormInstance<Form> } | { success: false; error: Error } => {
+	): Promise<{ success: true; data: FormInstance<T & { kind: 'form' }> } | { success: false; error: Error }> => {
 		try {
-			const { definition, origin } = readForm(input, options)
-			return { success: true, data: createFormInstance(definition, options, origin) }
+			return { success: true, data: await loadForm(input, options) }
 		} catch (err) {
 			return { success: false, error: err as Error }
 		}

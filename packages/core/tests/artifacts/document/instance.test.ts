@@ -145,10 +145,10 @@ describe('DocumentInstance', () => {
       expect(yaml).toContain('kind: document')
     })
 
-    test('round-trips correctly', () => {
+    test('round-trips correctly', async () => {
       const instance = createDocumentWithLayers()
       const yaml = instance.toYAML()
-      const parsed = load<'document'>(yaml)
+      const parsed = await load<'document'>(yaml)
       expect(parsed.name).toBe(instance.name)
     })
   })

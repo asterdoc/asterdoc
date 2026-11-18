@@ -29,18 +29,18 @@ describe('a definition string with an unpaired UTF-16 surrogate', () => {
 		expect(key.issues).toEqual([{ message: LONE_SURROGATE_MESSAGE, path: ['layers', 'pdf', 'bindings', 'Name\ud800'] }])
 	})
 
-	test('is refused when the definition is read, naming its path', () => {
-		expect(() => a.form.from(form({ title: 'Lease \ud800' }))).toThrow(`Invalid Form at title: ${LONE_SURROGATE_MESSAGE}`)
+	test('is refused when the definition is read, naming its path', async () => {
+		await expect(a.form.load(form({ title: 'Lease \ud800' }))).rejects.toThrow(`Invalid Form at title: ${LONE_SURROGATE_MESSAGE}`)
 	})
 
-	test('is refused at fill when it was written into the definition after it was read', () => {
-		const instance = a.form.from(form())
+	test('is refused at fill when it was written into the definition after it was read', async () => {
+		const instance = await a.form.load(form())
 		instance.toJSON({ includeSchema: false }).fields!.tenant!.label = 'Tenant \ud800'
 		expect(() => instance.fill()).toThrow(/unpaired UTF-16 surrogate/)
 	})
 
-	test('a well-formed pair, such as an emoji, is accepted', () => {
+	test('a well-formed pair, such as an emoji, is accepted', async () => {
 		expect(validate(form({ title: 'Lease 😀' })).issues).toBeUndefined()
-		expect(a.form.from(form({ title: 'Lease 😀' })).title).toBe('Lease 😀')
+		expect((await a.form.load(form({ title: 'Lease 😀' }))).title).toBe('Lease 😀')
 	})
 })

@@ -8,7 +8,7 @@ import { describe, expect, test } from 'vitest'
 import { form } from '@/artifacts'
 import { validateFieldInput } from '@/validation/progressive'
 
-const f = form().name('f').version('1.0.0').title('F').fields({ a: { type: 'text', label: 'A' } }).build()
+const f = await form.load(form().name('f').version('1.0.0').title('F').fields({ a: { type: 'text', label: 'A' } }).build())
 
 describe('Field input validation rejects prototype property names', () => {
 	test('control: an unknown path fails', () => {

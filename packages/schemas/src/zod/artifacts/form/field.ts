@@ -141,6 +141,10 @@ const RegionFieldSchema = BaseFieldSchema.extend({
 
 const PhoneFieldSchema = BaseFieldSchema.extend({
 	type: z.literal('phone'),
+	countryCode: z.string()
+		.regex(/^[1-9]\d{0,2}$/)
+		.describe('Country calling code a number must have, without + (e.g., 1 for the North American plan). A PDF binding to areaCode or subscriberNumber needs 1; a phone.region format that refuses numbers of other plans needs its region\'s code. Omit to accept any plan')
+		.optional(),
 	default: PhoneSchema.optional(),
 });
 

@@ -244,6 +244,8 @@ export interface PhoneFieldBuilder<R extends CondExpr | undefined = undefined> {
 	required<const V extends CondExpr>(value: V): PhoneFieldBuilder<V>;
 	visible(value?: CondExpr): PhoneFieldBuilder<R>;
 	sensitive(value?: boolean): PhoneFieldBuilder<R>;
+	/** The country calling code every number must have, without `+`: `1` for the North American plan. */
+	countryCode(code: string): PhoneFieldBuilder<R>;
 	default(value: Phone): PhoneFieldBuilder<R>;
 	build(): BuiltField<PhoneField, R>;
 }
@@ -634,6 +636,7 @@ export function phoneField(): PhoneFieldBuilder {
 		required(value: CondExpr = true) { _def.required = value; return self; },
 		visible(value: CondExpr = true) { _def.visible = value; return self; },
 		sensitive(value = true) { _def.sensitive = value; return self; },
+		countryCode(code: string) { _def.countryCode = code; return self; },
 		default(value: Phone) { _def.default = value; return self; },
 		build() { return parseField(_def) as PhoneField; },
 	};

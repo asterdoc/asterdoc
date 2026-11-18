@@ -5,6 +5,7 @@ import { toYAML, isForm, createSafeRegex, type Form, type FormField } from '@ast
 import { LocalFileSystem } from '../../utils/local-fs.js'
 
 import { readTextInput, resolveArtifactTarget } from '../../utils/io.js'
+import { loadFormFile } from '../../utils/load-form.js'
 import { parseDataInput, toFormPayload } from '../../utils/data-input.js'
 import {
   printPayloadErrors,
@@ -243,7 +244,7 @@ export function createFillCommand(): Command {
 
         // Read form file
         const resolvedTarget = await resolveArtifactTarget(fileTarget)
-        const { raw, sourcePath: _sourcePath } = await readTextInput(resolvedTarget)
+        const { raw, sourcePath: _sourcePath, baseDir } = await readTextInput(resolvedTarget)
         const { artifact } = loadValidatedArtifact(raw)
 
         // Check artifact kind is 'form'
@@ -255,6 +256,7 @@ export function createFillCommand(): Command {
         }
 
         const form = artifact as Form
+        const loaded = await loadFormFile(form, baseDir)
 
         // Interactive mode prompts for fields only; a form without fields has nothing to prompt for.
         if (!options.data && (!form.fields || Object.keys(form.fields).length === 0)) {
@@ -267,7 +269,7 @@ export function createFillCommand(): Command {
         // Non-interactive mode: use --data
         if (options.data) {
           const { data: rawData, source: dataSource } = await parseDataInput(options.data)
-          const validationResult = validateFormPayload(form, toFormPayload(rawData))
+          const validationResult = validateFormPayload(loaded, toFormPayload(rawData))
 
           if (!validationResult.success) {
             console.error(kleur.red('Data validation failed:'))
@@ -299,7 +301,7 @@ export function createFillCommand(): Command {
           }
 
           // Interactive mode collects field values only; annexes are attached separately.
-          const validationResult = validateFormPayload(form, { fields: filledFields })
+          const validationResult = validateFormPayload(loaded, { fields: filledFields })
           if (!validationResult.success) {
             console.error(kleur.red('Data validation failed:'))
             printPayloadErrors(validationResult.errors, validationResult.ruleErrors)

@@ -79,7 +79,7 @@ function fittedFontSize(text: string, overlay: PdfTextOverlay, font: DrawingFont
 
 function fittedFont(fonts: PdfFontSet, overlay: PdfTextOverlay, text: string, subject: string) {
   try {
-    const font = fonts.select(subject, text, undefined, overlay.font)
+    const font = fonts.select(subject, text, overlay.font)
     return { font, size: fittedFontSize(text, overlay, font, subject) }
   } catch (error) {
     if (error instanceof PdfFieldFillError && 'field' in overlay && overlay.field) throw error.withPaths([artifactPath(overlay.field)])
@@ -282,15 +282,14 @@ export function applyPdfOverlays(
       const text = String(textValue(overlay, read) ?? '').replace(/\r\n|\r|\n/g, ' ')
       const subject = overlaySubject(overlay, overlays.indexOf(overlay))
       const { font, size } = fittedFont(fonts, overlay, text, subject)
-      let fontName = pageFonts.get(font.resourceName)
-      if (fontName === undefined) {
-        fontName = addPageResource(model, page, 'Font', font.resourceName, font.reference())
-        pageFonts.set(font.resourceName, fontName)
+      for (const [resourceName, reference] of font.resources(text)) {
+        if (!pageFonts.has(resourceName)) pageFonts.set(resourceName, addPageResource(model, page, 'Font', resourceName, reference))
       }
+      const shown = font.show(text, String(size), pageFonts)
       const x = overlay.x + (overlay.width === undefined ? 0 : 1)
       const y = overlay.y + (overlay.height === undefined ? 0 : Math.max(1, (overlay.height - size) / 2))
       const [red, green, blue] = (overlay.color ?? [0, 0, 0]).map(component)
-      commands.push(`BT\n/${fontName} ${size} Tf\n${red} ${green} ${blue} rg\n${x} ${y} Td\n${font.encode(text)} Tj\nET`)
+      commands.push(`BT\n${red} ${green} ${blue} rg\n${x} ${y} Td\n${shown}\nET`)
     }
     const stream = model.addObject({ kind: 'dict', entries: new Map() }, new TextEncoder().encode(`q\n${commands.join('\n')}\nQ`))
     appendPageContent(model, page, stream)

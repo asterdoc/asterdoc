@@ -22,8 +22,8 @@ const issueMessages = (f: Form): string[] => {
 }
 
 describe('rule context', () => {
-	test('a rule can call today() when the form carries a clock', () => {
-		const def = form({
+	test('a rule can call today() when the form carries a clock', async () => {
+		const def = await form.load({
 			kind: 'form',
 			name: 'clock-rule',
 			fields: { startDate: { type: 'date' } },
@@ -123,7 +123,7 @@ describe('row visibility in aggregates', () => {
 })
 
 describe('defs cannot replace context roots or settings', () => {
-	test('a def named asOf does not replace the clock', () => {
+	test('a def named asOf does not replace the clock', async () => {
 		const f = {
 			kind: 'form',
 			name: 'asof-shadow',
@@ -135,7 +135,7 @@ describe('defs cannot replace context roots or settings', () => {
 				stamp: { type: 'date', value: 'today()' },
 			},
 		} as unknown as Form
-		const draft = form(f as any).fill({ fields: { signedOn: '2020-01-01' } } as any, {
+		const draft = (await form.load(f as any)).fill({ fields: { signedOn: '2020-01-01' } } as any, {
 			context: { asOf: '2026-09-12T12:00:00Z' },
 		})
 		expect(draft.getLogicValue('stamp')).toBe('2026-09-12')
@@ -287,8 +287,8 @@ describe('signing predicates', () => {
 		expect(evaluateExpression('witnessCount()', context).value).toBe(0)
 	})
 
-	test('a filled form supplies its captured signatures to its logic', () => {
-		const def = form({
+	test('a filled form supplies its captured signatures to its logic', async () => {
+		const def = await form.load({
 			kind: 'form',
 			name: 'sign-probe',
 			fields: { name: { type: 'text' } },

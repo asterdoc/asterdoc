@@ -147,6 +147,7 @@ export type {
 
 // Form artifact
 export { form, runtimeFormFromJSON, FormValidationError, FormRuleViolationError } from './form'
+export { LayerReadError, RenderRefusedError } from './form/print'
 export { SealConfigError, buildSlotPlan } from './form'
 export { INITIALS_RULE, SIGNATURE_RULE } from './form'
 export type { SlotPlan } from './form'

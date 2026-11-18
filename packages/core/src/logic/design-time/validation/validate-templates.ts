@@ -67,8 +67,10 @@ export function buildTemplateTypeEnvironment(artifact: TemplateArtifact): TypeEn
   return createTypeEnv({})
 }
 
-function templateCheckOptions(artifact: TemplateArtifact): TemplateCheckOptions {
-  return artifact.kind === 'form' ? { values: formValueResolver(artifact as unknown as Form) } : {}
+function templateCheckOptions(artifact: TemplateArtifact, layer: Layer): TemplateCheckOptions {
+  if (artifact.kind !== 'form') return {}
+  const format = (layer as { format?: TemplateCheckOptions['format'] }).format
+  return { values: formValueResolver(artifact as unknown as Form), ...(format && { format }) }
 }
 
 function issueFor(key: string, diagnostic: TemplateDiagnostic): StandardSchemaV1.Issue {
@@ -90,9 +92,8 @@ export function validateInlineTemplates(artifact: TemplateArtifact): StandardSch
   const layers = Object.entries(artifact.layers ?? {}).filter(([, layer]) => layer.kind === 'inline' && isTextLayer(layer))
   if (layers.length === 0) return []
   const env = buildTemplateTypeEnvironment(artifact)
-  const options = templateCheckOptions(artifact)
   return layers.flatMap(([key, layer]) =>
-    checkTextTemplate((layer as Extract<Layer, { kind: 'inline' }>).text, env, options).map((diagnostic) => issueFor(key, diagnostic)))
+    checkTextTemplate((layer as Extract<Layer, { kind: 'inline' }>).text, env, templateCheckOptions(artifact, layer)).map((diagnostic) => issueFor(key, diagnostic)))
 }
 
 /**
@@ -106,9 +107,9 @@ export async function validateFileTemplates(artifact: TemplateArtifact, resolver
     layer.kind === 'file' && (isTextLayer(layer) || isDocxMimeType(layer.mimeType)))
   if (layers.length === 0) return []
   const env = buildTemplateTypeEnvironment(artifact)
-  const options = templateCheckOptions(artifact)
   const issues: StandardSchemaV1.Issue[] = []
   for (const [key, layer] of layers) {
+    const options = templateCheckOptions(artifact, layer)
     const path = (layer as Extract<Layer, { kind: 'file' }>).path
     let bytes: Uint8Array
     try {

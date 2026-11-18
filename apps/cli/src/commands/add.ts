@@ -289,7 +289,7 @@ async function installArtifact(opts: InstallArtifactOpts): Promise<void> {
       }
 
       // A declared font travels with its layer, verified the same way.
-      if (layer.font) {
+      if (typeof layer.font === 'object') {
         if (!layer.font.checksum) {
           failures.push({ label: `font of layer "${layerKey}"`, path: layer.font.path, cause: 'missing required checksum' })
           continue

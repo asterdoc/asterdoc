@@ -164,6 +164,7 @@ A `not_recoverable` or `unparseable` entry you did not plan for is a binding bug
 |---------|-------|-----|
 | `validate` fails with `binding "<key>": "<PDF name>" is not a known Asterdoc path` | Bindings are inverted. | Keys are PDF names, values are Asterdoc paths. |
 | `validate` fails with `binding "<key>": "<key>" is not an AcroForm field` | The key is not a PDF field name. | Use the full name `inspectAcroFormFields` lists. |
+| `validate` fails with `the PDF field "<key>" ... has 2 widgets` | One PDF field shows its value in several boxes, so a value prints in each. | Split the field in the PDF into one field per widget (`asterdoc inspect` lists them), then bind each. |
 | `fields.x.enum: Invalid input: expected array, received undefined` | An `enum` field was hand-written or edited with no `enum` options. | Add the `enum` options list (`--field x:enum` scaffolds placeholder options; replace them). |
 | `Resolver path "../x.pdf" resolves outside the configured root` | A file sits outside the artifact's directory. | Move it next to the artifact. |
 | `checksum: mismatch` | A file changed after `attach`. | `npx asterdoc fix <file> -y`. |

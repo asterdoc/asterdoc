@@ -114,8 +114,8 @@ describe('transitiveBlockers', () => {
 // ────────────────────────────────────────────── status ordinal (integration)
 
 describe('fill state — status ordinal', () => {
-	test('each item carries hidden | optional | required', () => {
-		const f = form()
+	test('each item carries hidden | optional | required', async () => {
+		const f = await form.load(form()
 			.name('i')
 			.version('1.0.0')
 			.title('I')
@@ -124,7 +124,7 @@ describe('fill state — status ordinal', () => {
 				b: { type: 'text', label: 'B', visible: 'fields.a == true', required: true },
 				note: { type: 'text', label: 'Note' },
 			})
-			.build()
+			.build())
 
 		const state = (f as unknown as { fill: () => { getFillState: () => any } }).fill().getFillState()
 		const byKey = new Map<string, { status: string }>()

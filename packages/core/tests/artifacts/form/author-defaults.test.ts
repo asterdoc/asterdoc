@@ -12,13 +12,13 @@ describe('a form keeps what its author wrote', () => {
 		rules: { positive: { expr: 'true', message: 'Must hold' } },
 	} as const
 
-	test('toJSON adds no default the author did not write', () => {
-		const { $schema: _schema, ...written } = form.from(input).toJSON()
+	test('toJSON adds no default the author did not write', async () => {
+		const { $schema: _schema, ...written } = (await form.load(input)).toJSON() as Record<string, unknown>
 		expect(written).toEqual(input)
 	})
 
-	test('an omitted party count still defaults to one party', () => {
-		const sale = form.from(input)
+	test('an omitted party count still defaults to one party', async () => {
+		const sale = await form.load(input)
 		expect(() => sale.fill({ parties: { buyer: { id: 'buyer-0', name: 'A' } } })).not.toThrow()
 		expect(() => sale.fill({ parties: { buyer: [{ id: 'buyer-0', name: 'A' }, { id: 'buyer-1', name: 'B' }] } })).toThrow(/takes one party object, not an array/)
 	})

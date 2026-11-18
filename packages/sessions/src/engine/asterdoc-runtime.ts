@@ -1,30 +1,35 @@
-import { CANONICAL_SHAPES, loadFromObject, type ValidationError } from "@asterdoc/core";
+import { CANONICAL_SHAPES, load, type ArtifactInstanceOptions, type ValidationError } from "@asterdoc/core";
 import type { Issue } from "../event-log/types";
 import { assertCoercionOptions, coerceFieldValue, type CoercionOptions, type CoercionTarget } from "./coerce";
 import { templateFieldPath, unflattenPaths } from "./payload";
 import type { ArtifactRuntime, FillStateSnapshot } from "./types";
 
+/** How a runtime coerces answers, and what it loads the form's PDF layers with. */
+export type AsterdocRuntimeOptions = CoercionOptions & Pick<ArtifactInstanceOptions, "resolver">;
+
 /**
  * Build an ArtifactRuntime backed by @asterdoc/core.
  *
- * The artifact object is loaded once; per-call we run safeFill against
- * the current answers and ask the resulting DraftForm for its FillState,
- * wrapped behind a tight interface so the engine remains independent of
- * core's evolving API.
+ * The artifact object is loaded once, with its PDF layers read through
+ * `options.resolver`; per-call we run safeFill against the current answers
+ * and ask the resulting DraftForm for its FillState, wrapped behind a tight
+ * interface so the engine remains independent of core's evolving API.
  *
- * Performance: loadFromObject + safeFill is a few milliseconds for
+ * Performance: safeFill is a few milliseconds for
  * typical artifacts; cheap enough to recompute on every command.
  *
  * `options.defaultCallingCode` (for example `"+1"`) is the only source of a
  * country code for a phone number given without one; see `coerce.ts`.
  */
-export function createAsterdocRuntime(
+export async function createAsterdocRuntime(
 	artifact: Record<string, unknown>,
-	options: CoercionOptions = {},
-): ArtifactRuntime {
+	options: AsterdocRuntimeOptions = {},
+): Promise<ArtifactRuntime> {
 	assertCoercionOptions(options);
 	// Loaded once — pure design-time wrapper; doesn't capture answers.
-	const instance = loadFromObject<"form">(artifact);
+	const instance = await load<"form">(artifact, {
+		...(options.resolver && { resolver: options.resolver }),
+	});
 
 	// One walk of the field tree: the public list, the path set, and the type
 	// index all come from it, so they cannot disagree about list items.

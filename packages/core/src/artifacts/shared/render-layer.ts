@@ -17,7 +17,6 @@ import type {
 	RendererLayer,
 	Resolver,
 } from '@asterdoc/types'
-import { isPdfMimeType, PdfBindingObjectSchema } from '@asterdoc/schemas'
 import type { SchemaReadOptions } from '@/migration/upgrade'
 import { createLayerRenderer, resolveLayerBindings } from '@asterdoc/render'
 import {
@@ -33,7 +32,7 @@ import { verifyLayerChecksum } from '@/integrity/checksum'
  * Runtime wiring bound to an artifact instance when it is constructed.
  *
  * A file-backed layer's bytes come from a resolver, and the resolver is bound
- * once: `a.form(schema, { resolver })`. Every instance derived from that
+ * once: `await a.form.load(definition, { resolver })`. Every instance derived from that
  * one — every fill, every mutator, every clone — carries it. There is no
  * per-call resolver, because a runtime artifact is immutable by
  * reconstruction: a mutator builds a fresh instance from the config, and a
@@ -87,9 +86,9 @@ export type ResolverBindingSite = 'artifact' | 'layers'
 /** How each site says the resolver should have arrived. */
 const REMEDY: Record<ResolverBindingSite, string> = {
 	artifact:
-		'no resolver is bound to this artifact. Bind one where the artifact is constructed, as the ' +
-		'second argument to a.form, a.document or a.checklist, so every instance derived ' +
-		'from it carries the resolver.',
+		'no resolver is bound to this artifact. Bind one where the artifact is loaded or constructed: ' +
+		'form.load(definition, { resolver }), or the second argument to a.document or a.checklist, ' +
+		'so every instance derived from it carries the resolver.',
 	layers:
 		'this call was given no resolver. `renderLayer` reads a bare layers record rather than an ' +
 		'artifact, so there is nothing a resolver could have been bound to: pass one in its options.',
@@ -265,6 +264,19 @@ async function renderLayerAt(
  * @throws {UnboundResolverError} when a file layer has no resolver to read it.
  * @throws {LayerChecksumError} when the bytes do not match the layer's checksum.
  */
+/** A PDF layer file or its font that the resolver could not read while the form loaded. */
+export class LayerReadError extends Error {
+	readonly layerKey: string
+	readonly path: string
+
+	constructor(layerKey: string, path: string, cause: unknown) {
+		super(`Layer "${layerKey}" could not be read from "${path}": ${cause instanceof Error ? cause.message : String(cause)}`, { cause })
+		this.name = 'LayerReadError'
+		this.layerKey = layerKey
+		this.path = path
+	}
+}
+
 async function readLayerContent(
 	layerKey: string,
 	layerSpec: Layer,
@@ -350,41 +362,12 @@ export function selectLayerRenderer<Output>(
 	return createLayerRenderer() as AsterdocRenderer<RendererLayer, Output>
 }
 
-/**
- * The bindings a PDF layer renders with: its own (or those it reuses through
- * `bindingsFrom`), with the caller's `bindings` render option laid over them.
- *
- * Bindings map AcroForm field names to Asterdoc paths, so the option applies to
- * PDF layers only. Any other layer's template names values as `{{fields.x}}`,
- * and passing the option for one is refused rather than ignored. Each override
- * is a path string, parsed when the layer renders, or a binding object,
- * checked here as a layer's binding objects are.
- *
- * @throws {Error} when `override` is given for a layer that is not a PDF, or
- * holds a binding object the schema refuses.
- */
-export function renderBindings(
-	layers: Record<string, Layer>,
-	layerKey: string,
-	layerSpec: Layer,
-	override: Bindings | undefined,
-): Bindings | undefined {
-	const bindings = resolveLayerBindings(layers, layerSpec)
-	if (!override) return bindings
-	if (!isPdfMimeType(layerSpec.mimeType)) {
-		throw new Error(
-			`Layer "${layerKey}" is not a PDF layer, so the bindings render option does not apply: bindings map ` +
-				'AcroForm field names to Asterdoc paths. A text, HTML or DOCX template names a value as {{fields.x}}.',
-		)
-	}
-	for (const [field, binding] of Object.entries(override)) {
-		if (typeof binding !== 'object' || binding === null) continue
-		const checked = PdfBindingObjectSchema.safeParse(binding)
-		if (checked.success) continue
-		const problems = checked.error.issues.map((issue) => `${issue.path.map(String).join('.') || '(root)'}: ${issue.message}`)
-		throw new Error(`The bindings render option for layer "${layerKey}", binding "${field}", is not a valid binding object: ${problems.join('; ')}`)
-	}
-	return { ...bindings, ...override }
+export function refuseRenderOptions(options: object, allowed: readonly string[], subject: string): void {
+	const unknown = Object.entries(options).filter(([key, value]) => value !== undefined && !allowed.includes(key)).map(([key]) => key)
+	if (unknown.length === 0) return
+	throw new TypeError(
+		`${subject} has no render option ${unknown.map((key) => JSON.stringify(key)).join(', ')}. The options are ${allowed.join(', ')}. A PDF layer fills from the bindings the artifact declares.`,
+	)
 }
 
 /**
@@ -428,8 +411,9 @@ export async function buildRendererLayer(
 
 	const content = await readLayerContent(layerKey, layerSpec, resolver, site)
 
-	const font = layerSpec.kind === 'file' && layerSpec.font && resolver
-		? await readLayerFont(layerKey, layerSpec.font, resolver)
+	const declared = layerSpec.kind === 'file' ? layerSpec.font : undefined
+	const font = typeof declared === 'object' && resolver
+		? await readLayerFont(layerKey, declared, resolver)
 		: undefined
 
 	return {
@@ -440,6 +424,7 @@ export async function buildRendererLayer(
 		...(layerSpec.kind === 'file' && { path: layerSpec.path }),
 		...(bindings && { bindings }),
 		...(font && { font }),
+		...(typeof declared === 'string' && { standardFont: declared }),
 		...(layerSpec.format && { format: layerSpec.format }),
 	}
 }
@@ -449,7 +434,9 @@ async function readLayerFont(
 	font: { path: string; checksum?: string },
 	resolver: Resolver,
 ): Promise<{ content: Uint8Array; path: string }> {
-	const content = await resolver.read(font.path)
+	const content = await resolver.read(font.path).catch((error: unknown) => {
+		throw new LayerReadError(layerKey, font.path, error)
+	})
 	await verifyLayerChecksum(content, font.checksum, layerKey, font.path, 'font')
 	return { content, path: font.path }
 }

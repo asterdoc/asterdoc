@@ -46,7 +46,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'appointment',
   fields: {
     scheduledAt: { type: 'datetime', label: 'Appointment Time' }

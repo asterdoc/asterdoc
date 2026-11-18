@@ -16,7 +16,7 @@ The examples use this form:
 ```typescript
 import { a } from "@asterdoc/sdk";
 
-const lease = a.form({
+const lease = await a.form.load({
   name: "residential-lease",
   fields: {
     propertyAddress: { type: "address", label: "Property address", required: true },
@@ -157,7 +157,7 @@ A refused value also carries `code` and `candidates` when the engine converts it
 ```typescript
 import { a, placeDisplayNames } from "@asterdoc/sdk";
 
-const intake = a.form({
+const intake = await a.form.load({
   name: "intake",
   fields: {
     citizenship: { type: "country", label: "Country of citizenship" },
@@ -199,7 +199,7 @@ const report = draft.validate();
 if (!report.valid) console.error(report.errors, report.rules.errors);
 ```
 
-`validate()` reports value errors, effectively required fields that are missing, and failed error-severity rules. `isValid()` returns `report.valid`. `validateRules()` runs the rules alone.
+`validate()` reports value errors, effectively required fields that are missing, and failed error-severity rules: whether the data matches the artifact. It reads no layer. `isValid()` returns `report.valid`. `validateRules()` runs the rules alone. `renderProblems(layer)` is the render check of one layer: what stops valid data from rendering there (see [pdf.md § Fonts](./pdf.md#fonts)).
 
 Preview a draft with blanks marked before it is complete: `await draft.render({ progressive: { missing: "(missing)" } })` ([rendering.md § Render options](./rendering.md#render-options)).
 
@@ -211,7 +211,7 @@ Preview a draft with blanks marked before it is complete: `await draft.render({ 
 import { runtimeFormFromJSON } from "@asterdoc/sdk";
 
 const saved = JSON.stringify(draft.toJSON());
-const resumed = runtimeFormFromJSON(JSON.parse(saved)); // add { resolver } when the form has file layers
+const resumed = await runtimeFormFromJSON(JSON.parse(saved)); // add { resolver } when the form has file layers
 if (resumed.phase === "draft") {
   const next = resumed.update({ fields: { hasPets: false } }); // a live draft again
 }
@@ -230,8 +230,8 @@ A bundle stores its clock and each member with its kind, phase, and data. `runti
 import { runtimeBundleFromJSON, runtimeContentFromJSON } from "@asterdoc/sdk";
 
 const bundleJson = JSON.parse(storedBundle);
-const resumedBundle = runtimeBundleFromJSON(bundleJson);
-const withFiles = runtimeBundleFromJSON(bundleJson, (member) => runtimeContentFromJSON(member, { resolver }));
+const resumedBundle = await runtimeBundleFromJSON(bundleJson);
+const withFiles = await runtimeBundleFromJSON(bundleJson, async (member) => await runtimeContentFromJSON(member, { resolver }));
 ```
 
 Loading checks each member like `prepare()` does. An undeclared key, a member of the wrong kind, or a member in the wrong phase for the bundle phase throws.
@@ -246,7 +246,7 @@ A sealed form serializes `signatureMap` and `canonicalPdfHash`, not `canonicalPd
 import { a, createAsterdocRuntime, execute, deriveView, sessionPayload, type FormSession } from "@asterdoc/sdk";
 
 const definition = {
-  $schema: "https://schema.asterdoc.com/2026-11-12.json",
+  $schema: "https://schema.asterdoc.com/2026-11-17.json",
   kind: "form",
   name: "intake",
   fields: {
@@ -256,7 +256,7 @@ const definition = {
   parties: { applicant: { label: "Applicant", partyType: "person" } },
 } as const;
 
-const runtime = createAsterdocRuntime(definition);
+const runtime = await createAsterdocRuntime(definition);
 let session: FormSession = {
   formSessionId: "s-1",
   chatId: "c-1",
@@ -276,7 +276,7 @@ view.nextParty;  // { roleId, label } or null
 view.nextAnnex;  // { annexId, label } or null
 view.progress;   // { answered, requiredRemaining, optionalRemaining, deferredCount, ... }
 
-const draft = a.form(definition).fill(sessionPayload(view.projected, runtime)); // { fields, parties, annexes } answered so far
+const draft = (await a.form.load(definition)).fill(sessionPayload(view.projected, runtime)); // { fields, parties, annexes } answered so far
 ```
 
 Only one of `next`, `nextParty`, and `nextAnnex` is set at a time. Continue until `view.phase === "ready"`.
@@ -284,7 +284,7 @@ Only one of `next`, `nextParty`, and `nextAnnex` is set at a time. Continue unti
 | Part | Detail |
 |------|--------|
 | Commands | `start`, `prefill` (`values` by field path, `lockedPaths?`; each value checked against its field schema; visibility is not checked), `answer` and `revise` (`fieldPath`, `value`, `source`), `clear`, `defer`/`undefer`, `skip`/`unskip`, `answerParty` (`roleId`, `index?`, `value`; indices in order from 0 for a role with `max` above 1), `answerAnnex` (`annexId`, `value`), `clearAnnex`, `present`, `validate`, `render`, `abandon` |
-| Coercion | Only inputs with one reading: `"36"` to 36, yes/no to a boolean, structured list and composite values (JSON strings are not parsed), `"25"` or `"25 EUR"` to money (the field's `currency` when none is given; never an invented one). Dates are not parsed: use `YYYY-MM-DD`. A phone number needs a leading `+`, unless `createAsterdocRuntime(definition, { defaultCallingCode: "+1" })` supplies one. |
+| Coercion | Only inputs with one reading: `"36"` to 36, yes/no to a boolean, structured list and composite values (JSON strings are not parsed), `"25"` or `"25 EUR"` to money (the field's `currency` when none is given; never an invented one). Dates are not parsed: use `YYYY-MM-DD`. A phone number needs a leading `+`, unless `await createAsterdocRuntime(definition, { defaultCallingCode: "+1" })` supplies one. |
 | Actor | `{ kind: "user" }`, `{ kind: "agent", model }`, `{ kind: "system", reason }` |
 | Error codes | `field-not-found`, `field-not-visible`, `field-locked`, `invalid-value`, `stale-state`, `party-not-found`, `party-index-out-of-order`, `annex-not-found`, `session-not-active`, `session-already-started`, and others on `CommandErrorCode` |
 | Options | `execute(..., { expectedEventCount, now })`: `expectedEventCount` rejects with `stale-state` when another writer appended first |

@@ -3,18 +3,11 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, expectTypeOf, test } from 'vitest'
 import { a, type ChecklistBuilderInterface, type FormBuilderInterface } from '@/artifacts'
-import { validate } from '@/index'
+import { validate, type RenderOptions, type RuntimeFormRenderOptions } from '@/index'
 import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 import { createLayerRenderer } from '@asterdoc/render'
 import { inspectAcroFormFields } from '@asterdoc/render/pdf'
 
-/**
- * Bindings exist only on PDF layers: they map AcroForm field names to Asterdoc
- * paths. A text or DOCX template names a value as `{{fields.x}}`, and the
- * `bindings` render option applies to PDF layers only.
- *
- * `one-field-form.pdf` holds one text field, `name`.
- */
 const fixtures = join(fileURLToPath(new URL('.', import.meta.url)), 'fixtures')
 const template = new Uint8Array(readFileSync(join(fixtures, 'one-field-form.pdf')))
 const resolver = createMemoryResolver({ contents: { 'form.pdf': template } })
@@ -36,32 +29,36 @@ const definition = {
 }
 
 const data = { fields: { title: 'Lease', other: 'Addendum' } }
-const filled = () => a.form(definition, { resolver }).fill(data)
+const filled = async () => (await a.form.load(definition, { resolver })).fill(data)
 const boxValue = async (bytes: unknown) => (await inspectAcroFormFields(bytes as Uint8Array))
 	.find((field) => field.name === 'name')?.value
 
-describe('the bindings render option', () => {
+describe('the bindings of a form layer', () => {
 	test('a PDF layer fills from its own bindings', async () => {
-		expect(await boxValue(await filled().render({ renderer: createLayerRenderer() }))).toBe('Lease')
-		expect(await boxValue(await a.form(definition, { resolver }).render({ renderer: createLayerRenderer(), data }))).toBe('Lease')
+		expect(await boxValue(await (await filled()).render({ renderer: createLayerRenderer() }))).toBe('Lease')
+		expect(await boxValue(await (await a.form.load(definition, { resolver })).render({ renderer: createLayerRenderer(), data }))).toBe('Lease')
 	})
 
-	test('lays render-time bindings over a PDF layer\'s own', async () => {
+	test('come only from the layer: render refuses a bindings option, so the render check and the render read the same bindings', async () => {
 		const bindings = { name: 'fields.other' }
-		expect(await boxValue(await filled().render({ renderer: createLayerRenderer(), bindings }))).toBe('Addendum')
-		expect(await boxValue(await a.form(definition, { resolver }).render({ renderer: createLayerRenderer(), data, bindings }))).toBe('Addendum')
+		const refusal = /A form has no render option "bindings"/
+		await expect((async () => (await filled()).render({ renderer: createLayerRenderer(), bindings } as never))()).rejects.toThrow(refusal)
+		await expect((await a.form.load(definition, { resolver })).render({ renderer: createLayerRenderer(), data, bindings } as never))
+			.rejects.toThrow(/A form definition has no render option "bindings"/)
 	})
 
 	test('renders a text layer through {{fields.x}}', async () => {
-		expect(await filled().render({ renderer: createLayerRenderer(), layer: 'markdown' })).toBe('Title: Lease')
+		expect(await (await filled()).render({ renderer: createLayerRenderer(), layer: 'markdown' })).toBe('Title: Lease')
 	})
 
-	test('is refused for a layer that is not a PDF', async () => {
-		const bindings = { heading: 'fields.title' }
-		const refusal = /Layer "markdown" is not a PDF layer, so the bindings render option does not apply/
-		await expect(filled().render({ renderer: createLayerRenderer(), layer: 'markdown', bindings })).rejects.toThrow(refusal)
-		await expect(a.form(definition, { resolver }).render({ renderer: createLayerRenderer(), layer: 'markdown', data, bindings }))
-			.rejects.toThrow(refusal)
+	test('take an option it does not have whose value is undefined as absent', async () => {
+		expect(await boxValue(await (await filled()).render({ renderer: createLayerRenderer(), signal: undefined } as never))).toBe('Lease')
+		await expect((async () => (await filled()).render({ renderer: createLayerRenderer(), signal: null } as never))()).rejects.toThrow(/A form has no render option "signal"/)
+	})
+
+	test('the render options do not name bindings', () => {
+		expectTypeOf<RuntimeFormRenderOptions>().not.toHaveProperty('bindings')
+		expectTypeOf<RenderOptions>().not.toHaveProperty('bindings')
 	})
 })
 

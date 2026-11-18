@@ -9,8 +9,8 @@ describe('Bundles Guide', () => {
   // Step 1: Define the Artifacts
   // ============================================================================
 
-  describe('object pattern artifacts', () => {
-    const lease = a.form({
+  describe('object pattern artifacts', async () => {
+    const lease = await a.form.load({
       name: 'lease-agreement',
       version: '1.0.0',
       title: 'Residential Lease Agreement',
@@ -167,8 +167,8 @@ describe('Bundles Guide', () => {
   // Step 5: Save the Artifact
   // ============================================================================
 
-  describe('serialization', () => {
-    const lease = a.form({
+  describe('serialization', async () => {
+    const lease = await a.form.load({
       name: 'lease-agreement',
       version: '1.0.0',
       title: 'Residential Lease Agreement',
@@ -206,8 +206,8 @@ describe('Bundles Guide', () => {
   // Content Types
   // ============================================================================
 
-  describe('content types', () => {
-    const someForm = a.form({
+  describe('content types', async () => {
+    const someForm = await a.form.load({
       name: 'some-form',
       version: '1.0.0',
       title: 'Some Form',

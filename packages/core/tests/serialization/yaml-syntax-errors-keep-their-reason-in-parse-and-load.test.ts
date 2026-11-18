@@ -43,10 +43,10 @@ describe('A YAML syntax error keeps its reason in parse and load', () => {
 		expect(chain(err)).toContain(yamlReason)
 	})
 
-	test('load keeps the YAML reason', () => {
+	test('load keeps the YAML reason', async () => {
 		let err: unknown
 		try {
-			load(bad)
+			await load(bad)
 		} catch (e) {
 			err = e
 		}

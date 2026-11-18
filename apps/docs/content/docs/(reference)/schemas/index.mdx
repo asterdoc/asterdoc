@@ -47,13 +47,13 @@ An earlier version that a migration step cannot convert without loss fails with 
 
 A later SDK can load, validate and extract an artifact written for an earlier version. Renders are not promised to be byte-identical across releases; the durable record of a filing is its sealed canonical PDF and hash.
 
-In the SDK, `load()` and `safeLoad()` read file content and apply these rules; an error is a `SchemaVersionError` with a `code` of `missing-version`, `newer-version`, `unknown-version`, `not-upgradable`, `no-migration-path`, or, with `strictSchema`, `outdated-version`. Every other way to create an artifact takes an object that may have been built in memory, so it accepts one without `$schema`, and applies the same rules to a `$schema` it does carry: `loadFromObject()`, `a.form()`, `a.document()`, `a.checklist()` and `a.bundle()` with an object, their `.from()` and `.safeFrom()`, and the builder's `.from()`. Each takes `strictSchema` in its options, a bundle's included. An instance loaded from an earlier version names it in `migratedFrom`, and so does each runtime filled or prepared from it: a runtime's `toJSON()` writes the definition as stored, so a restore upgrades it again. `validate()` validates the upgraded artifact, and reports a version error as an issue at `$schema`. A bundle applies the rules to each inline part too, and the error names the part. To rewrite a file at the current version, use [`migrate`](/cli/commands/migrate).
+In the SDK, `load()` and `safeLoad()` read file content and apply these rules; an error is a `SchemaVersionError` with a `code` of `missing-version`, `newer-version`, `unknown-version`, `not-upgradable`, `no-migration-path`, or, with `strictSchema`, `outdated-version`. Every other way to create an artifact takes an object that may have been built in memory, so it accepts one without `$schema`, and applies the same rules to a `$schema` it does carry: `load()` and `safeLoad()` with an object, `a.form.load()` and `a.form.safeLoad()`, `a.document()`, `a.checklist()` and `a.bundle()` with an object, their `.from()` and `.safeFrom()`, and the builder's `.from()`. Each takes `strictSchema` in its options, a bundle's included. An instance loaded from an earlier version names it in `migratedFrom`, and so does each runtime filled or prepared from it: a runtime's `toJSON()` writes the definition as stored, so a restore upgrades it again. `validate()` validates the upgraded artifact, and reports a version error as an issue at `$schema`. A bundle applies the rules to each inline part too, and the error names the part. To rewrite a file at the current version, use [`migrate`](/cli/commands/migrate).
 
 ```ts
 import { load, SchemaVersionError } from '@asterdoc/sdk'
 
 try {
-  const artifact = load(fileContents)
+  const artifact = await load(fileContents)
   if (artifact.migratedFrom) console.log(`upgraded from ${artifact.migratedFrom}`)
 } catch (error) {
   if (error instanceof SchemaVersionError) console.error(error.code, error.message)
@@ -68,6 +68,7 @@ try {
 | `2026-11-06` | Adds the optional `format.date` setting to PDF layers. Only `$schema` changes. |
 | `2026-11-10` | Adds the optional value-formatting settings on layers, bindings and fields. Only `$schema` changes. |
 | `2026-11-12` | Adds the template binding, `{ "template": "..." }`, which prints several values in one PDF field, and removes the comma join (`"city, state"`). The step from `2026-11-10` turns each joined binding into the template that prints the same text: its values joined with `, `, empty values skipped. A binding object keeps its `format`. `asterdoc migrate` rewrites a file the same way. |
+| `2026-11-17` | Adds `countryCode` to phone fields: the country calling code every number must have, such as `"1"`. A PDF binding to the `areaCode` or `subscriberNumber` part needs `"countryCode": "1"`, and a `phone.region` format that refuses other plans needs the region's code. The step from `2026-11-12` adds nothing: an artifact that binds these on a phone field without `countryCode` fails `validate`, and `asterdoc migrate` names the field and the code to add. |
 
 ## Hosted server
 

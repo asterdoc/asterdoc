@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { pdfFiles, pdfFilesWith, PDF_FILES_URL } from './helpers/pdf-files'
 import { ASTERDOC_SCHEMA_URL } from '@asterdoc/core'
 import { FillStateOutputSchema, executeGetFillState } from '../src'
 
@@ -207,11 +208,11 @@ describe('get_fill_state targets', () => {
 			layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: 'form.pdf', bindings: { family: 'parties.client.lastName', given: 'parties.client.firstName' } } },
 			defaultLayer: 'pdf',
 		}
-		const nameOnly = await executeGetFillState({ source: 'artifact', artifact: splitName, data: { fields: {}, parties: { client: { name: 'Elena Quintero' } } } })
+		const nameOnly = await executeGetFillState({ source: 'artifact', artifact: splitName, base_url: PDF_FILES_URL, data: { fields: {}, parties: { client: { name: 'Elena Quintero' } } } }, pdfFilesWith(['family', 'given']))
 		expect(FillStateOutputSchema.parse(nameOnly).unprinted_names).toEqual([
 			{ path: 'parties.client', message: 'The "pdf" layer prints this party\'s name from lastName and firstName, and the party gives none of them. Its name would not print. Give them next to name.' },
 		])
-		const withParts = await executeGetFillState({ source: 'artifact', artifact: splitName, data: { fields: {}, parties: { client: { name: 'Elena Quintero', firstName: 'Elena', lastName: 'Quintero' } } } })
+		const withParts = await executeGetFillState({ source: 'artifact', artifact: splitName, base_url: PDF_FILES_URL, data: { fields: {}, parties: { client: { name: 'Elena Quintero', firstName: 'Elena', lastName: 'Quintero' } } } }, pdfFilesWith(['family', 'given']))
 		expect(withParts.errors).toBeUndefined()
 		expect('unprinted_names' in withParts).toBe(false)
 	})

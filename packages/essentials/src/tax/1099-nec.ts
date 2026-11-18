@@ -1211,9 +1211,13 @@ const resolver = createMemoryResolver({ contents });
  *
  * An IRS information return filed by a payer to report nonemployee compensation, excess golden parachute payments, and any federal or state tax withheld for a recipient over a calendar year. Copy A is filed with the IRS, Copy 1 with the state tax department, and Copies B and 2 are furnished to the recipient.
  */
-export const f1099NEC = Object.assign(a.form(schema, { resolver }), {
+export const f1099NEC = {
   /** The raw form spec, exactly as released. */
   spec: schema,
-});
+  /** Reads the form's bundled layer files, for a host that loads the spec itself. */
+  resolver,
+  /** Load the form on its bundled files. */
+  load: () => a.form.load(schema, { resolver }),
+};
 
 export default f1099NEC;

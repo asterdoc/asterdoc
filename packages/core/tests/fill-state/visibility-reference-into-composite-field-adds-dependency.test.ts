@@ -8,7 +8,7 @@ import { describe, test, expect } from 'vitest'
 import { form } from '@/artifacts'
 import { buildFieldDependencyGraph } from '@/fill-state/dependency-graph'
 
-const f = form()
+const f = await form.load(form()
 	.name('c')
 	.version('1.0.0')
 	.title('C')
@@ -18,7 +18,7 @@ const f = form()
 		flag: { type: 'boolean', label: 'Flag', required: true },
 		other: { type: 'text', label: 'Other', required: true, visible: 'fields.flag == true' },
 	} as never)
-	.build()
+	.build())
 
 describe('A visibility reference into a composite field adds a dependency edge', () => {
 	test('graph: caId depends on the addr node', () => {

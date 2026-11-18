@@ -35,8 +35,8 @@ describe('prepareSeal', () => {
 		},
 	}
 
-	const draft = () =>
-		form()
+	const draft = async () =>
+		await (await form.load(form()
 			.name('prepare-contract')
 			.version('1.0.0')
 			.title('Prepare Contract')
@@ -56,7 +56,7 @@ describe('prepareSeal', () => {
 				signatures: SLOTS,
 			})
 			.defaultLayer('md')
-			.build()
+			.build()))
 			.fill({
 				fields: { amount: 10 },
 				parties: { client: { id: 'client-0', name: 'Cleo Client' } },
@@ -65,7 +65,7 @@ describe('prepareSeal', () => {
 			.addSignatory('client', 'client-0', { signerId: 'client-signer' })
 
 	test('returns the clean PDF, resolved map, and per-field provenance', async () => {
-		const prep = await draft().prepareSeal({ adapter: converter })
+		const prep = await (await draft()).prepareSeal({ adapter: converter })
 
 		expect(prep.signatureMap.map((field) => field.id)).toEqual([
 			'client-sig',
@@ -89,25 +89,25 @@ describe('prepareSeal', () => {
 			rendered.push(String(request.document.content))
 			return converter.convert(request)
 		} }
-		const d = draft()
-		const prepared = await d.prepareSeal({ adapter, formatter })
-		const sealed = await d.seal({ adapter, formatter })
+		const d = await draft()
+		const prepared = await (await d).prepareSeal({ adapter, formatter })
+		const sealed = await (await d).seal({ adapter, formatter })
 		expect(rendered.length).toBeGreaterThanOrEqual(4)
 		expect(rendered.every((text) => text.includes('CUSTOM-AMOUNT'))).toBe(true)
 		expect(sealed.signatureMap).toEqual(prepared.signatureMap)
 	})
 
 	test('does not change phase: the draft can still be edited and sealed', async () => {
-		const d = draft()
-		await d.prepareSeal({ adapter: converter })
-		const sealed = await d.seal({ adapter: converter })
+		const d = await draft()
+		await (await d).prepareSeal({ adapter: converter })
+		const sealed = await (await d).seal({ adapter: converter })
 		expect(sealed.phase).toBe('signable')
 	})
 
 	test('seal() canonicalizes exactly the PDF prepareSeal returned', async () => {
-		const d = draft()
-		const prep = await d.prepareSeal({ adapter: converter })
-		const sealed = await d.seal({ adapter: converter })
+		const d = await draft()
+		const prep = await (await d).prepareSeal({ adapter: converter })
+		const sealed = await (await d).seal({ adapter: converter })
 
 		const flattened = await flattenPdf(prep.pdf)
 		const digest = await globalThis.crypto.subtle.digest('SHA-256', Uint8Array.from(flattened).buffer)
@@ -118,7 +118,7 @@ describe('prepareSeal', () => {
 	})
 
 	test('reports skipped unfilled-party slots as warnings', async () => {
-		const prep = await form()
+		const prep = await (await form.load(form()
 			.name('multi')
 			.version('1.0.0')
 			.title('Multi')
@@ -137,7 +137,7 @@ describe('prepareSeal', () => {
 				},
 			})
 			.defaultLayer('md')
-			.build()
+			.build()))
 			.fill({ fields: { amount: 1 }, parties: { client: { id: 'client-0', name: 'C' } } })
 			.addSigner('s', { person: { name: 'C' } })
 			.addSignatory('client', 'client-0', { signerId: 's' })
@@ -149,7 +149,7 @@ describe('prepareSeal', () => {
 
 	test('resolves anchor slots through the locator and reports anchor provenance', async () => {
 		const contractPdf = fixture('large-contract.pdf')
-		const prep = await form()
+		const prep = await (await form.load(form()
 			.name('anchored')
 			.version('1.0.0')
 			.title('Anchored')
@@ -167,7 +167,7 @@ describe('prepareSeal', () => {
 				},
 			})
 			.defaultLayer('md')
-			.build()
+			.build()))
 			.fill({ fields: { amount: 1 }, parties: { client: { id: 'client-0', name: 'C' } } })
 			.addSigner('s', { person: { name: 'C' } })
 			.addSignatory('client', 'client-0', { signerId: 's' })
@@ -184,7 +184,7 @@ describe('prepareSeal', () => {
 	})
 
 	test('requires a slot-declaring layer', async () => {
-		const unslotted = form()
+		const unslotted = await (await form.load(form()
 			.name('unslotted')
 			.version('1.0.0')
 			.title('Unslotted')
@@ -192,7 +192,7 @@ describe('prepareSeal', () => {
 			.parties({ client: { label: 'Client', partyType: 'person' } })
 			.inlineLayer('md', { mimeType: 'text/markdown', text: 'Sign here.' })
 			.defaultLayer('md')
-			.build()
+			.build()))
 			.fill({ fields: { amount: 1 }, parties: { client: { id: 'client-0', name: 'C' } } })
 
 		await expect(unslotted.prepareSeal({ adapter: converter })).rejects.toThrow(/signature slots/)

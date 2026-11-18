@@ -82,7 +82,7 @@ Primitives are commonly used when filling form data:
 ```ts
 import { a, money, address } from '@asterdoc/core'
 
-const form = a.form({
+const form = await a.form.load({
   name: 'invoice',
   fields: {
     total: { type: 'money', label: 'Total Amount' },

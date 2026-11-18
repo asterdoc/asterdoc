@@ -62,8 +62,8 @@ const party = (roleId: string, name: string, index?: number): Command => ({
 	source: "user",
 });
 
-describe("answerParty", () => {
-	const runtime = createAsterdocRuntime(
+describe("answerParty", async () => {
+	const runtime = await createAsterdocRuntime(
 		artifact({
 			parties: {
 				signer: { label: "Signer", partyType: "person" },
@@ -148,8 +148,8 @@ describe("answerParty", () => {
 	});
 });
 
-describe("annexes", () => {
-	const runtime = createAsterdocRuntime(
+describe("annexes", async () => {
+	const runtime = await createAsterdocRuntime(
 		artifact({
 			fields: { name: { type: "text", required: true } },
 			annexes: {
@@ -214,8 +214,8 @@ describe("annexes", () => {
 	});
 });
 
-describe("progress", () => {
-	const runtime = createAsterdocRuntime(
+describe("progress", async () => {
+	const runtime = await createAsterdocRuntime(
 		artifact({
 			fields: {
 				name: { type: "text", required: true },
@@ -246,8 +246,8 @@ describe("progress", () => {
 	});
 });
 
-describe("fields", () => {
-	const runtime = createAsterdocRuntime(
+describe("fields", async () => {
+	const runtime = await createAsterdocRuntime(
 		artifact({
 			fields: {
 				age: { type: "number", required: true },

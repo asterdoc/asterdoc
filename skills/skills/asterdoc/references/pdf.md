@@ -49,7 +49,7 @@ Path rules:
 |------|---------|-------|
 | Field id | `businessName` | Write the bare id, as the essentials do. |
 | Nested member | `mailingAddress.line1` | Fieldset members and composite parts. |
-| List item | `dependents[0].name` or `dependents.0.name` | More list items than bound indices fails the render: `PDF bindings for "dependents" support 2 list items, but received 3`. |
+| List item | `dependents[0].name` or `dependents.0.name` | Bind every row from the first and the same members in each row, no row at or past `maxItems` (its bindings never fill), and give the list `maxItems` no larger than the rows bound (the fewest across PDF layers, and for a nested list the fewest inner rows under any outer row). Validation refuses a list that can hold more items. |
 | Party, `max: 1` | `parties.taxpayer.name` | An index is refused. |
 | Party, `max > 1` | `parties.tenant[0].name` | The index is required and must be below `max`. |
 | Computed value | `defs.totalDue` | Fill only. |
@@ -89,8 +89,8 @@ A binding value can also be an object. `path` is the string the binding would be
   "fields": {
     "signedOn": { "type": "date" },
     "dob": { "type": "date" },
-    "phone": { "type": "phone" },
-    "fee": { "type": "money", "currency": "USD" },
+    "phone": { "type": "phone", "countryCode": "1" },
+    "fee": { "type": "money", "currency": "USD", "min": 0 },
     "ssn": { "type": "text", "mask": "###-##-####", "sensitive": true }
   },
   "layers": {
@@ -125,7 +125,12 @@ For June 15, 1990, `SignedOn` prints `06/15/1990` and `FiledOn` `1990-06-15`. `S
 | `money` | `units`, `cents` |
 
 - A part is never formatted as a whole value. Money rounds half away from zero to two decimals, then splits: `1.999` prints `2` and `00`.
-- At render, a negative amount, a currency without two minor digits, and `areaCode` or `subscriberNumber` on a number outside +1 fail with `unsupported_part`. Under a `phone.region`, every phone part but `extension` refuses a number from another plan with `phone_region_mismatch`. Phone parts need the phone provider, which the default formatter has ([formatting.md § Lookup providers](./formatting.md#lookup-providers)).
+- The field must hold only values the part can print, so the artifact guarantees every valid value has a part to print:
+  - `areaCode` and `subscriberNumber` need a phone field with `"countryCode": "1"`. Fill then refuses a number of another plan.
+  - Under a `phone.region`, every phone part but `extension`, and a whole phone under the `national` or `digits` style, need the field's `countryCode` to be the region's (`"1"` for `US`).
+  - `units` and `cents` need a money field with a `currency` of two minor digits and `"min": 0`.
+  - Validation refuses a binding or a placeholder that breaks one of these, naming the field and what to add. Render refuses the layer too, before any value.
+- Phone parts need the phone provider, which the default formatter has ([formatting.md § Lookup providers](./formatting.md#lookup-providers)).
 - Validation refuses a part the kind does not have (`Binding "dob" prints the part "cents" of fields.dob, a date value, whose parts are "year", "month", "day".`), a `format` or `part` on a split part such as `ssn:2`, a `format` on an option test such as `status:married`, and a `part` on a template (write it on the placeholder).
 - Read-back joins the parts only when every part the value needs is bound: a date's year, month and day; money's units and cents, in the field's `currency`; a phone's country code and national number, or a +1 number's area code and subscriber number. Otherwise the path is `not_recoverable`. Parts that disagree make it `unparseable`.
 - A layer that reuses bindings through `bindingsFrom` takes each binding with its `format` and `part`, but not the other layer's own `format`.
@@ -280,28 +285,35 @@ Real messages name the layer, PDF field, path, and limit:
 
 Fix each by giving the field a `maxLength` its box can hold (use `maxLen` from `inspect`, or the box width), or a `pattern`. Use a multiline PDF field for free text.
 
-At fill time the renderer honors each field's font size (auto when 0), alignment, color, comb boxes, and multiline wrapping. A value that does not fit shrinks to 6 points. Past that, the render fails with `PdfFieldFillError` (`field`, `reason`: `overflow` or `comb-length`, `limit`).
+At fill time the renderer honors each field's font size (auto when 0), alignment, color, comb boxes, and multiline wrapping. A value that does not fit shrinks to 6 points. Past that, the render check reports it, and the render refuses with `RenderRefusedError` before drawing.
 
 ## Fonts
 
-Each value uses the first font that can draw all of it: a font passed at render time, then the layer's `font`, then the form's own embedded font for the field, then Helvetica for Latin-1 text. Latin-1 data needs no font. For names in Latin Extended, Greek, Cyrillic, or CJK scripts, declare a TrueType font (`.ttf`, TrueType outlines). The resolver reads it like the PDF, and it is embedded in the output.
+Values draw in Helvetica, a standard PDF font every viewer has, with the Windows Latin 1 characters, whatever font the PDF field itself names. Nothing is embedded. The binding's `font`, else the layer's `font`, can choose Courier (monospace) instead. Choose `"Helvetica"` or `"Courier"` (monospace) in the artifact, never in the data: the render check measures with it.
 
 ```json schema=layer
 "path": "w-9.pdf",
-"font": { "path": "fonts/NotoSans-Regular.ttf" }
+"font": "Courier"
 ```
 
-Only PDF layers declare a `font`. A character no font can draw fails with `PdfFieldFillError` (`reason: "missing-glyph"`, `character`). The error names the PDF field (`field`) and the artifact paths it prints (`paths`):
+A binding object takes `font` too: `{ "path": "fields.ssn", "font": "Courier" }`.
+
+A layer may instead declare a TrueType `font` (`.ttf`, TrueType outlines) as a design choice: each character draws in it when it has the glyph, else in the field's standard font. It is subset to the glyphs drawn. Only PDF layers declare a `font`.
+
+```json schema=layer
+"path": "w-9.pdf",
+"font": { "path": "fonts/Corporate-Regular.ttf" }
+```
+
+`draft.validate()` answers whether the data matches the artifact and reads no layer. Whether valid data renders on a PDF layer is its render check, `draft.renderProblems(layer)`: a character the field's font cannot draw (Chinese, Cyrillic, Greek, Polish ł, Czech č, Turkish ğ, Vietnamese ễ, and so on), a value too long for its box, or more characters than a comb field has boxes. Each problem has `code: "unprintable"`, the `layer`, the `pdfField` and the path:
 
 ```text
-Cannot fill PDF field "form1[0].Page1[0].NativeName[0]" with fields.nameInNativeAlphabet: no available font can draw "王" (U+738B). Declare a font that has this character on the PDF layer of the artifact: "font": { "path": "<file>.ttf" }. The SDK can also take a font for one render: pdfRenderer({ font }).
+Layer "pdf": Cannot fill PDF field "form1[0].Page1[0].NativeName[0]" with fields.nameInNativeAlphabet: no available font can draw "Հ" (U+0540). The field draws in Helvetica, a standard PDF font with the Windows Latin 1 characters only. To print this character, declare a TrueType font that has it on the PDF layer of the artifact: "font": { "path": "<file>.ttf" }.
 ```
 
-Correct it with a `font` on the PDF layer that has the character. `asterdoc render` has no font option; only the SDK can pass a font at render time.
+`render()`, `prepareSeal()` and `seal()` run the same check first and throw `RenderRefusedError` with the same `problems`, before drawing. `asterdoc data validate <form> <data> --render-check <layer>` runs it from the CLI, and `asterdoc render` prints it when it refuses. `asterdoc validate` runs it on each test in `tests` whose data is valid and names the layer, the test, the PDF field and the path. When a form takes names in other scripts, write a test with such a name.
 
-`asterdoc validate` finds this before the first render: it prints the values of each test in `tests` with the fonts of each PDF layer, and each value they cannot draw is an error that names the layer, the test, the PDF field and the path. When a form takes names in other scripts, write a test with such a name.
-
-Scripts that need shaping (Arabic, Hebrew, Devanagari, Thai, and others) fail with `reason: "unsupported-script"`, whatever the font. For those documents, compose the output with the `asterdoc-react` skill. An unreadable or non-embeddable font fails with `PdfFontError`.
+Scripts that need shaping (Arabic, Hebrew, Devanagari, Thai, and others) are refused by the render check with `unsupported-script`, whatever the font. For those documents, compose the output with the `asterdoc-react` skill. An unreadable or non-embeddable font fails with `PdfFontError`.
 
 ## Money
 

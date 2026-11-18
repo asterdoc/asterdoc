@@ -150,10 +150,10 @@ describe('ChecklistInstance', () => {
       expect(yaml).toContain('kind: checklist')
     })
 
-    test('round-trips correctly', () => {
+    test('round-trips correctly', async () => {
       const instance = createChecklistWithItems()
       const yaml = instance.toYAML()
-      const parsed = load<'checklist'>(yaml)
+      const parsed = await load<'checklist'>(yaml)
       expect(parsed.name).toBe(instance.name)
     })
   })

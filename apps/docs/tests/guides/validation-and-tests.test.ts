@@ -5,7 +5,7 @@ import { describe, test, expect } from 'vitest'
 import { a, validate } from '@asterdoc/sdk'
 
 const definition = {
-  $schema: 'https://schema.asterdoc.com/2026-11-12.json',
+  $schema: 'https://schema.asterdoc.com/2026-11-17.json',
   kind: 'form' as const,
   name: 'direct-deposit',
   version: '1.0.0',
@@ -34,7 +34,7 @@ const definition = {
   ],
 }
 
-const form = a.form(definition)
+const form = await a.form.load(definition)
 const draft = form.fill({ fields: { routingNumber: '123456789', accountNumber: '12', card: '4111111111111112' } })
 
 describe('Rules and test cases guide', () => {
@@ -50,8 +50,8 @@ describe('Rules and test cases guide', () => {
       })
     })
 
-    test('a list value prints at most ten elements', () => {
-      const listed = a.form({
+    test('a list value prints at most ten elements', async () => {
+      const listed = await a.form.load({
         name: 'listed',
         fields: { codes: { type: 'list', label: 'Codes', item: { type: 'text', label: 'Code' } } },
         rules: { few: { expr: 'count(fields.codes) <= 3', message: 'Too many codes' } },
@@ -88,8 +88,8 @@ describe('Rules and test cases guide', () => {
       expect(draft.validate({ explain: { raw: true } }).rules.errors[1]?.explanation).toEqual({ values: [{ path: 'fields.accountNumber', value: '"12"' }] })
     })
 
-    test('an identification field is sensitive unless it opts out', () => {
-      const ids = a.form({
+    test('an identification field is sensitive unless it opts out', async () => {
+      const ids = await a.form.load({
         name: 'ids',
         fields: {
           passport: { type: 'identification', label: 'Passport' },
@@ -106,7 +106,7 @@ describe('Rules and test cases guide', () => {
     })
 
     test('rendered output prints the value', async () => {
-      const shown = a.form({ ...definition, layers: { summary: { kind: 'inline', mimeType: 'text/plain', text: '{{ fields.accountNumber }}' } } })
+      const shown = await a.form.load({ ...definition, layers: { summary: { kind: 'inline', mimeType: 'text/plain', text: '{{ fields.accountNumber }}' } } })
       expect(await shown.fill({ fields: { accountNumber: '00001234' } }).render({ layer: 'summary' })).toBe('00001234')
     })
   })
@@ -126,15 +126,15 @@ describe('Rules and test cases guide', () => {
       })
     })
 
-    test('a case whose outcome differs from expect fails', () => {
-      const wrong = a.form({ ...definition, tests: [{ ...definition.tests[1]!, expect: { valid: true } }] })
+    test('a case whose outcome differs from expect fails', async () => {
+      const wrong = await a.form.load({ ...definition, tests: [{ ...definition.tests[1]!, expect: { valid: true } }] })
       const report = wrong.runTests()
       expect(report.passed).toBe(false)
       expect(report.results[0]?.passed).toBe(false)
     })
 
-    test('asOf makes a rule that reads today() deterministic', () => {
-      const dated = a.form({
+    test('asOf makes a rule that reads today() deterministic', async () => {
+      const dated = await a.form.load({
         name: 'dated',
         fields: { startDate: { type: 'date', label: 'Start date' } },
         rules: { startsInFuture: { expr: 'fields.startDate > today()', message: 'Start in the future' } },

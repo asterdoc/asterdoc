@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import { form } from '@/artifacts'
 
-const lease = () =>
-	form({
+const lease = async () =>
+	await form.load({
 		kind: 'form',
 		name: 'lease',
 		version: '1.0.0',
@@ -16,24 +16,24 @@ const lease = () =>
 		},
 	} as any)
 
-const errorsOf = (data: Record<string, unknown>) =>
-	lease()
+const errorsOf = async (data: Record<string, unknown>) =>
+	(await lease())
 		.fill(data as never)
 		.validate()
 		.errors.map((error) => [error.field, error.message])
 
 describe('readiness of a draft', () => {
-	test('names every missing party and every missing field in one result', () => {
-		expect(errorsOf({ fields: { note: 'Ground floor' } })).toEqual([
+	test('names every missing party and every missing field in one result', async () => {
+		expect(await errorsOf({ fields: { note: 'Ground floor' } })).toEqual([
 			['fields.rent', 'Missing required field: fields.rent'],
 			['parties.tenant', 'Role "tenant" requires at least 1 party(ies)'],
 			['parties.landlord', 'Role "landlord" requires at least 1 party(ies)'],
 		])
 	})
 
-	test('names only what is still missing as values arrive, and nothing when the data is complete', () => {
+	test('names only what is still missing as values arrive, and nothing when the data is complete', async () => {
 		const tenant = { name: 'Dana Ortiz' }
-		expect(errorsOf({ fields: { rent: 1200 }, parties: { tenant } })).toEqual([['parties.landlord', 'Role "landlord" requires at least 1 party(ies)']])
-		expect(errorsOf({ fields: { rent: 1200 }, parties: { tenant, landlord: { name: 'Sam Reyes' } } })).toEqual([])
+		expect(await errorsOf({ fields: { rent: 1200 }, parties: { tenant } })).toEqual([['parties.landlord', 'Role "landlord" requires at least 1 party(ies)']])
+		expect(await errorsOf({ fields: { rent: 1200 }, parties: { tenant, landlord: { name: 'Sam Reyes' } } })).toEqual([])
 	})
 })

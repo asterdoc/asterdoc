@@ -58,8 +58,11 @@ const filledPdf = [
 	'%%EOF',
 	'',
 ].join('\n')
+const templateFiles = { fetch: (async () => new Response(new TextEncoder().encode(filledPdf))) as typeof globalThis.fetch }
+
 const extractInput = {
 	source: 'artifact' as const,
+	base_url: 'https://files.asterdoc.dev/intake/',
 	artifact: {
 		kind: 'form',
 		name: 'intake',
@@ -102,10 +105,10 @@ describe('@asterdoc/mastra', () => {
 	})
 
 	it('reads a filled PDF through the extract tool with the shared result', async () => {
-		const result = await execute(extract(), extractInput)
+		const result = await execute(extract(templateFiles), extractInput)
 
 		expect(result).toMatchObject({ success: true, layer: 'pdf', data: { fields: { name: 'Ada Lovelace' } } })
-		expect(result).toEqual(await executeExtract(extractInput))
+		expect(result).toEqual(await executeExtract(extractInput, templateFiles))
 	})
 
 	it('executes registry, validation, draft, and rendering operations through Mastra', async () => {

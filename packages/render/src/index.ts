@@ -6,7 +6,7 @@ import type {
   RenderRequest,
 } from '@asterdoc/types'
 import type { DocxSignatureOptions } from './docx/signatures'
-import type { PdfFont } from './pdf/drawing-fonts'
+
 import type { TextSignatureOptions } from './text/signatures'
 import type { TemplateExpressionOptions } from './template/context'
 
@@ -20,13 +20,16 @@ export {
   fieldDefinition,
   isOptionTest,
   joinedBindingTemplate,
+  layerPrintProblems,
   parseBinding,
   parseBindings,
   PdfBindingKeyError,
   PdfBindingSyntaxError,
+  PdfPrintRuleError,
   resolveLayerBindings,
   splitPartIndex,
   type LayerBindingsSpec,
+  type LayerPrintProblem,
   type ParsedLayerBinding,
   type ParsedPdfBinding,
   type PdfBindingPart,
@@ -45,8 +48,6 @@ export interface CreateLayerRendererOptions {
   formatter?: Formatter
   progressive?: FormatterProgressivePolicy
   textSignatureOptions?: TextSignatureOptions
-  /** A font the PDF engine tries first, before the font a PDF layer declares. */
-  pdfFont?: PdfFont
   docxSignatureOptions?: DocxSignatureOptions
   /** Host-configured functions text and DOCX templates and PDF binding templates can call, with their signatures. */
   expressions?: Pick<TemplateExpressionOptions, 'functions' | 'signatures'>
@@ -109,7 +110,6 @@ export function createLayerRenderer(options: CreateLayerRendererOptions = {}): A
         const { pdfRenderer } = await import('./pdf')
         return pdfRenderer({
           formatter: options.formatter,
-          font: options.pdfFont,
           expressions: options.expressions,
         }).render(request as never)
       }

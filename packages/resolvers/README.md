@@ -100,7 +100,7 @@ import { createFsResolver } from "@asterdoc/resolvers/fs";
 
 const resolver = createFsResolver({ root: "./templates" });
 
-const form = a.form(formSchema, { resolver });
+const form = await a.form.load(formSchema, { resolver });
 
 const result = await form
   .fill({

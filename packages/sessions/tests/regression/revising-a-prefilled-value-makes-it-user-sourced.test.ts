@@ -8,8 +8,8 @@ import { execute } from "../../src/engine/execute";
 import { project } from "../../src/event-log/projector";
 import type { SessionEvent } from "../../src/event-log/types";
 
-it("user revision of a prefilled field is user-sourced", () => {
-  const runtime = createAsterdocRuntime(artifact({ fields: { name: { type: "text", required: true } } }));
+it("user revision of a prefilled field is user-sourced", async () => {
+  const runtime = await createAsterdocRuntime(artifact({ fields: { name: { type: "text", required: true } } }));
   const s = session();
   s.events.push({ v: 1, t: "PrefillApplied", at: "2026-01-01T00:00:01.000Z", by: { kind: "system", reason: "prefill" }, values: { name: "Pre" }, sources: { name: "prefill" }, lockedPaths: [] } as SessionEvent);
   const r = execute(s, runtime, { kind: "revise", fieldPath: "name", value: "Mine", source: "user" }, { kind: "user" });

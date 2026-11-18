@@ -29,16 +29,15 @@ export function VendorPacketBlockPreview() {
 
   useEffect(() => {
     let cancelled = false;
-    const parsed = w9.safeParseData(vendorPacketData.taxpayer);
-    if (!parsed.success) {
-      const details = parsed.errors.map((issue) => `${issue.field}: ${issue.message}`).join("; ");
-      setError(
-        `The taxpayer's sample data failed validation against the W-9 artifact. ${details}`
-      );
-      return;
-    }
-    w9.fill(parsed.data)
-      .render({ layer: "pdf" })
+    w9.load()
+      .then((form) => {
+        const parsed = form.safeParseData(vendorPacketData.taxpayer);
+        if (!parsed.success) {
+          const details = parsed.errors.map((issue) => `${issue.field}: ${issue.message}`).join("; ");
+          throw new Error(`The taxpayer's sample data failed validation against the W-9 artifact. ${details}`);
+        }
+        return form.fill(parsed.data).render({ layer: "pdf" });
+      })
       .then((output) => {
         if (cancelled) return;
         if (output instanceof Uint8Array) setTaxpayerPdf(output);

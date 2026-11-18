@@ -41,7 +41,7 @@ function artifact(fields: Record<string, unknown>, path: string, layer: Record<s
 
 describe('validateLayers with phone, choice and boolean formats', () => {
   it('checks fit at the output the layer format prints', async () => {
-    const phone = { phone: { type: 'phone', label: 'Phone' } }
+    const phone = { phone: { type: 'phone', label: 'Phone', countryCode: '1' } }
     const bounded = await validateLayers(artifact(phone, 'phone.pdf', { bindings: { phone: 'phone.number' }, format: { phone: { style: 'digits', region: 'US' } } }), { resolver })
     expect(bounded.issues).toBeUndefined()
     const open = await validateLayers(artifact(phone, 'phone.pdf', { bindings: { phone: 'phone.number' }, format: { phone: { style: 'digits' } } }), { resolver })
@@ -68,8 +68,18 @@ describe('validateLayers with phone, choice and boolean formats', () => {
     expect(result.warnings).toEqual([expect.objectContaining({ path: ['layers', 'pdf', 'format'], message: expect.stringContaining('print "X" and "X", equal apart from space and case') })])
   })
 
+  it('refuses a national phone.region on a layer that fills a phone field of another or every plan by its id', () => {
+    const layer = (phone: Record<string, unknown>) => artifact({ phone }, 'phone.pdf', { format: { phone: { style: 'national', region: 'US' } } })
+    expect(validate(layer({ type: 'phone', label: 'Phone', countryCode: '1' })).issues).toBeUndefined()
+    expect(validate(layer({ type: 'phone', label: 'Phone' })).issues).toEqual([expect.objectContaining({
+      path: ['layers', 'pdf', 'format'],
+      message: 'Layer "pdf", fields filled by id: prints fields.phone, but it prints as national under phone.region "US", which refuses a number of another plan, and fields.phone accepts numbers of every plan; give the field "countryCode": "1".',
+    })])
+    expect(validate(layer({ type: 'phone', label: 'Phone', countryCode: '44' })).issues?.[0]?.message).toContain('fields.phone accepts only +44 numbers; give the field "countryCode": "1"')
+  })
+
   it('accepts the new keys in the schema, and refuses values outside them', () => {
-    const fields = { phone: { type: 'phone', label: 'Phone' } }
+    const fields = { phone: { type: 'phone', label: 'Phone', countryCode: '1' } }
     const layer = (format: unknown) => artifact(fields, 'phone.pdf', { format })
     expect(validate(layer({ phone: { style: 'national', region: 'US' }, choice: { display: 'label' }, boolean: { trueLabel: 'Yes', falseLabel: '' } })).issues).toBeUndefined()
     expect(validate(layer({ phone: { style: 'local' } })).issues).toBeDefined()

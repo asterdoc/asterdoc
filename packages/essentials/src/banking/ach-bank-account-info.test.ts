@@ -29,23 +29,23 @@ const happyPathInputs = {
 } as const;
 
 describe("ach-bank-account-info", () => {
-  it("loads via a.form()", () => {
-    expect(achBankAccountInfo.isValid()).toBe(true);
+  it("loads via a.form.load()", async () => {
+    expect((await achBankAccountInfo.load()).isValid()).toBe(true);
   });
 
-  it("accepts the bundled passing vector (synth.required.orgentitytype.present-accountholdertype-organization)", () => {
-    const result = achBankAccountInfo.safeFill(happyPathInputs as any);
+  it("accepts the bundled passing vector (synth.required.orgentitytype.present-accountholdertype-organization)", async () => {
+    const result = (await achBankAccountInfo.load()).safeFill(happyPathInputs as any);
     expect(result.success).toBe(true);
   });
 
-  it("passes its own test cases", () => {
-    const report = achBankAccountInfo.runTests();
+  it("passes its own test cases", async () => {
+    const report = (await achBankAccountInfo.load()).runTests();
     expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
     expect(report.results).toHaveLength(3);
   });
 
   it("renders the markdown layer on the bound resolver", async () => {
-    const result = achBankAccountInfo.safeFill(happyPathInputs as any);
+    const result = (await achBankAccountInfo.load()).safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");
     const output = await result.data.render({ layer: "markdown" });
     expect(typeof output).toBe("string");
@@ -53,7 +53,7 @@ describe("ach-bank-account-info", () => {
   });
 
   it("renders the PDF layer through the default renderer", async () => {
-    const result = achBankAccountInfo.safeFill(happyPathInputs as any);
+    const result = (await achBankAccountInfo.load()).safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");
     const output = await result.data.render({ layer: "pdf" });
     expect(output).toBeInstanceOf(Uint8Array);

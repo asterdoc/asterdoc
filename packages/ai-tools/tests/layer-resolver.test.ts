@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { makeResolver } from '../src/artifact'
+import { layerFileResolver } from '../src/artifact'
 
 function recordingFetch() {
 	const urls: string[] = []
@@ -10,14 +10,14 @@ function recordingFetch() {
 	return { urls, fetch }
 }
 
-describe('makeResolver', () => {
+describe('layerFileResolver', () => {
 	test('returns no resolver without a base URL', () => {
-		expect(makeResolver(undefined)).toBeUndefined()
+		expect(layerFileResolver(undefined)).toBeUndefined()
 	})
 
 	test('reads relative and one-leading-slash layer paths beneath the base URL', async () => {
 		const { urls, fetch } = recordingFetch()
-		const resolver = makeResolver('https://registry.example.test/forms/w-9', { fetch })!
+		const resolver = layerFileResolver('https://registry.example.test/forms/w-9', { fetch })!
 
 		await expect(resolver.read('w-9.pdf')).resolves.toEqual(new Uint8Array([7, 8]))
 		await resolver.read('/templates/w-9.pdf')
@@ -30,7 +30,7 @@ describe('makeResolver', () => {
 
 	test('rejects a layer path that escapes the base URL without fetching', async () => {
 		const { urls, fetch } = recordingFetch()
-		const resolver = makeResolver('https://registry.example.test/forms/w-9', { fetch })!
+		const resolver = layerFileResolver('https://registry.example.test/forms/w-9', { fetch })!
 
 		await expect(resolver.read('../other/secret.pdf')).rejects.toMatchObject({ code: 'ERR_RESOLVER_OUTSIDE_ROOT' })
 		expect(urls).toEqual([])
@@ -38,7 +38,7 @@ describe('makeResolver', () => {
 
 	test('applies the tools fetch policy to layer reads', async () => {
 		const { urls, fetch } = recordingFetch()
-		const resolver = makeResolver('https://registry.example.test/forms/w-9', {
+		const resolver = layerFileResolver('https://registry.example.test/forms/w-9', {
 			fetch,
 			approvedOrigins: ['https://cdn.example.test'],
 		})!

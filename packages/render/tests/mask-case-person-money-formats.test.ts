@@ -22,7 +22,7 @@ const form = {
     id: { type: 'uuid' },
     status: { type: 'enum', enum: [{ value: 'single', label: 'Single' }, { value: 'married', label: 'Married' }] },
     agree: { type: 'boolean' },
-    amount: { type: 'money', currency: 'USD' },
+    amount: { type: 'money', currency: 'USD', min: 0 },
     client: { type: 'person' },
     nickname: { type: 'person' },
     home: { type: 'address' },
@@ -372,7 +372,7 @@ describe('parts under money digits, grouping and case', () => {
     kind: 'form',
     name: 'parts',
     version: '1.0.0',
-    fields: { amount: { type: 'money', currency: 'USD' }, dob: { type: 'date' } },
+    fields: { amount: { type: 'money', currency: 'USD', min: 0 }, dob: { type: 'date' } },
   } as unknown as Form
   const filled = { fields: { amount: { amount: 1234.5, currency: 'USD' }, dob: '2021-06-15' } }
   const bindings: Bindings = {

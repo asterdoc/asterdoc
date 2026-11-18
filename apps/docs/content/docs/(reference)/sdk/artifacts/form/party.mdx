@@ -64,7 +64,7 @@ const affiant = party()
 
 ```ts
 // Object pattern
-const form = a.form({
+const form = await a.form.load({
   name: 'purchase-agreement',
   parties: {
     buyer: {
@@ -81,7 +81,7 @@ const form = a.form({
 })
 
 // Builder pattern
-const form = a.form()
+const form = await a.form.load(a.form()
   .name('purchase-agreement')
   .party('buyer', party()
     .label('Buyer')
@@ -92,7 +92,7 @@ const form = a.form()
     .label('Seller')
     .signature({ required: true, witnesses: 2 })
     .build())
-  .build()
+  .build())
 ```
 
 ## API
@@ -216,7 +216,7 @@ party()
 Allow multiple parties to fill a single role by setting `max > 1`:
 
 ```ts
-const form = a.form()
+const form = await a.form.load(a.form()
   .name('joint-account')
   .party('accountHolders', party()
     .label('Account Holders')
@@ -224,7 +224,7 @@ const form = a.form()
     .max(4)   // Up to 4 allowed (enables array format)
     .signature({ required: true })  // All must sign
     .build())
-  .build()
+  .build())
 ```
 
 When `max > 1`, the party data at runtime must be an array:
@@ -246,7 +246,7 @@ const filled = form.fill({
 Use defs for conditional party requirements:
 
 ```ts
-const form = a.form()
+const form = await a.form.load(a.form()
   .name('loan-application')
   .field('loanAmount', field.number().label('Loan amount').build())
   .def('needsGuarantor', 'fields.loanAmount > 100000')
@@ -259,7 +259,7 @@ const form = a.form()
     .required('needsGuarantor')
     .signature({ required: true })
     .build())
-  .build()
+  .build())
 ```
 
 ## Runtime Party Types

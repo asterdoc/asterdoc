@@ -744,9 +744,13 @@ const resolver = createMemoryResolver({ contents });
  *
  * Standalone vendor / payee bank-account-information collection form for ACH credit destination setup. Captures account-holder identity (individual or organization), bank routing/account/type, and (for organizations) W-9-adjacent entity classification. Pairs with a separate authorization document (vendor agreement, W-9, MSA); the form itself is data-collection only and does not carry an authorization clause.
  */
-export const achBankAccountInfo = Object.assign(a.form(schema, { resolver }), {
+export const achBankAccountInfo = {
   /** The raw form spec, exactly as released. */
   spec: schema,
-});
+  /** Reads the form's bundled layer files, for a host that loads the spec itself. */
+  resolver,
+  /** Load the form on its bundled files. */
+  load: () => a.form.load(schema, { resolver }),
+};
 
 export default achBankAccountInfo;

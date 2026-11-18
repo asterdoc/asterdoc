@@ -47,40 +47,28 @@ const definition = {
 	defaultLayer: 'pdf',
 }
 
-const filled = () => a.form(definition, { resolver }).fill({ fields: { signed: '2021-06-05' } })
+const filled = async () => (await a.form.load(definition, { resolver })).fill({ fields: { signed: '2021-06-05' } })
 const box = async (bytes: unknown) => (await inspectAcroFormFields(bytes as Uint8Array)).find((field) => field.name === 'name')?.value
 const docxText = (bytes: unknown) => [...new TextDecoder().decode(unzipSync(bytes as Uint8Array)['word/document.xml']).matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g)].map((match) => match[1]).join('')
 
 describe('formats on an artifact layer and its bindings', () => {
 	test('a binding format overrides its layer format', async () => {
-		expect(await box(await filled().render({ layer: 'pdf' }))).toBe('2021-06-05')
-		expect(await box(await filled().render({ layer: 'pdfLayerOnly' }))).toBe('05/06/2021')
+		expect(await box(await (await filled()).render({ layer: 'pdf' }))).toBe('2021-06-05')
+		expect(await box(await (await filled()).render({ layer: 'pdfLayerOnly' }))).toBe('05/06/2021')
 	})
 
 	test('a layer reusing bindings takes each binding format, and keeps its own layer format', async () => {
-		expect(await box(await filled().render({ layer: 'pdfCopy' }))).toBe('2021-06-05')
-		expect(await box(await filled().render({ layer: 'pdfCopy', bindings: { name: 'signed' } }))).toBe('05/06/2021')
-	})
-
-	test('a binding object passed at render time is laid over the layer bindings', async () => {
-		const bindings = { name: { path: 'signed', format: { date: { pattern: 'DD/MM/YYYY' as const } } } }
-		expect(await box(await filled().render({ layer: 'pdf', bindings }))).toBe('05/06/2021')
-	})
-
-	test('a binding object passed at render time is checked as a layer binding is', async () => {
-		await expect(filled().render({ layer: 'pdf', bindings: { name: { path: 'signed', format: { date: { pattern: 'D/M/YY' } } } } as never }))
-			.rejects.toThrow('binding "name", is not a valid binding object')
-		await expect(filled().render({ layer: 'pdf', bindings: { name: { path: 'signed', part: 'week' } } as never })).rejects.toThrow('part')
+		expect(await box(await (await filled()).render({ layer: 'pdfCopy' }))).toBe('2021-06-05')
 	})
 
 	test('a text layer applies its format, inline and from a file', async () => {
-		expect(await filled().render({ layer: 'markdown' })).toBe('Signed 2021-06-05')
-		expect(await filled().render({ layer: 'markdownFile' })).toBe('Signed 05/06/2021')
+		expect(await (await filled()).render({ layer: 'markdown' })).toBe('Signed 2021-06-05')
+		expect(await (await filled()).render({ layer: 'markdownFile' })).toBe('Signed 05/06/2021')
 	})
 
 	test('a DOCX layer applies its format, and one without a format prints as before', async () => {
-		expect(docxText(await filled().render({ layer: 'docx' }))).toBe('Signed 06/05/2021')
-		expect(docxText(await filled().render({ layer: 'docxPlain' }))).toBe('Signed Jun 5, 2021')
+		expect(docxText(await (await filled()).render({ layer: 'docx' }))).toBe('Signed 06/05/2021')
+		expect(docxText(await (await filled()).render({ layer: 'docxPlain' }))).toBe('Signed Jun 5, 2021')
 	})
 
 	test('the file layer builder takes binding objects', () => {
@@ -126,7 +114,9 @@ describe('validating binding formats', () => {
 
 	test('accepts a part the value has, and renders it', async () => {
 		expect(validate(pdfForm({ year: { path: 'signed', part: 'year' } })).issues).toBeUndefined()
-		expect(await box(await filled().render({ layer: 'pdf', bindings: { name: { path: 'signed', part: 'year' } } }))).toBe('2021')
+		const yearOnly = { ...definition, layers: { ...definition.layers, pdf: { ...definition.layers.pdf, bindings: { name: { path: 'signed', part: 'year' as const } } } } }
+		const draft = (await a.form.load(yearOnly, { resolver })).fill({ fields: { signed: '2021-06-05' } })
+		expect(await box(await draft.render({ layer: 'pdf' }))).toBe('2021')
 	})
 
 	test('refuses a part the value does not have or on a qualifier, naming the binding', () => {
@@ -156,13 +146,13 @@ describe('an unknown key in a current artifact', () => {
 		layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: 'form.pdf', ...layer } },
 	})
 
-	test('is a schema error that asks for no SDK update', () => {
-		expect(() => load(artifact({ format: { money: { futureOption: 0 } } }))).toThrow(/Unrecognized key/)
-		expect(() => load(artifact({ format: { money: { futureOption: 0 } } }))).not.toThrow(/update/i)
+	test('is a schema error that asks for no SDK update', async () => {
+		await expect(load(artifact({ format: { money: { futureOption: 0 } } }))).rejects.toThrow(/Unrecognized key/)
+		await expect(load(artifact({ format: { money: { futureOption: 0 } } }))).rejects.not.toThrow(/update/i)
 	})
 
-	test('a newer schema date asks for an SDK update before any key is read', () => {
+	test('a newer schema date asks for an SDK update before any key is read', async () => {
 		const newer = artifact({ format: { money: { futureOption: 0 } } }, 'https://schema.asterdoc.com/2999-01-01.json')
-		expect(() => load(newer)).toThrow('newer than this SDK knows; update @asterdoc/core')
+		await expect(load(newer)).rejects.toThrow('newer than this SDK knows; update @asterdoc/core')
 	})
 })

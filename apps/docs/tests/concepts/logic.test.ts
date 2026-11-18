@@ -42,14 +42,14 @@ describe('Logic Concept', () => {
       expect(form.fields!.vehicleMake.required).toBe('fields.hasVehicle')
     })
 
-    test('fields.<id> gate actually drives runtime visibility', () => {
+    test('fields.<id> gate actually drives runtime visibility', async () => {
       // hasVehicle true => vehicleMake visible & required
-      const shown = fieldState(form.fill({ fields: { hasVehicle: true } }), 'vehicleMake')
+      const shown = fieldState((await a.form.load(form)).fill({ fields: { hasVehicle: true } }), 'vehicleMake')
       expect(shown?.visible).toBe(true)
       expect(shown?.status).toBe('required')
 
       // hasVehicle false => vehicleMake hidden
-      const hidden = fieldState(form.fill({ fields: { hasVehicle: false } }), 'vehicleMake')
+      const hidden = fieldState((await a.form.load(form)).fill({ fields: { hasVehicle: false } }), 'vehicleMake')
       expect(hidden?.visible).toBe(false)
       expect(hidden?.status).toBe('hidden')
     })
@@ -84,23 +84,23 @@ describe('Logic Concept', () => {
     // Design Time vs Runtime
     // ============================================================================
 
-    test('the same def evaluates to different visibility per data', () => {
+    test('the same def evaluates to different visibility per data', async () => {
       // age 15 => isAdult false => drivingLicense hidden, parentConsent visible
-      const minor = form.fill({ fields: { age: 15 } })
+      const minor = (await a.form.load(form)).fill({ fields: { age: 15 } })
       expect(fieldState(minor, 'drivingLicense')?.visible).toBe(false)
       expect(fieldState(minor, 'parentConsent')?.visible).toBe(true)
 
       // age 21 => isAdult true => drivingLicense visible, parentConsent hidden
-      const adult = form.fill({ fields: { age: 21 } })
+      const adult = (await a.form.load(form)).fill({ fields: { age: 21 } })
       expect(fieldState(adult, 'drivingLicense')?.visible).toBe(true)
       expect(fieldState(adult, 'parentConsent')?.visible).toBe(false)
     })
 
-    test('full fill round-trips with conditional fields satisfied', () => {
-      const filled1 = form.fill({ fields: { age: 15, drivingLicense: '', parentConsent: true } })
+    test('full fill round-trips with conditional fields satisfied', async () => {
+      const filled1 = (await a.form.load(form)).fill({ fields: { age: 15, drivingLicense: '', parentConsent: true } })
       expect(filled1.getField('age')).toBe(15)
 
-      const filled2 = form.fill({ fields: { age: 21, drivingLicense: 'A-12345', parentConsent: false } })
+      const filled2 = (await a.form.load(form)).fill({ fields: { age: 21, drivingLicense: 'A-12345', parentConsent: false } })
       expect(filled2.getField('age')).toBe(21)
     })
   })
@@ -123,40 +123,40 @@ describe('Logic Concept', () => {
       })
       .build()
 
-    const failedRules = (fields: Record<string, string>) =>
-      payment.fill({ fields }).validateRules().errors.map((error) => error.ruleId)
+    const failedRules = async (fields: Record<string, string>) =>
+      (await a.form.load(payment)).fill({ fields }).validateRules().errors.map((error) => error.ruleId)
 
-    test('passes the documented rules for valid numbers', () => {
-      expect(validate(payment.toJSON())).not.toHaveProperty('issues')
-      expect(failedRules({ routingNumber: '021000021', cardNumber: '4111111111111111' })).toEqual([])
+    test('passes the documented rules for valid numbers', async () => {
+      expect(validate((await a.form.load(payment)).toJSON())).not.toHaveProperty('issues')
+      expect(await failedRules({ routingNumber: '021000021', cardNumber: '4111111111111111' })).toEqual([])
     })
 
-    test('fails them for wrong check digits and for separators', () => {
-      expect(failedRules({ routingNumber: '123456789', cardNumber: '4111111111111112' })).toEqual(['routingNumber', 'cardNumber'])
-      expect(failedRules({ routingNumber: '021-000-021', cardNumber: '4111 1111 1111 1111' })).toEqual(['routingNumber', 'cardNumber'])
-      expect(failedRules({ routingNumber: '0', cardNumber: '4111111111111111' })).toEqual(['routingNumber'])
-      expect(failedRules({ routingNumber: '11', cardNumber: '4111111111111111' })).toEqual(['routingNumber'])
+    test('fails them for wrong check digits and for separators', async () => {
+      expect(await failedRules({ routingNumber: '123456789', cardNumber: '4111111111111112' })).toEqual(['routingNumber', 'cardNumber'])
+      expect(await failedRules({ routingNumber: '021-000-021', cardNumber: '4111 1111 1111 1111' })).toEqual(['routingNumber', 'cardNumber'])
+      expect(await failedRules({ routingNumber: '0', cardNumber: '4111111111111111' })).toEqual(['routingNumber'])
+      expect(await failedRules({ routingNumber: '11', cardNumber: '4111111111111111' })).toEqual(['routingNumber'])
     })
 
-    test('checks IBAN check digits with the documented rearrangement', () => {
+    test('checks IBAN check digits with the documented rearrangement', async () => {
       const iban = a
         .form()
         .name('iban')
         .fields({ iban: { type: 'text' } })
         .rules({ iban: { expr: "checkDigit(substring(fields.iban, 4) + substring(fields.iban, 0, 4), 'mod97-10')", message: 'Check the IBAN' } })
         .build()
-      expect(iban.fill({ fields: { iban: 'GB82WEST12345698765432' } }).validateRules().errors).toEqual([])
-      expect(iban.fill({ fields: { iban: 'GB82WEST12345698765431' } }).validateRules().errors.map((error) => error.ruleId)).toEqual(['iban'])
+      expect((await a.form.load(iban)).fill({ fields: { iban: 'GB82WEST12345698765432' } }).validateRules().errors).toEqual([])
+      expect((await a.form.load(iban)).fill({ fields: { iban: 'GB82WEST12345698765431' } }).validateRules().errors.map((error) => error.ruleId)).toEqual(['iban'])
     })
 
-    test('refuses an unknown algorithm name at authoring time', () => {
+    test('refuses an unknown algorithm name at authoring time', async () => {
       const form = a
         .form()
         .name('card')
         .fields({ cardNumber: { type: 'text' } })
         .rules({ cardNumber: { expr: "checkDigit(fields.cardNumber, 'mod10')", message: 'Enter a valid card number' } })
         .build()
-      const result = validate(form.toJSON())
+      const result = validate((await a.form.load(form)).toJSON())
       const messages = 'issues' in result && result.issues ? result.issues.map((issue) => issue.message) : []
       expect(messages.join('\n')).toMatch(/must be one of 'luhn', 'mod97-10', 'mod11-2', 'verhoeff', 'damm'/)
     })
@@ -200,8 +200,8 @@ describe('Logic Concept', () => {
       { description: 'Hosting', amount: { amount: 99.5, currency: 'USD' }, taxable: false },
     ]
 
-    test('evaluates the documented totals', () => {
-      const draft = invoice.fill({ fields: { currency: 'USD', lineItems: rows } } as never)
+    test('evaluates the documented totals', async () => {
+      const draft = (await a.form.load(invoice)).fill({ fields: { currency: 'USD', lineItems: rows } } as never)
       expect(draft.getFillState().defsValues).toEqual({
         subtotal: { amount: 1299.5, currency: 'USD' },
         taxableTotal: 1200,
@@ -210,17 +210,17 @@ describe('Logic Concept', () => {
       })
     })
 
-    test('flags an unpriced row and returns the empty results for no rows', () => {
-      const unpriced = invoice.fill({
+    test('flags an unpriced row and returns the empty results for no rows', async () => {
+      const unpriced = (await a.form.load(invoice)).fill({
         fields: { currency: 'USD', lineItems: [{ ...rows[0], amount: { amount: 0, currency: 'USD' } }] },
       } as never)
       expect(unpriced.getFillState().defsValues.everyRowPriced).toBe(false)
 
-      const empty = invoice.fill({ fields: { currency: 'USD', lineItems: [] } } as never)
+      const empty = (await a.form.load(invoice)).fill({ fields: { currency: 'USD', lineItems: [] } } as never)
       expect(empty.getFillState().defsValues).toMatchObject({ taxableTotal: 0, rowCount: 0, everyRowPriced: true })
     })
 
-    test('rejects a list value read outside an aggregate at authoring time', () => {
+    test('rejects a list value read outside an aggregate at authoring time', async () => {
       const form = a
         .form()
         .name('invoice')
@@ -229,10 +229,10 @@ describe('Logic Concept', () => {
           note: { type: 'text', visible: 'fields.lineItems.amount > 0' },
         })
         .build()
-      const result = validate(form.toJSON())
+      const result = validate((await a.form.load(form)).toJSON())
       const messages = 'issues' in result && result.issues ? result.issues.map((issue) => issue.message) : []
       expect(messages.join('\n')).toMatch(/reads a value from every row of fields.lineItems/)
-      expect(validate(invoice.toJSON())).not.toHaveProperty('issues')
+      expect(validate((await a.form.load(invoice)).toJSON())).not.toHaveProperty('issues')
     })
   })
 
@@ -261,9 +261,9 @@ describe('Logic Concept', () => {
       expect(form.annexes!.petPhoto).toBeDefined()
     })
 
-    test('fields.<id> annex gate drives annex visibility', () => {
-      expect(fieldState(form.fill({ fields: { hasPets: true } }), 'petPhoto')?.visible).toBe(true)
-      expect(fieldState(form.fill({ fields: { hasPets: false } }), 'petPhoto')?.visible).toBe(false)
+    test('fields.<id> annex gate drives annex visibility', async () => {
+      expect(fieldState((await a.form.load(form)).fill({ fields: { hasPets: true } }), 'petPhoto')?.visible).toBe(true)
+      expect(fieldState((await a.form.load(form)).fill({ fields: { hasPets: false } }), 'petPhoto')?.visible).toBe(false)
     })
   })
 })

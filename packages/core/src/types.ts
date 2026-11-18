@@ -9,7 +9,6 @@
  */
 
 import type {
-  Bindings,
   Form,
   Document,
   Bundle,
@@ -58,6 +57,10 @@ export interface ValidationError {
   code?: string
   /** What to choose from instead: up to five nearest places, or every place an ambiguous input names. */
   candidates?: PlaceCandidate[]
+  /** For a value a PDF layer cannot print (`code: 'unprintable'`), the layer. */
+  layer?: string
+  /** For a value a PDF layer cannot print, the AcroForm field that refuses it. */
+  pdfField?: string
 }
 
 /**
@@ -190,12 +193,6 @@ export interface RenderOptions<Output = string | Uint8Array> {
   /** Key of the layer to use. If not provided, uses defaultLayer or first available. */
   layer?: string
 
-  /**
-   * PDF layers only: AcroForm field name -> Asterdoc path, as a string or a
-   * binding object with its own format, laid over the layer's own bindings.
-   * Refused for any other layer.
-   */
-  bindings?: Bindings
 }
 
 /**
@@ -235,12 +232,6 @@ export interface RuntimeFormRenderOptions<Output = string | Uint8Array> {
   /** Key of the layer to use. If not provided, uses defaultLayer or first available. */
   layer?: string
 
-  /**
-   * PDF layers only: AcroForm field name -> Asterdoc path, as a string or a
-   * binding object with its own format, laid over the layer's own bindings.
-   * Refused for any other layer.
-   */
-  bindings?: Bindings
 
   /**
    * `'complete'` refuses to render unless the form passes the check `seal()`
@@ -303,7 +294,7 @@ export interface RuntimeChecklistRenderOptions<Output = unknown> {
  *
  * @example
  * ```typescript
- * const form = a.form({
+ * const form = await a.form.load({
  *   name: 'my-form',
  *   version: '1.0.0',
  *   fields: { name: { type: 'text' } }

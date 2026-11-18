@@ -1,18 +1,15 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
-import type { Form, Document, Checklist, Bundle, Resolver } from '@asterdoc/types'
+import type { Form, Document, Checklist, Bundle } from '@asterdoc/types'
 import { validateLogic, type LogicValidatableArtifact } from '@/logic'
 import {
-  validateFileTemplates,
   validateInlineTemplates,
   type TemplateArtifact,
 } from '@/logic/design-time/validation/validate-templates'
 import { parse } from '@/serialization/serialization'
 import { findLoneSurrogates, LONE_SURROGATE_MESSAGE } from '@/integrity/canonical-json'
-import { validatePdfLayers, type LayerValidationIssue } from './pdf-layers'
 import { validatePdfBindingPaths } from './pdf-bindings'
-import { validatePlaceDefinitions, validatePlaceFormats } from './place-definitions'
-import { validateMaskDefaults, validateValueFormats } from './value-formats'
-import { validateFileReferences } from './file-references'
+import { validatePlaceDefinitions } from './place-definitions'
+import { validateMaskDefaults } from './value-formats'
 import { validateLayerReferences } from './layer-references'
 import { validateFormReferences } from './form-references'
 import {
@@ -283,86 +280,11 @@ function isFormDefinition(artifact: unknown): artifact is Form {
   return typeof artifact === 'object' && artifact !== null && (artifact as { kind?: unknown }).kind === 'form'
 }
 
-function hasTemplateLayers(artifact: unknown): artifact is TemplateArtifact {
+/** Whether an artifact kind has template layers: a form, a document or a checklist. */
+export function hasTemplateLayers(artifact: unknown): artifact is TemplateArtifact {
   return typeof artifact === 'object'
     && artifact !== null
     && TEMPLATE_KINDS.has(String((artifact as { kind?: unknown }).kind))
-}
-
-/** Options for {@link validateLayers}. */
-export interface ValidateLayersOptions extends ValidateOptions {
-  /** Reads file-backed layers, relative to the artifact. */
-  resolver: Resolver
-}
-
-/**
- * The result of {@link validateLayers}: a Standard Schema result, whose issues
- * are the errors, and the warnings found alongside them. Warnings do not fail
- * validation.
- */
-export type ValidateLayersResult<T> = StandardSchemaV1.Result<T> & {
-  readonly warnings?: readonly LayerValidationIssue[]
-}
-
-/** A resolver that reads each path once, so the checks that share a file share one read. */
-function readOnce(resolver: Resolver): Resolver {
-  const reads = new Map<string, Promise<Uint8Array>>()
-  return {
-    read(path) {
-      let read = reads.get(path)
-      if (!read) {
-        read = resolver.read(path)
-        reads.set(path, read)
-      }
-      return read
-    },
-  }
-}
-
-/**
- * Validate an artifact and the files it refers to. `validate()` checks inline
- * layers; this also reads each file through the resolver, and a file that
- * cannot be read is an error:
- * - every file-backed layer except a React layer, whose path names a module;
- * - the `instructions` and `agentInstructions` files;
- * - the template expressions of each text and DOCX layer, and that each text
- *   template places its 'flow' signature slots;
- * - for a form, that every key of a PDF layer's bindings is an AcroForm field
- *   of its template, and that every value a binding accepts can fill its PDF
- *   text field: it fits the box at the minimum font size, and has no more
- *   characters than a comb field has boxes. A bound text field with nothing
- *   bounding its length is a warning;
- * - for a form, that the fonts of each PDF layer can draw the values of each
- *   test in `tests`, as a render of the test's draft prints them;
- * - for a form, that a stored value a layer prints with a country or region
- *   format normalizes; a default that does not is a warning.
- * - for a form, a warning for each layer or PDF binding that prints person
- *   names family-first, since a person given only a name cannot be reordered.
- *
- * @example
- * ```typescript
- * const result = await validateLayers(form, { resolver: createFsResolver({ root: '.' }) })
- * for (const warning of result.warnings ?? []) console.warn(warning.message)
- * ```
- */
-export async function validateLayers<T = unknown>(
-  input: unknown,
-  options: ValidateLayersOptions,
-): Promise<ValidateLayersResult<T>> {
-  const { resolver, ...validateOptions } = options
-  const result = validate<T>(input, validateOptions)
-  if (result.issues) return result
-  const artifact: unknown = result.value
-  const reader = readOnce(resolver)
-  const fileIssues = await validateFileReferences(artifact, reader)
-  const templateIssues = validateOptions.logic === false || !hasTemplateLayers(artifact) ? [] : await validateFileTemplates(artifact, reader)
-  const pdf = hasTemplateLayers(artifact) && artifact.kind === 'form' ? await validatePdfLayers(artifact as unknown as Form, reader) : []
-  const errors = [...fileIssues, ...templateIssues, ...pdf.filter((issue) => issue.severity === 'error')]
-  const places = hasTemplateLayers(artifact) && artifact.kind === 'form' ? validatePlaceFormats(artifact as unknown as Form) : []
-  const formats = hasTemplateLayers(artifact) && artifact.kind === 'form' ? validateValueFormats(artifact as unknown as Form) : []
-  const warnings = [...pdf.filter((issue) => issue.severity === 'warning'), ...places, ...formats]
-  const outcome: StandardSchemaV1.Result<T> = errors.length > 0 ? { issues: errors } : result
-  return warnings.length > 0 ? { ...outcome, warnings } : outcome
 }
 
 export const parseArtifact = (

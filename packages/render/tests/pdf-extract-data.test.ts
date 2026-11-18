@@ -35,7 +35,7 @@ const form = {
     fee: { type: 'money', label: 'Fee' },
     born: { type: 'date', label: 'Born' },
     count: { type: 'number', label: 'Count' },
-    dependents: { type: 'list', label: 'Dependents', item: { type: 'fieldset', label: 'Dependent', fields: { name: { type: 'text', label: 'Name' } } } },
+    dependents: { type: 'list', label: 'Dependents', maxItems: 1, item: { type: 'fieldset', label: 'Dependent', fields: { name: { type: 'text', label: 'Name' } } } },
   },
 } as unknown as Form
 

@@ -138,3 +138,14 @@ describe('bbox definitions', () => {
 		).toBe(false)
 	})
 })
+
+describe('phone country calling code', () => {
+	it('takes a country calling code of one to three digits', () => {
+		expect(FormFieldSchema.safeParse({ type: 'phone', countryCode: '1' }).success).toBe(true)
+		expect(FormFieldSchema.safeParse({ type: 'phone', countryCode: '44' }).success).toBe(true)
+	})
+
+	it.each([['+1'], ['01'], ['1234'], [1]])('refuses %j as a country calling code', (countryCode) => {
+		expect(FormFieldSchema.safeParse({ type: 'phone', countryCode }).success).toBe(false)
+	})
+})

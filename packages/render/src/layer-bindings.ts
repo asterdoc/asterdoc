@@ -1,6 +1,7 @@
-import type { BindingValue, Bindings, Form, FormField, ValueFormat, ValuePart } from '@asterdoc/types'
+import type { BindingValue, Bindings, Form, FormField, LayerFormat, StandardPdfFont, ValueFormat, ValuePart } from '@asterdoc/types'
 import { pathSegments } from './path'
-import { ALL_VALUE_PARTS, bindingDeclaration, isValuePart, partsOf } from './parts/rules'
+import { mergeFormats } from './presentation'
+import { ALL_VALUE_PARTS, bindingDeclaration, isValuePart, partsOf, printProblem } from './parts/rules'
 import { joinedTemplate, parseBindingTemplate, pathExpression, type BindingTemplate } from './template/binding'
 
 /** The part of a layer that decides which bindings it fills with. */
@@ -72,6 +73,8 @@ export interface ParsedPdfBinding {
   part?: ValuePart
   /** The template a template binding prints. */
   template?: BindingTemplate
+  /** The standard font a binding object declares for its field. */
+  font?: StandardPdfFont
 }
 
 /** One binding of a layer, with the PDF field it fills. */
@@ -106,7 +109,7 @@ export function parseBinding(value: BindingValue): ParsedPdfBinding {
   if (typeof value === 'string') return { path: value, parts: [parsePath(value)] }
   const described = () => JSON.stringify(value) ?? String(value)
   if (!isRecord(value)) throw new PdfBindingSyntaxError(described(), 'is neither a path string nor a binding object')
-  const { path, template, format, part } = value as Record<string, unknown>
+  const { path, template, format, part, font } = value as Record<string, unknown>
   if (path !== undefined && template !== undefined) {
     throw new PdfBindingSyntaxError(described(), 'holds both a path and a template; a binding object holds one of them')
   }
@@ -115,6 +118,8 @@ export function parseBinding(value: BindingValue): ParsedPdfBinding {
     throw new PdfBindingSyntaxError(described(), 'is neither a path string nor a binding object with a string path or template')
   }
   if (format !== undefined && !isRecord(format)) throw new PdfBindingSyntaxError(text, 'has a format that is not an object')
+  if (font !== undefined && font !== 'Helvetica' && font !== 'Courier') throw new PdfBindingSyntaxError(text, 'has a font that is neither "Helvetica" nor "Courier"')
+  const chosen = font === undefined ? {} : { font: font as StandardPdfFont }
   if (template !== undefined) {
     if (part !== undefined) throw new PdfBindingSyntaxError(text, 'sets a part on a template; write it on a placeholder, such as {{fields.dob | part="year"}}')
     const parsed = parseBindingTemplate(text)
@@ -124,6 +129,7 @@ export function parseBinding(value: BindingValue): ParsedPdfBinding {
       parts: templateParts(parsed.template),
       ...(format !== undefined && { format: format as ValueFormat }),
       template: parsed.template,
+      ...chosen,
     }
   }
   if (part !== undefined && typeof part !== 'string') throw new PdfBindingSyntaxError(text, 'has a part that is not a string')
@@ -132,6 +138,7 @@ export function parseBinding(value: BindingValue): ParsedPdfBinding {
     parts: [parsePath(text)],
     ...(format !== undefined && { format: format as ValueFormat }),
     ...(part !== undefined && { part: part as ValuePart }),
+    ...chosen,
   }
 }
 
@@ -198,6 +205,11 @@ function parsePath(binding: string): PdfBindingPart {
 /** Parse every binding of a layer. @throws {PdfBindingSyntaxError} as {@link parseBinding} does. */
 export function parseBindings(bindings: Bindings): ParsedLayerBinding[] {
   return Object.entries(bindings).map(([field, binding]) => ({ field, ...parseBinding(binding) }))
+}
+
+/** The standard font each binding object declares, by the AcroForm field it fills. */
+export function bindingFonts(bindings: Bindings | undefined): Map<string, StandardPdfFont> {
+  return new Map(parseBindings(bindings ?? {}).flatMap((binding) => binding.font ? [[binding.field, binding.font] as const] : []))
 }
 
 /** The field definition a data path names, through fieldsets and list items. */
@@ -323,4 +335,152 @@ export function renderDataPath(data: Record<string, unknown>, path: string): str
   return root === 'parties' || root === 'annexes' || root === 'defs' || root === '_signers' || root === '_captures'
     ? trimmed
     : `fields.${trimmed}`
+}
+
+/**
+ * Thrown before filling when a print of the layer fails for some value the
+ * artifact accepts, naming the PDF field (or the field filled by its id) and
+ * what the artifact needs. `validate()` reports the same problem first.
+ */
+export class PdfPrintRuleError extends Error {
+  /** The binding key, or undefined for a field the layer fills by its id. */
+  readonly binding?: string
+
+  constructor(found: LayerPrintProblem) {
+    super(`${found.binding === undefined ? 'The PDF layer' : `PDF field ${JSON.stringify(found.binding)}`} ${found.problem}.`)
+    this.name = 'PdfPrintRuleError'
+    if (found.binding !== undefined) this.binding = found.binding
+  }
+}
+
+/** A print of a PDF layer that fails for some value the artifact accepts. */
+export interface LayerPrintProblem {
+  /** The binding key, when one binding prints the value. */
+  binding?: string
+  /** True for a list whose bound rows cannot hold every item it accepts. */
+  rows?: true
+  /** What fails and what the artifact needs, worded to follow the binding or the field. */
+  problem: string
+}
+
+function bindingPrintProblems(form: Form, value: BindingValue, format: LayerFormat | undefined): string[] {
+  let parsed: ParsedPdfBinding
+  try {
+    parsed = parseBinding(value)
+  } catch (error) {
+    if (error instanceof PdfBindingSyntaxError) return []
+    throw error
+  }
+  const effective = mergeFormats<ValueFormat>(format, parsed.format)
+  if (parsed.template) {
+    return parsed.template.slots.flatMap((slot) => {
+      const source = templateSlotPart(slot.segments)
+      const problem = source && printProblem(bindingDeclaration(form, source.source), slot.part, mergeFormats(effective, slot.format))
+      return problem ? [`prints {{${slot.source}}}, but ${problem}`] : []
+    })
+  }
+  const [only] = parsed.parts
+  if (parsed.parts.length !== 1 || only!.qualifier !== undefined) return []
+  const problem = printProblem(bindingDeclaration(form, only!.source), parsed.part, effective)
+  return problem ? [`prints ${only!.source}, but ${problem}`] : []
+}
+
+function boundPaths(bindings: Bindings): string[][] {
+  return Object.values(bindings).flatMap((value) => {
+    try {
+      return parseBinding(value).parts.map((part) => pathSegments(part.path))
+    } catch (error) {
+      if (error instanceof PdfBindingSyntaxError) return []
+      throw error
+    }
+  })
+}
+
+const isRow = (segment: string | undefined): segment is string => segment !== undefined && /^\d+$/.test(segment)
+
+interface BoundLists {
+  rows: Map<string, { field: Extract<FormField, { type: 'list' }>; fewest: number }>
+  problems: Map<string, string>
+}
+
+function walkBoundRows(field: FormField, path: string, paths: readonly string[][], depth: number, found: BoundLists): void {
+  if (field.type === 'fieldset') {
+    for (const [key, child] of Object.entries(field.fields)) {
+      walkBoundRows(child, `${path}.${key}`, paths.filter((segments) => segments[depth] === key), depth + 1, found)
+    }
+    return
+  }
+  if (field.type !== 'list') return
+  const rows = new Map<number, Set<string>>()
+  for (const segments of paths) {
+    const row = segments[depth]
+    if (!isRow(row)) continue
+    const members = rows.get(Number(row)) ?? new Set<string>()
+    members.add(segments.slice(depth + 1).join('.'))
+    rows.set(Number(row), members)
+  }
+  if (rows.size === 0) return
+  const dead = [...rows.keys()].filter((row) => field.maxItems !== undefined && row >= field.maxItems).sort((left, right) => left - right)
+  if (dead.length > 0) {
+    found.problems.set(`${path}:dead`, `binds row ${dead.map((row) => row + 1).join(', ')} of ${path}, past its "maxItems": ${field.maxItems}, so ${dead.length === 1 ? 'that row never fills' : 'those rows never fill'}; remove ${dead.length === 1 ? 'its' : 'their'} bindings, or raise maxItems`)
+  }
+  for (const row of dead) rows.delete(row)
+  if (rows.size === 0) return
+  const count = Math.max(...rows.keys()) + 1
+  const missing = Array.from({ length: count }, (_, row) => row).filter((row) => !rows.has(row))
+  if (missing.length > 0) {
+    found.problems.set(`${path}:gap`, `binds rows of ${path} up to row ${count}, but not row ${missing.map((row) => row + 1).join(', ')}; bind every row from the first`)
+  }
+  const first = field.item.type === 'list' ? undefined : rows.get(0)
+  for (const [row, members] of first ? rows : []) {
+    const lacking = [...first!].filter((member) => !members.has(member))
+    if (lacking.length > 0) {
+      found.problems.set(`${path}:members`, `binds ${lacking.map((member) => member === '' ? 'the value' : member).join(', ')} in row 1 of ${path} but not in row ${row + 1}; bind the same members in every row`)
+      break
+    }
+  }
+  const known = found.rows.get(path)
+  found.rows.set(path, { field, fewest: Math.min(rows.size, known?.fewest ?? rows.size) })
+  for (const row of rows.keys()) walkBoundRows(field.item, `${path}[]`, paths.filter((segments) => segments[depth] === String(row)), depth + 1, found)
+}
+
+/**
+ * Each list a PDF layer binds by row that can hold more items than the layer
+ * has rows for, binds its rows with a gap, or binds fewer members in a later
+ * row than in the first, among the rows below `maxItems`. A row at or past
+ * `maxItems` holds no item: its bindings are reported as dead. A nested list needs `maxItems` within the fewest
+ * rows bound under any outer row.
+ */
+function boundListProblems(form: Form, bindings: Bindings): string[] {
+  const paths = boundPaths(bindings)
+  const found: BoundLists = { rows: new Map(), problems: new Map() }
+  for (const [key, field] of Object.entries(form.fields ?? {})) {
+    walkBoundRows(field, `fields.${key}`, paths.filter((segments) => segments[0] === key), 1, found)
+  }
+  const capacity = [...found.rows].flatMap(([path, { field, fewest }]) => field.maxItems !== undefined && field.maxItems <= fewest
+    ? []
+    : [`binds ${fewest} row${fewest === 1 ? '' : 's'} of ${path}, and the field accepts ${field.maxItems === undefined ? 'any number of items' : `${field.maxItems} items`}; give it "maxItems": ${fewest}, or bind more rows`])
+  return [...found.problems.values(), ...capacity]
+}
+
+/**
+ * Each print of a PDF layer that fails for some value the artifact accepts,
+ * so no data can be relied on to print: a phone part or a `phone.region`
+ * style on a phone field whose `countryCode` does not hold it, or a money
+ * part on a money field that accepts other currencies or amounts below zero.
+ * `bindings` are the layer's resolved bindings; without them each top-level
+ * field the layer fills by its id is checked under `format`.
+ */
+export function layerPrintProblems(form: Form, bindings: Bindings | undefined, format: LayerFormat | undefined): LayerPrintProblem[] {
+  if (bindings) {
+    return [
+      ...Object.entries(bindings).flatMap(([binding, value]) => bindingPrintProblems(form, value, format).map((problem) => ({ binding, problem }))),
+      ...boundListProblems(form, bindings).map((problem) => ({ rows: true as const, problem })),
+    ]
+  }
+  return Object.entries(form.fields ?? {}).flatMap(([name, field]) => {
+    if (field.type === 'fieldset') return []
+    const problem = printProblem({ source: 'field', kind: field.type, field, path: `fields.${name}` }, undefined, format)
+    return problem ? [{ problem: `prints fields.${name}, but ${problem}` }] : []
+  })
 }

@@ -33,7 +33,7 @@ Asterdoc draws a hard line between **design time** and **runtime**.
 
 ```ts
 // Design time: define the form
-const lease = a.form()
+const lease = await a.form.load(a.form()
   .name("lease")
   .fields({
     tenant: { type: "text", required: true },
@@ -42,7 +42,7 @@ const lease = a.form()
   .layers({
     markdown: a.layer().inline().mimeType("text/markdown").text("Tenant: {{fields.tenant}}"),
   })
-  .build()
+  .build())
 
 // Runtime: fill and render
 const filled = lease.fill({ fields: { tenant: "Jane Doe", rent: { amount: 1500, currency: "USD" } } })

@@ -19,24 +19,24 @@ const base = (overrides: Partial<Form> = {}): Form => ({
 const messages = (definition: Form): string[] => (validate(definition).issues ?? []).map((issue) => issue.message)
 
 describe('rule paths', () => {
-	test('a failed rule returns its declared paths and its id as the code', () => {
-		const draft = form(base({
+	test('a failed rule returns its declared paths and its id as the code', async () => {
+		const draft = (await form.load(base({
 			rules: { ssnLength: { expr: 'length(ssn) == 9', message: 'SSN has nine digits', paths: ['fields.ssn'] } },
-		})).fill({ fields: { ssn: '123' } } as never)
+		}))).fill({ fields: { ssn: '123' } } as never)
 		expect(draft.validateRules().errors).toMatchObject([{ ruleId: 'ssnLength', paths: ['fields.ssn'] }])
 	})
 
-	test('a passing rule returns its paths too', () => {
-		const draft = form(base({
+	test('a passing rule returns its paths too', async () => {
+		const draft = (await form.load(base({
 			rules: { ssnLength: { expr: 'length(ssn) == 9', message: 'SSN has nine digits', paths: ['fields.ssn'] } },
-		})).fill({ fields: { ssn: '123456789' } } as never)
+		}))).fill({ fields: { ssn: '123456789' } } as never)
 		expect(draft.validateRules().rules).toMatchObject([{ ruleId: 'ssnLength', passed: true, paths: ['fields.ssn'] }])
 	})
 
-	test('a rule without paths stays form level: no paths are inferred from the expression', () => {
-		const draft = form(base({
+	test('a rule without paths stays form level: no paths are inferred from the expression', async () => {
+		const draft = (await form.load(base({
 			rules: { ssnLength: { expr: 'length(ssn) == 9', message: 'SSN has nine digits' } },
-		})).fill({ fields: { ssn: '123' } } as never)
+		}))).fill({ fields: { ssn: '123' } } as never)
 		expect(draft.validateRules().errors[0]).not.toHaveProperty('paths')
 	})
 
@@ -67,7 +67,7 @@ describe('rule paths', () => {
 		expect(messages(definition)).toHaveLength(1)
 	})
 
-	test('refuses a path that names no field', () => {
+	test('refuses a path that names no field', async () => {
 		const definition = base({ rules: { postal: { expr: 'true', message: 'm', paths: ['fields.address.zip'] } } })
 		const result = validate(definition)
 		expect(result.issues).toEqual([
@@ -76,7 +76,7 @@ describe('rule paths', () => {
 				path: ['rules', 'postal', 'paths', 0],
 			},
 		])
-		expect(() => form(definition).fill()).toThrow(/names no field/)
+		await expect((async () => (await form.load(definition)).fill())()).rejects.toThrow(/names no field/)
 	})
 
 	test('refuses a path outside fields, even when its root is a field id', () => {

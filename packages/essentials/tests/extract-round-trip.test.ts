@@ -15,6 +15,7 @@ import { w9 } from '../src/tax/w-9.js'
 import { f1099NEC } from '../src/tax/1099-nec.js'
 
 type EssentialsForm = (typeof essentials)[keyof typeof essentials]
+type Loaded = Awaited<ReturnType<EssentialsForm['load']>>
 type Spec = {
   fields?: Record<string, FormField>
   parties?: Record<string, { partyType?: string; max?: number }>
@@ -144,7 +145,7 @@ function valueIn(data: { fields: Record<string, unknown>; parties?: Record<strin
 }
 
 /** Fill the form with every sampled value; a value its PDF field cannot hold fails the test. */
-async function fill(form: EssentialsForm, layer: string, planned: Plan): Promise<Uint8Array> {
+async function fill(form: Loaded, layer: string, planned: Plan): Promise<Uint8Array> {
   return await form.render({ layer, data: planned.data } as never) as Uint8Array
 }
 
@@ -156,9 +157,10 @@ describe('extract from filled essentials forms', () => {
     for (const [layer, definition] of pdfLayers(form)) {
       it(`${name} (${layer}) returns every exactly reversible value it was filled with`, async () => {
         const planned = plan(form.spec as Spec, definition.bindings!)
-        const pdf = await fill(form, layer, planned)
+        const loaded = await form.load()
+        const pdf = await fill(loaded, layer, planned)
         const { exact, joined } = planned
-        const result = await form.extract(pdf, { layer })
+        const result = await loaded.extract(pdf, { layer })
         const byPath = new Map<string, PdfExtractionEntry>(result.report.entries.map((entry) => [entry.path, entry]))
 
         expect(result.layer).toBe(layer)
@@ -176,16 +178,17 @@ describe('extract from filled essentials forms', () => {
 })
 
 describe('extracted data through the normal fill path', () => {
+  const loadW9 = () => w9.load()
   const taxpayer = { id: 'taxpayer-0', name: 'Jane Q Public', firstName: 'Jane', lastName: 'Public' }
 
   it('fills cleanly and reports the required values the PDF did not hold as missing', async () => {
-    const pdf = await w9.render({
+    const pdf = await (await loadW9()).render({
       data: { fields: { taxClassification: 'individual_or_sole_proprietor', ssn: '123-45-6789' }, parties: { taxpayer } },
     }) as Uint8Array
-    const { data } = await w9.extract(pdf)
+    const { data } = await (await loadW9()).extract(pdf)
 
     expect(data.fields).toEqual({ taxClassification: 'individual_or_sole_proprietor', ssn: '123-45-6789' })
-    const filled = w9.safeFill(data as never)
+    const filled = (await loadW9()).safeFill(data as never)
     expect(filled.success).toBe(true)
     if (!filled.success) return
     expect(filled.data.validateRules().valid).toBe(true)
@@ -193,13 +196,13 @@ describe('extracted data through the normal fill path', () => {
   })
 
   it('names the address parts a joined box kept from being recovered', async () => {
-    const pdf = await w9.render({
+    const pdf = await (await loadW9()).render({
       data: { fields: { taxClassification: 'individual_or_sole_proprietor', ssn: '123-45-6789', mailingAddress: address }, parties: { taxpayer } },
     }) as Uint8Array
-    const { data } = await w9.extract(pdf)
+    const { data } = await (await loadW9()).extract(pdf)
 
     expect(data.fields.mailingAddress).toEqual({ line1: '1 Main St' })
-    const filled = w9.safeFill(data as never)
+    const filled = (await loadW9()).safeFill(data as never)
     expect(filled.success).toBe(false)
     if (filled.success) return
     expect((filled.error as unknown as { errors: Array<{ field: string }> }).errors.map((error) => error.field)).toEqual([
@@ -213,10 +216,11 @@ describe('extracted data through the normal fill path', () => {
 
 describe('layer selection on essentials forms', () => {
   it('requires a layer name on a form with several PDF copies', async () => {
-    const pdf = await f1099NEC.render({ layer: 'pdfCopyB', data: { fields: {} } }) as Uint8Array
-    const error = await f1099NEC.extract(pdf).catch((caught: unknown) => caught)
+    const nec = await f1099NEC.load()
+    const pdf = await nec.render({ layer: 'pdfCopyB', data: { fields: {} } }) as Uint8Array
+    const error = await nec.extract(pdf).catch((caught: unknown) => caught)
     expect(error).toBeInstanceOf(PdfExtractionError)
     expect(error).toMatchObject({ code: 'layer_required', message: expect.stringContaining('pdfCopyB') })
-    await expect(f1099NEC.extract(pdf, { layer: 'pdfCopyB' })).resolves.toMatchObject({ layer: 'pdfCopyB' })
+    await expect(nec.extract(pdf, { layer: 'pdfCopyB' })).resolves.toMatchObject({ layer: 'pdfCopyB' })
   })
 })

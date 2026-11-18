@@ -1,7 +1,8 @@
 import type { RuleValidationResult } from '@asterdoc/core'
 import type { AsterdocToolsConfig } from '../config'
 import { FillStateInputSchema, type FillItemState, type FillStateInput, type FillStateOutput, type FillTarget, type RuleViolation, type ToolError } from '../contracts'
-import { artifactKind, asChecklistPayload, asFormPayload, contextOptions, contextSnapshot, makeResolver } from '../artifact'
+import { artifactKind, asChecklistPayload, asFormPayload, contextOptions, contextSnapshot } from '../artifact'
+import { loadToolForm, artifactFileResolver } from '../form-loader'
 import { errorFromUnknown, validationErrors } from '../errors'
 import { resolveSource } from '../resolve-source'
 
@@ -65,10 +66,10 @@ export async function executeGetFillState(
 ): Promise<FillStateOutput> {
 	try {
 		const normalized = FillStateInputSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject, notApplicableProblems, redactDefsValues, unprintedNameProblems } = await import('@asterdoc/core')
+		const { isChecklist, isForm, load, notApplicableProblems, redactDefsValues, unprintedNameProblems } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		if (isForm(artifact)) {
-			const instance = loadFromObject<'form'>(artifact, { resolver: makeResolver(base_url, config) })
+			const instance = await loadToolForm(artifact, base_url, config)
 			const result = instance.safeFill(asFormPayload(normalized.data) as never, contextOptions(normalized.evaluation_context))
 			if (!result.success) return { artifact_kind: 'form', phase: 'draft', summary: { required_total: 0, required_done: 0, required_remaining: 0, completion_percent: 0 }, rules: { valid: false, errors: [], warnings: [] }, open_required: [], open_optional: [], blocked: [], done: [], candidates: [], next: null, errors: validationErrors(result.error) }
 			const draft = result.data
@@ -83,7 +84,7 @@ export async function executeGetFillState(
 			return stateOutput('form', state, state.rules, { notApplicable: notApplicableProblems(state), unprintedNames: unprintedNameProblems(state) }, draft.context, undefined, redact)
 		}
 		if (isChecklist(artifact)) {
-			const instance = loadFromObject<'checklist'>(artifact, { resolver: makeResolver(base_url, config) })
+			const instance = await load<'checklist'>(artifact, { resolver: artifactFileResolver(artifact, base_url, config) })
 			const result = instance.safeFill(asChecklistPayload(normalized.data) as never, contextOptions(normalized.evaluation_context))
 			if (!result.success) return { artifact_kind: 'checklist', phase: 'draft', summary: { required_total: 0, required_done: 0, required_remaining: 0, completion_percent: 0 }, rules: { valid: false, errors: [], warnings: [] }, open_required: [], open_optional: [], blocked: [], done: [], candidates: [], next: null, errors: validationErrors(result.error) }
 			const state = result.data.getFillState()

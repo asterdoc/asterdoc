@@ -26,6 +26,15 @@ export interface PdfFieldInfo {
   maxLen?: number | null
   /** For a text field: whether it prints several lines, so a binding template's line break starts a new line. */
   multiline?: boolean
+  /** Every widget of the field, in the order of the PDF. A value fills each one. `page` and `rect` are the first one's. */
+  widgets: PdfFieldWidget[]
+}
+
+/** One place on a page where a field shows its value. */
+export interface PdfFieldWidget {
+  /** One-based page number, when the PDF says where the widget is. */
+  page?: number
+  rect?: [number, number, number, number]
 }
 
 export interface InspectOptions {
@@ -69,7 +78,7 @@ export async function inspectAcroFormFields(
   const model = await PdfModel.load(template)
   const form = acroFields(model)
   if (!form) return []
-  const pages = new Map(documentPages(model).map(({ ref }, index) => [ref.object, index + 1]))
+  const pageOfWidget = widgetPages(model)
   const result: PdfFieldInfo[] = []
 
   for (const field of form.fields) {
@@ -87,13 +96,15 @@ export async function inspectAcroFormFields(
     } else if (Array.isArray(rawValue)) fieldValue = rawValue.map(textValue).filter((item): item is string => item !== undefined)
     else fieldValue = textValue(rawValue)
 
-    const widget = field.widgets[0]?.dict
-    const rectangle = model.resolve(widget?.entries.get('Rect'))
-    const rect = Array.isArray(rectangle) && rectangle.length === 4 && rectangle.every((item) => typeof item === 'number')
-      ? rectangle as [number, number, number, number]
-      : undefined
-    const pageRef = widget?.entries.get('P')
-    const page = isRef(pageRef) ? pages.get(pageRef.object) : undefined
+    const widgets = field.widgets.map((widget): PdfFieldWidget => {
+      const rectangle = model.resolve(widget.dict.entries.get('Rect'))
+      const rect = Array.isArray(rectangle) && rectangle.length === 4 && rectangle.every((item) => typeof item === 'number')
+        ? rectangle as [number, number, number, number]
+        : undefined
+      const page = pageOfWidget(widget)
+      return { ...(page !== undefined && { page }), ...(rect && { rect }) }
+    })
+    const { page, rect } = widgets[0] ?? {}
 
     const choices = type === 'dropdown'
       ? choiceOptions(model, field).map(({ value, display }) => ({ value, label: display }))
@@ -111,15 +122,15 @@ export async function inspectAcroFormFields(
       rect,
       maxLen: type === 'text' ? field.maxLength ?? null : undefined,
       ...(type === 'text' && { multiline: textFieldDrawing(field).multiline }),
+      widgets,
     })
   }
   return result
 }
 
-function fieldPages(model: PdfModel): Map<string, number[]> {
-  const form = acroFields(model)
-  const result = new Map<string, number[]>()
-  if (!form) return result
+type AcroWidget = NonNullable<ReturnType<typeof acroFields>>['fields'][number]['widgets'][number]
+
+function widgetPages(model: PdfModel): (widget: AcroWidget) => number | undefined {
   const pageOf = new Map<number, number>()
   const annotationPage = new Map<number, number>()
   documentPages(model).forEach(({ ref, record }, index) => {
@@ -128,11 +139,21 @@ function fieldPages(model: PdfModel): Map<string, number[]> {
     if (!Array.isArray(annotations)) return
     for (const annotation of annotations) if (isRef(annotation)) annotationPage.set(annotation.object, index + 1)
   })
+  return (widget) => {
+    const parent = widget.dict.entries.get('P')
+    return (isRef(parent) ? pageOf.get(parent.object) : undefined) ?? (widget.ref ? annotationPage.get(widget.ref.object) : undefined)
+  }
+}
+
+function fieldPages(model: PdfModel): Map<string, number[]> {
+  const form = acroFields(model)
+  const result = new Map<string, number[]>()
+  if (!form) return result
+  const pageOfWidget = widgetPages(model)
   for (const field of form.fields) {
     const pages = new Set<number>()
     for (const widget of field.widgets) {
-      const parent = widget.dict.entries.get('P')
-      const page = (isRef(parent) ? pageOf.get(parent.object) : undefined) ?? (widget.ref ? annotationPage.get(widget.ref.object) : undefined)
+      const page = pageOfWidget(widget)
       if (page !== undefined) pages.add(page)
     }
     if (pages.size > 0) result.set(field.name, [...pages].sort((a, b) => a - b))

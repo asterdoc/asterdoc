@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { Form } from '@asterdoc/types'
 import { flattenPdf, inspectAcroFormFields, inspectPdf, pdfRenderer, renderPdf, selectPdfPages } from '../src/pdf'
 import { compressedCheckboxPdf, pagePdf, textFieldsPdf } from './pdf-fixtures'
+import { layerPrintProblems } from '../src/index'
 
 const fixtures = ['pet-addendum.pdf', 'pet-addendum-2.pdf']
 
@@ -11,26 +12,26 @@ const SPECIES = ['bird', 'dog', 'cat', 'fish', 'turtle'].map((value) => ({ value
 
 const expectedFields = {
   'pet-addendum.pdf': [
-    { name: 'name', type: 'text', value: '', required: false, rect: [72, 648, 288, 668], maxLen: 100, multiline: false },
-    { name: 'weight', type: 'text', value: '', required: false, rect: [72, 612, 288, 632], maxLen: 100, multiline: false },
-    { name: 'species', type: 'dropdown', value: ['fish'], options: SPECIES, required: false, rect: [72, 576, 288, 596] },
-    { name: 'hasVaccination', type: 'checkbox', value: false, required: false, rect: [72, 540, 92, 560] },
+    { name: 'name', type: 'text', value: '', required: false, page: 1, rect: [72, 648, 288, 668], maxLen: 100, multiline: false, widgets: [{ page: 1, rect: [72, 648, 288, 668] }] },
+    { name: 'weight', type: 'text', value: '', required: false, page: 1, rect: [72, 612, 288, 632], maxLen: 100, multiline: false, widgets: [{ page: 1, rect: [72, 612, 288, 632] }] },
+    { name: 'species', type: 'dropdown', value: ['fish'], options: SPECIES, required: false, page: 1, rect: [72, 576, 288, 596], widgets: [{ page: 1, rect: [72, 576, 288, 596] }] },
+    { name: 'hasVaccination', type: 'checkbox', value: false, required: false, page: 1, rect: [72, 540, 92, 560], widgets: [{ page: 1, rect: [72, 540, 92, 560] }] },
   ],
   'pet-addendum-2.pdf': [
-    { name: 'pet_name', type: 'text', value: '', required: false, page: 1, rect: [72, 648, 288, 668], maxLen: 100, multiline: false },
-    { name: 'petWeight', type: 'text', value: '', required: false, page: 1, rect: [72, 612, 288, 632], maxLen: 100, multiline: false },
-    { name: 'SPECIES', type: 'dropdown', value: ['dog'], options: SPECIES, required: false, page: 1, rect: [72, 576, 288, 596] },
-    { name: 'is_vaccinated', type: 'checkbox', value: false, required: true, page: 1, rect: [72, 540, 92, 560] },
+    { name: 'pet_name', type: 'text', value: '', required: false, page: 1, rect: [72, 648, 288, 668], maxLen: 100, multiline: false, widgets: [{ page: 1, rect: [72, 648, 288, 668] }] },
+    { name: 'petWeight', type: 'text', value: '', required: false, page: 1, rect: [72, 612, 288, 632], maxLen: 100, multiline: false, widgets: [{ page: 1, rect: [72, 612, 288, 632] }] },
+    { name: 'SPECIES', type: 'dropdown', value: ['dog'], options: SPECIES, required: false, page: 1, rect: [72, 576, 288, 596], widgets: [{ page: 1, rect: [72, 576, 288, 596] }] },
+    { name: 'is_vaccinated', type: 'checkbox', value: false, required: true, page: 1, rect: [72, 540, 92, 560], widgets: [{ page: 1, rect: [72, 540, 92, 560] }] },
   ],
 }
 
 describe('PDF renderer behavior', () => {
 	it('fills fixed AcroForm slots from lists and lists of lists using bracket bindings', async () => {
-		const template = textFieldsPdf(['item_1', 'item_2', 'matrix_1_1', 'matrix_1_2', 'matrix_2_1'])
+		const template = textFieldsPdf(['item_1', 'item_2', 'matrix_1_1', 'matrix_1_2', 'matrix_2_1', 'matrix_2_2'])
 		const form = {
 			kind: 'form', name: 'repeated-data', fields: {
-				items: { type: 'list', item: { type: 'text' } },
-				matrix: { type: 'list', item: { type: 'list', item: { type: 'text' } } },
+				items: { type: 'list', maxItems: 2, item: { type: 'text' } },
+				matrix: { type: 'list', maxItems: 2, item: { type: 'list', maxItems: 2, item: { type: 'text' } } },
 			},
 		} as unknown as Form
 		const output = await renderPdf({
@@ -39,23 +40,39 @@ describe('PDF renderer behavior', () => {
 			data: { items: ['Labor', 'Parts'], matrix: [['a', 'b'], ['c']] },
 			bindings: {
 				item_1: 'items[0]', item_2: 'items[1]',
-				matrix_1_1: 'matrix[0][0]', matrix_1_2: 'matrix[0][1]', matrix_2_1: 'matrix[1][0]',
+				matrix_1_1: 'matrix[0][0]', matrix_1_2: 'matrix[0][1]', matrix_2_1: 'matrix[1][0]', matrix_2_2: 'matrix[1][1]',
 			},
 		})
 		const values = Object.fromEntries((await inspectAcroFormFields(output)).map((field) => [field.name, field.value]))
 		expect(values).toMatchObject({ item_1: 'Labor', item_2: 'Parts', matrix_1_1: 'a', matrix_1_2: 'b', matrix_2_1: 'c' })
 	})
 
-	it('fails loudly when repeated data exceeds the fixed PDF binding capacity', async () => {
+	it('refuses a list that can hold more items than the bound rows, before any value', async () => {
 		const form = {
 			kind: 'form', name: 'invoice', fields: { items: { type: 'list', item: { type: 'text' } } },
 		} as unknown as Form
 		await expect(renderPdf({
 			template: textFieldsPdf(['item_1', 'item_2']),
 			form,
-			data: { items: ['one', 'two', 'three'] },
+			data: { items: ['one'] },
 			bindings: { item_1: 'items[0]', item_2: 'items[1]' },
-		})).rejects.toThrow('support 2 list items, but received 3')
+		})).rejects.toThrow('The PDF layer binds 2 rows of fields.items, and the field accepts any number of items; give it "maxItems": 2, or bind more rows.')
+	})
+
+	it('refuses a gap in the bound rows, a later row that binds fewer members, and a nested list beyond its fewest inner rows', () => {
+		const form = {
+			kind: 'form', name: 'rows', fields: {
+				lines: { type: 'list', maxItems: 3, item: { type: 'fieldset', fields: { a: { type: 'text' }, b: { type: 'text' } } } },
+				grid: { type: 'list', maxItems: 2, item: { type: 'list', maxItems: 2, item: { type: 'text' } } },
+			},
+		} as unknown as Form
+		expect(layerPrintProblems(form, { x: 'lines[0].a', y: 'lines[2].a' }, undefined).map((found) => found.problem))
+			.toContain('binds rows of fields.lines up to row 3, but not row 2; bind every row from the first')
+		expect(layerPrintProblems(form, { x: 'lines[0].a', x2: 'lines[0].b', y: 'lines[1].a' }, undefined).map((found) => found.problem))
+			.toContain('binds b in row 1 of fields.lines but not in row 2; bind the same members in every row')
+		expect(layerPrintProblems(form, { p: 'grid[0][0]', q: 'grid[0][1]', r: 'grid[1][0]' }, undefined).map((found) => found.problem))
+			.toEqual(['binds 1 row of fields.grid[], and the field accepts 2 items; give it "maxItems": 1, or bind more rows'])
+		expect(layerPrintProblems(form, { p: 'grid[0][0]', q: 'grid[0][1]', r: 'grid[1][0]', s: 'grid[1][1]' }, undefined)).toEqual([])
 	})
 
   it('inspects page count and dimensions for downstream placement', async () => {
@@ -255,7 +272,7 @@ describe('PDF artifact formatting', () => {
   const form = {
     fields: {
       count: { type: 'number' }, enabled: { type: 'boolean' },
-      rows: { type: 'list', item: { type: 'fieldset', fields: { amount: { type: 'money' }, choice: { type: 'enum', enum: [{ value: '1', label: 'One' }] } } } },
+      rows: { type: 'list', maxItems: 1, item: { type: 'fieldset', fields: { amount: { type: 'money' }, choice: { type: 'enum', enum: [{ value: '1', label: 'One' }] } } } },
     },
     defs: { total: { type: 'money', value: {} } },
     parties: { owner: { label: 'Owner', partyType: 'person' } },

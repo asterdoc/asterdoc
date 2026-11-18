@@ -5,17 +5,17 @@ import {
 	evaluateBundleInclusion,
 } from '@/artifacts/bundle/inclusion'
 
-function sourceForm() {
-	return form()
+async function sourceForm() {
+	return await form.load(form()
 		.name('source')
 		.version('1.0.0')
 		.title('Source')
 		.fields({ enabled: { type: 'boolean', label: 'Enabled' } })
-		.build()
+		.build())
 }
 
-function conditionalBundle(enabled: boolean) {
-	const source = sourceForm()
+async function conditionalBundle(enabled: boolean) {
+	const source = await sourceForm()
 	const artifact = document().name('optional').version('1.0.0').title('Optional').build()
 	const condition = 'forms.source.fields.enabled == true'
 	const definition = bundle()
@@ -25,21 +25,21 @@ function conditionalBundle(enabled: boolean) {
 		.inline('inline', artifact, condition)
 		.path('path', './optional.yaml', condition)
 		.registry('registry', '@example/forms/optional', condition)
-		.inline('source', source)
+		.inline('source', (await source))
 		.build()
 
 	return {
 		definition,
 		contents: {
-			source: source.fill({ fields: { enabled } }),
+			source: (await source).fill({ fields: { enabled } }),
 		},
 	}
 }
 
 describe('bundle inclusion', () => {
-	test('uses one evaluator for inline, path, and registry members', () => {
-		const enabled = conditionalBundle(true)
-		const state = evaluateBundleInclusion(enabled.definition, enabled.contents)
+	test('uses one evaluator for inline, path, and registry members', async () => {
+		const enabled = await conditionalBundle(true)
+		const state = evaluateBundleInclusion((await enabled).definition, (await enabled).contents)
 
 		expect(state.resolved).toBe(true)
 		expect(state.decisions.map((decision) => [decision.key, decision.status])).toEqual([
@@ -49,16 +49,16 @@ describe('bundle inclusion', () => {
 			['source', 'included'],
 		])
 
-		const disabled = conditionalBundle(false)
-		expect(evaluateBundleInclusion(disabled.definition, disabled.contents).excludedKeys).toEqual([
+		const disabled = await conditionalBundle(false)
+		expect(evaluateBundleInclusion((await disabled).definition, (await disabled).contents).excludedKeys).toEqual([
 			'inline',
 			'path',
 			'registry',
 		])
 	})
 
-	test('resolves named bundle definitions from the same instance context', () => {
-		const source = sourceForm()
+	test('resolves named bundle definitions from the same instance context', async () => {
+		const source = await sourceForm()
 		const artifact = document().name('optional').version('1.0.0').title('Optional').build()
 		const definition = bundle()
 			.name('named')
@@ -66,18 +66,18 @@ describe('bundle inclusion', () => {
 			.title('Named')
 			.def('showOptional', 'forms.source.fields.enabled == true')
 			.inline('optional', artifact, 'showOptional')
-			.inline('source', source)
+			.inline('source', (await source))
 			.build()
 		const state = evaluateBundleInclusion(definition, {
-			source: source.fill({ fields: { enabled: true } }),
+			source: (await source).fill({ fields: { enabled: true } }),
 		})
 
 		expect(state.decisions[0]?.value).toBe(true)
 		expect(state.errors).toEqual([])
 	})
 
-	test('keeps conditions unresolved until the referenced runtime data exists', () => {
-		const { definition } = conditionalBundle(true)
+	test('keeps conditions unresolved until the referenced runtime data exists', async () => {
+		const { definition } = (await conditionalBundle(true))
 		const state = evaluateBundleInclusion(definition)
 
 		expect(state.resolved).toBe(false)
@@ -136,8 +136,8 @@ describe('bundle inclusion', () => {
 		expect(state.unresolvedKeys).toEqual(['doc'])
 	})
 
-	test('uses the supplied bundle clock for temporal conditions', () => {
-		const source = sourceForm()
+	test('uses the supplied bundle clock for temporal conditions', async () => {
+		const source = await sourceForm()
 		const definition = bundle()
 			.name('clocked')
 			.version('1.0.0')
@@ -147,9 +147,9 @@ describe('bundle inclusion', () => {
 				document().name('doc').version('1.0.0').title('Doc').build(),
 				'today() == "2026-09-12"',
 			)
-			.inline('source', source)
+			.inline('source', (await source))
 			.build()
-		const contents = { source: source.fill(undefined, { context: { asOf: '2026-09-12T12:00:00Z' } }) }
+		const contents = { source: (await source).fill(undefined, { context: { asOf: '2026-09-12T12:00:00Z' } }) }
 		const state = evaluateBundleInclusion(definition, contents, {
 			asOf: { date: '2026-09-12', datetime: '2026-09-12T12:00:00.000Z' },
 		})
@@ -160,14 +160,14 @@ describe('bundle inclusion', () => {
 	})
 
 	test('filters draft rendering and assembly while retaining excluded answers', async () => {
-		const artifact = form()
+		const artifact = await form.load(form()
 			.name('conditional-form')
 			.version('1.0.0')
 			.title('Conditional form')
 			.fields({ answer: { type: 'text', label: 'Answer' } })
 			.inlineLayer('default', { mimeType: 'text/plain', text: '{{fields.answer}}' })
 			.defaultLayer('default')
-			.build()
+			.build())
 		const filled = artifact.fill({ fields: { answer: 'retained' } })
 		const definition = bundle()
 			.name('filtered')
@@ -190,24 +190,24 @@ describe('bundle inclusion', () => {
 	).toEqual(['kept'])
 	})
 
-	test('retains excluded draft content so reinclusion restores its answer', () => {
-		const source = sourceForm()
-		const optional = form()
+	test('retains excluded draft content so reinclusion restores its answer', async () => {
+		const source = await sourceForm()
+		const optional = await form.load(form()
 			.name('optional')
 			.version('1.0.0')
 			.title('Optional')
 			.fields({ answer: { type: 'text', label: 'Answer' } })
-			.build()
+			.build())
 		const definition = bundle()
 			.name('reinclude')
 			.version('1.0.0')
 			.title('Reinclude')
 			.inline('optional', optional, 'forms.source.fields.enabled == true')
-			.inline('source', source)
+			.inline('source', (await source))
 			.build()
 		const optionalAnswer = optional.fill({ fields: { answer: 'retained' } })
-		const disabledSource = source.fill({ fields: { enabled: false } })
-		const enabledSource = source.fill({ fields: { enabled: true } })
+		const disabledSource = (await source).fill({ fields: { enabled: false } })
+		const enabledSource = (await source).fill({ fields: { enabled: true } })
 		const draft = definition.prepare({ optional: optionalAnswer, source: disabledSource })
 
 		expect(draft.getInclusion('optional').status).toBe('excluded')
@@ -216,15 +216,15 @@ describe('bundle inclusion', () => {
 		expect(reenabled.getContent('optional')).toBe(optionalAnswer)
 	})
 
-	test('applies the same contract to nested bundle membership', () => {
-		const source = sourceForm()
+	test('applies the same contract to nested bundle membership', async () => {
+		const source = await sourceForm()
 		const child = document().name('child').version('1.0.0').title('Child').build()
 		const inner = bundle()
 			.name('inner')
 			.version('1.0.0')
 			.title('Inner')
 			.inline('child', child, 'forms.source.fields.enabled == true')
-			.inline('source', source)
+			.inline('source', (await source))
 			.build()
 		const outer = bundle()
 			.name('outer')
@@ -234,7 +234,7 @@ describe('bundle inclusion', () => {
 			.build()
 		const innerRuntime = inner.prepare({
 			child: child.prepare(),
-			source: source.fill({ fields: { enabled: false } }),
+			source: (await source).fill({ fields: { enabled: false } }),
 		})
 		const state = evaluateBundleInclusion(outer, { inner: innerRuntime })
 
@@ -242,22 +242,23 @@ describe('bundle inclusion', () => {
 		expect(state.decisions[0]?.nested?.excludedKeys).toEqual(['child'])
 	})
 
-	test('rechecks inclusion when a signable bundle member changes', () => {
-		const source = sourceForm()
+	test('rechecks inclusion when a signable bundle member changes', async () => {
+		const source = await sourceForm()
 		const optional = document().name('optional').version('1.0.0').title('Optional').build()
 		const definition = bundle()
 			.name('finalize-check')
 			.version('1.0.0')
 			.title('Finalize check')
 			.inline('optional', optional, 'forms.source.fields.enabled == true')
-			.inline('source', source)
+			.inline('source', (await source))
 			.build()
 		const draft = definition.prepare({
 			optional: optional.prepare(),
-			source: source.fill({ fields: { enabled: true } }),
+			source: (await source).fill({ fields: { enabled: true } }),
 		})
 		const signable = draft.prepareForSigning()
 
-		expect(() => signable.updateContent('source', source.fill().prepareForSigning())).toThrow(/unresolved/)
+		const ready = (await source).fill().prepareForSigning()
+		expect(() => signable.updateContent('source', ready)).toThrow(/unresolved/)
 	})
 })

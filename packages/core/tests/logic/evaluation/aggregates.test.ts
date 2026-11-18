@@ -284,15 +284,15 @@ describe('authoring validation', () => {
 	})
 })
 
-describe('fill state', () => {
-	const f = form()
+describe('fill state', async () => {
+	const f = await form.load(form()
 		.name('approval')
 		.fields({
 			items: { type: 'list', item: { type: 'fieldset', fields: { amount: { type: 'number' } } } },
 			approver: { type: 'text', required: true, visible: 'sum(fields.items.amount) > 1000' },
 		})
 		.defs({ total: { type: 'number', value: 'sum(fields.items.amount)' } })
-		.build()
+		.build())
 
 	it('names the list as the prerequisite of a condition over its rows', () => {
 		expect(buildFieldDependencyGraph(f.toJSON() as Form).dependsOn.get('approver')?.has('items')).toBe(true)

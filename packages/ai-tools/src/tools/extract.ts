@@ -4,6 +4,7 @@ import { artifactKind } from '../artifact'
 import { errorFromUnknown, toolError } from '../errors'
 import { fetchPolicyFromConfig, MAX_LAYER_FILE_SIZE, safeFetch } from '../registry-client'
 import { resolveSource } from '../resolve-source'
+import { loadToolForm } from '../form-loader'
 
 class ExtractInputError extends Error {
 	constructor(readonly code: string, message: string) {
@@ -41,8 +42,8 @@ export async function executeExtract(
 ): Promise<ExtractOutput> {
 	try {
 		const normalized = ExtractInputSchema.parse(input)
-		const { isForm, loadFromObject, validate } = await import('@asterdoc/core')
-		const { artifact } = await resolveSource(normalized, config)
+		const { isForm, load, validate } = await import('@asterdoc/core')
+		const { artifact, base_url } = await resolveSource(normalized, config)
 		const kind = artifactKind(artifact)
 		const validation = validate(artifact)
 		if (validation.issues) {
@@ -62,7 +63,7 @@ export async function executeExtract(
 		}
 
 		const pdf = await pdfBytes(normalized, config)
-		const result = await loadFromObject<'form'>(artifact).extract(pdf, { layer: normalized.layer })
+		const result = await (await loadToolForm(artifact, base_url, config)).extract(pdf, { layer: normalized.layer })
 		return {
 			success: true,
 			artifact_kind: 'form',

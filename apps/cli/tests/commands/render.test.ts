@@ -149,13 +149,12 @@ describe('CLI render command', () => {
       expect(content.subarray(0, signature.length).toString()).toBe(signature)
     })
 
-    it('should fill a PDF through --bindings binding objects, each with its own format', async () => {
+    it('should fill a PDF through the layer\'s binding objects, each with its own format', async () => {
       const outPath = path.join(tempDir, 'bound.pdf')
       const data = JSON.stringify({ fields: { name: 'Milo', species: 'cat', weight: 5.5, hasVaccination: true } })
-      const bindings = JSON.stringify({ pet_name: 'fields.name', petWeight: { path: 'fields.weight', format: { locale: 'de-DE' } } })
 
       const result = await executeCliCommand([
-        'render', path.join(fixturesDir, 'pet-addendum-pdf-bindings.yaml'), '--data', data, '--bindings', bindings, '--out', outPath,
+        'render', path.join(fixturesDir, 'pet-addendum-pdf-bindings.yaml'), '--data', data, '--out', outPath,
       ])
 
       expect(result.stderr).toBe('')
@@ -179,16 +178,6 @@ describe('CLI render command', () => {
       const { inspectAcroFormFields } = await import('@asterdoc/render/pdf')
       const fields = await inspectAcroFormFields(new Uint8Array(await fs.readFile(outPath)))
       expect(fields.find((field) => field.name === 'pet_name')?.value).toBe(printed)
-    })
-
-    it('should refuse a --bindings binding object the schema refuses', async () => {
-      const data = JSON.stringify({ fields: { name: 'Milo', species: 'cat', weight: 5, hasVaccination: true } })
-      const bindings = JSON.stringify({ petWeight: { path: 'fields.weight', format: { locale: 'not a locale' } } })
-
-      const result = await executeCliCommand(['render', path.join(fixturesDir, 'pet-addendum-pdf-bindings.yaml'), '--data', data, '--bindings', bindings, '--out', path.join(tempDir, 'refused.pdf')])
-
-      expect(result.exitCode).toBe(1)
-      expect(result.stderr).toContain('binding "petWeight", is not a valid binding object')
     })
 
     it('should print a phone style from the layer format with the bundled phone provider', async () => {
@@ -216,20 +205,13 @@ describe('CLI render command', () => {
       expect(result).toMatchObject({ exitCode: 0, stdout: 'Call (212) 555-1234 (agreed)' })
     })
 
-    it('should refuse --bindings for a layer that is not a PDF', async () => {
+    it('should take no --bindings: a PDF fills from the bindings its layer declares', async () => {
       const data = JSON.stringify({ fields: { name: 'Milo', species: 'cat', weight: 5, hasVaccination: true } })
 
-      const result = await executeCliCommand(['render', fixture, '--data', data, '--bindings', '{"pet":"fields.name"}'])
+      const result = await executeCliCommand(['render', path.join(fixturesDir, 'pet-addendum-pdf-bindings.yaml'), '--data', data, '--bindings', '{"pet_name":"fields.species"}', '--out', path.join(tempDir, 'refused.pdf')])
 
-      expect(result.exitCode).toBe(1)
-      expect(result.stderr).toContain('Layer "default" is not a PDF layer, so the bindings render option does not apply')
-    })
-
-    it('should refuse --bindings for a non-PDF layer even without --data', async () => {
-      const result = await executeCliCommand(['render', fixture, '--bindings', '{"pet":"fields.name"}'])
-
-      expect(result.exitCode).toBe(1)
-      expect(result.stderr).toContain('Layer "default" is not a PDF layer, so the bindings render option does not apply')
+      expect(result.exitCode).not.toBe(0)
+      expect(result.stderr).toContain("unknown option '--bindings'")
     })
 
     it('should write output to file with --out', async () => {

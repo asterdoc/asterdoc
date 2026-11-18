@@ -17,6 +17,7 @@ export type {
   InlineLayer,
   FileLayer,
   LayerFont,
+  StandardPdfFont,
   LayerFormat,
   LayerDateFormat,
   LayerDatePattern,

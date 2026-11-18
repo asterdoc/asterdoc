@@ -123,7 +123,7 @@ export function* fileReferencesOf(artifact: Artifact, prefix: string[] = []): Ge
     for (const [key, layer] of Object.entries(artifact.layers)) {
       if (layer.kind !== 'file') continue
       yield { path: layer.path, checksum: layer.checksum, propertyPath: [...prefix, 'layers', key] }
-      if (layer.font) {
+      if (typeof layer.font === 'object') {
         yield { path: layer.font.path, checksum: layer.font.checksum, propertyPath: [...prefix, 'layers', key, 'font'] }
       }
     }

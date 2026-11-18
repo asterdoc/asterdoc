@@ -28,23 +28,23 @@ const happyPathInputs = {
 } as const;
 
 describe("w-9", () => {
-  it("loads via a.form()", () => {
-    expect(w9.isValid()).toBe(true);
+  it("loads via a.form.load()", async () => {
+    expect((await w9.load()).isValid()).toBe(true);
   });
 
-  it("accepts the bundled passing vector (llm.tin.individual-with-ssn-only)", () => {
-    const result = w9.safeFill(happyPathInputs as any);
+  it("accepts the bundled passing vector (llm.tin.individual-with-ssn-only)", async () => {
+    const result = (await w9.load()).safeFill(happyPathInputs as any);
     expect(result.success).toBe(true);
   });
 
-  it("passes its own test cases", () => {
-    const report = w9.runTests();
+  it("passes its own test cases", async () => {
+    const report = (await w9.load()).runTests();
     expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
     expect(report.results).toHaveLength(3);
   });
 
   it("renders the markdown layer on the bound resolver", async () => {
-    const result = w9.safeFill(happyPathInputs as any);
+    const result = (await w9.load()).safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");
     const output = await result.data.render({ layer: "markdown" });
     expect(typeof output).toBe("string");
@@ -52,7 +52,7 @@ describe("w-9", () => {
   });
 
   it("renders the PDF layer through the default renderer", async () => {
-    const result = w9.safeFill(happyPathInputs as any);
+    const result = (await w9.load()).safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");
     const output = await result.data.render({ layer: "pdf" });
     expect(output).toBeInstanceOf(Uint8Array);

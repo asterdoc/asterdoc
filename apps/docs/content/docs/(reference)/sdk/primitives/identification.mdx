@@ -51,7 +51,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'kyc',
   fields: {
     primaryId: { type: 'identification', label: 'Primary ID' },

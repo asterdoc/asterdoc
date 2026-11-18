@@ -85,7 +85,7 @@ describe('one condition language through an artifact', () => {
     const resolver = createMemoryResolver({
       contents: { 'conditions.docx': docx(conditions.flatMap((condition) => [`{{IF ${condition}}}`, 'T', '{{ELSE}}', 'F', '{{END-IF}}'])) },
     })
-    const artifact = form.from({
+    const artifact = await form.load({
       kind: 'form',
       name: 'conditions',
       fields,
@@ -110,7 +110,7 @@ describe('one condition language through an artifact', () => {
   })
 
   it('reads typed parties in field logic and templates, and places signing marks by party', async () => {
-    const artifact = form.from({
+    const artifact = await form.load({
       kind: 'form',
       name: 'parties',
       fields: { memo: { type: 'text', label: 'Memo', visible: 'parties.buyer.name == "Ada" and count(parties.tenants) > 1' } },
@@ -209,10 +209,10 @@ describe('authoring validation of template expressions', () => {
   })
 
   it('renders format modifiers through an artifact, with its field metadata', async () => {
-    const draft = form.from({
+    const draft = (await form.load({
       ...artifact('{{ fields.due | date.pattern="MM/DD/YYYY" }} {{ fields.price | money.currencyDisplay="none" }} {{ fields.due }}'),
       defaultLayer: 'md',
-    } as never).fill(seed as never)
+    } as never)).fill(seed as never)
     expect(await draft.render({ renderer: createLayerRenderer() })).toBe('03/05/2024 19.95 Mar 5, 2024')
   })
 

@@ -9,8 +9,8 @@ describe('Forms Guide', () => {
   // Step 3: Define the Form (Object Pattern)
   // ============================================================================
 
-  describe('object pattern', () => {
-    const lease = a.form({
+  describe('object pattern', async () => {
+    const lease = await a.form.load({
       name: 'lease-agreement',
       version: '1.0.0',
       title: 'Residential Lease Agreement',
@@ -70,8 +70,8 @@ describe('Forms Guide', () => {
   // Step 4: Add a Layer (Object Pattern with Inline Layer)
   // ============================================================================
 
-  describe('form with inline layer', () => {
-    const lease = a.form({
+  describe('form with inline layer', async () => {
+    const lease = await a.form.load({
       name: 'lease-agreement',
       version: '1.0.0',
       title: 'Residential Lease Agreement',
@@ -170,16 +170,16 @@ describe('Forms Guide', () => {
       expect(yaml).toContain('name: lease-agreement')
     })
 
-    test('loads from JSON string', () => {
+    test('loads from JSON string', async () => {
       const jsonStr = JSON.stringify(lease.toJSON())
-      const loaded = a.load(jsonStr)
+      const loaded = await a.load(jsonStr)
       expect(loaded.kind).toBe('form')
       expect(loaded.name).toBe('lease-agreement')
     })
 
-    test('loads from YAML string', () => {
+    test('loads from YAML string', async () => {
       const yaml = lease.toYAML()
-      const loaded = a.load(yaml)
+      const loaded = await a.load(yaml)
       expect(loaded.kind).toBe('form')
       expect(loaded.name).toBe('lease-agreement')
     })

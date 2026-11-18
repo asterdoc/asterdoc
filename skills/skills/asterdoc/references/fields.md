@@ -457,12 +457,12 @@ Fields render in definition order: identity, contact, domain data, conditional f
 
 ## SDK
 
-The builder chain takes field builders, plain objects, or a mix, and validates each field at `build()`. `a.form({ ... })` takes plain objects only ([sdk.md § Define an artifact](./sdk.md#define-an-artifact)).
+The builder chain takes field builders, plain objects, or a mix, and validates each field at `build()`. `await a.form.load({ ... })` takes plain objects only ([sdk.md § Define an artifact](./sdk.md#define-an-artifact)).
 
 ```typescript
 import { a } from "@asterdoc/sdk";
 
-const builtForm = a
+const builtForm = await a.form.load(a
   .form()
   .name("intake")
   .fields({
@@ -470,7 +470,7 @@ const builtForm = a
     status: a.field.enum().options([{ value: "new" }, { value: "returning" }]),
     deposit: { type: "money", currency: "USD" },
   })
-  .build();
+  .build());
 ```
 
 ### Field builder methods

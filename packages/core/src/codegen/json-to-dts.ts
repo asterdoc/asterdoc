@@ -18,7 +18,7 @@ export interface JsonToTsModuleOptions {
 
 	/**
 	 * The export name for the artifact instance
-	 * @example 'w9' will generate `export const w9 = a.form(...)`
+	 * @example 'w9' will generate `export const w9 = schema` and `loadW9()`
 	 */
 	exportName: string
 }
@@ -158,9 +158,10 @@ export function jsonToDts(value: unknown, moduleName?: string): string {
  * // const schema = { ... } as const;
  * // import { a } from '@asterdoc/sdk';
  * //
- * // export const w9 = a.form(schema);
- * // export type W9Form = typeof w9;
- * // export type W9Payload = Parameters<typeof w9.fill>[0];
+ * // export const w9 = schema;
+ * // export const loadW9 = (options) => a.form.load(schema, options);
+ * // export type W9Form = Awaited<ReturnType<typeof loadW9>>;
+ * // export type W9Payload = Parameters<W9Form['fill']>[0];
  * ```
  */
 const IDENTIFIER_RE = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/
@@ -202,25 +203,48 @@ export function jsonToTsModule(value: unknown, options: JsonToTsModuleOptions): 
 		.join('\n')
 	lines.push(`const schema = ${indentedJson} as const;`)
 
+	if (artifactKind === 'form') {
+		lines.push(`import { a, type ArtifactInstanceOptions } from '@asterdoc/sdk';`)
+		lines.push('')
+		lines.push(`/**`)
+		lines.push(` * The ${exportName} form definition. Load it with load${typeName}() to fill it.`)
+		lines.push(` */`)
+		lines.push(`export const ${exportName} = schema;`)
+		lines.push('')
+		lines.push(`/**`)
+		lines.push(` * Load the ${exportName} form: every PDF layer is read through the resolver, so a render checks the data against it before drawing.`)
+		lines.push(` */`)
+		lines.push(`export const load${typeName} = (options?: ArtifactInstanceOptions) => a.form.load(schema, options);`)
+		lines.push('')
+		lines.push(`/**`)
+		lines.push(` * Type of the loaded ${exportName} form instance`)
+		lines.push(` */`)
+		lines.push(`export type ${typeName}Form = Awaited<ReturnType<typeof load${typeName}>>;`)
+		lines.push('')
+		lines.push(`/**`)
+		lines.push(` * Payload type for filling the ${exportName} form`)
+		lines.push(` */`)
+		lines.push(`export type ${typeName}Payload = Parameters<${typeName}Form['fill']>[0];`)
+		lines.push('')
+		return lines.join('\n')
+	}
+
 	lines.push(`import { a } from '@asterdoc/sdk';`)
 	lines.push('')
 
-	// Create the artifact instance
 	lines.push(`/**`)
 	lines.push(` * ${typeName} ${artifactKind} artifact - ready to use`)
 	lines.push(` */`)
 	lines.push(`export const ${exportName} = a.${artifactKind}(schema);`)
 	lines.push('')
 
-	// Export useful types
 	lines.push(`/**`)
 	lines.push(` * Type of the ${exportName} ${artifactKind} instance`)
 	lines.push(` */`)
 	lines.push(`export type ${typeName}${capitalize(artifactKind)} = typeof ${exportName};`)
 	lines.push('')
 
-	// Add payload type for forms and checklists
-	if (artifactKind === 'form' || artifactKind === 'checklist') {
+	if (artifactKind === 'checklist') {
 		lines.push(`/**`)
 		lines.push(` * Payload type for filling the ${exportName} ${artifactKind}`)
 		lines.push(` */`)

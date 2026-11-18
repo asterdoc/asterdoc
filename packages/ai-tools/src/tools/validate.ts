@@ -1,7 +1,8 @@
 import type { ValidateLayersResult } from '@asterdoc/core'
 import type { AsterdocToolsConfig } from '../config'
 import { ValidateArtifactInputSchema, type ValidateArtifactInput, type ValidateArtifactOutput } from '../contracts'
-import { artifactKind, makeResolver } from '../artifact'
+import { artifactKind } from '../artifact'
+import { artifactFileResolver } from '../form-loader'
 import { errorFromUnknown } from '../errors'
 import { resolveSource } from '../resolve-source'
 
@@ -14,9 +15,7 @@ export async function executeValidateArtifact(
 		const normalized = ValidateArtifactInputSchema.parse(input)
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		const kind = artifactKind(artifact)
-		// File-backed layers resolve against the source's base URL; without one
-		// only inline layers can be checked.
-		const resolver = makeResolver(base_url, config)
+		const resolver = artifactFileResolver(artifact, base_url, config)
 		const result: ValidateLayersResult<unknown> = resolver
 			? await validateLayers(artifact, { ...normalized.options, resolver })
 			: validate(artifact, normalized.options)

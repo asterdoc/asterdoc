@@ -351,18 +351,18 @@ describe('Bundle', () => {
           expect(result.contents[0]?.type).toBe('inline')
         })
 
-        test('builds bundle with inline form', () => {
+        test('builds bundle with inline form', async () => {
           const result = bundle()
             .name('form-bundle')
             .version('1.0.0')
             .title('Form Bundle')
             .inline(
               'contact',
-              form()
+              await form.load(form()
                 .name('contact-form')
                 .version('1.0.0')
                 .title('Contact Form')
-                .build()
+                .build())
             )
             .build()
           expect(result.contents).toHaveLength(1)

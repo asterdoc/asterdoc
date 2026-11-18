@@ -20,10 +20,10 @@ const definition = {
 	},
 }
 
-const form = () => a.form(definition)
-const thrown = (run: () => unknown): unknown => {
+const form = async () => await a.form.load(definition)
+const thrown = async (run: () => unknown): Promise<unknown> => {
 	try {
-		run()
+		await run()
 	} catch (error) {
 		return error
 	}
@@ -59,65 +59,65 @@ describe('canonicalizeFieldValue', () => {
 })
 
 describe('writing a masked field', () => {
-	it('stores the canonical value from fill, update and safeUpdate, with or without separators', () => {
-		const draft = form().fill({ fields: { ssn: '123-45-6789' } })
+	it('stores the canonical value from fill, update and safeUpdate, with or without separators', async () => {
+		const draft = (await form()).fill({ fields: { ssn: '123-45-6789' } })
 		expect(draft.getField('ssn')).toBe('123456789')
 		expect(draft.update({ fields: { code: 'A-XY' } }).getField('code')).toBe('XY')
 		const updated = draft.safeUpdate({ fields: { people: [{ anumber: 'A-012345678' }] } })
 		expect(updated.success && updated.data.getField('people')).toEqual([{ anumber: '012345678' }])
 	})
 
-	it('stores a default without its literals', () => {
-		expect(form().fill().getField('ein')).toBe('123456789')
-		const changed = form().fill({ fields: { ein: '98-7654321' } })
+	it('stores a default without its literals', async () => {
+		expect((await form()).fill().getField('ein')).toBe('123456789')
+		const changed = (await form()).fill({ fields: { ein: '98-7654321' } })
 		expect(changed.reset('fields.ein').getField('ein')).toBe('123456789')
 	})
 
-	it('refuses a value that does not fit with a structured mask_mismatch issue', () => {
-		const error = thrown(() => form().fill().update({ fields: { ssn: '123-456-789' } }))
+	it('refuses a value that does not fit with a structured mask_mismatch issue', async () => {
+		const error = await thrown(async () => (await form()).fill().update({ fields: { ssn: '123-456-789' } }))
 		expect(error).toBeInstanceOf(FormValidationError)
 		expect((error as FormValidationError).errors).toEqual([expect.objectContaining({ field: 'fields.ssn', code: 'mask_mismatch' })])
-		expect(form().fill().safeUpdate({ fields: { ssn: '12345678X' } }).success).toBe(false)
+		expect((await form()).fill().safeUpdate({ fields: { ssn: '12345678X' } }).success).toBe(false)
 	})
 
-	it('accepts a prefix while drafting and refuses it on completion', () => {
-		const draft = form().fill({ fields: { ssn: '123' } })
+	it('accepts a prefix while drafting and refuses it on completion', async () => {
+		const draft = (await form()).fill({ fields: { ssn: '123' } })
 		expect(draft.getField('ssn')).toBe('123')
 		expect(draft.validate().errors).toEqual(expect.arrayContaining([expect.objectContaining({ field: 'fields.ssn', code: 'mask_mismatch' })]))
-		expect(form().safeParseData({ fields: { ssn: '123' } }).success).toBe(false)
-		expect(form().safeParseData({ fields: { ssn: '123-45-6789' } })).toMatchObject({ success: true, data: { fields: { ssn: '123456789' } } })
+		expect((await form()).safeParseData({ fields: { ssn: '123' } }).success).toBe(false)
+		expect((await form()).safeParseData({ fields: { ssn: '123-45-6789' } })).toMatchObject({ success: true, data: { fields: { ssn: '123456789' } } })
 	})
 
-	it('applies pattern and maxLength to the canonical value, on completion only', () => {
-		expect(form().fill({ fields: { ssn: '9' } }).getField('ssn')).toBe('9')
-		expect(form().safeParseData({ fields: { ssn: '923-45-6789' } }).success).toBe(false)
-		expect(form().safeParseData({ fields: { ssn: '823-45-6789' } }).success).toBe(true)
-		expect(form().fill().safeUpdate({ fields: { note: '1234' } }).success).toBe(false)
+	it('applies pattern and maxLength to the canonical value, on completion only', async () => {
+		expect((await form()).fill({ fields: { ssn: '9' } }).getField('ssn')).toBe('9')
+		expect((await form()).safeParseData({ fields: { ssn: '923-45-6789' } }).success).toBe(false)
+		expect((await form()).safeParseData({ fields: { ssn: '823-45-6789' } }).success).toBe(true)
+		expect((await form()).fill().safeUpdate({ fields: { note: '1234' } }).success).toBe(false)
 	})
 
-	it('validates one field input with the stated input form', () => {
-		const instance = form()
-		expect(instance.validateFieldInput({ fieldPath: 'ssn', value: '123-45-6789' })).toMatchObject({ success: true, value: '123456789' })
-		expect(instance.validateFieldInput({ fieldPath: 'code', value: 'A' })).toMatchObject({ success: true, value: 'A' })
-		expect(instance.validateFieldInput({ fieldPath: 'code', value: 'A-', input: 'formatted' })).toMatchObject({ success: true, value: '' })
-		expect(instance.validateFieldInput({ fieldPath: 'people.0.anumber', value: 'A-012345678' })).toMatchObject({ success: true, value: '012345678' })
-		expect(instance.validateFieldInput({ fieldPath: 'code', value: 'A-' })).toMatchObject({ success: false, errors: [expect.objectContaining({ code: 'mask_mismatch' })] })
-		expect(instance.validateFieldsPatch({ ssn: '123-45-6789' })).toMatchObject({ success: true, value: { ssn: '123456789' } })
+	it('validates one field input with the stated input form', async () => {
+		const instance = await form()
+		expect((await instance).validateFieldInput({ fieldPath: 'ssn', value: '123-45-6789' })).toMatchObject({ success: true, value: '123456789' })
+		expect((await instance).validateFieldInput({ fieldPath: 'code', value: 'A' })).toMatchObject({ success: true, value: 'A' })
+		expect((await instance).validateFieldInput({ fieldPath: 'code', value: 'A-', input: 'formatted' })).toMatchObject({ success: true, value: '' })
+		expect((await instance).validateFieldInput({ fieldPath: 'people.0.anumber', value: 'A-012345678' })).toMatchObject({ success: true, value: '012345678' })
+		expect((await instance).validateFieldInput({ fieldPath: 'code', value: 'A-' })).toMatchObject({ success: false, errors: [expect.objectContaining({ code: 'mask_mismatch' })] })
+		expect((await instance).validateFieldsPatch({ ssn: '123-45-6789' })).toMatchObject({ success: true, value: { ssn: '123456789' } })
 	})
 
-	it('keeps stored values unchanged on restore and on repeated writes', () => {
-		const draft = form().fill({ fields: { ssn: '123-45-6789', code: 'A' } })
-		const restored = runtimeFormFromJSON(draft.toJSON())
+	it('keeps stored values unchanged on restore and on repeated writes', async () => {
+		const draft = (await form()).fill({ fields: { ssn: '123-45-6789', code: 'A' } })
+		const restored = await runtimeFormFromJSON(draft.toJSON())
 		expect(restored.getField('ssn')).toBe('123456789')
 		expect(restored.getField('code')).toBe('A')
 		const again = (restored as typeof draft).update({ fields: { ssn: restored.getField('ssn') as string, code: restored.getField('code') as string } })
 		expect([again.getField('ssn'), again.getField('code')]).toEqual(['123456789', 'A'])
 	})
 
-	it('canonicalizes stored values on restore and refuses one that does not fit', () => {
-		const json = form().fill().toJSON()
-		expect(runtimeFormFromJSON({ ...json, fields: { ...json.fields, ssn: '123-45-6789' } }).getField('ssn')).toBe('123456789')
-		expect(() => runtimeFormFromJSON({ ...json, fields: { ...json.fields, ssn: '12-34' } })).toThrow(FormValidationError)
+	it('canonicalizes stored values on restore and refuses one that does not fit', async () => {
+		const json = (await form()).fill().toJSON()
+		expect((await runtimeFormFromJSON({ ...json, fields: { ...json.fields, ssn: '123-45-6789' } })).getField('ssn')).toBe('123456789')
+		await expect(runtimeFormFromJSON({ ...json, fields: { ...json.fields, ssn: '12-34' } })).rejects.toThrow(FormValidationError)
 	})
 })
 

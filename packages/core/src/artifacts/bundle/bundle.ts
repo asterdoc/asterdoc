@@ -885,7 +885,7 @@ function transitionToExecuted(instance: RuntimeInstance): RuntimeInstance {
  * A resolver is behavior, not data, so it is not in the JSON: bind it here to
  * give file-backed layers back.
  */
-export function runtimeContentFromJSON(content: RuntimeContentJSON, options?: ArtifactInstanceOptions): RuntimeInstance {
+export async function runtimeContentFromJSON(content: RuntimeContentJSON, options?: ArtifactInstanceOptions): Promise<RuntimeInstance> {
 	const { kind, artifact, targetLayer, context, phase } = content
 	switch (kind) {
 		case 'form':
@@ -918,7 +918,7 @@ export function runtimeContentFromJSON(content: RuntimeContentJSON, options?: Ar
 		case 'bundle': {
 			const executed = phase === 'executed'
 			const data = content.data as { contents: Record<string, RuntimeContentJSON>; executedAt: string }
-			return runtimeBundleFromJSON(
+			return await runtimeBundleFromJSON(
 				{
 					phase,
 					bundle: artifact,
@@ -944,14 +944,14 @@ export function runtimeContentFromJSON(content: RuntimeContentJSON, options?: Ar
  * {@link runtimeContentFromJSON}; pass one to bind a resolver. `options.strictSchema`
  * refuses a bundle definition written for an earlier schema version.
  */
-export function runtimeBundleFromJSON<B extends Bundle>(
+export async function runtimeBundleFromJSON<B extends Bundle>(
 	json: RuntimeBundleJSON<B>,
-	deserializeContent: (content: RuntimeContentJSON) => RuntimeInstance = (content) => runtimeContentFromJSON(content),
+	deserializeContent: (content: RuntimeContentJSON) => Promise<RuntimeInstance> | RuntimeInstance = (content) => runtimeContentFromJSON(content),
 	options?: SchemaReadOptions,
-): RuntimeBundle<B> {
+): Promise<RuntimeBundle<B>> {
 	const contents: RuntimeBundleContents = {}
 	for (const [key, contentJson] of Object.entries(json.contents)) {
-		contents[key] = deserializeContent(contentJson)
+		contents[key] = await deserializeContent(contentJson)
 	}
 
 	const { definition, origin } = restoreDefinition(json.bundle, options)

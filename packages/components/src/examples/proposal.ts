@@ -312,7 +312,7 @@ export const proposalSpec = {
 } as const;
 
 /** The parsed, validated proposal form. */
-export const proposal = a.form(proposalSpec);
+export const proposal = await a.form.load(proposalSpec);
 
 /**
  * The same validated artifact as a plain `Form`. Everything that renders or

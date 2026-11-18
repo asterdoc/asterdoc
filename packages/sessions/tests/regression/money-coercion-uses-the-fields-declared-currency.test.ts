@@ -4,14 +4,14 @@
 import { expect, it } from "vitest";
 import { createAsterdocRuntime } from "../../src/engine/asterdoc-runtime";
 
-const rt = () => createAsterdocRuntime(artifact({ fields: { fee: { type: "money", currency: "EUR" }, open: { type: "money" } } }));
+const rt = async () => await createAsterdocRuntime(artifact({ fields: { fee: { type: "money", currency: "EUR" }, open: { type: "money" } } }));
 
-it("plain amount on a EUR field uses EUR", () => {
-  expect(rt().validateField("fee", 25)).toEqual({ ok: true, value: { amount: 25, currency: "EUR" } });
-  expect(rt().validateField("fee", "25")).toEqual({ ok: true, value: { amount: 25, currency: "EUR" } });
+it("plain amount on a EUR field uses EUR", async () => {
+  expect((await rt()).validateField("fee", 25)).toEqual({ ok: true, value: { amount: 25, currency: "EUR" } });
+  expect((await rt()).validateField("fee", "25")).toEqual({ ok: true, value: { amount: 25, currency: "EUR" } });
 });
-it("plain amount on a field with no currency is not stored as USD", () => {
-  const r = rt().validateField("open", "25");
+it("plain amount on a field with no currency is not stored as USD", async () => {
+  const r = (await rt()).validateField("open", "25");
   expect(r.ok && (r.value as { currency?: string }).currency === "USD").toBe(false);
 });
 

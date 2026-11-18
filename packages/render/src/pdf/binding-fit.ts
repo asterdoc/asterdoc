@@ -46,12 +46,12 @@
  */
 
 import { COUNTRY_CODES, countryName, displayRegion, parseMask, subdivisionsOf, type MaskSlot } from '@asterdoc/format'
-import type { BindingValue, Bindings, EnumOption, Form, FormField, Formatter, LayerFormat, ValueFormat, ValuePart } from '@asterdoc/types'
+import type { BindingValue, Bindings, EnumOption, Form, FormField, Formatter, LayerFormat, StandardPdfFont, ValueFormat, ValuePart } from '@asterdoc/types'
 import { acroFields, textFieldDrawing, widgetLayout, type AcroField } from './acroform'
 import { PdfFontSet, type PdfFont } from './drawing-fonts'
 import { layoutFieldText, MIN_FONT_SIZE, PdfFieldFillError, type FieldLayout } from './field-appearance'
 import { analyzePattern, REFERENCE_REPERTOIRE, type CharSet } from './pattern-bounds'
-import { parseBinding, splitPartIndex, templateSlotPart, type PdfBindingPart } from '../layer-bindings'
+import { bindingFonts, parseBinding, splitPartIndex, templateSlotPart, type PdfBindingPart } from '../layer-bindings'
 import { fieldDefinition } from '../layer-bindings'
 import { PdfModel } from './syntax'
 import { defaultFormatter } from '../default-formatter'
@@ -103,8 +103,10 @@ export interface CheckPdfBindingFitOptions {
   form: Form
   /** The layer's bindings, strings or binding objects; without them, fields fill the PDF fields of the same name. */
   bindings?: Bindings
-  /** The font the layer declares. */
+  /** The TrueType font the layer declares. */
   layerFont?: PdfFont
+  /** The standard font the layer declares. */
+  standardFont?: StandardPdfFont
   /** How the layer prints values, with each binding's own format merged over it. */
   format?: LayerFormat
   /** The formatter the layer is filled with, which prints labels. Defaults to the default formatter. */
@@ -616,12 +618,11 @@ function fitFailure(field: AcroField, binding: string, print: BindingPrint<Bound
  * @throws {PdfFontError} when the layer's font cannot be read.
  * @throws {PdfBindingSyntaxError} when a binding cannot be parsed.
  */
-export async function checkPdfBindingFit({ template, form, bindings, layerFont, format, formatter = defaultFormatter }: CheckPdfBindingFitOptions): Promise<PdfBindingFitIssue[]> {
+export async function checkPdfBindingFit({ template, form, bindings, layerFont, standardFont, format, formatter = defaultFormatter }: CheckPdfBindingFitOptions): Promise<PdfBindingFitIssue[]> {
   const model = await PdfModel.load(template)
   const acro = acroFields(model)
   if (!acro) return []
-  const fonts = PdfFontSet.create(model, { layerFont })
-  await fonts.readFormFonts(model.dict(acro.acroForm.entries.get('DR')))
+  const fonts = PdfFontSet.create(model, { layerFont, ...(standardFont && { standard: standardFont }), fieldFonts: bindingFonts(bindings) })
   const byName = new Map(acro.fields.map((field) => [field.name, field]))
   const entries: [string, BindingValue][] = bindings
     ? Object.entries(bindings)
@@ -678,7 +679,7 @@ function checkLayout(fonts: PdfFontSet, field: AcroField, binding: string, print
   let chosen: MeasuringFont
   try {
     const probe = print.text(sources.map((source) => source.probe))
-    chosen = fonts.select(field.name, probe, layout.appearance.fontName)
+    chosen = fonts.select(field.name, probe)
   } catch (error) {
     // Characters no font can draw are a font question, not a fit question.
     if (error instanceof PdfFieldFillError) return undefined
@@ -694,7 +695,7 @@ function checkLayout(fonts: PdfFontSet, field: AcroField, binding: string, print
   }
   for (const { kind, text } of checks) {
     try {
-      layoutFieldText(layout, text, fonts.select(field.name, text, layout.appearance.fontName))
+      layoutFieldText(layout, text, fonts.select(field.name, text))
     } catch (error) {
       if (!(error instanceof PdfFieldFillError)) throw error
       return fitFailure(field, binding, print, layout, text, kind, error)

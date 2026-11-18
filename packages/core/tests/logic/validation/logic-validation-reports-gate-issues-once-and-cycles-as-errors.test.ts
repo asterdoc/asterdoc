@@ -9,33 +9,33 @@ import { validateLogic } from '@/logic'
 import { validate } from '@/validation/artifact'
 
 describe('Logic validation reports gate issues once and treats cycles as errors', () => {
-	test('an unknown variable in a boolean gate is reported once', () => {
-		const f = form()
+	test('an unknown variable in a boolean gate is reported once', async () => {
+		const f = await form.load(form()
 			.name('f').version('1.0.0').title('F')
 			.fields({ a: { type: 'text', label: 'A', visible: 'fields.nope' } as never })
-			.build()
+			.build())
 		expect(validateLogic(f as never).issues).toEqual([
 			expect.objectContaining({ message: 'Unknown variable: "fields.nope"' }),
 		])
 	})
 
-	test('a gate that resolves but is not boolean is still a type issue', () => {
-		const f = form()
+	test('a gate that resolves but is not boolean is still a type issue', async () => {
+		const f = await form.load(form()
 			.name('f').version('1.0.0').title('F')
 			.fields({ n: { type: 'number', label: 'N' }, a: { type: 'text', label: 'A', visible: 'fields.n' } as never })
-			.build()
+			.build())
 		expect(validateLogic(f as never).issues).toEqual([
 			expect.objectContaining({ path: ['fields', 'a', 'visible'], expectedType: 'boolean', actualType: 'number' }),
 		])
 	})
 
-	test('a dependency cycle is an error that fails validate(), and issues carry no severity', () => {
-		const f = form()
+	test('a dependency cycle is an error that fails validate(), and issues carry no severity', async () => {
+		const f = await form.load(form()
 			.name('f').version('1.0.0').title('F')
 			.fields({ a: { type: 'boolean', label: 'A' } })
 			.def('x', 'y')
 			.def('y', 'x')
-			.build()
+			.build())
 		const logic = validateLogic(f as never)
 		expect(logic.issues?.map((i) => i.message)).toEqual([
 			'Circular dependency detected: defs key "x" is involved in a dependency cycle',
@@ -45,13 +45,13 @@ describe('Logic validation reports gate issues once and treats cycles as errors'
 		expect(validate(f.toJSON()).issues).toHaveLength(2)
 	})
 
-	test('definitions without a cycle pass', () => {
-		const f = form()
+	test('definitions without a cycle pass', async () => {
+		const f = await form.load(form()
 			.name('f').version('1.0.0').title('F')
 			.fields({ a: { type: 'boolean', label: 'A' } })
 			.def('x', 'fields.a')
 			.def('y', 'x')
-			.build()
+			.build())
 		expect(validateLogic(f as never).issues).toBeUndefined()
 	})
 })

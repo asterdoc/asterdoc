@@ -27,7 +27,7 @@ A layer is `inline` (content in the artifact) or `file` (a path the resolver rea
 | `title`, `description` | optional | optional | Up to 200 and 2000 characters |
 | `bindings`, `bindingsFrom` | none | PDF only | See [Bindings](#bindings) |
 | `signatures` | optional | optional | See [Signature slots](#signature-slots) |
-| `font` | none | PDF only | Font for filled values. See [pdf.md § Fonts](./pdf.md#fonts) |
+| `font` | none | PDF only | `"Helvetica"` or `"Courier"`, or a TrueType file `{ "path" }`, for filled values. See [pdf.md § Fonts](./pdf.md#fonts) |
 | `format` | optional | optional | How values print. PDF, text, Markdown, HTML, DOCX and React layers only. See [formatting.md § Artifact formats](./formatting.md#artifact-formats) |
 
 ```json schema=form
@@ -271,7 +271,7 @@ Declare a layer with `signatures` as an object, or use `.signatures()` on either
 ```typescript
 import { a } from "@asterdoc/sdk";
 
-const lease = a
+const lease = await a.form.load(a
   .form()
   .name("lease")
   .fields({ tenantName: a.field.text().label("Tenant name") })
@@ -283,7 +283,7 @@ const lease = a
     bindings: { Tenant_Name: "tenantName" },
   })
   .defaultLayer("markdown")
-  .build();
+  .build());
 ```
 
 `.inlineLayer(key, { mimeType, text, signatures? })` adds an inline layer. `.layers({ ... })` takes a record of objects or `a.layer()` chains. A chain reads `a.layer().file().path("templates/lease.pdf").mimeType("application/pdf").bindings({ Tenant_Name: "tenantName" })`, with `.title()`, `.description()`, `.checksum()`, `.font()`, `.format()`, `.signatures()` and `.bindingsFrom()`. `a.layer().inline()` has `.format()` and `.signatures()` too.

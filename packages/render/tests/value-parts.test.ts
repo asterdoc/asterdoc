@@ -4,7 +4,7 @@ import { phoneProvider } from '@asterdoc/format/phone'
 import { createTypeEnv, T } from '@asterdoc/expr'
 import { unzipSync, zipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
-import { PdfBindingSyntaxError } from '../src/index'
+import { PdfBindingSyntaxError, PdfPrintRuleError } from '../src/index'
 import { checkPdfBindingFit, extractPdfData, renderPdf } from '../src/pdf'
 import { inspectAcroFormFields } from '../src/pdf/inspect'
 import { ArtifactFieldFormatError, checkTextTemplate, formValueResolver, renderText, TemplateError } from '../src/text'
@@ -17,17 +17,17 @@ const form = {
   version: '1.0.0',
   fields: {
     dob: { type: 'date' },
-    home: { type: 'phone' },
+    home: { type: 'phone', countryCode: '1' },
     uk: { type: 'phone' },
-    fee: { type: 'money', currency: 'USD', max: 99999 },
-    small: { type: 'money', currency: 'USD' },
-    big: { type: 'money', currency: 'USD' },
+    fee: { type: 'money', currency: 'USD', min: 0, max: 99999 },
+    small: { type: 'money', currency: 'USD', min: 0 },
+    big: { type: 'money', currency: 'USD', min: 0 },
     loose: { type: 'money' },
     refund: { type: 'money' },
     yen: { type: 'money' },
     note: { type: 'text', maxLength: 20 },
     married: { type: 'boolean' },
-    lines: { type: 'list', item: { type: 'fieldset', fields: { on: { type: 'date' } } } },
+    lines: { type: 'list', maxItems: 1, item: { type: 'fieldset', fields: { on: { type: 'date' } } } },
   },
   defs: { due: { type: 'date', value: 'fields.dob' } },
 } as unknown as Form
@@ -91,10 +91,18 @@ describe('parts of a value bound to a PDF', () => {
     expect(await fill(bindings)).toEqual({ cc: '44', nn: '2079460958', ext: undefined })
   })
 
-  it('refuse areaCode and subscriberNumber on a number outside +1 with unsupported_part', async () => {
+  it('refuse areaCode and subscriberNumber on a phone field that accepts numbers of every plan, before any value', async () => {
     for (const part of ['areaCode', 'subscriberNumber'] as const) {
-      const error = await formatError(() => fill({ area: { path: 'uk', part } }))
-      expect(error.issues[0]).toMatchObject({ code: 'unsupported_part', path: 'fields.uk' })
+      const error = await failure(() => fill({ area: { path: 'uk', part } }, undefined, { fields: {} }))
+      expect(error).toBeInstanceOf(PdfPrintRuleError)
+      expect((error as Error).message).toBe(`PDF field "area" prints uk, but the part "${part}" exists only for +1 numbers, and fields.uk accepts numbers of every plan; give the field "countryCode": "1".`)
+    }
+  })
+
+  it('refuse areaCode and subscriberNumber of a number outside +1 that bypassed validation, with unsupported_part', async () => {
+    for (const part of ['areaCode', 'subscriberNumber'] as const) {
+      const error = await formatError(() => fill({ area: { path: 'home', part } }, undefined, { fields: { home: data.fields.uk } }))
+      expect(error.issues[0]).toMatchObject({ code: 'unsupported_part', path: 'fields.home' })
       expect(error.message).toContain('+44')
     }
   })
@@ -143,14 +151,27 @@ describe('parts of a value bound to a PDF', () => {
     expect(await fill({ ext: { path: 'home', part: 'extension' } }, { phone: { region: 'US' } }, berlin)).toEqual({ ext: '7' })
   })
 
-  it('refuse money parts of a negative amount or a currency without two minor digits with unsupported_part', async () => {
-    const negative = await formatError(() => fill({ units: { path: 'refund', part: 'units' } }))
-    expect(negative.issues[0]).toMatchObject({ code: 'unsupported_part', path: 'fields.refund' })
+  it('refuse money parts on a money field that accepts another currency or an amount below zero, before any value', async () => {
+    const cases: Array<[string, Record<string, unknown>, string]> = [
+      ['loose', { type: 'money', min: 0 }, 'fields.loose accepts every currency; give the field a "currency" with two minor digits, such as "USD"'],
+      ['loose', { type: 'money', currency: 'JPY', min: 0 }, 'fields.loose takes JPY, which has 0 minor digits'],
+      ['loose', { type: 'money', currency: 'USD' }, 'fields.loose accepts amounts below zero; give the field "min": 0'],
+    ]
+    for (const [path, field, problem] of cases) {
+      const declared = { ...form, fields: { ...form.fields, [path]: field } } as unknown as Form
+      const error = await failure(() => renderPdf({ template: acroFormPdf(textBoxes('cents')), form: declared, data: { fields: {} }, bindings: { cents: { path, part: 'cents' } } }))
+      expect(error).toBeInstanceOf(PdfPrintRuleError)
+      expect((error as Error).message).toBe(`PDF field "cents" prints ${path}, but the part "cents" needs a currency with two minor digits and an amount of zero or more, and ${problem}.`)
+    }
+  })
+
+  it('refuse money parts of a negative amount or a currency without two minor digits that bypassed validation, with unsupported_part', async () => {
+    const negative = await formatError(() => fill({ units: { path: 'fee', part: 'units' } }, undefined, { fields: { fee: data.fields.refund } }))
+    expect(negative.issues[0]).toMatchObject({ code: 'unsupported_part', path: 'fields.fee' })
     expect(negative.message).toContain('-3.5')
-    const yen = await formatError(() => fill({ cents: { path: 'yen', part: 'cents' } }))
-    expect(yen.issues[0]).toMatchObject({ code: 'unsupported_part', path: 'fields.yen' })
+    const yen = await formatError(() => fill({ cents: { path: 'fee', part: 'cents' } }, undefined, { fields: { fee: data.fields.yen } }))
+    expect(yen.issues[0]).toMatchObject({ code: 'unsupported_part', path: 'fields.fee' })
     expect(yen.message).toContain('JPY has 0')
-    expect(await fill({ cents: { path: 'yen', part: 'cents' } }, undefined, { fields: { ...data.fields, yen: { amount: 5, currency: 'EUR' } } })).toEqual({ cents: '00' })
   })
 
   it('fail only for a value a binding reads', async () => {
@@ -305,8 +326,9 @@ describe('reading parts back', () => {
 
   it('reports money not recoverable without both parts, or without a declared currency', async () => {
     expect(entry(await readBack({ u: { path: 'fee', part: 'units' } }), 'fee')).toMatchObject({ status: 'not_recoverable', reason: expect.stringContaining('cents is not bound') })
-    expect(entry(await readBack({ u: { path: 'loose', part: 'units' }, c: { path: 'loose', part: 'cents' } }), 'loose'))
-      .toMatchObject({ status: 'not_recoverable', reason: expect.stringContaining('currency') })
+    const pdf = acroFormPdf([{ kind: 'text', name: 'u', value: '7' }, { kind: 'text', name: 'c', value: '25' }])
+    const loose = await extractPdfData({ pdf, form, bindings: { u: { path: 'loose', part: 'units' }, c: { path: 'loose', part: 'cents' } } })
+    expect(loose.report.entries.find((item) => item.path === 'loose')).toMatchObject({ status: 'not_recoverable', reason: expect.stringContaining('currency') })
   })
 
   it('joins a phone back from its calling code and national number, with the extension only when it is bound', async () => {
@@ -389,6 +411,8 @@ const env = createTypeEnv({
   'fields.dob': T.date,
   'fields.home': T.object,
   'fields.fee': T.object,
+  'fields.uk': T.object,
+  'fields.loose': T.object,
   'fields.note': T.string,
   'fields.lines': T.array(T.object),
   'fields.lines.on': T.date,
@@ -406,6 +430,20 @@ describe('the part modifier on template placeholders', () => {
     expect(render('{{#each fields.lines}}{{ item.on | part="year" }}{{/each}}')).toBe('2024')
     expect(render('{{ due | part="year" }}')).toBe('2030')
     expect(check('{{ fields.dob | part="year" }}{{#each fields.lines}}{{ item.on | part="day" }}{{/each}}{{ fields.home | part="extension" }}')).toEqual([])
+  })
+
+  it('refuses a +1-only phone part or a money part on a field whose declaration does not hold it', () => {
+    const [phone] = check('{{ fields.uk | part="areaCode" }}')
+    expect(phone?.message).toContain('the part "areaCode" exists only for +1 numbers, and fields.uk accepts numbers of every plan; give the field "countryCode": "1".')
+    const [money] = check('{{ fields.loose | part="cents" }}')
+    expect(money?.message).toContain('fields.loose accepts every currency')
+    expect(check('{{ fields.home | part="areaCode" }}{{ fields.fee | part="cents" }}')).toEqual([])
+  })
+
+  it('refuses a PDF template binding that prints a +1-only part of a phone field of every plan, before any value', async () => {
+    const error = await failure(() => fill({ box: { template: '({{ fields.uk | part="areaCode" }})' } }, undefined, { fields: {} }))
+    expect(error).toBeInstanceOf(PdfPrintRuleError)
+    expect((error as Error).message).toBe('PDF field "box" prints {{fields.uk}}, but the part "areaCode" exists only for +1 numbers, and fields.uk accepts numbers of every plan; give the field "countryCode": "1".')
   })
 
   it('prints as before without the modifier', () => {

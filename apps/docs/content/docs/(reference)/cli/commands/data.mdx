@@ -176,7 +176,9 @@ Fill Form: Residential Lease Agreement
 
 Validate instance data against a form artifact. Exits with code 0 when the data is valid and 1 when it is not.
 
-The data is a `{ fields, parties, annexes }` payload, or bare field values that are read as `fields`. The command reports the same errors as the SDK's `form.fill(data).validate()`: expression-based `required`, party role rules, annex values, rule failures, and unknown top-level keys. With `--json`, a valid result carries the filled payload as `data`; an invalid one carries `errors`, and `ruleErrors` when a form rule fails.
+The data is a `{ fields, parties, annexes }` payload, or bare field values that are read as `fields`. The command reports the same errors as the SDK's `form.fill(data).validate()`: expression-based `required`, party role rules, annex values, rule failures, and unknown top-level keys. It answers whether the data matches the form, and reads no layer. With `--json`, a valid result carries the filled payload as `data`; an invalid one carries `errors`, and `ruleErrors` when a form rule fails.
+
+Add `--render-check <layer>` to also check that valid data renders on that layer: a PDF layer refuses a value too wide for its field, longer than a comb, or with a character the field's font cannot draw. The report is the one [`render`](/cli/commands/render) gives when it refuses. With `--json`, it is in `renderProblems`, each with the `field`, the `layer`, the `pdfField` and the `message`.
 
 ```bash
 asterdoc data validate <form-file> <data> [options]
@@ -195,6 +197,7 @@ asterdoc data validate <form-file> <data> [options]
 |--------|-------------|
 | `--json` | Output a machine-readable JSON result |
 | `--silent` | Suppress console output (exit code only) |
+| `--render-check <layer>` | Also check that valid data renders on this layer |
 
 ### Examples
 
@@ -208,6 +211,12 @@ Validate data from stdin and print a JSON result:
 
 ```bash
 cat data.json | asterdoc data validate my-form.yaml - --json
+```
+
+Check that the data also renders on the PDF layer:
+
+```bash
+asterdoc data validate w-9.json data.json --render-check pdf
 ```
 
 ---

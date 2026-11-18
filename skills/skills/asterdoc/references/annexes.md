@@ -92,12 +92,12 @@ Only a React composition reads an attachment, at `annexes.<id>` (the `asterdoc-r
 
 ## SDK
 
-`a.form({ ... })` takes plain annex objects. The builder chain takes `a.annex()` builders or plain objects.
+`await a.form.load({ ... })` takes plain annex objects. The builder chain takes `a.annex()` builders or plain objects.
 
 ```typescript
 import { a } from "@asterdoc/sdk";
 
-const form = a
+const form = await a.form.load(a
   .form()
   .name("lease-application")
   .fields({ hasPets: { type: "boolean", default: false } })
@@ -107,7 +107,7 @@ const form = a
     references: { title: "References", order: 2 },
   })
   .allowAdditionalAnnexes(true)
-  .build();
+  .build());
 ```
 
 | Method | Sets |

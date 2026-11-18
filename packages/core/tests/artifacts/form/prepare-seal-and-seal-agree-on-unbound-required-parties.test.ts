@@ -19,8 +19,8 @@ const slots: Record<string, SignatureSlot> = {
 	'sb-witness': { party: { role: 'witness' }, type: 'signature', placement: { page: 1, x: 10, y: 10, width: 100, height: 30 } },
 }
 
-const draft = () =>
-	form()
+const draft = async () =>
+	await (await form.load(form()
 		.name('slots')
 		.version('1.0.0')
 		.title('Slots')
@@ -31,7 +31,7 @@ const draft = () =>
 		})
 		.inlineLayer('md', { mimeType: 'text/markdown', text: 'Contract', signatures: slots })
 		.defaultLayer('md')
-		.build()
+		.build()))
 		.fill({ fields: { amount: 1 }, parties: { client: { id: 'client-0', name: 'C', legalName: 'C LLC' }, witness: { id: 'witness-0', name: 'W' } } })
 		.addSigner('w', { person: { name: 'W' } })
 		.addSignatory('witness', 'witness-0', { signerId: 'w' })
@@ -44,14 +44,14 @@ const problemsOf = async (run: Promise<unknown>): Promise<string[]> => {
 
 test('prepareSeal and seal reject the unbound required party with the same problems', async () => {
 	const expected = ['slot "sb-client" (client[0]) has no signatory']
-	expect(await problemsOf(draft().seal({ adapter }))).toEqual(expected)
-	expect(await problemsOf(draft().prepareSeal({ adapter }))).toEqual(expected)
+	expect(await problemsOf((await draft()).seal({ adapter }))).toEqual(expected)
+	expect(await problemsOf((await draft()).prepareSeal({ adapter }))).toEqual(expected)
 })
 
 test('once the party is bound, seal places what prepareSeal plans', async () => {
-	const bound = () => draft().addSigner('c', { person: { name: 'C' } }).addSignatory('client', 'client-0', { signerId: 'c' })
-	const prepared = await bound().prepareSeal({ adapter })
-	const sealed = await bound().seal({ adapter })
+	const bound = async () => (await draft()).addSigner('c', { person: { name: 'C' } }).addSignatory('client', 'client-0', { signerId: 'c' })
+	const prepared = await (await bound()).prepareSeal({ adapter })
+	const sealed = await (await bound()).seal({ adapter })
 	expect(sealed.signatureMap).toEqual(prepared.signatureMap)
 	expect(prepared.signatureMap.map((field) => field.id)).toEqual(['sb-client', 'sb-witness'])
 })

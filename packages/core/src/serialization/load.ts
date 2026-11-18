@@ -82,23 +82,21 @@ export function isChecklistInstance(instance: AnyArtifactInstance): instance is 
 // ============================================================================
 
 /**
- * Load an artifact from a string (YAML or JSON).
- * Auto-detects the format and parses the content, returning the appropriate
- * artifact instance based on the `kind` field.
+ * Load an artifact from a string (YAML or JSON) or a parsed object, returning
+ * the instance its `kind` names. A form is loaded with `form.load()`: every
+ * PDF layer is read through the resolver into the profile its validation
+ * checks data against, so loading is asynchronous for every kind.
  *
- * You can optionally specify the expected kind as a generic parameter for
- * compile-time type inference, or omit it and use runtime type narrowing.
+ * A string must carry `$schema`; an object without it is accepted as one
+ * built in memory with the SDK. One that names an earlier schema version is
+ * upgraded in memory to the current one, and the instance records it in
+ * `migratedFrom`; the input is never rewritten. Pass `strictSchema: true` to
+ * refuse an earlier version instead.
  *
- * The content must carry `$schema`. One that names an earlier schema version
- * is upgraded in memory to the current one, and the instance records it in
- * `migratedFrom`; the content is never rewritten. Pass `strictSchema: true`
- * to refuse an earlier version instead.
- *
- * @param content - YAML or JSON string containing the artifact definition
+ * @param input - YAML or JSON text, or a parsed artifact object
  * @param options - The resolver for file-backed layers (not for a bundle), and `strictSchema`
- * @returns An artifact instance (FormInstance, DocumentInstance, BundleInstance, or ChecklistInstance)
- * @throws LoadError if parsing fails or the artifact kind is unknown
- * @throws SchemaVersionError if `$schema` is missing, names a version newer than this SDK
+ * @throws LoadError if parsing fails, the artifact kind is unknown, or a form's PDF layer cannot be read
+ * @throws SchemaVersionError if `$schema` is missing from text, names a version newer than this SDK
  *   knows, names no published version, cannot be upgraded without loss, or, with
  *   `strictSchema`, names an earlier version
  *
@@ -106,95 +104,41 @@ export function isChecklistInstance(instance: AnyArtifactInstance): instance is 
  * ```typescript
  * import { load } from '@asterdoc/core'
  *
- * // With generic parameter - compile-time typing
- * const checklist = load<'checklist'>(fileContents)
- * checklist.items // ✅ TypeScript knows this is ChecklistInstance
- *
- * // Without generic - runtime type narrowing
- * const artifact = load(fileContents)
- * if (artifact.kind === 'checklist') {
- *   artifact.items // ✅ TypeScript narrows the type here
- * }
+ * const contract = await load<'form'>(fileContents, { resolver })
+ * const artifact = await load(fileContents)
+ * if (artifact.kind === 'checklist') artifact.items
  * ```
  */
-export function load<_K extends 'form'>(content: string, options?: ArtifactInstanceOptions): FormInstance<Form>;
-export function load<_K extends 'document'>(content: string, options?: ArtifactInstanceOptions): DocumentInstance<Document>;
-export function load<_K extends 'bundle'>(content: string, options?: SchemaReadOptions): BundleInstance<Bundle>;
-export function load<_K extends 'checklist'>(content: string, options?: ArtifactInstanceOptions): ChecklistInstance<Checklist>;
-export function load(content: string, options?: ArtifactInstanceOptions): AnyArtifactInstance;
-export function load(content: string, options?: ArtifactInstanceOptions): AnyArtifactInstance {
+export function load<_K extends 'form'>(input: unknown, options?: ArtifactInstanceOptions): Promise<FormInstance<Form>>;
+export function load<_K extends 'document'>(input: unknown, options?: ArtifactInstanceOptions): Promise<DocumentInstance<Document>>;
+export function load<_K extends 'bundle'>(input: unknown, options?: SchemaReadOptions): Promise<BundleInstance<Bundle>>;
+export function load<_K extends 'checklist'>(input: unknown, options?: ArtifactInstanceOptions): Promise<ChecklistInstance<Checklist>>;
+export function load(input: unknown, options?: ArtifactInstanceOptions): Promise<AnyArtifactInstance>;
+export async function load(input: unknown, options?: ArtifactInstanceOptions): Promise<AnyArtifactInstance> {
+  if (typeof input !== 'string') return loadArtifactObject(input, options, { required: false })
   let parsed: unknown
-
   try {
-    parsed = parse(content)
+    parsed = parse(input)
   } catch (err) {
     throw new LoadError(
       'Failed to parse content as YAML or JSON',
       err instanceof Error ? err : new Error(String(err))
     )
   }
-
   return loadArtifactObject(parsed, options, { required: true })
 }
 
 /**
- * Load an artifact from a parsed object.
- * Returns the appropriate artifact instance based on the `kind` field.
- *
- * You can optionally specify the expected kind as a generic parameter for
- * compile-time type inference, or rely on type inference from the object's
- * literal `kind` type, or use runtime type narrowing.
- *
- * An object without `$schema` is accepted as one built in memory with the
- * SDK. One that declares an earlier schema version is upgraded in memory, as
- * with {@link load}; the object is never changed.
- *
- * @param obj - A parsed object containing the artifact definition
- * @param options - The resolver for file-backed layers (not for a bundle), and `strictSchema`
- * @returns An artifact instance (FormInstance, DocumentInstance, etc.)
- * @throws LoadError if the object is invalid or the artifact kind is unknown
- * @throws SchemaVersionError if the object declares a `$schema` that names a version newer
- *   than this SDK knows, names no published version, cannot be upgraded without loss, or,
- *   with `strictSchema`, names an earlier version
- *
- * @example
- * ```typescript
- * import { loadFromObject } from '@asterdoc/core'
- *
- * // With generic parameter - compile-time typing
- * const parsed = JSON.parse(fileContents)
- * const checklist = loadFromObject<'checklist'>(parsed)
- * checklist.items // ✅ TypeScript knows this is ChecklistInstance
- *
- * // With literal kind type - automatic inference
- * const obj = { kind: 'form' as const, name: 'my-form', version: '1.0.0' }
- * const form = loadFromObject(obj) // TypeScript infers FormInstance<Form>
- * ```
- */
-export function loadFromObject<_K extends 'form'>(obj: unknown, options?: ArtifactInstanceOptions): FormInstance<Form>;
-export function loadFromObject<_K extends 'document'>(obj: unknown, options?: ArtifactInstanceOptions): DocumentInstance<Document>;
-export function loadFromObject<_K extends 'bundle'>(obj: unknown, options?: SchemaReadOptions): BundleInstance<Bundle>;
-export function loadFromObject<_K extends 'checklist'>(obj: unknown, options?: ArtifactInstanceOptions): ChecklistInstance<Checklist>;
-export function loadFromObject<T extends { kind: 'form' }>(obj: T, options?: ArtifactInstanceOptions): FormInstance<Form>;
-export function loadFromObject<T extends { kind: 'document' }>(obj: T, options?: ArtifactInstanceOptions): DocumentInstance<Document>;
-export function loadFromObject<T extends { kind: 'bundle' }>(obj: T, options?: SchemaReadOptions): BundleInstance<Bundle>;
-export function loadFromObject<T extends { kind: 'checklist' }>(obj: T, options?: ArtifactInstanceOptions): ChecklistInstance<Checklist>;
-export function loadFromObject(obj: unknown, options?: ArtifactInstanceOptions): AnyArtifactInstance;
-export function loadFromObject(obj: unknown, options?: ArtifactInstanceOptions): AnyArtifactInstance {
-  return loadArtifactObject(obj, options, { required: false })
-}
-
-/**
  * Load a parsed artifact. `required` applies the rule for artifact files:
- * `$schema` must be present. Each kind's `.from()` then applies the schema
+ * `$schema` must be present. Each kind's loader then applies the schema
  * version rule: an earlier version is upgraded in memory unless
  * `strictSchema` refuses it.
  */
-function loadArtifactObject(
+async function loadArtifactObject(
   obj: unknown,
   options: ArtifactInstanceOptions | undefined,
   version: { required: boolean },
-): AnyArtifactInstance {
+): Promise<AnyArtifactInstance> {
   if (!obj || typeof obj !== 'object') {
     throw new LoadError('Invalid artifact: expected an object')
   }
@@ -206,9 +150,7 @@ function loadArtifactObject(
   const kind = obj.kind
 
   // Outside the try, so it surfaces as itself rather than as a LoadError about
-  // a bundle that is in fact perfectly loadable. The typed bundle overloads
-  // take no resolver; this is the untyped path, where the kind is only
-  // known once the object has been read.
+  // a bundle that is in fact perfectly loadable.
   if (kind === 'bundle' && options?.resolver) throw new BundleResolverError()
 
   if (!ARTIFACT_KINDS.has(kind)) throw new LoadError(`Unknown artifact kind: "${kind}"`)
@@ -220,7 +162,7 @@ function loadArtifactObject(
   try {
     switch (kind) {
       case 'form':
-        return form.from(obj, options) as FormInstance<Form>
+        return await form.load(obj as never, options) as FormInstance<Form>
 
       case 'document':
         return document.from(obj, options) as DocumentInstance<Document>
@@ -248,138 +190,16 @@ function loadArtifactObject(
 }
 
 /**
- * Safely load an artifact from a string (YAML or JSON).
- * Returns a result object instead of throwing.
- *
- * You can optionally specify the expected kind as a generic parameter for
- * compile-time type inference, or omit it and use runtime type narrowing.
- *
- * @param content - YAML or JSON string containing the artifact definition
- * @returns A result object with success status and either the artifact or error
- *
- * @example
- * ```typescript
- * import { safeLoad } from '@asterdoc/core'
- *
- * // With generic parameter - compile-time typing
- * const result = safeLoad<'checklist'>(fileContents)
- * if (result.success) {
- *   result.data.items // ✅ TypeScript knows this is ChecklistInstance
- * }
- *
- * // Without generic - runtime type narrowing
- * const result = safeLoad(fileContents)
- * if (result.success && result.data.kind === 'checklist') {
- *   result.data.items // ✅ TypeScript narrows the type here
- * }
- * ```
+ * {@link load}, with the failure as a result instead of a thrown error.
  */
-export function safeLoad<_K extends 'form'>(
-  content: string,
-  options?: ArtifactInstanceOptions
-): { success: true; data: FormInstance<Form> } | { success: false; error: LoadError };
-export function safeLoad<_K extends 'document'>(
-  content: string,
-  options?: ArtifactInstanceOptions
-): { success: true; data: DocumentInstance<Document> } | { success: false; error: LoadError };
-export function safeLoad<_K extends 'bundle'>(
-  content: string,
-  options?: SchemaReadOptions
-): { success: true; data: BundleInstance<Bundle> } | { success: false; error: LoadError };
-export function safeLoad<_K extends 'checklist'>(
-  content: string,
-  options?: ArtifactInstanceOptions
-): { success: true; data: ChecklistInstance<Checklist> } | { success: false; error: LoadError };
-export function safeLoad(
-  content: string,
-  options?: ArtifactInstanceOptions
-): { success: true; data: AnyArtifactInstance } | { success: false; error: LoadError };
-export function safeLoad(
-  content: string,
-  options?: ArtifactInstanceOptions
-): { success: true; data: AnyArtifactInstance } | { success: false; error: LoadError } {
+export function safeLoad<_K extends 'form'>(input: unknown, options?: ArtifactInstanceOptions): Promise<{ success: true; data: FormInstance<Form> } | { success: false; error: LoadError }>;
+export function safeLoad<_K extends 'document'>(input: unknown, options?: ArtifactInstanceOptions): Promise<{ success: true; data: DocumentInstance<Document> } | { success: false; error: LoadError }>;
+export function safeLoad<_K extends 'bundle'>(input: unknown, options?: SchemaReadOptions): Promise<{ success: true; data: BundleInstance<Bundle> } | { success: false; error: LoadError }>;
+export function safeLoad<_K extends 'checklist'>(input: unknown, options?: ArtifactInstanceOptions): Promise<{ success: true; data: ChecklistInstance<Checklist> } | { success: false; error: LoadError }>;
+export function safeLoad(input: unknown, options?: ArtifactInstanceOptions): Promise<{ success: true; data: AnyArtifactInstance } | { success: false; error: LoadError }>;
+export async function safeLoad(input: unknown, options?: ArtifactInstanceOptions): Promise<{ success: true; data: AnyArtifactInstance } | { success: false; error: LoadError }> {
   try {
-    const artifact = load(content, options)
-    return { success: true, data: artifact }
-  } catch (err) {
-    const error = err instanceof LoadError ? err : new LoadError(String(err), err instanceof Error ? err : undefined)
-    return { success: false, error }
-  }
-}
-
-/**
- * Safely load an artifact from a parsed object.
- * Returns a result object instead of throwing.
- *
- * You can optionally specify the expected kind as a generic parameter for
- * compile-time type inference, or rely on type inference from the object's
- * literal `kind` type, or use runtime type narrowing.
- *
- * @param obj - A parsed object containing the artifact definition
- * @returns A result object with success status and either the artifact or error
- *
- * @example
- * ```typescript
- * import { safeLoadFromObject } from '@asterdoc/core'
- *
- * // With generic parameter - compile-time typing
- * const parsed = JSON.parse(fileContents)
- * const result = safeLoadFromObject<'checklist'>(parsed)
- * if (result.success) {
- *   result.data.items // ✅ TypeScript knows this is ChecklistInstance
- * }
- *
- * // With literal kind type - automatic inference
- * const obj = { kind: 'checklist' as const, name: 'my-list', version: '1.0.0' }
- * const result = safeLoadFromObject(obj)
- * if (result.success) {
- *   result.data.items // ✅ TypeScript infers ChecklistInstance
- * }
- * ```
- */
-export function safeLoadFromObject<_K extends 'form'>(
-  obj: unknown,
-  options?: ArtifactInstanceOptions
-): { success: true; data: FormInstance<Form> } | { success: false; error: LoadError };
-export function safeLoadFromObject<_K extends 'document'>(
-  obj: unknown,
-  options?: ArtifactInstanceOptions
-): { success: true; data: DocumentInstance<Document> } | { success: false; error: LoadError };
-export function safeLoadFromObject<_K extends 'bundle'>(
-  obj: unknown,
-  options?: SchemaReadOptions
-): { success: true; data: BundleInstance<Bundle> } | { success: false; error: LoadError };
-export function safeLoadFromObject<_K extends 'checklist'>(
-  obj: unknown,
-  options?: ArtifactInstanceOptions
-): { success: true; data: ChecklistInstance<Checklist> } | { success: false; error: LoadError };
-export function safeLoadFromObject<T extends { kind: 'form' }>(
-  obj: T,
-  options?: ArtifactInstanceOptions
-): { success: true; data: FormInstance<Form> } | { success: false; error: LoadError };
-export function safeLoadFromObject<T extends { kind: 'document' }>(
-  obj: T,
-  options?: ArtifactInstanceOptions
-): { success: true; data: DocumentInstance<Document> } | { success: false; error: LoadError };
-export function safeLoadFromObject<T extends { kind: 'bundle' }>(
-  obj: T,
-  options?: SchemaReadOptions
-): { success: true; data: BundleInstance<Bundle> } | { success: false; error: LoadError };
-export function safeLoadFromObject<T extends { kind: 'checklist' }>(
-  obj: T,
-  options?: ArtifactInstanceOptions
-): { success: true; data: ChecklistInstance<Checklist> } | { success: false; error: LoadError };
-export function safeLoadFromObject(
-  obj: unknown,
-  options?: ArtifactInstanceOptions
-): { success: true; data: AnyArtifactInstance } | { success: false; error: LoadError };
-export function safeLoadFromObject(
-  obj: unknown,
-  options?: ArtifactInstanceOptions
-): { success: true; data: AnyArtifactInstance } | { success: false; error: LoadError } {
-  try {
-    const artifact = loadFromObject(obj, options)
-    return { success: true, data: artifact }
+    return { success: true, data: await load(input, options) }
   } catch (err) {
     const error = err instanceof LoadError ? err : new LoadError(String(err), err instanceof Error ? err : undefined)
     return { success: false, error }

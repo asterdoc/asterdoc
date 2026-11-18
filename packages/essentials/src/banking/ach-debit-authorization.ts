@@ -923,9 +923,13 @@ const resolver = createMemoryResolver({ contents });
  *
  * Authorization by which a payer (consumer or business) authorizes a named originator to initiate ACH debit entries against a deposit account at a named financial institution. Supports one-time and recurring debits, fixed or variable amounts, and is governed by NACHA Operating Rules and (for consumers) Regulation E.
  */
-export const achDebitAuthorization = Object.assign(a.form(schema, { resolver }), {
+export const achDebitAuthorization = {
   /** The raw form spec, exactly as released. */
   spec: schema,
-});
+  /** Reads the form's bundled layer files, for a host that loads the spec itself. */
+  resolver,
+  /** Load the form on its bundled files. */
+  load: () => a.form.load(schema, { resolver }),
+};
 
 export default achDebitAuthorization;

@@ -6,17 +6,11 @@ import type {
   RenderRequest,
 } from '@asterdoc/types'
 import { requestRenderData } from '../render-data'
-import type { PdfFont } from './drawing-fonts'
 import { renderPdf, type RenderPdfOptions } from './render'
 import { requestExpressions, type TemplateExpressionOptions } from '../template/context'
 
 export interface PdfRendererOptions {
   formatter?: Formatter
-  /**
-   * A font supplied at render time, such as a licensed corporate font. It is
-   * tried before the font the layer declares.
-   */
-  font?: PdfFont
   /** Configured functions binding templates can call when no artifact context is supplied. */
   expressions?: Pick<TemplateExpressionOptions, 'functions' | 'signatures'>
 }
@@ -35,8 +29,8 @@ export function requestPdfOptions(request: RenderRequest<PdfLayer>, options: Pdf
     formatter: request.ctx?.formatter ?? options.formatter ?? defaultFormatter,
     bindings: template.bindings,
     expressions: requestExpressions(options.expressions, request.ctx?.expressions),
-    font: options.font,
     layerFont: template.font && { bytes: template.font.content, source: template.font.path },
+    ...(template.standardFont && { standardFont: template.standardFont }),
     ...(template.format && { format: template.format }),
   }
 }

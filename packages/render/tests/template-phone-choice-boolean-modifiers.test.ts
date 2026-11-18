@@ -1,7 +1,7 @@
 import { unzipSync, zipSync } from 'fflate'
 import { createFormatter } from '@asterdoc/format'
 import { createTypeEnv, T } from '@asterdoc/expr'
-import type { Form } from '@asterdoc/types'
+import type { Form, LayerFormat } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
 import { checkTextTemplate, formValueResolver, renderText, TemplateError } from '../src/text'
 import { checkDocxTemplate, renderDocx } from '../src/docx'
@@ -10,7 +10,7 @@ const form = {
   kind: 'form',
   name: 'phone-choice-boolean-modifiers',
   fields: {
-    us: { type: 'phone', label: 'US' },
+    us: { type: 'phone', label: 'US', countryCode: '1' },
     uk: { type: 'phone', label: 'UK' },
     status: { type: 'enum', label: 'Status', enum: [{ value: 'S', label: 'Single' }, { value: 'M', label: 'Married' }] },
     colors: { type: 'multiselect', label: 'Colors', enum: [{ value: 'r', label: 'Red' }, { value: 'b', label: 'Blue' }] },
@@ -51,7 +51,7 @@ const env = createTypeEnv({
 const values = formValueResolver(form)
 
 const render = (template: string, options: Partial<Parameters<typeof renderText>[0]> = {}) => renderText({ form, data, template, ...options })
-const check = (template: string) => checkTextTemplate(template, env, { values })
+const check = (template: string, format?: LayerFormat) => checkTextTemplate(template, env, { values, ...(format && { format }) })
 
 describe('phone, choice and boolean modifiers on template placeholders', () => {
   it('print a phone in the style a modifier names, with the extension, and in the region it names', () => {
@@ -62,12 +62,17 @@ describe('phone, choice and boolean modifiers on template placeholders', () => {
     expect(check('{{ fields.us | phone.style="national", phone.region="US" }}')).toEqual([])
   })
 
+  it('refuse at check a phone.region style on a phone of every plan', () => {
+    expect(check('{{ fields.uk | phone.style="national", phone.region="US" }}')).toEqual([expect.objectContaining({ code: 'print', message: expect.stringContaining('fields.uk accepts numbers of every plan; give the field "countryCode": "1"') })])
+    expect(check('{{ fields.uk }}', { phone: { style: 'digits', region: 'US' } })).toHaveLength(1)
+  })
+
   it('refuse at render a national number of another plan than phone.region names', () => {
     expect(() => render('{{ fields.uk | phone.style="national", phone.region="US" }}')).toThrowError(/calling code \+44/)
   })
 
-  it('accept at check a phone.region the phone provider has no plan for, and refuse it at render', () => {
-    expect(check('{{ fields.us | phone.style="national", phone.region="AQ" }}')).toEqual([])
+  it('refuse at check and at render a phone.region the phone provider has no plan for', () => {
+    expect(check('{{ fields.us | phone.style="national", phone.region="AQ" }}')).toEqual([expect.objectContaining({ code: 'print', message: 'it prints as national under phone.region "AQ", which refuses a number of another plan, and that region has no numbering plan, so every number is refused.' })])
     expect(() => render('{{ fields.us | phone.style="national", phone.region="AQ" }}')).toThrowError(/Phone region "AQ" names no numbering plan/)
   })
 

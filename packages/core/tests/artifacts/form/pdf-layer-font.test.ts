@@ -46,29 +46,27 @@ const definition = (layerFont?: { path: string }) => ({
 const resolver = createMemoryResolver({ contents: { 'form.pdf': template, 'fonts/cyrillic.ttf': font } })
 const latin1 = new TextDecoder('latin1')
 
-const filled = (layerFont?: { path: string }) =>
-	a.form(definition(layerFont), { resolver })
+const filled = async (layerFont?: { path: string }) =>
+	await (await a.form.load(definition(layerFont), { resolver }))
 		.fill({ fields: { name: 'Жук' }, parties: { signer: { id: 'signer-0', name: 'Ада' } } })
 
 describe('a PDF layer that declares a font', () => {
 	test('renders text only the font covers, embedding the font', async () => {
-		const output = await filled({ path: 'fonts/cyrillic.ttf' }).render({ renderer: createLayerRenderer() }) as Uint8Array
+		const output = await (await filled({ path: 'fonts/cyrillic.ttf' })).render({ renderer: createLayerRenderer() }) as Uint8Array
 		const source = latin1.decode(output)
 		expect(source).toContain('/BaseFont /AsterdocTestCyrillic')
 		expect(source).toContain('/FontFile2')
 	})
 
-	test('fails without it, naming the field and the character', async () => {
-		await expect(filled().render({ renderer: createLayerRenderer() })).rejects.toMatchObject({
-			name: 'PdfFieldFillError',
-			field: 'name',
-			reason: 'missing-glyph',
-			character: 'Ж',
+	test('refuses to render without it, naming the field and the character', async () => {
+		await expect((async () => (await filled()).render({ renderer: createLayerRenderer() }))()).rejects.toMatchObject({
+			name: 'RenderRefusedError',
+			problems: [expect.objectContaining({ field: 'fields.name', pdfField: 'name', message: expect.stringContaining('no available font can draw "Ж"') })],
 		})
 	})
 
 	test('seals with the font, hashing the same document every time', async () => {
-		const seal = () => filled({ path: 'fonts/cyrillic.ttf' })
+		const seal = async () => (await filled({ path: 'fonts/cyrillic.ttf' }))
 			.addSigner('ada', { person: { name: 'Ада' } })
 			.addSignatory('signer', 'signer-0', { signerId: 'ada' })
 			.seal()
@@ -77,27 +75,13 @@ describe('a PDF layer that declares a font', () => {
 		expect(second.canonicalPdfHash).toBe(first.canonicalPdfHash)
 	})
 
-	test('fails the way a missing layer file does when the resolver cannot find the font', async () => {
-		const missingPdf = await a.form(definition(), { resolver: createMemoryResolver({ contents: {} }) })
-			.fill({ fields: { name: 'Ada' } })
-			.render({ renderer: createLayerRenderer() })
+	test('fails the load the way a missing layer file does when the resolver cannot find the font', async () => {
+		const missingPdf = await a.form.load(definition(), { resolver: createMemoryResolver({ contents: {} }) })
 			.then(() => undefined, (error: unknown) => error as Error)
 		const missingFont = await filled({ path: 'fonts/absent.ttf' })
-			.render({ renderer: createLayerRenderer() })
 			.then(() => undefined, (error: unknown) => error as Error)
 		expect(missingFont?.constructor).toBe(missingPdf?.constructor)
-		expect(missingFont?.message).toBe(missingPdf?.message.replace('form.pdf', 'fonts/absent.ttf'))
-	})
-
-	test('a render-time font wins over the declared font', async () => {
-		const output = await filled({ path: 'fonts/cyrillic.ttf' }).render({
-			renderer: createLayerRenderer({ pdfFont: { bytes: font, source: 'override.ttf' } }),
-		}) as Uint8Array
-		// The override drew the value, so the declared font was never embedded.
-		const source = latin1.decode(output)
-		expect(source).toContain('/PdrFontOverride')
-		expect(source).not.toContain('/PdrFontLayer')
-		expect(source.match(/\/FontFile2/g)).toHaveLength(1)
+		expect(missingFont?.message).toBe(missingPdf?.message.replaceAll('form.pdf', 'fonts/absent.ttf'))
 	})
 })
 

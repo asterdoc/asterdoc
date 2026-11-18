@@ -45,8 +45,14 @@ const pdfForm = (checksums: { layer?: string; font?: string } = {}) => ({
 const files = (overrides: Record<string, Uint8Array> = {}) =>
 	createMemoryResolver({ contents: { 'form.pdf': template, 'fonts/cyrillic.ttf': font, ...overrides } })
 
-const draft = (checksums: { layer?: string; font?: string }, resolver = files()) =>
-	a.form(pdfForm(checksums), { resolver })
+/** A resolver whose files are changed after the form loads, as a file changed on disk would be. */
+const changing = () => {
+	const contents: Record<string, Uint8Array> = { 'form.pdf': template, 'fonts/cyrillic.ttf': font }
+	return { resolver: { read: async (path: string) => contents[path.replace(/^\.\//, '')]! }, change: (path: string, bytes: Uint8Array) => { contents[path] = bytes } }
+}
+
+const draft = async (checksums: { layer?: string; font?: string }, resolver = files()) =>
+	await (await a.form.load(pdfForm(checksums), { resolver }))
 		.fill({ fields: { name: 'Жук' }, parties: { signer: { id: 'signer-0', name: 'Ада' } } })
 		.addSigner('ada', { person: { name: 'Ада' } })
 		.addSignatory('signer', 'signer-0', { signerId: 'ada' })
@@ -59,44 +65,64 @@ async function failure(run: () => Promise<unknown>): Promise<LayerChecksumError>
 
 describe('a file layer that declares checksums', () => {
 	test('renders and seals when the template and font bytes match', async () => {
-		const form = draft({ layer: TEMPLATE, font: FONT })
-		expect(await form.render()).toBeInstanceOf(Uint8Array)
-		expect((await form.seal()).canonicalPdfHash).toMatch(/^sha256:[a-f0-9]{64}$/)
+		const form = await draft({ layer: TEMPLATE, font: FONT })
+		expect(await (await form).render()).toBeInstanceOf(Uint8Array)
+		expect((await (await form).seal()).canonicalPdfHash).toMatch(/^sha256:[a-f0-9]{64}$/)
 	})
 
-	test('fails the render of tampered template bytes, naming the layer and both digests', async () => {
+	test('fails the load of tampered template bytes, naming the layer and both digests', async () => {
 		const bad = tampered(template)
-		const error = await failure(() => draft({ layer: TEMPLATE, font: FONT }, files({ 'form.pdf': bad })).render())
+		const error = await failure(async () => await draft({ layer: TEMPLATE, font: FONT }, files({ 'form.pdf': bad })))
+		expect(error).toMatchObject({ layerKey: 'pdf', path: 'form.pdf', target: 'layer', expected: TEMPLATE, actual: checksumOf(bad) })
+	})
+
+	test('fails the render of template bytes tampered after the load, naming the layer and both digests', async () => {
+		const bad = tampered(template)
+		const { resolver, change } = changing()
+		const loaded = await draft({ layer: TEMPLATE, font: FONT }, resolver)
+		change('form.pdf', bad)
+		const error = await failure(async () => loaded.render())
 		expect(error).toMatchObject({ layerKey: 'pdf', path: 'form.pdf', target: 'layer', expected: TEMPLATE, actual: checksumOf(bad) })
 		expect(error.message).toContain('Layer "pdf" file "form.pdf" does not match its checksum')
 		expect(error.message).toContain(TEMPLATE)
 		expect(error.message).toContain(checksumOf(bad))
 	})
 
-	test('fails the seal of tampered template bytes', async () => {
-		const error = await failure(() => draft({ layer: TEMPLATE }, files({ 'form.pdf': tampered(template) })).seal())
+	test('fails the seal of template bytes tampered after the load', async () => {
+		const { resolver, change } = changing()
+		const loaded = await draft({ layer: TEMPLATE }, resolver)
+		change('form.pdf', tampered(template))
+		const error = await failure(async () => loaded.seal())
 		expect(error.target).toBe('layer')
 	})
 
 	test('fails the render and the seal of tampered font bytes, naming the font and both digests', async () => {
 		const bad = tampered(font)
-		const resolver = files({ 'fonts/cyrillic.ttf': bad })
-		const rendered = await failure(() => draft({ layer: TEMPLATE, font: FONT }, resolver).render())
+		const { resolver, change } = changing()
+		const loaded = await draft({ layer: TEMPLATE, font: FONT }, resolver)
+		const loadedForSeal = await draft({ font: FONT }, resolver)
+		change('fonts/cyrillic.ttf', bad)
+		const rendered = await failure(async () => loaded.render())
 		expect(rendered).toMatchObject({ layerKey: 'pdf', path: 'fonts/cyrillic.ttf', target: 'font', expected: FONT, actual: checksumOf(bad) })
 		expect(rendered.message).toContain('The font of layer "pdf" ("fonts/cyrillic.ttf") does not match its checksum')
-		const sealed = await failure(() => draft({ font: FONT }, resolver).seal())
+		const sealed = await failure(async () => loadedForSeal.seal())
 		expect(sealed.target).toBe('font')
 	})
 
-	test('fails a definition-level render of tampered bytes too', async () => {
-		const form = a.form(pdfForm({ layer: TEMPLATE }), { resolver: files({ 'form.pdf': tampered(template) }) })
+	test('fails a definition-level render of bytes tampered after the load too', async () => {
+		const { resolver, change } = changing()
+		const form = await a.form.load(pdfForm({ layer: TEMPLATE }), { resolver })
+		change('form.pdf', tampered(template))
 		await failure(() => form.render({ data: { fields: { name: 'Жук' } } }))
 	})
 
 	test('fails the bundle seal of a part whose template was tampered with, naming the part', async () => {
 		const bundle = { kind: 'bundle' as const, name: 'packet', contents: [{ key: 'form', type: 'path' as const, path: './form.json' }] }
+		const { resolver, change } = changing()
+		const part = await draft({ layer: TEMPLATE }, resolver)
+		change('form.pdf', tampered(template))
 		const failed = await sealBundle(bundle, {
-			contents: { form: draft({ layer: TEMPLATE }, files({ 'form.pdf': tampered(template) })) },
+			contents: { form: part },
 		}).then(() => undefined, (caught: unknown) => caught as Error & { part?: string; cause?: unknown })
 		expect(failed?.part).toBe('form')
 		expect(failed?.cause).toBeInstanceOf(LayerChecksumError)
@@ -106,8 +132,8 @@ describe('a file layer that declares checksums', () => {
 describe('a file layer that declares no checksum', () => {
 	test('renders and seals whatever bytes the resolver returns', async () => {
 		const resolver = files({ 'form.pdf': tampered(template), 'fonts/cyrillic.ttf': font })
-		await expect(draft({}, resolver).render()).resolves.toBeInstanceOf(Uint8Array)
-		expect((await draft({}, resolver).seal()).phase).toBe('signable')
+		await expect((async () => (await draft({}, resolver)).render())()).resolves.toBeInstanceOf(Uint8Array)
+		expect((await (await draft({}, resolver)).seal()).phase).toBe('signable')
 	})
 })
 

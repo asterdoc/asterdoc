@@ -15,14 +15,14 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const fixturesRoot = path.resolve(__dirname, '../fixtures/templates')
 
-describe('Text Layers Guide', () => {
+describe('Text Layers Guide', async () => {
   // ============================================================================
   // Step 4: Define the Form
   // ============================================================================
 
   const resolver = createFsResolver({ root: fixturesRoot })
 
-  const leaseAgreement = a.form({
+  const leaseAgreement = await a.form.load({
     name: 'lease-agreement',
     title: 'Residential Lease Agreement',
     fields: {

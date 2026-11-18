@@ -188,7 +188,7 @@ export interface TextDrawing {
   comb?: number
 }
 
-interface DrawnValue extends TextDrawing {
+export interface DrawnValue extends TextDrawing {
   text: string
 }
 
@@ -227,7 +227,7 @@ function textAppearance(model: PdfModel, fonts: PdfFontSet, field: AcroField, wi
   const layout = widgetLayout(model, field, widget, value)
   if (!layout) return
   const { width, height, appearance } = layout
-  const font = fonts.select(field.name, value.text, appearance.fontName)
+  const font = fonts.select(field.name, value.text)
   const text = layoutFieldText(layout, value.text, font)
   const stream = new TextEncoder().encode(
     `/Tx BMC\nq\n0 0 ${width} ${height} re W n\nBT\n${appearance.color}\n${text}\nET\nQ\nEMC`,
@@ -244,7 +244,7 @@ function textAppearance(model: PdfModel, fonts: PdfFontSet, field: AcroField, wi
         entries: new Map<string, PdfValue>([
           ['Font', {
             kind: 'dict',
-            entries: new Map<string, PdfValue>([[font.resourceName, font.reference()]]),
+            entries: new Map<string, PdfValue>(font.resources(value.text)),
           }],
         ]),
       }],
@@ -285,13 +285,18 @@ interface ChoiceSelection {
   drawn: DrawnValue
 }
 
-function choiceSelection(model: PdfModel, field: AcroField, value: unknown): ChoiceSelection {
-  const multiSelect = (field.flags & MULTI_SELECT) !== 0
+/** The text a choice field shows for `value`, and how it draws it, given its options and flags. */
+export function choiceDrawing(flags: number, options: ReadonlyArray<{ value: string; display: string }>, value: unknown): { multiSelect: boolean; selected: string[]; drawn: DrawnValue } {
+  const multiSelect = (flags & MULTI_SELECT) !== 0
   const selected = multiSelect && Array.isArray(value) ? value.map(String) : [String(value)]
-  const options = choiceOptions(model, field)
   const shown = selected.map((item) => options.find((option) => option.value === item)?.display ?? item)
-  const listBox = (field.flags & COMBO) === 0
-  return { multiSelect, selected, options, drawn: { text: listBox ? shown.join('\n') : shown.join(', '), multiline: listBox } }
+  const listBox = (flags & COMBO) === 0
+  return { multiSelect, selected, drawn: { text: listBox ? shown.join('\n') : shown.join(', '), multiline: listBox } }
+}
+
+function choiceSelection(model: PdfModel, field: AcroField, value: unknown): ChoiceSelection {
+  const options = choiceOptions(model, field)
+  return { ...choiceDrawing(field.flags, options, value), options }
 }
 
 function setChoiceValue(model: PdfModel, fonts: PdfFontSet, field: AcroField, value: unknown): void {

@@ -24,14 +24,14 @@ function pageBlock(lang: string): string {
   return match[2]!.split('\n').map((line) => line.slice(indent.length)).join('\n')
 }
 
-describe('Quickstart Guide', () => {
+describe('Quickstart Guide', async () => {
   // ============================================================================
   // Step 2: Define the Form
   // ============================================================================
 
   const resolver = createFsResolver({ root: fixturesRoot })
 
-  const purchaseAgreement = a
+  const purchaseAgreement = await a.form.load(a
     .form()
     .name('purchase-agreement')
     .title('Purchase Agreement')
@@ -49,7 +49,7 @@ describe('Quickstart Guide', () => {
       markdown: a.layer().file().mimeType('text/markdown').path('purchase-agreement.md'),
     })
     .defaultLayer('markdown')
-    .build({ resolver })
+    .build(), { resolver })
 
   test('defines the form correctly', () => {
     expect(purchaseAgreement).toBeDefined()
@@ -124,7 +124,7 @@ describe('Quickstart Guide', () => {
   // Step 7: Save Artifact
   // ============================================================================
 
-  test('serializes to JSON', () => {
+  test('serializes to JSON', async () => {
     const json = purchaseAgreement.toJSON()
     expect(json).toBeDefined()
     expect(typeof json).toBe('object')
@@ -132,7 +132,7 @@ describe('Quickstart Guide', () => {
     expect(json.name).toBe('purchase-agreement')
   })
 
-  test('serializes to YAML', () => {
+  test('serializes to YAML', async () => {
     const yaml = purchaseAgreement.toYAML()
     expect(yaml).toBeDefined()
     expect(typeof yaml).toBe('string')
@@ -140,25 +140,25 @@ describe('Quickstart Guide', () => {
     expect(yaml).toContain('name: purchase-agreement')
   })
 
-  test('the saved JSON on the page is what toJSON produces', () => {
+  test('the saved JSON on the page is what toJSON produces', async () => {
     expect(JSON.parse(pageBlock('json'))).toEqual(purchaseAgreement.toJSON())
   })
 
-  test('the saved YAML on the page is what toYAML produces', () => {
+  test('the saved YAML on the page is what toYAML produces', async () => {
     expect(pageBlock('yaml').trimEnd()).toBe(purchaseAgreement.toYAML().trimEnd())
   })
 
-  test('round-trips through JSON', () => {
+  test('round-trips through JSON', async () => {
     const jsonStr = JSON.stringify(purchaseAgreement.toJSON())
-    const loaded = a.load(jsonStr)
+    const loaded = await a.load(jsonStr)
     expect(loaded.kind).toBe('form')
     expect(loaded.name).toBe('purchase-agreement')
     expect(loaded.title).toBe('Purchase Agreement')
   })
 
-  test('round-trips through YAML', () => {
+  test('round-trips through YAML', async () => {
     const yaml = purchaseAgreement.toYAML()
-    const loaded = a.load(yaml)
+    const loaded = await a.load(yaml)
     expect(loaded.kind).toBe('form')
     expect(loaded.name).toBe('purchase-agreement')
   })

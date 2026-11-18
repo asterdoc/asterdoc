@@ -1,8 +1,8 @@
 import { describe, expect, test } from 'vitest'
 import { form } from '@/artifacts'
 
-function createFormWithDefaults() {
-	return form()
+async function createFormWithDefaults() {
+	return await form.load(form()
 		.name('clear-reset')
 		.fields({
 			title: { type: 'text', default: 'Untitled' },
@@ -26,12 +26,12 @@ function createFormWithDefaults() {
 			},
 		})
 		.annex('proof', { title: 'Proof' })
-		.build()
+		.build())
 }
 
 describe('DraftForm clear and reset', () => {
-	test('applies recursive defaults at creation, including existing list rows', () => {
-		const draft = createFormWithDefaults().fill({ fields: { settings: {}, rows: [{}] } } as never)
+	test('applies recursive defaults at creation, including existing list rows', async () => {
+		const draft = (await createFormWithDefaults()).fill({ fields: { settings: {}, rows: [{}] } } as never)
 
 		expect(draft.fields).toMatchObject({
 			title: 'Untitled',
@@ -41,8 +41,8 @@ describe('DraftForm clear and reset', () => {
 		})
 	})
 
-	test('clears a defaulted value and keeps it absent across unrelated updates until reset', () => {
-		const draft = createFormWithDefaults().fill({ fields: { title: 'Custom', count: 1 } } as never)
+	test('clears a defaulted value and keeps it absent across unrelated updates until reset', async () => {
+		const draft = (await createFormWithDefaults()).fill({ fields: { title: 'Custom', count: 1 } } as never)
 		const cleared = draft.clear('fields.title')
 
 		expect(cleared.fields).not.toHaveProperty('title')
@@ -53,8 +53,8 @@ describe('DraftForm clear and reset', () => {
 		expect(reset.fields.title).toBe('Untitled')
 	})
 
-	test('clears and resets nested fieldsets and list item paths', () => {
-		const draft = createFormWithDefaults().fill({
+	test('clears and resets nested fieldsets and list item paths', async () => {
+		const draft = (await createFormWithDefaults()).fill({
 			fields: { settings: { enabled: true, note: 'Keep' }, rows: [{ label: 'First', value: 7 }] },
 		} as never)
 
@@ -69,8 +69,8 @@ describe('DraftForm clear and reset', () => {
 		expect(resetListValue.fields.rows).toEqual([{ label: 'Row', value: 7 }])
 	})
 
-	test('reset does not invent list rows and annex reset removes the stored value', () => {
-		const draft = createFormWithDefaults().fill({
+	test('reset does not invent list rows and annex reset removes the stored value', async () => {
+		const draft = (await createFormWithDefaults()).fill({
 			fields: { rows: [{ label: 'First' }] },
 			annexes: { proof: { name: 'proof.pdf', mimeType: 'application/pdf' } },
 		} as never)
@@ -82,18 +82,18 @@ describe('DraftForm clear and reset', () => {
 		expect(reset.annexes).not.toHaveProperty('proof')
 	})
 
-	test('rejects paths that are not present in the definition', () => {
-		const draft = createFormWithDefaults().fill({ fields: {} } as never)
+	test('rejects paths that are not present in the definition', async () => {
+		const draft = (await createFormWithDefaults()).fill({ fields: {} } as never)
 
 		expect(() => draft.clear('fields.unknown' as never)).toThrow('unknown field')
 		expect(() => draft.reset('fields.rows.label' as never)).toThrow('numeric bracket index')
 		expect(() => draft.clear('annexes.unknown' as never)).toThrow('unknown annex')
 	})
 
-	test('reset uses the instance definition snapshot', () => {
-		const definition = createFormWithDefaults()
-		const draft = definition.fill({ fields: { title: 'Custom' } } as never)
-		const authoring = definition.toJSON({ includeSchema: false }) as unknown as {
+	test('reset uses the instance definition snapshot', async () => {
+		const definition = await createFormWithDefaults()
+		const draft = (await definition).fill({ fields: { title: 'Custom' } } as never)
+		const authoring = (await definition).toJSON({ includeSchema: false }) as unknown as {
 			fields?: Record<string, { default?: string }>
 		}
 		;(authoring.fields!.title as { default?: string }).default = 'Changed later'

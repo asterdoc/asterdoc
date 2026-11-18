@@ -138,6 +138,33 @@ describe('asterdoc migrate', () => {
     expect(await readFile(refused, 'utf8')).toBe(before)
   })
 
+  it('moves a 2026-11-12 form to 2026-11-17, and refuses one that binds a phone areaCode with no countryCode', async () => {
+    const contact = (bindings: Record<string, unknown>) => JSON.stringify({
+      $schema: 'https://schema.asterdoc.com/2026-11-12.json',
+      kind: 'form',
+      name: 'contact',
+      version: '1.0.0',
+      title: 'Contact',
+      fields: { phone: { type: 'phone', label: 'Phone' } },
+      layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: './contact.pdf', bindings } },
+    }, null, 2) + '\n'
+    const file = path.join(dir, 'contact.json')
+    await writeFile(file, contact({ phone: 'phone' }))
+
+    const result = await run(['migrate', file], dir)
+
+    expect(result.exitCode).toBe(0)
+    expect(JSON.parse(await readFile(file, 'utf8')).$schema).toBe('https://schema.asterdoc.com/2026-11-17.json')
+
+    const refused = path.join(dir, 'area.json')
+    const before = contact({ area: { path: 'phone', part: 'areaCode' } })
+    await writeFile(refused, before)
+    const failure = await run(['migrate', refused], dir)
+    expect(failure.exitCode).not.toBe(0)
+    expect(failure.stdout + failure.stderr).toContain('countryCode')
+    expect(await readFile(refused, 'utf8')).toBe(before)
+  })
+
   it('refuses a $schema that names an unpublished version and leaves the file as it is', async () => {
     const file = path.join(dir, 'notice.json')
     const source = notice('https://schema.asterdoc.com/2020-01-01.json')

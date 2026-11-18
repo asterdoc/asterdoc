@@ -8,14 +8,14 @@ import type { FormSession } from "../../src/engine/types";
 import { execute } from "../../src/engine/execute";
 import { deriveView } from "../../src/engine/derive";
 
-const rt = () => createAsterdocRuntime(artifact({
+const rt = async () => await createAsterdocRuntime(artifact({
   parties: { witness: { label: "Witness", partyType: "person", min: 0, max: 3 }, signer: { label: "Signer", partyType: "person" } },
   fields: { name: { type: "text", required: true } },
 }));
 
 describe("Answering a repeatable role keeps the session resolved", () => {
-  it("repeatable role answered once keeps the session resolved", () => {
-    const runtime = rt();
+  it("repeatable role answered once keeps the session resolved", async () => {
+    const runtime = await rt();
     const r = execute(session(), runtime, { kind: "answerParty", roleId: "witness", index: 0, value: { name: "Ada" }, source: "user" }, { kind: "user" });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -24,8 +24,8 @@ describe("Answering a repeatable role keeps the session resolved", () => {
     const a = execute(r.session, runtime, { kind: "answer", fieldPath: "name", value: "X", source: "user" }, { kind: "user" });
     expect(a.ok ? "ok" : a.code).toBe("ok");
   });
-  it("repeatable role answered at index 0 and 1 keeps the session resolved", () => {
-    const runtime = rt();
+  it("repeatable role answered at index 0 and 1 keeps the session resolved", async () => {
+    const runtime = await rt();
     let s = session();
     for (const index of [0, 1]) {
       const r = execute(s, runtime, { kind: "answerParty", roleId: "witness", index, value: { name: `W${index}` }, source: "user" }, { kind: "user" });
@@ -34,8 +34,8 @@ describe("Answering a repeatable role keeps the session resolved", () => {
     }
     expect(deriveView(s, runtime).phase).not.toBe("unresolved");
   });
-  it("single role rejects index 1", () => {
-    const r = execute(session(), rt(), { kind: "answerParty", roleId: "signer", index: 1, value: { name: "Ada" }, source: "user" }, { kind: "user" });
+  it("single role rejects index 1", async () => {
+    const r = execute(session(), await rt(), { kind: "answerParty", roleId: "signer", index: 1, value: { name: "Ada" }, source: "user" }, { kind: "user" });
     expect(r.ok).toBe(false);
   });
 });

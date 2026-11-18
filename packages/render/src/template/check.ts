@@ -14,7 +14,10 @@ import { removedSyntaxHint, TemplateError, type TemplateDiagnostic, type Templat
 import { blockSlot, parseTemplate, type ExpressionSlot, type TemplateNode } from './markers'
 import { frameFor, LOOP_FUNCTION_NAMES, referenceSegments, withLoopFunctions } from './scope'
 import { loopAliasProblem } from './paths'
-import { inapplicableModifier, type ModifierTarget } from './format-modifiers'
+import type { ValueFormat, ValuePart } from '@asterdoc/types'
+import { inapplicableModifier, modifierFormat, PART_MODIFIER, type ModifierTarget } from './format-modifiers'
+import { mergeFormats } from '../presentation'
+import { printProblem } from '../parts/rules'
 import { contextTarget, pathContexts, printedBranches, sourceRows, staticKind, type RowContext } from './targets'
 import type { TemplateValueResolver } from './values'
 import { DIRECTIVE_MODIFIER_RULE, SIGNING_DIRECTIVES } from '../text/template'
@@ -38,14 +41,14 @@ interface CheckFrame {
 const UNKNOWN_ROWS: readonly RowContext[] = [{ kind: 'unknown' }]
 
 class CheckScope {
-  constructor(readonly env: TypeEnv, readonly values?: TemplateValueResolver, readonly frames: readonly CheckFrame[] = []) {}
+  constructor(readonly env: TypeEnv, readonly values?: TemplateValueResolver, readonly format?: ValueFormat, readonly frames: readonly CheckFrame[] = []) {}
 
   push(frame: CheckFrame): CheckScope {
-    return new CheckScope(this.env, this.values, [...this.frames, frame])
+    return new CheckScope(this.env, this.values, this.format, [...this.frames, frame])
   }
 
   pop(): CheckScope {
-    return new CheckScope(this.env, this.values, this.frames.slice(0, -1))
+    return new CheckScope(this.env, this.values, this.format, this.frames.slice(0, -1))
   }
 
   frameFor(name: string): CheckFrame | undefined {
@@ -189,13 +192,38 @@ function checkModifiers(slot: ExpressionSlot, scope: CheckScope, expressionCheck
   return problem ? [{ code: 'format-modifier', message: problem.message, expression: modifiers.text, position: problem.entry.position }] : []
 }
 
+/**
+ * A placeholder whose declared value prints, under the layer's format and its
+ * own modifiers, in a way some accepted value cannot: a +1-only phone part,
+ * a `phone.region` style or part on a phone of another plan, a money part on
+ * a field of any currency or sign, or a place format on an address stored
+ * without codes.
+ */
+function checkPrint(slot: ExpressionSlot, scope: CheckScope): TemplateDiagnostic[] {
+  if (!slot.ast || !scope.values || slot.modifiers?.problem) return []
+  if (slot.ast.kind === 'Call' && SIGNING_DIRECTIVES.has(slot.ast.callee)) return []
+  const entries = slot.modifiers?.entries ?? []
+  const part = entries.find((entry) => entry.key === PART_MODIFIER)?.value as ValuePart | undefined
+  const format = mergeFormats<ValueFormat>(scope.format, modifierFormat(entries))
+  for (const branch of printedBranches(slot.ast)) {
+    for (const context of pathContexts(branch, scope.frames) ?? []) {
+      const declared = contextTarget(context, scope.values)?.declared
+      const problem = declared && printProblem(declared, part, format)
+      if (problem) return [{ code: 'print', message: `${problem}.`, expression: slot.source, position: slot.position }]
+    }
+  }
+  return []
+}
+
 function checkNodes(nodes: readonly TemplateNode[], scope: CheckScope, found: TemplateDiagnostic[]): void {
   for (const node of nodes) {
     if (node.type === 'text') continue
     if (node.type === 'value') {
       const { diagnostics } = checkSlot(node.slot, scope, 'value')
       found.push(...diagnostics)
-      found.push(...checkModifiers(node.slot, scope, diagnostics.length === 0))
+      const modifierProblems = checkModifiers(node.slot, scope, diagnostics.length === 0)
+      found.push(...modifierProblems)
+      if (diagnostics.length === 0 && modifierProblems.length === 0) found.push(...checkPrint(node.slot, scope))
       continue
     }
     if (node.type === 'each') {
@@ -225,6 +253,11 @@ export interface TemplateCheckOptions {
    * types only.
    */
   values?: TemplateValueResolver
+  /**
+   * The layer's format, merged under each placeholder's modifiers, so a print
+   * that fails for some value the artifact accepts is reported.
+   */
+  format?: ValueFormat
 }
 
 /** Check every expression and format modifier in a text, Markdown, or HTML template. */
@@ -236,7 +269,7 @@ export function checkTextTemplate(template: string, env: TypeEnv, options: Templ
     return markerProblem(error)
   }
   const found: TemplateDiagnostic[] = []
-  checkNodes(nodes, new CheckScope(env, options.values), found)
+  checkNodes(nodes, new CheckScope(env, options.values, options.format), found)
   return found
 }
 
@@ -259,7 +292,7 @@ export function checkDocxTemplate(template: Uint8Array, env: TypeEnv, options: D
     for (const { index, message } of docxControlProblems(commands)) {
       found.push({ code: 'markers', message, location: `${part} paragraph ${index + 1}` })
     }
-    let scope = new CheckScope(env, options.values)
+    let scope = new CheckScope(env, options.values, options.format)
     const open: Array<'IF' | 'FOR'> = []
     paragraphs.forEach((match, index) => {
       const location = `${part} paragraph ${index + 1}`

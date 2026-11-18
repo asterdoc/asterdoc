@@ -42,8 +42,8 @@ describe('Composition Concept', () => {
   // Bundles
   // ============================================================================
 
-  describe('bundles', () => {
-    const leaseAgreement = a.form({
+  describe('bundles', async () => {
+    const leaseAgreement = await a.form.load({
       name: 'lease-agreement',
       title: 'Lease Agreement',
     })

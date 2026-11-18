@@ -1,6 +1,6 @@
 import type { Bindings, Form, LayerFormat } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
-import { joinedBindingTemplate } from '../src/index'
+import { joinedBindingTemplate, PdfPrintRuleError } from '../src/index'
 import { extractPdfData, inspectAcroFormFields, PdfBindingSyntaxError, renderPdf } from '../src/pdf'
 import { TemplateError } from '../src/text'
 import { acroFormPdf, type AcroFormFixtureField } from './pdf-fixtures'
@@ -14,14 +14,14 @@ const form = {
     name: { type: 'text', label: 'Name' },
     nickname: { type: 'text', label: 'Nickname' },
     ssn: { type: 'text', label: 'SSN', mask: '###-##-####' },
-    mailing: { type: 'address', label: 'Mailing address' },
+    mailing: { type: 'address', label: 'Mailing address', codes: true },
     llc: { type: 'enum', label: 'LLC type', enum: [{ value: 'C', label: 'C corporation' }, { value: 'S', label: 'S corporation' }, { value: 'P', label: 'Partnership' }] },
     born: { type: 'date', label: 'Born' },
     fee: { type: 'money', label: 'Fee', currency: 'USD' },
     exempt: { type: 'boolean', label: 'Exempt' },
     count: { type: 'number', label: 'Count' },
     email: { type: 'email', label: 'Email' },
-    owners: { type: 'list', label: 'Owners', item: { type: 'fieldset', label: 'Owner', fields: { name: { type: 'text', label: 'Name' }, born: { type: 'date', label: 'Born' } } } },
+    owners: { type: 'list', label: 'Owners', maxItems: 2, item: { type: 'fieldset', label: 'Owner', fields: { name: { type: 'text', label: 'Name' }, born: { type: 'date', label: 'Born' } } } },
   },
   defs: { total: { type: 'money', value: {} } },
   parties: { requester: { label: 'Requester', partyType: 'organization' } },
@@ -49,7 +49,8 @@ type Values = typeof data.fields
 const withFields = (fields: Partial<Record<keyof Values, unknown>>) => ({ ...data, fields: { ...data.fields, ...fields } })
 const without = (...names: (keyof Values)[]) => ({ ...data, fields: Object.fromEntries(Object.entries(data.fields).filter(([name]) => !names.includes(name as keyof Values))) })
 
-const box: AcroFormFixtureField[] = [{ kind: 'text', name: 'box' }]
+const box: AcroFormFixtureField[] = [{ kind: 'text', name: 'box' }, { kind: 'text', name: 'rows' }]
+const ROWS = '{{fields.owners[0].name}}{{fields.owners[0].born}}{{fields.owners[1].name}}{{fields.owners[1].born}}'
 
 async function values(pdf: Uint8Array): Promise<Record<string, unknown>> {
   return Object.fromEntries((await inspectAcroFormFields(pdf, { includeButton: true })).map((field) => [field.name, field.value]))
@@ -60,7 +61,7 @@ async function print(template: string, options: { data?: Record<string, unknown>
     template: acroFormPdf(box),
     ...(options.form !== null && { form: options.form ?? form }),
     data: options.data ?? data,
-    bindings: { box: { template, ...(options.binding && { format: options.binding }) } },
+    bindings: { box: { template, ...(options.binding && { format: options.binding }) }, rows: { template: ROWS } },
     ...(options.format && { format: options.format }),
   })
   return (await values(pdf)).box
@@ -105,7 +106,7 @@ describe('filling a template binding', () => {
   })
 
   it('prints each value as a path binding to the same path prints it', async () => {
-    const paths = ['name', 'ssn', 'mailing.line1', 'mailing.region', 'mailing.country', 'llc', 'born', 'fee', 'fee.amount', 'exempt', 'count', 'email', 'owners[0].born', 'parties.requester', 'parties.requester.name', 'defs.total']
+    const paths = ['name', 'ssn', 'mailing.line1', 'mailing.region', 'mailing.country', 'llc', 'born', 'fee', 'fee.amount', 'exempt', 'count', 'email', 'owners[0].born', 'owners[1].born', 'parties.requester', 'parties.requester.name', 'defs.total']
     const expression = (path: string) => path.startsWith('parties.') ? path : path.startsWith('defs.') ? path.slice('defs.'.length) : `fields.${path}`
     const names = paths.map((_, index) => `f${index}`)
     const fields: AcroFormFixtureField[] = names.map((name) => ({ kind: 'text', name }))
@@ -178,10 +179,11 @@ describe('filling a template binding', () => {
     await expect(print('{{signature(parties.requester, "sign")}}')).rejects.toThrow(PdfBindingSyntaxError)
   })
 
-  it('fills only as many list rows as its placeholders name', async () => {
-    const flat = { ...data.fields, parties: data.parties }
-    await expect(print('{{fields.owners[0].name}}', { data: flat })).rejects.toThrow('PDF bindings for "owners" support 1 list items, but received 2')
-    expect(await print('{{fields.owners[0].name}} and {{fields.owners[1].name}}', { data: flat })).toBe('Ann and Bo')
+  it('refuses a list that can hold more items than its placeholders name rows for, before any value', async () => {
+    const error = await renderPdf({ template: acroFormPdf(box.slice(0, 1)), form, data: { fields: {} }, bindings: { box: { template: '{{fields.owners[0].name}}' } } }).then(() => undefined, (caught: unknown) => caught)
+    expect(error).toBeInstanceOf(PdfPrintRuleError)
+    expect((error as Error).message).toBe('The PDF layer binds 1 row of fields.owners, and the field accepts 2 items; give it "maxItems": 1, or bind more rows.')
+    expect(await print('{{fields.owners[0].name}} and {{fields.owners[1].name}}')).toBe('Ann and Bo')
   })
 })
 

@@ -322,7 +322,7 @@ export const invoiceSpec = {
 } as const;
 
 /** The parsed, validated invoice form. */
-export const invoice = a.form(invoiceSpec);
+export const invoice = await a.form.load(invoiceSpec);
 
 /**
  * The same validated artifact as a plain `Form`. Everything that renders or

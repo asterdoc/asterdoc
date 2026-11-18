@@ -50,12 +50,13 @@ const W9_ANSWERS = {
 };
 
 /** The W-9 draft, filled from what its session answered and ready to seal. */
-function taxpayerDraft(filled: FilledSession) {
-  const parsed = w9.safeParseData(filled.payload as never);
+async function taxpayerDraft(filled: FilledSession) {
+  const form = await w9.load();
+  const parsed = form.safeParseData(filled.payload as never);
   if (!parsed.success) {
     throw new Error(`the session's W-9 answers did not parse: ${JSON.stringify(parsed.errors)}`);
   }
-  return w9
+  return form
     .fill(parsed.data)
     .addSigner("taxpayer-signer", { person: { name: "Dana Whitfield" } })
     .addSignatory("taxpayer", "taxpayer-0", { signerId: "taxpayer-signer" });
@@ -67,11 +68,11 @@ let packet: Awaited<ReturnType<typeof sealVendorPacket>>;
 let pages: Awaited<ReturnType<typeof pageTextRuns>>;
 
 beforeAll(async () => {
-  order = fillBySession("purchase-order", purchaseOrderSpec, purchaseOrderAnswers);
-  taxpayer = fillBySession("w-9", w9.toJSON(), W9_ANSWERS);
+  order = await fillBySession("purchase-order", purchaseOrderSpec, purchaseOrderAnswers);
+  taxpayer = await fillBySession("w-9", w9.spec, W9_ANSWERS, w9.resolver);
 
   packet = await sealVendorPacket({
-    taxpayer: taxpayerDraft(taxpayer),
+    taxpayer: await taxpayerDraft(taxpayer),
     insurance: await insuranceCertificateFixture(),
     purchaseOrderData: purchaseOrderDocumentData(order.payload),
   });

@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'vitest'
+import { pdfFiles } from '../../support/pdf-files'
 import { form } from '@/artifacts'
 import type { Form, EnumField } from '@asterdoc/types'
 
@@ -11,25 +12,25 @@ import type { Form, EnumField } from '@asterdoc/types'
  */
 describe('Form', () => {
   // ==========================================================================
-  // OBJECT PATTERN - Direct validation with form(input)
+  // OBJECT PATTERN - Direct validation with await form.load(input)
   // ==========================================================================
   describe('Object Pattern', () => {
     describe('form() - direct validation', () => {
       describe('success cases', () => {
-        test('creates valid form with minimal required properties', () => {
+        test('creates valid form with minimal required properties', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
             name: 'contact-form',
             title: 'Contact Form',
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.kind).toBe('form')
           expect(result.name).toBe('contact-form')
           expect(result.title).toBe('Contact Form')
         })
 
-        test('creates form with fields', () => {
+        test('creates form with fields', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -40,12 +41,12 @@ describe('Form', () => {
               email: { type: 'email', label: 'Email' },
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result?.fields?.name?.type).toBe('text')
           expect(result?.fields?.email?.type).toBe('email')
         })
 
-        test('creates form with various field types', () => {
+        test('creates form with various field types', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -63,11 +64,11 @@ describe('Form', () => {
               coordinateField: { type: 'coordinate', label: 'Coordinate' },
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(Object.keys(result.fields || {})).toHaveLength(9)
         })
 
-        test('creates form with nested fieldset', () => {
+        test('creates form with nested fieldset', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -84,13 +85,13 @@ describe('Form', () => {
               },
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result?.fields?.personal?.type).toBe('fieldset')
           const fields = result?.fields as any
           expect(fields.personal.fields.name.type).toBe('text')
         })
 
-        test('creates form with deeply nested fieldsets', () => {
+        test('creates form with deeply nested fieldsets', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -118,12 +119,12 @@ describe('Form', () => {
               },
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           const fields = result.fields as any
           expect(fields.level1.fields.level2.fields.level3.fields.name.type).toBe('text')
         })
 
-        test('creates form with inline template', () => {
+        test('creates form with inline template', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -138,14 +139,14 @@ describe('Form', () => {
             },
             defaultLayer: 'default',
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.layers?.default?.kind).toBe('inline')
           if (result.layers?.default?.kind === 'inline') {
             expect(result.layers.default.text).toBe('# Welcome\n\nPlease fill out this form.')
           }
         })
 
-        test('creates form with file template', () => {
+        test('creates form with file template', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -160,14 +161,14 @@ describe('Form', () => {
             },
             defaultLayer: 'pdf',
           }
-          const result = form(input)
+          const result = await form.load(input, { resolver: pdfFiles() })
           expect(result.layers?.pdf?.kind).toBe('file')
           if (result.layers?.pdf?.kind === 'file') {
             expect(result.layers.pdf.path).toBe('./template.pdf')
           }
         })
 
-        test('creates form with annexes', () => {
+        test('creates form with annexes', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -179,12 +180,12 @@ describe('Form', () => {
               },
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(Object.keys(result.annexes || {})).toHaveLength(1)
           expect(result?.annexes?.terms?.title).toBe('Terms and Conditions')
         })
 
-        test('creates form with multiple annexes', () => {
+        test('creates form with multiple annexes', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -196,11 +197,11 @@ describe('Form', () => {
               agreement: { title: 'Agreement' },
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(Object.keys(result.annexes || {})).toHaveLength(3)
         })
 
-        test('creates form with description', () => {
+        test('creates form with description', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -208,11 +209,11 @@ describe('Form', () => {
             title: 'Described Form',
             description: 'This is a detailed description of the form.',
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.description).toBe('This is a detailed description of the form.')
         })
 
-        test('creates form with code', () => {
+        test('creates form with code', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -220,11 +221,11 @@ describe('Form', () => {
             title: 'Coded Form',
             code: 'FORM-001',
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.code).toBe('FORM-001')
         })
 
-        test('creates form with source language', () => {
+        test('creates form with source language', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -232,11 +233,11 @@ describe('Form', () => {
             title: 'Spanish Form',
             language: 'es',
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.language).toBe('es')
         })
 
-        test('creates form with metadata', () => {
+        test('creates form with metadata', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -248,12 +249,12 @@ describe('Form', () => {
               category: 'HR',
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.metadata?.version).toBe('1.0')
           expect(result.metadata?.author).toBe('John Doe')
         })
 
-        test('creates form with inline instructions', () => {
+        test('creates form with inline instructions', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -264,14 +265,14 @@ describe('Form', () => {
               text: 'Complete all fields before submitting. Refer to IRS Publication 15 for guidance.',
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.instructions?.kind).toBe('inline')
           if (result.instructions?.kind === 'inline') {
             expect(result.instructions.text).toContain('IRS Publication 15')
           }
         })
 
-        test('creates form with file instructions', () => {
+        test('creates form with file instructions', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -286,7 +287,7 @@ describe('Form', () => {
               checksum: 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.instructions?.kind).toBe('file')
           if (result.instructions?.kind === 'file') {
             expect(result.instructions.path).toBe('./instructions/w9-instructions.pdf')
@@ -296,7 +297,7 @@ describe('Form', () => {
           }
         })
 
-        test('creates form with inline agentInstructions', () => {
+        test('creates form with inline agentInstructions', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -307,14 +308,14 @@ describe('Form', () => {
               text: 'Ask for SSN first, then name. Group address fields together. Use formal tone.',
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.agentInstructions?.kind).toBe('inline')
           if (result.agentInstructions?.kind === 'inline') {
             expect(result.agentInstructions.text).toContain('formal tone')
           }
         })
 
-        test('creates form with file agentInstructions', () => {
+        test('creates form with file agentInstructions', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -326,7 +327,7 @@ describe('Form', () => {
               mimeType: 'text/markdown',
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.agentInstructions?.kind).toBe('file')
           if (result.agentInstructions?.kind === 'file') {
             expect(result.agentInstructions.path).toBe('./prompts/agent-guide.md')
@@ -334,7 +335,7 @@ describe('Form', () => {
           }
         })
 
-        test('creates form with both instructions and agentInstructions', () => {
+        test('creates form with both instructions and agentInstructions', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -350,12 +351,12 @@ describe('Form', () => {
               text: 'Present fields in order: identification, contact, financial.',
             },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.instructions?.kind).toBe('file')
           expect(result.agentInstructions?.kind).toBe('inline')
         })
 
-        test('creates form with all properties (except edition and issuer)', () => {
+        test('creates form with all properties (except edition and issuer)', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -378,11 +379,11 @@ describe('Form', () => {
             defaultLayer: 'default',
             annexes: { guide: { title: 'User Guide' } },
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.toJSON({ includeSchema: false })).toEqual(input)
         })
 
-        test('creates form with valid name patterns', () => {
+        test('creates form with valid name patterns', async () => {
           const validNames = [
             'simple',
             'with-dash',
@@ -403,34 +404,34 @@ describe('Form', () => {
               name,
               title: 'Test Form',
             }
-            const result = form(input)
+            const result = await form.load(input)
             expect(result.name).toBe(name)
           }
         })
 
-        test('creates form with long valid name', () => {
+        test('creates form with long valid name', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
             name: 'a'.repeat(128),
             title: 'Test Form',
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.name).toHaveLength(128)
         })
 
-        test('creates form with long valid title', () => {
+        test('creates form with long valid title', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
             name: 'test',
             title: 'T'.repeat(200),
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.title).toHaveLength(200)
         })
 
-        test('creates form with long valid description', () => {
+        test('creates form with long valid description', async () => {
           const input: Form = {
             kind: 'form',
             version: '1.0.0',
@@ -438,11 +439,11 @@ describe('Form', () => {
             title: 'Test',
             description: 'D'.repeat(2000),
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(result.description).toHaveLength(2000)
         })
 
-        test('creates form with many fields', () => {
+        test('creates form with many fields', async () => {
           const fields: Form['fields'] = {}
           for (let i = 0; i < 50; i++) {
             fields[`field${i}`] = { type: 'text', label: `Field ${i}` }
@@ -454,49 +455,50 @@ describe('Form', () => {
             title: 'Many Fields',
             fields,
           }
-          const result = form(input)
+          const result = await form.load(input)
           expect(Object.keys(result.fields || {})).toHaveLength(50)
         })
       })
 
       describe('validation failures', () => {
-        test('corrects kind when incorrect value is provided', () => {
+        test('refuses a kind other than form, and fills in a missing kind', async () => {
           const input = {
             kind: 'invalid',
             version: '1.0.0',
             name: 'test',
             title: 'Test',
           } as any
-          const result = form(input)
-          expect(result.kind).toBe('form')
+          await expect(form.load(input)).rejects.toThrow(/kind/)
+          const { kind: _kind, ...withoutKind } = input
+          expect((await form.load(withoutKind)).kind).toBe('form')
         })
 
-        test('throws error when name is missing', () => {
+        test('throws error when name is missing', async () => {
           const input = { kind: 'form', version: '1.0.0', title: 'Test' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when name is empty string', () => {
+        test('throws error when name is empty string', async () => {
           const input = { kind: 'form', version: '1.0.0', name: '', title: 'Test' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when title is empty string', () => {
+        test('throws error when title is empty string', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'test', title: '' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when name exceeds maxLength', () => {
+        test('throws error when name exceeds maxLength', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'a'.repeat(129), title: 'Test' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when title exceeds maxLength', () => {
+        test('throws error when title exceeds maxLength', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'test', title: 'T'.repeat(201) } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when description exceeds maxLength', () => {
+        test('throws error when description exceeds maxLength', async () => {
           const input = {
             kind: 'form',
             version: '1.0.0',
@@ -504,45 +506,45 @@ describe('Form', () => {
             title: 'Test',
             description: 'D'.repeat(2001),
           } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when code is empty string', () => {
+        test('throws error when code is empty string', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'test', title: 'Test', code: '' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when language has invalid format', () => {
+        test('throws error when language has invalid format', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'test', title: 'Test', language: 'english' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when name has invalid pattern (starts with dash)', () => {
+        test('throws error when name has invalid pattern (starts with dash)', async () => {
           const input = { kind: 'form', version: '1.0.0', name: '-invalid', title: 'Test' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when name has invalid pattern (ends with dash)', () => {
+        test('throws error when name has invalid pattern (ends with dash)', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'invalid-', title: 'Test' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when name has invalid pattern (consecutive dashes)', () => {
+        test('throws error when name has invalid pattern (consecutive dashes)', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'invalid--name', title: 'Test' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when name has invalid pattern (underscore)', () => {
+        test('throws error when name has invalid pattern (underscore)', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'invalid_name', title: 'Test' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when name has invalid pattern (special chars)', () => {
+        test('throws error when name has invalid pattern (special chars)', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'invalid@name', title: 'Test' } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('rejects the removed releaseDate field', () => {
+        test('rejects the removed releaseDate field', async () => {
           const input = {
             kind: 'form',
             version: '1.0.0',
@@ -550,10 +552,10 @@ describe('Form', () => {
             title: 'Test',
             releaseDate: '2024-03-01',
           } as any
-          expect(() => form(input)).toThrow(/releaseDate/)
+          await expect(form.load(input)).rejects.toThrow(/releaseDate/)
         })
 
-        test('throws error when field definition is invalid', () => {
+        test('throws error when field definition is invalid', async () => {
           const input = {
             kind: 'form',
             version: '1.0.0',
@@ -561,10 +563,10 @@ describe('Form', () => {
             title: 'Test',
             fields: { invalid: { type: 'invalid-type' } },
           } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when annex is invalid', () => {
+        test('throws error when annex is invalid', async () => {
           const input = {
             kind: 'form',
             version: '1.0.0',
@@ -574,10 +576,10 @@ describe('Form', () => {
               test: { description: '' }, // empty description should fail
             },
           } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('rejects additional properties (strict validation)', () => {
+        test('rejects additional properties (strict validation)', async () => {
           const input = {
             kind: 'form',
             version: '1.0.0',
@@ -585,36 +587,36 @@ describe('Form', () => {
             title: 'Test',
             extra: 'should be removed',
           } as any
-          expect(() => form(input)).toThrow()
+          await expect(form.load(input)).rejects.toThrow()
         })
 
-        test('throws error when input is null', () => {
-          expect(() => form(null as any)).toThrow()
+        test('throws error when input is null', async () => {
+          await expect(form.load(null as any)).rejects.toThrow()
         })
 
-        test('throws error when input is a string', () => {
-          expect(() => form('not an object' as any)).toThrow()
+        test('throws error when input is a string', async () => {
+          await expect(form.load('not an object' as any)).rejects.toThrow()
         })
 
-        test('throws error when input is a number', () => {
-          expect(() => form(123 as any)).toThrow()
+        test('throws error when input is a number', async () => {
+          await expect(form.load(123 as any)).rejects.toThrow()
         })
 
-        test('throws error when input is an array', () => {
-          expect(() => form([{ kind: 'form', name: 'test', title: 'Test' }] as any)).toThrow()
+        test('throws error when input is an array', async () => {
+          await expect(form.load([{ kind: 'form', name: 'test', title: 'Test' }] as any)).rejects.toThrow()
         })
       })
     })
 
-    describe('form.from()', () => {
+    describe('await form.load()', () => {
       describe('success cases', () => {
-        test('parses valid form and returns FormInstance', () => {
+        test('parses valid form and returns FormInstance', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'test-form', title: 'Test Form' }
-          const result = form.from(input)
+          const result = await form.load(input)
           expect(result.toJSON({ includeSchema: false })).toEqual(input)
         })
 
-        test('parses form with fields', () => {
+        test('parses form with fields', async () => {
           const input = {
             kind: 'form',
             version: '1.0.0',
@@ -622,11 +624,11 @@ describe('Form', () => {
             title: 'User Form',
             fields: { name: { type: 'text', label: 'Name' } },
           }
-          const result = form.from(input)
+          const result = await form.load(input)
           expect(result.fields?.name!.type).toBe('text')
         })
 
-        test('parses form with template', () => {
+        test('parses form with template', async () => {
           const input = {
             kind: 'form',
             version: '1.0.0',
@@ -636,14 +638,14 @@ describe('Form', () => {
               default: { kind: 'inline', mimeType: 'text/plain', text: 'Content here' },
             },
           }
-          const result = form.from(input)
+          const result = await form.load(input)
           expect(result.layers?.default?.kind).toBe('inline')
           if (result.layers?.default?.kind === 'inline') {
             expect(result.layers.default.text).toBe('Content here')
           }
         })
 
-        test('parses form with annexes', () => {
+        test('parses form with annexes', async () => {
           const input = {
             kind: 'form',
             version: '1.0.0',
@@ -651,42 +653,42 @@ describe('Form', () => {
             title: 'Form with Annexes',
             annexes: { annex1: { title: 'Annex 1' } },
           }
-          const result = form.from(input)
+          const result = await form.load(input)
           expect(Object.keys(result.annexes || {})).toHaveLength(1)
         })
       })
 
       describe('validation failures', () => {
-        test('throws error for missing name', () => {
-          expect(() => form.from({ kind: 'form', title: 'Test' })).toThrow()
+        test('throws error for missing name', async () => {
+          await expect(form.load({ kind: 'form', title: 'Test' })).rejects.toThrow()
         })
 
-        test('throws error for null input', () => {
-          expect(() => form.from(null)).toThrow()
+        test('throws error for null input', async () => {
+          await expect(form.load(null)).rejects.toThrow()
         })
 
-        test('throws error for undefined input', () => {
-          expect(() => form.from(undefined)).toThrow()
+        test('throws error for undefined input', async () => {
+          await expect(form.load(undefined)).rejects.toThrow()
         })
 
-        test('throws error for invalid input type', () => {
-          expect(() => form.from('string')).toThrow()
+        test('throws error for invalid input type', async () => {
+          await expect(form.load('string')).rejects.toThrow()
         })
       })
     })
 
-    describe('form.safeFrom()', () => {
+    describe('await form.safeLoad()', () => {
       describe('success cases', () => {
-        test('returns success for valid form', () => {
+        test('returns success for valid form', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'test-form', title: 'Test Form' }
-          const result = form.safeFrom(input)
+          const result = await form.safeLoad(input)
           expect(result.success).toBe(true)
           if (result.success) {
             expect(result.data.toJSON({ includeSchema: false })).toEqual(input)
           }
         })
 
-        test('returns success for form with all properties', () => {
+        test('returns success for form with all properties', async () => {
           const input = {
             kind: 'form',
             version: '1.0.0',
@@ -699,58 +701,58 @@ describe('Form', () => {
             layers: { default: { kind: 'inline', mimeType: 'text/plain', text: 'Content' } },
             annexes: { annex1: { title: 'Annex 1' } },
           }
-          const result = form.safeFrom(input)
+          const result = await form.safeLoad(input)
           expect(result.success).toBe(true)
         })
       })
 
       describe('failure cases', () => {
-        test('returns error for missing name', () => {
-          const result = form.safeFrom({ kind: 'form', title: 'Test' })
+        test('returns error for missing name', async () => {
+          const result = await form.safeLoad({ kind: 'form', title: 'Test' })
           expect(result.success).toBe(false)
           if (!result.success) {
             expect(result.error).toBeInstanceOf(Error)
           }
         })
 
-        test('returns error for empty name', () => {
-          const result = form.safeFrom({ kind: 'form', name: '', title: 'Test' })
+        test('returns error for empty name', async () => {
+          const result = await form.safeLoad({ kind: 'form', name: '', title: 'Test' })
           expect(result.success).toBe(false)
         })
 
-        test('returns error for empty title', () => {
-          const result = form.safeFrom({ kind: 'form', name: 'test', title: '' })
+        test('returns error for empty title', async () => {
+          const result = await form.safeLoad({ kind: 'form', name: 'test', title: '' })
           expect(result.success).toBe(false)
         })
 
-        test('returns error for null input', () => {
-          const result = form.safeFrom(null)
+        test('returns error for null input', async () => {
+          const result = await form.safeLoad(null)
           expect(result.success).toBe(false)
         })
 
-        test('returns error for undefined input', () => {
-          const result = form.safeFrom(undefined)
+        test('returns error for undefined input', async () => {
+          const result = await form.safeLoad(undefined)
           expect(result.success).toBe(false)
         })
 
-        test('returns error for invalid input type', () => {
-          const result = form.safeFrom('string')
+        test('returns error for invalid input type', async () => {
+          const result = await form.safeLoad('string')
           expect(result.success).toBe(false)
         })
 
-        test('returns error for invalid name pattern', () => {
-          const result = form.safeFrom({ kind: 'form', name: '-invalid', title: 'Test' })
+        test('returns error for invalid name pattern', async () => {
+          const result = await form.safeLoad({ kind: 'form', name: '-invalid', title: 'Test' })
           expect(result.success).toBe(false)
         })
 
-        test('returns error for name too long', () => {
-          const result = form.safeFrom({ kind: 'form', name: 'a'.repeat(129), title: 'Test' })
+        test('returns error for name too long', async () => {
+          const result = await form.safeLoad({ kind: 'form', name: 'a'.repeat(129), title: 'Test' })
           expect(result.success).toBe(false)
         })
 
-        test('rejects additional properties (strict validation)', () => {
+        test('rejects additional properties (strict validation)', async () => {
           const input = { kind: 'form', version: '1.0.0', name: 'test', title: 'Test', extra: 'removed' }
-          const result = form.safeFrom(input)
+          const result = await form.safeLoad(input)
           expect(result.success).toBe(false)
         })
       })
@@ -758,45 +760,45 @@ describe('Form', () => {
   })
 
   // ==========================================================================
-  // BUILDER PATTERN - Fluent API with form().name().title().build()
+  // BUILDER PATTERN - Fluent API with await form.load(form().name().title().build())
   // ==========================================================================
   describe('Builder Pattern', () => {
     describe('fluent builder API', () => {
       describe('success cases', () => {
-        test('builds valid form with minimal required properties', () => {
-          const result = form().name('contact-form').version('1.0.0').title('Contact Form').build()
+        test('builds valid form with minimal required properties', async () => {
+          const result = await form.load(form().name('contact-form').version('1.0.0').title('Contact Form').build())
           expect(result.kind).toBe('form')
           expect(result.name).toBe('contact-form')
           expect(result.title).toBe('Contact Form')
         })
 
-        test('builds form with single field using field()', () => {
-          const result = form()
+        test('builds form with single field using field()', async () => {
+          const result = await form.load(form()
             .name('user-form')
             .version('1.0.0')
             .title('User Form')
             .field('name', { type: 'text', label: 'Full Name' })
-            .build()
+            .build())
           expect(result.fields).toBeDefined()
           const fields = result.fields as any
           expect(fields.name.type).toBe('text')
           expect(fields.name.label).toBe('Full Name')
         })
 
-        test('builds form with multiple fields using field()', () => {
-          const result = form()
+        test('builds form with multiple fields using field()', async () => {
+          const result = await form.load(form()
             .name('profile-form')
             .version('1.0.0')
             .title('Profile Form')
             .field('name', { type: 'text', label: 'Name' })
             .field('email', { type: 'email', label: 'Email' })
             .field('age', { type: 'number', label: 'Age' })
-            .build()
+            .build())
           expect(Object.keys(result.fields || {})).toHaveLength(3)
         })
 
-        test('builds form with fields using fields()', () => {
-          const result = form()
+        test('builds form with fields using fields()', async () => {
+          const result = await form.load(form()
             .name('bulk-form')
             .version('1.0.0')
             .title('Bulk Form')
@@ -805,12 +807,12 @@ describe('Form', () => {
               email: { type: 'email', label: 'Email' },
               subscribe: { type: 'boolean', label: 'Subscribe' },
             })
-            .build()
+            .build())
           expect(Object.keys(result.fields || {})).toHaveLength(3)
         })
 
-        test('builds form with various field types', () => {
-          const result = form()
+        test('builds form with various field types', async () => {
+          const result = await form.load(form()
             .name('complex-form')
             .version('1.0.0')
             .title('Complex Form')
@@ -825,12 +827,12 @@ describe('Form', () => {
               phoneField: { type: 'phone', label: 'Phone' },
               coordinateField: { type: 'coordinate', label: 'Coordinate' },
             })
-            .build()
+            .build())
           expect(Object.keys(result.fields || {})).toHaveLength(9)
         })
 
-        test('builds form with nested fieldset', () => {
-          const result = form()
+        test('builds form with nested fieldset', async () => {
+          const result = await form.load(form()
             .name('nested-form')
             .version('1.0.0')
             .title('Nested Form')
@@ -842,15 +844,15 @@ describe('Form', () => {
                 age: { type: 'number', label: 'Age' },
               },
             })
-            .build()
+            .build())
           expect(result.fields).toBeDefined()
           const fields = result.fields as any
           expect(fields.personal.type).toBe('fieldset')
           expect(fields.personal.fields.name.type).toBe('text')
         })
 
-        test('builds form with deeply nested fieldsets', () => {
-          const result = form()
+        test('builds form with deeply nested fieldsets', async () => {
+          const result = await form.load(form()
             .name('deeply-nested')
             .version('1.0.0')
             .title('Deeply Nested')
@@ -871,20 +873,20 @@ describe('Form', () => {
                 },
               },
             })
-            .build()
+            .build())
           expect(result.fields).toBeDefined()
           const fields = result.fields as any
           expect(fields.level1.fields.level2.fields.level3.fields.name.type).toBe('text')
         })
 
-        test('builds form with inline template', () => {
-          const result = form()
+        test('builds form with inline template', async () => {
+          const result = await form.load(form()
             .name('form-with-template')
             .version('1.0.0')
             .title('Form with Template')
             .inlineLayer('default', { mimeType: 'text/markdown', text: '# Welcome\n\nPlease fill out this form.' })
             .defaultLayer('default')
-            .build()
+            .build())
           expect(result.layers).toBeDefined()
           expect(result.layers?.default?.kind).toBe('inline')
           if (result.layers?.default?.kind === 'inline') {
@@ -892,14 +894,14 @@ describe('Form', () => {
           }
         })
 
-        test('builds form with file template', () => {
-          const result = form()
+        test('builds form with file template', async () => {
+          const result = await form.load(form()
             .name('form-with-file-template')
             .version('1.0.0')
             .title('Form with File Template')
             .fileLayer('pdf', { mimeType: 'application/pdf', path: './template.pdf' })
             .defaultLayer('pdf')
-            .build()
+            .build(), { resolver: pdfFiles() })
           expect(result.layers).toBeDefined()
           expect(result.layers?.pdf?.kind).toBe('file')
           if (result.layers?.pdf?.kind === 'file') {
@@ -907,32 +909,32 @@ describe('Form', () => {
           }
         })
 
-        test('builds form with single annex using annex()', () => {
-          const result = form()
+        test('builds form with single annex using annex()', async () => {
+          const result = await form.load(form()
             .name('form-with-annex')
             .version('1.0.0')
             .title('Form with Annex')
             .annex('terms', { title: 'Terms and Conditions' })
-            .build()
+            .build())
           expect(Object.keys(result.annexes || {})).toHaveLength(1)
           // Note: singular .annex() doesn't track types; cast to access
           const annexes = result.annexes as unknown as Record<string, { title: string }>
           expect(annexes.terms?.title).toBe('Terms and Conditions')
         })
 
-        test('builds form with multiple annexes using annex()', () => {
-          const result = form()
+        test('builds form with multiple annexes using annex()', async () => {
+          const result = await form.load(form()
             .name('form-with-annexes')
             .version('1.0.0')
             .title('Form with Annexes')
             .annex('terms', { title: 'Terms and Conditions' })
             .annex('privacy', { title: 'Privacy Policy' })
-            .build()
+            .build())
           expect(Object.keys(result.annexes || {})).toHaveLength(2)
         })
 
-        test('builds form with annexes using annexes()', () => {
-          const result = form()
+        test('builds form with annexes using annexes()', async () => {
+          const result = await form.load(form()
             .name('form-with-bulk-annexes')
             .version('1.0.0')
             .title('Form with Bulk Annexes')
@@ -940,53 +942,53 @@ describe('Form', () => {
               terms: { title: 'Terms and Conditions' },
               privacy: { title: 'Privacy Policy' },
             })
-            .build()
+            .build())
           expect(Object.keys(result.annexes || {})).toHaveLength(2)
         })
 
-        test('builds form with description', () => {
-          const result = form()
+        test('builds form with description', async () => {
+          const result = await form.load(form()
             .name('described-form')
             .version('1.0.0')
             .title('Described Form')
             .description('This is a detailed description.')
-            .build()
+            .build())
           expect(result.description).toBe('This is a detailed description.')
         })
 
-        test('builds form with code', () => {
-          const result = form()
+        test('builds form with code', async () => {
+          const result = await form.load(form()
             .name('coded-form')
             .version('1.0.0')
             .title('Coded Form')
             .code('FORM-001')
-            .build()
+            .build())
           expect(result.code).toBe('FORM-001')
         })
 
-        test('builds form with source language', () => {
-          const result = form()
+        test('builds form with source language', async () => {
+          const result = await form.load(form()
             .name('spanish-form')
             .version('1.0.0')
             .title('Spanish Form')
             .language('es')
-            .build()
+            .build())
           expect(result.language).toBe('es')
         })
 
-        test('builds form with metadata', () => {
-          const result = form()
+        test('builds form with metadata', async () => {
+          const result = await form.load(form()
             .name('metadata-form')
             .version('1.0.0')
             .title('Metadata Form')
             .metadata({ version: '1.0', author: 'John Doe', category: 'HR' })
-            .build()
+            .build())
           expect(result.metadata?.version).toBe('1.0')
           expect(result.metadata?.author).toBe('John Doe')
         })
 
-        test('builds form with inline instructions', () => {
-          const result = form()
+        test('builds form with inline instructions', async () => {
+          const result = await form.load(form()
             .name('form-inline-instructions')
             .version('1.0.0')
             .title('Form with Inline Instructions')
@@ -994,15 +996,15 @@ describe('Form', () => {
               kind: 'inline',
               text: 'Complete all fields before submitting. Refer to IRS Publication 15 for guidance.',
             })
-            .build()
+            .build())
           expect(result.instructions?.kind).toBe('inline')
           if (result.instructions?.kind === 'inline') {
             expect(result.instructions.text).toContain('IRS Publication 15')
           }
         })
 
-        test('builds form with file instructions', () => {
-          const result = form()
+        test('builds form with file instructions', async () => {
+          const result = await form.load(form()
             .name('form-file-instructions')
             .version('1.0.0')
             .title('Form with File Instructions')
@@ -1014,7 +1016,7 @@ describe('Form', () => {
               description: 'Official IRS instructions for Form W-9',
               checksum: 'sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
             })
-            .build()
+            .build())
           expect(result.instructions?.kind).toBe('file')
           if (result.instructions?.kind === 'file') {
             expect(result.instructions.path).toBe('./instructions/w9-instructions.pdf')
@@ -1024,8 +1026,8 @@ describe('Form', () => {
           }
         })
 
-        test('builds form with inline agentInstructions', () => {
-          const result = form()
+        test('builds form with inline agentInstructions', async () => {
+          const result = await form.load(form()
             .name('form-inline-agent')
             .version('1.0.0')
             .title('Form with Agent Instructions')
@@ -1033,15 +1035,15 @@ describe('Form', () => {
               kind: 'inline',
               text: 'Ask for SSN first, then name. Group address fields together. Use formal tone.',
             })
-            .build()
+            .build())
           expect(result.agentInstructions?.kind).toBe('inline')
           if (result.agentInstructions?.kind === 'inline') {
             expect(result.agentInstructions.text).toContain('formal tone')
           }
         })
 
-        test('builds form with file agentInstructions', () => {
-          const result = form()
+        test('builds form with file agentInstructions', async () => {
+          const result = await form.load(form()
             .name('form-file-agent')
             .version('1.0.0')
             .title('Form with File Agent Instructions')
@@ -1050,7 +1052,7 @@ describe('Form', () => {
               path: './prompts/agent-guide.md',
               mimeType: 'text/markdown',
             })
-            .build()
+            .build())
           expect(result.agentInstructions?.kind).toBe('file')
           if (result.agentInstructions?.kind === 'file') {
             expect(result.agentInstructions.path).toBe('./prompts/agent-guide.md')
@@ -1058,8 +1060,8 @@ describe('Form', () => {
           }
         })
 
-        test('builds form with both instructions and agentInstructions', () => {
-          const result = form()
+        test('builds form with both instructions and agentInstructions', async () => {
+          const result = await form.load(form()
             .name('form-both-instructions')
             .version('1.0.0')
             .title('Form with Both Instruction Types')
@@ -1072,13 +1074,13 @@ describe('Form', () => {
               kind: 'inline',
               text: 'Present fields in order: identification, contact, financial.',
             })
-            .build()
+            .build())
           expect(result.instructions?.kind).toBe('file')
           expect(result.agentInstructions?.kind).toBe('inline')
         })
 
-        test('builds form with all properties (except edition and issuer)', () => {
-          const result = form()
+        test('builds form with all properties (except edition and issuer)', async () => {
+          const result = await form.load(form()
             .name('complete-form')
             .version('1.0.0')
             .title('Complete Form')
@@ -1092,7 +1094,7 @@ describe('Form', () => {
             .inlineLayer('default', { mimeType: 'text/markdown', text: '# Instructions\n\nComplete all required fields.' })
             .defaultLayer('default')
             .annexes({ guide: { title: 'User Guide' } })
-            .build()
+            .build())
           expect(result.name).toBe('complete-form')
           expect(result.title).toBe('Complete Form')
           expect(result.description).toBe('A fully configured form')
@@ -1104,41 +1106,41 @@ describe('Form', () => {
           expect(Object.keys(result.annexes || {})).toHaveLength(1)
         })
 
-        test('supports method chaining', () => {
-          const result = form()
+        test('supports method chaining', async () => {
+          const result = await form.load(form()
             .name('chained')
             .version('1.0.0')
             .title('Chained Form')
             .description('Description')
             .code('CODE-001')
-            .build()
+            .build())
           expect(result.name).toBe('chained')
           expect(result.title).toBe('Chained Form')
         })
 
-        test('allows overwriting name', () => {
-          const result = form().name('original').version('1.0.0').name('updated').title('Test').build()
+        test('allows overwriting name', async () => {
+          const result = await form.load(form().name('original').version('1.0.0').name('updated').title('Test').build())
           expect(result.name).toBe('updated')
         })
 
-        test('allows overwriting title', () => {
-          const result = form().name('test').version('1.0.0').title('Original').title('Updated').build()
+        test('allows overwriting title', async () => {
+          const result = await form.load(form().name('test').version('1.0.0').title('Original').title('Updated').build())
           expect(result.title).toBe('Updated')
         })
 
-        test('allows overwriting description', () => {
-          const result = form()
+        test('allows overwriting description', async () => {
+          const result = await form.load(form()
             .name('test')
             .version('1.0.0')
             .title('Test')
             .description('Original')
             .description('Updated')
-            .build()
+            .build())
           expect(result.description).toBe('Updated')
         })
 
-        test('field() is overwritten by fields()', () => {
-          const result = form()
+        test('field() is overwritten by fields()', async () => {
+          const result = await form.load(form()
             .name('mixed')
             .version('1.0.0')
             .title('Mixed')
@@ -1148,7 +1150,7 @@ describe('Form', () => {
               field3: { type: 'boolean', label: 'Field 3' },
             })
             .field('field4', { type: 'email', label: 'Field 4' })
-            .build()
+            .build())
           expect(Object.keys(result.fields || {})).toHaveLength(3)
           const fields = result.fields as any
           expect(fields.field2).toBeDefined()
@@ -1156,15 +1158,15 @@ describe('Form', () => {
           expect(fields.field4).toBeDefined()
         })
 
-        test('annexes() overwrites previous annexes', () => {
-          const result = form()
+        test('annexes() overwrites previous annexes', async () => {
+          const result = await form.load(form()
             .name('mixed-annexes')
             .version('1.0.0')
             .title('Mixed Annexes')
             .annex('annex1', { title: 'Annex 1' })
             .annexes({ annex2: { title: 'Annex 2' } })
             .annex('annex3', { title: 'Annex 3' })
-            .build()
+            .build())
           expect(Object.keys(result.annexes || {})).toHaveLength(2)
           // Note: singular .annex() after .annexes() adds at runtime but not in types
           const annexes = result.annexes as Record<string, { title: string }>
@@ -1172,7 +1174,7 @@ describe('Form', () => {
           expect(annexes.annex3).toBeDefined()
         })
 
-        test('builds form with valid name patterns', () => {
+        test('builds form with valid name patterns', async () => {
           const validNames = [
             'simple',
             'with-dash',
@@ -1187,23 +1189,23 @@ describe('Form', () => {
           ]
 
           for (const name of validNames) {
-            const result = form().name(name).version('1.0.0').title('Test').build()
+            const result = await form.load(form().name(name).version('1.0.0').title('Test').build())
             expect(result.name).toBe(name)
           }
         })
 
-        test('builds form with long valid name', () => {
-          const result = form().name('a'.repeat(128)).version('1.0.0').title('Test').build()
+        test('builds form with long valid name', async () => {
+          const result = await form.load(form().name('a'.repeat(128)).version('1.0.0').title('Test').build())
           expect(result.name).toHaveLength(128)
         })
 
-        test('builds form with long valid title', () => {
-          const result = form().name('test').version('1.0.0').title('T'.repeat(200)).build()
+        test('builds form with long valid title', async () => {
+          const result = await form.load(form().name('test').version('1.0.0').title('T'.repeat(200)).build())
           expect(result.title).toHaveLength(200)
         })
 
-        test('builds form with long valid description', () => {
-          const result = form().name('test').version('1.0.0').title('Test').description('D'.repeat(2000)).build()
+        test('builds form with long valid description', async () => {
+          const result = await form.load(form().name('test').version('1.0.0').title('Test').description('D'.repeat(2000)).build())
           expect(result.description).toHaveLength(2000)
         })
 
@@ -1218,71 +1220,65 @@ describe('Form', () => {
       })
 
       describe('validation failures on build()', () => {
-        test('throws error when name is empty string', () => {
+        test('throws error when name is empty string', async () => {
           expect(() => form().name('').version('1.0.0').title('Test').build()).toThrow()
         })
 
-        test('throws error when title is empty string', () => {
+        test('throws error when title is empty string', async () => {
           expect(() => form().name('test').version('1.0.0').title('').build()).toThrow()
         })
 
-        test('throws error when name exceeds maxLength', () => {
+        test('throws error when name exceeds maxLength', async () => {
           expect(() => form().name('a'.repeat(129)).version('1.0.0').title('Test').build()).toThrow()
         })
 
-        test('throws error when title exceeds maxLength', () => {
+        test('throws error when title exceeds maxLength', async () => {
           expect(() => form().name('test').version('1.0.0').title('T'.repeat(201)).build()).toThrow()
         })
 
-        test('throws error when description exceeds maxLength', () => {
-          expect(() =>
-            form().name('test').version('1.0.0').title('Test').description('D'.repeat(2001)).build()
-          ).toThrow()
+        test('throws error when description exceeds maxLength', async () => {
+          expect(() => form().name('test').version('1.0.0').title('Test').description('D'.repeat(2001)).build()).toThrow()
         })
 
-        test('throws error when code is empty string', () => {
+        test('throws error when code is empty string', async () => {
           expect(() => form().name('test').version('1.0.0').title('Test').code('').build()).toThrow()
         })
 
-        test('throws error when language has invalid format', () => {
+        test('throws error when language has invalid format', async () => {
           expect(() => form().name('test').version('1.0.0').title('Test').language('english').build()).toThrow()
         })
 
-        test('throws error when name has invalid pattern (starts with dash)', () => {
+        test('throws error when name has invalid pattern (starts with dash)', async () => {
           expect(() => form().name('-invalid').version('1.0.0').title('Test').build()).toThrow()
         })
 
-        test('throws error when name has invalid pattern (ends with dash)', () => {
+        test('throws error when name has invalid pattern (ends with dash)', async () => {
           expect(() => form().name('invalid-').version('1.0.0').title('Test').build()).toThrow()
         })
 
-        test('throws error when name has invalid pattern (consecutive dashes)', () => {
+        test('throws error when name has invalid pattern (consecutive dashes)', async () => {
           expect(() => form().name('invalid--name').version('1.0.0').title('Test').build()).toThrow()
         })
 
-        test('throws error when name has invalid pattern (underscore)', () => {
+        test('throws error when name has invalid pattern (underscore)', async () => {
           expect(() => form().name('invalid_name').version('1.0.0').title('Test').build()).toThrow()
         })
 
-        test('throws error when name has invalid pattern (special chars)', () => {
+        test('throws error when name has invalid pattern (special chars)', async () => {
           expect(() => form().name('invalid@name').version('1.0.0').title('Test').build()).toThrow()
         })
 
-        test('throws error when the edition date has an invalid format', () => {
-          expect(() =>
-            form().name('test').version('1.0.0').title('Test').edition({ key: 'k', label: 'K', date: 'invalid-date' }).build()
-          ).toThrow()
+        test('throws error when the edition date has an invalid format', async () => {
+          expect(() => form().name('test').version('1.0.0').title('Test').edition({ key: 'k', label: 'K', date: 'invalid-date' }).build()).toThrow()
         })
 
-        test('throws error when field definition is invalid', () => {
-          expect(() =>
-            form()
+        test('throws error when field definition is invalid', async () => {
+          expect(() => form()
               .name('test')
               .version('1.0.0')
               .title('Test')
               .field('invalid', { type: 'invalid-type' } as any)
-              .build()
-          ).toThrow()
+              .build()).toThrow()
         })
 
         test('throws error when annex is invalid', () => {
@@ -1296,15 +1292,13 @@ describe('Form', () => {
           ).toThrow()
         })
 
-        test('throws error when template is invalid', () => {
-          expect(() =>
-            form()
+        test('throws error when template is invalid', async () => {
+          expect(() => form()
               .name('test')
               .version('1.0.0')
               .title('Test')
               .layer('default', { kind: 'inline', mimeType: 'text/plain', text: '' })
-              .build()
-          ).toThrow()
+              .build()).toThrow()
         })
       })
 
@@ -1334,12 +1328,12 @@ describe('Form', () => {
           expect(builder2.build().name).toBe('form2')
         })
 
-        test('builder can be reused after build', () => {
+        test('builder can be reused after build', async () => {
           const builder = form().name('test').version('1.0.0').title('Test')
           const result1 = builder.build()
           const result2 = builder.build()
           // Compare form definitions (instances have different function references)
-          expect(result1._data).toEqual(result2._data)
+          expect((await form.load(result1))._data).toEqual((await form.load(result2))._data)
           expect(result1.name).toEqual(result2.name)
           expect(result1.version).toEqual(result2.version)
           expect(result1.title).toEqual(result2.title)
@@ -1356,16 +1350,16 @@ describe('Form', () => {
       })
 
       describe('builder pattern vs object pattern comparison', () => {
-        test('builder pattern produces equivalent result as object pattern', () => {
-          const builderResult = form()
+        test('builder pattern produces equivalent result as object pattern', async () => {
+          const builderResult = await form.load(form()
             .name('test-form')
             .version('1.0.0')
             .title('Test Form')
             .description('Description')
             .fields({ name: { type: 'text', label: 'Name' } })
-            .build()
+            .build())
 
-          const objectResult = form({
+          const objectResult = await form.load({
             kind: 'form',
             version: '1.0.0',
             name: 'test-form',
@@ -1381,23 +1375,21 @@ describe('Form', () => {
           expect(builderResult.fields).toEqual(objectResult.fields)
         })
 
-        test('builder validates on build(), object validates immediately', () => {
+        test('builder validates on build(), object validates immediately', async () => {
           const builder = form().name('test').title('')
           expect(() => builder.build()).toThrow()
 
-          expect(() =>
-            form({
+          await expect(form.load({
               kind: 'form',
               name: 'test',
               title: '',
-            } as any)
-          ).toThrow()
+            } as any)).rejects.toThrow()
         })
       })
 
       describe('common usage patterns', () => {
-        test('creates contact form', () => {
-          const result = form()
+        test('creates contact form', async () => {
+          const result = await form.load(form()
             .name('contact-form')
             .version('1.0.0')
             .title('Contact Us')
@@ -1407,14 +1399,14 @@ describe('Form', () => {
               email: { type: 'email', label: 'Email Address', required: true },
               message: { type: 'text', label: 'Message', required: true },
             })
-            .build()
+            .build())
 
           expect(result.name).toBe('contact-form')
           expect(Object.keys(result.fields || {})).toHaveLength(3)
         })
 
-        test('creates lease agreement form with layers and annexes', () => {
-          const result = form()
+        test('creates lease agreement form with layers and annexes', async () => {
+          const result = await form.load(form()
             .name('lease-agreement')
             .version('1.0.0')
             .title('Residential Lease Agreement')
@@ -1427,7 +1419,7 @@ describe('Form', () => {
             })
             .annex('terms', { title: 'Terms and Conditions' })
             .annex('rules', { title: 'House Rules' })
-            .build()
+            .build())
 
           expect(result.name).toBe('lease-agreement')
           expect(result.layers).toBeDefined()
@@ -1435,8 +1427,8 @@ describe('Form', () => {
           expect(Object.keys(result.annexes || {})).toHaveLength(2)
         })
 
-        test('creates employee onboarding form with nested fieldsets', () => {
-          const result = form()
+        test('creates employee onboarding form with nested fieldsets', async () => {
+          const result = await form.load(form()
             .name('employee-onboarding')
             .version('1.0.0')
             .title('Employee Onboarding Form')
@@ -1461,7 +1453,7 @@ describe('Form', () => {
                 zip: { type: 'text', label: 'ZIP Code', required: true },
               },
             })
-            .build()
+            .build())
 
           expect(result.fields).toBeDefined()
           const fields = result.fields as any

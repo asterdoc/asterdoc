@@ -18,12 +18,12 @@ describe('An optional party role accepts null and an empty list', () => {
 		const r = validatePartiesForRole([], role, 'tenant')
 		expect(r.success).toBe(true)
 	})
-	test('fill with an empty optional role completes', () => {
-		const f = form()
+	test('fill with an empty optional role completes', async () => {
+		const f = await form.load(form()
 			.name('f').version('1.0.0').title('F')
 			.fields({ a: { type: 'text', label: 'A' } })
 			.parties({ tenant: { label: 'Tenant', partyType: 'person', max: 3, required: false } as never })
-			.build()
+			.build())
 		const r = f.safeFill({ fields: {}, parties: { tenant: [] } } as never)
 		expect(r.success).toBe(true)
 		const v = (r as { data: { validate(): { valid: boolean; errors: unknown } } }).data.validate()

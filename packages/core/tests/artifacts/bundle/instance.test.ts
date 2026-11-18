@@ -119,13 +119,13 @@ describe('BundleInstance', () => {
   })
 
   describe('rendering', () => {
-    const createRenderableBundle = () => {
-      const formInstance = form()
+    const createRenderableBundle = async () => {
+      const formInstance = await form.load(form()
         .name('greeting-form')
         .fields({ name: { type: 'text', required: true } })
         .inlineLayer('default', { mimeType: 'text/plain', text: 'Hello, {{fields.name}}!' })
         .defaultLayer('default')
-        .build()
+        .build())
 
       const bundleInstance = bundle()
         .name('greeting-bundle')
@@ -139,7 +139,7 @@ describe('BundleInstance', () => {
     }
 
     test('assembles supported layers without a renderer registry', async () => {
-      const { bundleInstance, filledForm } = createRenderableBundle()
+      const { bundleInstance, filledForm } = (await createRenderableBundle())
 
       const assembled = await bundleInstance.assemble({
         contents: { greeting: filledForm },
@@ -149,7 +149,7 @@ describe('BundleInstance', () => {
     })
 
     test('runtime bundles render supported layers without options', async () => {
-      const { bundleInstance, filledForm } = createRenderableBundle()
+      const { bundleInstance, filledForm } = (await createRenderableBundle())
 
       const rendered = await bundleInstance.prepare({ greeting: filledForm }).render()
 
@@ -157,7 +157,7 @@ describe('BundleInstance', () => {
     })
 
     test('uses an explicit MIME renderer as an override', async () => {
-      const { bundleInstance, filledForm } = createRenderableBundle()
+      const { bundleInstance, filledForm } = (await createRenderableBundle())
 
       const assembled = await bundleInstance.assemble({
         contents: { greeting: filledForm },
@@ -175,7 +175,7 @@ describe('BundleInstance', () => {
     })
 
     test('render and assemble name a plain-text part the same way', async () => {
-      const { bundleInstance, filledForm } = createRenderableBundle()
+      const { bundleInstance, filledForm } = (await createRenderableBundle())
 
       const rendered = await bundleInstance.prepare({ greeting: filledForm }).render()
       const assembled = await bundleInstance.assemble({ contents: { greeting: filledForm } })
@@ -189,14 +189,14 @@ describe('BundleInstance', () => {
       const renderers = {
         'text/tsx': { id: 'stub', render: () => pdf } as AsterdocRenderer<RendererLayer, Uint8Array>,
       }
-      const composed = form()
+      const composed = await form.load(form()
         .name('composed')
         .version('1.0.0')
         .title('Composed')
         .fields({ amount: { type: 'number', label: 'Amount', required: true } })
         .fileLayer('composition', { mimeType: 'text/tsx', path: 'composed.tsx' })
         .defaultLayer('composition')
-        .build()
+        .build())
       const bundleInstance = bundle().name('composed-bundle').inline('composition', composed).build()
       const filled = composed.fill({ fields: { amount: 1 } })
 
@@ -248,10 +248,10 @@ describe('BundleInstance', () => {
       expect(yaml).toContain('kind: bundle')
     })
 
-    test('round-trips correctly', () => {
+    test('round-trips correctly', async () => {
       const instance = createBundleWithContents()
       const yaml = instance.toYAML()
-      const parsed = load<'bundle'>(yaml)
+      const parsed = await load<'bundle'>(yaml)
       expect(parsed.name).toBe(instance.name)
     })
   })

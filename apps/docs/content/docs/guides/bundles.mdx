@@ -19,7 +19,7 @@ A lease transaction needs multiple artifacts. Start with the form from the previ
 import { a } from '@asterdoc/sdk'
 
 // Lease Agreement Form
-const lease = a.form({
+const lease = await a.form.load({
   name: 'lease-agreement',
   version: '1.0.0',
   title: 'Residential Lease Agreement',
@@ -70,7 +70,7 @@ const moveInChecklist = a.checklist({
 import { a } from '@asterdoc/sdk'
 
 // Lease Agreement Form
-const lease = a
+const lease = await a.form.load(a
   .form()
   .name('lease-agreement')
   .version('1.0.0')
@@ -87,7 +87,7 @@ const lease = a
   })
   .defaultLayer('markdown')
   .inlineLayer('markdown', { mimeType: 'text/markdown', text: '# Lease\n\n{{fields.address}}' })
-  .build()
+  .build())
 
 // Lead Paint Disclosure Document
 const disclosure = a

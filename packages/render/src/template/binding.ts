@@ -33,6 +33,8 @@ export interface BindingTemplate {
    * of its blocks. Undefined when it has more than {@link MAX_TEMPLATE_VARIANTS}.
    */
   variants?: BindingTemplatePiece[][]
+  /** Every placeholder, in every block, in the order written. */
+  slots: BindingTemplateSlot[]
   /** Whether the template's own text holds a line break. */
   lineBreak: boolean
 }
@@ -66,25 +68,34 @@ function merged(pieces: BindingTemplatePiece[]): BindingTemplatePiece[] {
   return result
 }
 
+function bindingSlot(node: Extract<TemplateNode, { type: 'value' }>): BindingTemplateSlot {
+  const { slot } = node
+  const segments = slot.ast ? referenceSegments(slot.ast) : undefined
+  const part = slot.modifiers?.entries.find((entry) => entry.key === PART_MODIFIER)?.value as ValuePart | undefined
+  const hasFormat = slot.modifiers !== undefined && Object.keys(slot.modifiers.format).length > 0
+  return {
+    source: slot.source,
+    ...(segments && { segments }),
+    ...(hasFormat && { format: slot.modifiers!.format }),
+    ...(part !== undefined && { part }),
+  }
+}
+
+function slotsOf(nodes: readonly TemplateNode[]): BindingTemplateSlot[] {
+  return nodes.flatMap((node) => {
+    if (node.type === 'text') return []
+    if (node.type === 'value') return [bindingSlot(node)]
+    return [...slotsOf(node.children), ...slotsOf(node.inverse)]
+  })
+}
+
 function variantsOf(nodes: readonly TemplateNode[]): BindingTemplatePiece[][] | undefined {
   let variants: BindingTemplatePiece[][] = [[]]
   for (const node of nodes) {
     let choices: BindingTemplatePiece[][]
     if (node.type === 'text') choices = [[{ text: node.value }]]
-    else if (node.type === 'value') {
-      const { slot } = node
-      const segments = slot.ast ? referenceSegments(slot.ast) : undefined
-      const part = slot.modifiers?.entries.find((entry) => entry.key === PART_MODIFIER)?.value as ValuePart | undefined
-      const hasFormat = slot.modifiers !== undefined && Object.keys(slot.modifiers.format).length > 0
-      choices = [[{
-        slot: {
-          source: slot.source,
-          ...(segments && { segments }),
-          ...(hasFormat && { format: slot.modifiers!.format }),
-          ...(part !== undefined && { part }),
-        },
-      }]]
-    } else {
+    else if (node.type === 'value') choices = [[{ slot: bindingSlot(node) }]]
+    else {
       const taken = variantsOf(node.children)
       const skipped = variantsOf(node.inverse)
       if (!taken || !skipped) return undefined
@@ -150,7 +161,7 @@ export function parseBindingTemplate(source: string): { template: BindingTemplat
   const references: string[][] = []
   const lineBreak = collect(nodes, references)
   const variants = variantsOf(nodes)?.map(merged)
-  return { template: { source, nodes, references, ...(variants && { variants }), lineBreak } }
+  return { template: { source, nodes, references, ...(variants && { variants }), slots: slotsOf(nodes), lineBreak } }
 }
 
 const BARE_IDENTIFIER = /^[A-Za-z_][A-Za-z0-9_]*$/

@@ -1341,9 +1341,13 @@ const resolver = createMemoryResolver({ contents });
  *
  * U.S. federal information return filed by a payer to report miscellaneous payments — rents, royalties, other income, fishing/farming proceeds, medical and health-care payments, attorney gross proceeds, NQDC deferrals, and similar — made to a recipient during a calendar year. Copy A goes to the IRS; Copy 1 to the state tax department; Copies B and 2 to the recipient.
  */
-export const f1099MISC = Object.assign(a.form(schema, { resolver }), {
+export const f1099MISC = {
   /** The raw form spec, exactly as released. */
   spec: schema,
-});
+  /** Reads the form's bundled layer files, for a host that loads the spec itself. */
+  resolver,
+  /** Load the form on its bundled files. */
+  load: () => a.form.load(schema, { resolver }),
+};
 
 export default f1099MISC;

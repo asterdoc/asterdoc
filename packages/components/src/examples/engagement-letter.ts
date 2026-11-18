@@ -233,7 +233,7 @@ export const engagementLetterSpec = {
 } as const;
 
 /** The parsed, validated engagement letter. */
-export const engagementLetter = a.form(engagementLetterSpec);
+export const engagementLetter = await a.form.load(engagementLetterSpec);
 
 /**
  * The same validated artifact as a plain `Form`. Everything that renders or

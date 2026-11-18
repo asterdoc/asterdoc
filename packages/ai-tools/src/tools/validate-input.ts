@@ -1,6 +1,7 @@
 import type { AsterdocToolsConfig } from '../config'
 import { ValidateInputValueSchema, type ValidateInputOutput, type ValidateInputValue } from '../contracts'
 import { artifactKind } from '../artifact'
+import { loadToolForm } from '../form-loader'
 import { errorFromUnknown, toolError, validationErrors } from '../errors'
 import { resolveSource } from '../resolve-source'
 
@@ -19,14 +20,15 @@ export async function executeValidateInput(
 ): Promise<ValidateInputOutput> {
 	try {
 		const normalized = ValidateInputValueSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject } = await import('@asterdoc/core')
-		const { artifact } = await resolveSource(normalized, config)
+		const { isChecklist, isForm, load } = await import('@asterdoc/core')
+		const { artifact, base_url } = await resolveSource(normalized, config)
+		const loadForm = () => loadToolForm(artifact, base_url, config)
 		const kind = artifactKind(artifact)
 
 		if (normalized.target === 'field') {
 			if (!isForm(artifact)) return failure(normalized, kind, 'Target "field" requires a form artifact.')
 			if (!normalized.field_path?.trim()) return failure(normalized, 'form', 'field_path is required for target "field".', 'field_path')
-			const result = loadFromObject<'form'>(artifact).validateFieldInput({
+			const result = (await loadForm()).validateFieldInput({
 				fieldPath: normalized.field_path,
 				value: normalized.value,
 			})
@@ -38,7 +40,7 @@ export async function executeValidateInput(
 		if (normalized.target === 'party') {
 			if (!isForm(artifact)) return failure(normalized, kind, 'Target "party" requires a form artifact.')
 			if (!normalized.role_id?.trim()) return failure(normalized, 'form', 'role_id is required for target "party".', 'role_id')
-			const result = loadFromObject<'form'>(artifact).validatePartyInput({
+			const result = (await loadForm()).validatePartyInput({
 				roleId: normalized.role_id,
 				index: normalized.index,
 				value: normalized.value,
@@ -51,7 +53,7 @@ export async function executeValidateInput(
 		if (normalized.target === 'annex') {
 			if (!isForm(artifact)) return failure(normalized, kind, 'Target "annex" requires a form artifact.')
 			if (!normalized.annex_id?.trim()) return failure(normalized, 'form', 'annex_id is required for target "annex".', 'annex_id')
-			const result = loadFromObject<'form'>(artifact).validateAnnexInput({ annexId: normalized.annex_id, value: normalized.value })
+			const result = (await loadForm()).validateAnnexInput({ annexId: normalized.annex_id, value: normalized.value })
 			return result.success
 				? { valid: true, target: normalized.target, artifact_kind: 'form', normalized_value: result.value }
 				: { valid: false, target: normalized.target, artifact_kind: 'form', errors: validationErrors(result.errors) }
@@ -59,7 +61,7 @@ export async function executeValidateInput(
 
 		if (!isChecklist(artifact)) return failure(normalized, kind, 'Target "checklist_item" requires a checklist artifact.')
 		if (!normalized.item_id?.trim()) return failure(normalized, 'checklist', 'item_id is required for target "checklist_item".', 'item_id')
-		const result = loadFromObject<'checklist'>(artifact).validateItemInput({ itemId: normalized.item_id, value: normalized.value })
+		const result = (await load<'checklist'>(artifact)).validateItemInput({ itemId: normalized.item_id, value: normalized.value })
 		return result.success
 			? { valid: true, target: normalized.target, artifact_kind: 'checklist', normalized_value: result.value }
 			: { valid: false, target: normalized.target, artifact_kind: 'checklist', errors: validationErrors(result.errors) }

@@ -21,7 +21,7 @@ const form = {
     wed: { type: 'boolean' },
     ssn: { type: 'text', maxLength: 11 },
     home: { type: 'address' },
-    people: { type: 'list', item: { type: 'fieldset', fields: { name: { type: 'text', maxLength: 40 }, born: { type: 'date' } } } },
+    people: { type: 'list', maxItems: 2, item: { type: 'fieldset', fields: { name: { type: 'text', maxLength: 40 }, born: { type: 'date' } } } },
   },
   parties: { client: { partyType: 'person' } },
 } as unknown as Form
@@ -175,11 +175,11 @@ describe('formatting values one by one', () => {
   })
 
   it('fills every kind of path as the one pass does', async () => {
-    const names = ['dob', 'amount', 'status', 'wedText', 'married', 'single', 'ssn1', 'ssn3', 'city', 'home', 'person0', 'born1', 'client', 'clientLast', 'joined']
+    const names = ['dob', 'amount', 'status', 'wedText', 'married', 'single', 'ssn1', 'ssn3', 'city', 'home', 'person0', 'born0', 'person1', 'born1', 'client', 'clientLast', 'joined']
     const fields: AcroFormFixtureField[] = names.map((name) => name === 'married' || name === 'single' ? { kind: 'checkbox', name } : { kind: 'text', name })
     const strings: Record<string, string> = {
       dob: 'fields.dob', amount: 'amount', status: 'status', wedText: 'wed', married: 'status:married', single: 'status:single',
-      ssn1: 'ssn:1', ssn3: 'ssn:3', city: 'home.locality', home: 'home', person0: 'people[0].name', born1: 'people.1.born',
+      ssn1: 'ssn:1', ssn3: 'ssn:3', city: 'home.locality', home: 'home', person0: 'people[0].name', born0: 'people[0].born', person1: 'people[1].name', born1: 'people.1.born',
       client: 'parties.client', clientLast: 'parties.client.lastName',
     }
     const joined: Bindings = { joined: { template: '{{fields.home.locality}}, {{fields.home.region}}' } }

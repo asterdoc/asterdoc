@@ -116,9 +116,39 @@ describe('CLI inspect command', () => {
       expect(table.exitCode).toBe(0)
       expect(table.stdout).toContain('Multi-line')
       const row = (name: string) => table.stdout.split('\n').find((line) => line.includes(name))?.split(/\s{2,}|\s*[│|]\s*/).map((cell) => cell.trim()).filter(Boolean)
-      expect(row('address')).toEqual(['address', 'text', 'no', 'yes'])
-      expect(row('city')).toEqual(['city', 'text', 'no', 'no'])
-      expect(row('agree')).toEqual(['agree', 'checkbox', 'no', 'false'])
+      expect(row('address')).toEqual(['address', 'text', '1', 'no', 'yes'])
+      expect(row('city')).toEqual(['city', 'text', '1', 'no', 'no'])
+      expect(row('agree')).toEqual(['agree', 'checkbox', '1', 'no', 'false'])
+    })
+
+    it('lists every widget of a field, in JSON and in the table', async () => {
+      const pdf = path.join(tempDir, 'shared.pdf')
+      await fs.writeFile(pdf, [
+        '%PDF-1.4',
+        '1 0 obj << /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [5 0 R 8 0 R] >> >> endobj',
+        '2 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> endobj',
+        '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [6 0 R 8 0 R] >> endobj',
+        '4 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Annots [7 0 R] >> endobj',
+        '5 0 obj << /FT /Tx /T (title) /Kids [6 0 R 7 0 R] >> endobj',
+        '6 0 obj << /Subtype /Widget /Parent 5 0 R /Rect [127 342 263 359] /P 3 0 R >> endobj',
+        '7 0 obj << /Subtype /Widget /Parent 5 0 R /Rect [42 323 240 336] /P 4 0 R >> endobj',
+        '8 0 obj << /FT /Tx /T (number) /Subtype /Widget /Rect [72 500 300 514] /P 3 0 R >> endobj',
+        'trailer << /Root 1 0 R >>',
+        '%%EOF',
+      ].join('\n'))
+
+      const json = await executeCliCommand(['inspect', pdf, '--format', 'json'])
+      expect(json.exitCode).toBe(0)
+      const fields = JSON.parse(json.stdout) as Array<{ name: string; widgets: unknown[] }>
+      expect(fields.map((field) => [field.name, field.widgets])).toEqual([
+        ['title', [{ page: 1, rect: [127, 342, 263, 359] }, { page: 2, rect: [42, 323, 240, 336] }]],
+        ['number', [{ page: 1, rect: [72, 500, 300, 514] }]],
+      ])
+
+      const table = await executeCliCommand(['inspect', pdf])
+      expect(table.exitCode).toBe(0)
+      expect(table.stdout).toContain('Fields with more than one widget (a value prints in each):\n  title:\n    page 1 at [127, 342, 263, 359]\n    page 2 at [42, 323, 240, 336]')
+      expect(table.stdout).not.toMatch(/ {2}number:\n {4}page/)
     })
 
     it('should output JSON format', async () => {

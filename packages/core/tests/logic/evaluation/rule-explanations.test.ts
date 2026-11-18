@@ -14,17 +14,17 @@ const build = (fields: Form['fields'], rules: Form['rules'], defs?: Form['defs']
 	...(defs && { defs }),
 })
 
-const explain = (definition: Form, values: Record<string, unknown>, raw?: boolean) => {
-	const draft = form(definition).fill({ fields: values } as never)
+const explain = async (definition: Form, values: Record<string, unknown>, raw?: boolean) => {
+	const draft = (await form.load(definition)).fill({ fields: values } as never)
 	return draft.validateRules(raw === undefined ? undefined : { explain: { raw } }).rules
 }
 
 describe('a failed rule explains the values it reads', () => {
-	test('prints each value the expression reads, keeping the rule message', () => {
-		const [result] = explain(
+	test('prints each value the expression reads, keeping the rule message', async () => {
+		const [result] = (await explain(
 			build({ amount: { type: 'number' }, term: { type: 'number' } }, { fits: { expr: 'amount * term < 1000', message: 'Too large' } }),
 			{ amount: 50, term: 30 },
-		)
+		))
 		expect(result).toEqual({
 			ruleId: 'fits',
 			passed: false,
@@ -34,13 +34,13 @@ describe('a failed rule explains the values it reads', () => {
 		})
 	})
 
-	test('a passing rule carries no explanation', () => {
-		const [result] = explain(build({ amount: { type: 'number' } }, { positive: { expr: 'amount > 0', message: 'm' } }), { amount: 5 })
+	test('a passing rule carries no explanation', async () => {
+		const [result] = (await explain(build({ amount: { type: 'number' } }, { positive: { expr: 'amount > 0', message: 'm' } }), { amount: 5 }))
 		expect(result).not.toHaveProperty('explanation')
 	})
 
-	test('a missing value prints as null', () => {
-		const [result] = explain(build({ name: { type: 'text' } }, { named: { expr: 'length(fields.name) > 0', message: 'm' } }), {})
+	test('a missing value prints as null', async () => {
+		const [result] = (await explain(build({ name: { type: 'text' } }, { named: { expr: 'length(fields.name) > 0', message: 'm' } }), {}))
 		expect(result?.explanation?.values).toEqual([{ path: 'fields.name', value: 'null' }])
 	})
 })
@@ -48,33 +48,33 @@ describe('a failed rule explains the values it reads', () => {
 describe('sensitive values are redacted', () => {
 	const id = { type: 'ssn', number: '123456789' }
 
-	test('an identification field is sensitive by default', () => {
-		const [whole, number] = explain(
+	test('an identification field is sensitive by default', async () => {
+		const [whole, number] = (await explain(
 			build({ taxId: { type: 'identification' } }, {
 				whole: { expr: 'fields.taxId == null', message: 'm' },
 				number: { expr: 'length(fields.taxId.number) == 11', message: 'm' },
 			}),
 			{ taxId: id },
-		)
+		))
 		expect(whole?.explanation?.values).toEqual([{ path: 'fields.taxId', value: '[redacted] (object, length 2)' }])
 		expect(number?.explanation?.values).toEqual([{ path: 'fields.taxId.number', value: '[redacted] (string, length 9)' }])
 	})
 
-	test('an identification field that sets sensitive false prints its value', () => {
-		const [result] = explain(
+	test('an identification field that sets sensitive false prints its value', async () => {
+		const [result] = (await explain(
 			build({ taxId: { type: 'identification', sensitive: false } }, { number: { expr: 'length(fields.taxId.number) == 11', message: 'm' } }),
 			{ taxId: id },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([{ path: 'fields.taxId.number', value: '"123456789"' }])
 	})
 
-	test('a text field marked sensitive is redacted, by its bare id and through fields', () => {
-		const [result] = explain(
+	test('a text field marked sensitive is redacted, by its bare id and through fields', async () => {
+		const [result] = (await explain(
 			build({ account: { type: 'text', sensitive: true }, bank: { type: 'text' } }, {
 				account: { expr: 'length(account) == 10 and fields.account != bank', message: 'm' },
 			}),
 			{ account: '000123456789', bank: 'First' },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([
 			{ path: 'account', value: '[redacted] (string, length 12)' },
 			{ path: 'bank', value: '"First"' },
@@ -82,38 +82,38 @@ describe('sensitive values are redacted', () => {
 		])
 	})
 
-	test('a sensitive value inside a fieldset is redacted where the fieldset prints', () => {
-		const [result] = explain(
+	test('a sensitive value inside a fieldset is redacted where the fieldset prints', async () => {
+		const [result] = (await explain(
 			build({
 				applicant: { type: 'fieldset', fields: { name: { type: 'text' }, ssn: { type: 'text', sensitive: true } } },
 			}, { listed: { expr: 'fields.applicant == null', message: 'm' } }),
 			{ applicant: { name: 'Ada', ssn: '123456789' } },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([
 			{ path: 'fields.applicant', value: '{"name": "Ada", "ssn": [redacted] (string, length 9)}' },
 		])
 	})
 
-	test('every value under a sensitive fieldset is sensitive', () => {
-		const [result] = explain(
+	test('every value under a sensitive fieldset is sensitive', async () => {
+		const [result] = (await explain(
 			build({
 				bank: { type: 'fieldset', sensitive: true, fields: { account: { type: 'text', sensitive: false } } },
 			}, { listed: { expr: 'fields.bank.account == ""', message: 'm' } }),
 			{ bank: { account: '42' } },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([{ path: 'fields.bank.account', value: '[redacted] (string, length 2)' }])
 	})
 
-	test('raw values print only when the caller asks for them', () => {
+	test('raw values print only when the caller asks for them', async () => {
 		const definition = build({ account: { type: 'text', sensitive: true } }, { account: { expr: 'length(account) == 12', message: 'm' } })
-		expect(explain(definition, { account: '1234' }, false)[0]?.explanation?.values).toEqual([
+		expect((await explain(definition, { account: '1234' }, false))[0]?.explanation?.values).toEqual([
 			{ path: 'account', value: '[redacted] (string, length 4)' },
 		])
-		expect(explain(definition, { account: '1234' }, true)[0]?.explanation?.values).toEqual([{ path: 'account', value: '"1234"' }])
+		expect((await explain(definition, { account: '1234' }, true))[0]?.explanation?.values).toEqual([{ path: 'account', value: '"1234"' }])
 	})
 
-	test('a computed value read from a sensitive field is redacted, unless it is a boolean', () => {
-		const [shown, valid] = explain(
+	test('a computed value read from a sensitive field is redacted, unless it is a boolean', async () => {
+		const [shown, valid] = (await explain(
 			build(
 				{ account: { type: 'text', sensitive: true } },
 				{
@@ -126,7 +126,7 @@ describe('sensitive values are redacted', () => {
 				},
 			),
 			{ account: 'ab12' },
-		)
+		))
 		expect(shown?.explanation?.values).toEqual([{ path: 'upperAccount', value: '[redacted] (string, length 4)' }])
 		expect(valid?.explanation?.values).toEqual([{ path: 'longEnough', value: 'false' }])
 	})
@@ -144,41 +144,41 @@ describe('sensitive values are redacted', () => {
 describe('a path that resolves to a list', () => {
 	const rows = (count: number, value: (index: number) => unknown) => Array.from({ length: count }, (_, index) => value(index))
 
-	test('prints at most ten elements and counts the rest', () => {
-		const [result] = explain(
+	test('prints at most ten elements and counts the rest', async () => {
+		const [result] = (await explain(
 			build(
 				{ items: { type: 'list', item: { type: 'fieldset', fields: { amount: { type: 'number' } } } } },
 				{ small: { expr: 'sum(fields.items.amount) < 10', message: 'm' } },
 			),
 			{ items: rows(12, (index) => ({ amount: index + 1 })) },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([
 			{ path: 'fields.items.amount', value: '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, … 2 more]' },
 		])
 	})
 
-	test('redacts each element of a sensitive list and caps them', () => {
-		const [result] = explain(
+	test('redacts each element of a sensitive list and caps them', async () => {
+		const [result] = (await explain(
 			build(
 				{ ids: { type: 'list', item: { type: 'identification' } } },
 				{ none: { expr: 'count(fields.ids) == 0', message: 'm' } },
 			),
 			{ ids: rows(11, () => ({ type: 'ssn', number: '123456789' })) },
-		)
+		))
 		const printed = result?.explanation?.values[0]?.value ?? ''
 		expect(printed.match(/\[redacted\] \(object, length 2\)/g)).toHaveLength(10)
 		expect(printed).toMatch(/… 1 more\]$/)
 		expect(printed).not.toContain('123456789')
 	})
 
-	test('redacts a sensitive member read across rows', () => {
-		const [result] = explain(
+	test('redacts a sensitive member read across rows', async () => {
+		const [result] = (await explain(
 			build(
 				{ owners: { type: 'list', item: { type: 'fieldset', fields: { ssn: { type: 'text', sensitive: true } } } } },
 				{ none: { expr: 'count(fields.owners.ssn) == 0', message: 'm' } },
 			),
 			{ owners: [{ ssn: '111223333' }, { ssn: '444556666' }] },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([
 			{ path: 'fields.owners.ssn', value: '[[redacted] (string, length 9), [redacted] (string, length 9)]' },
 		])
@@ -187,10 +187,10 @@ describe('a path that resolves to a list', () => {
 
 describe('a member read through a list of sensitive items is redacted', () => {
 	const id = { type: 'ssn', number: '123456789' }
-	const printed = (definition: Form, values: Record<string, unknown>) => explain(definition, values)[0]?.explanation?.values ?? []
+	const printed = async (definition: Form, values: Record<string, unknown>) => (await explain(definition, values))[0]?.explanation?.values ?? []
 
-	test('a member of identification rows', () => {
-		const values = printed(
+	test('a member of identification rows', async () => {
+		const values = await printed(
 			build({ ids: { type: 'list', item: { type: 'identification' } } }, { none: { expr: 'count(fields.ids.number) == 0', message: 'm' } }),
 			{ ids: [id] },
 		)
@@ -198,8 +198,8 @@ describe('a member read through a list of sensitive items is redacted', () => {
 		expect(JSON.stringify(values)).not.toContain('123456789')
 	})
 
-	test('a member of rows whose fieldset item is sensitive', () => {
-		const values = printed(
+	test('a member of rows whose fieldset item is sensitive', async () => {
+		const values = await printed(
 			build(
 				{ owners: { type: 'list', item: { type: 'fieldset', sensitive: true, fields: { ssn: { type: 'text' } } } } },
 				{ none: { expr: 'count(fields.owners.ssn) == 0', message: 'm' } },
@@ -210,8 +210,8 @@ describe('a member read through a list of sensitive items is redacted', () => {
 		expect(values[0]?.value).toBe('[[redacted] (string, length 9)]')
 	})
 
-	test('a member of a list of lists of identification', () => {
-		const values = printed(
+	test('a member of a list of lists of identification', async () => {
+		const values = await printed(
 			build(
 				{ grid: { type: 'list', item: { type: 'list', item: { type: 'identification' } } } },
 				{ none: { expr: 'count(fields.grid.number) == 0', message: 'm' } },
@@ -221,7 +221,7 @@ describe('a member read through a list of sensitive items is redacted', () => {
 		expect(JSON.stringify(values)).not.toContain('123456789')
 	})
 
-	test('a member of money rows marked sensitive, and a computed value over it', () => {
+	test('a member of money rows marked sensitive, and a computed value over it', async () => {
 		const definition = build(
 			{ pays: { type: 'list', item: { type: 'money', sensitive: true } } },
 			{
@@ -230,21 +230,21 @@ describe('a member read through a list of sensitive items is redacted', () => {
 			},
 			{ total: { type: 'number', value: 'sum(fields.pays.amount)' } },
 		)
-		const [small, totalSmall] = explain(definition, { pays: [{ amount: 98765, currency: 'USD' }] })
+		const [small, totalSmall] = (await explain(definition, { pays: [{ amount: 98765, currency: 'USD' }] }))
 		expect(small?.explanation?.values).toEqual([{ path: 'fields.pays.amount', value: '[[redacted] (number, length 5)]' }])
 		expect(totalSmall?.explanation?.values).toEqual([{ path: 'total', value: '[redacted] (number, length 5)' }])
 	})
 
-	test('whole person rows marked sensitive', () => {
-		const values = printed(
+	test('whole person rows marked sensitive', async () => {
+		const values = await printed(
 			build({ people: { type: 'list', item: { type: 'person', sensitive: true } } }, { none: { expr: 'count(fields.people) == 0', message: 'm' } }),
 			{ people: [{ name: 'Grace Hopper' }] },
 		)
 		expect(values).toEqual([{ path: 'fields.people', value: '[[redacted] (object, length 1)]' }])
 	})
 
-	test('whole rows of a fieldset with a sensitive member', () => {
-		const values = printed(
+	test('whole rows of a fieldset with a sensitive member', async () => {
+		const values = await printed(
 			build(
 				{ owners: { type: 'list', item: { type: 'fieldset', fields: { name: { type: 'text' }, ssn: { type: 'text', sensitive: true } } } } },
 				{ none: { expr: 'count(fields.owners) == 0', message: 'm' } },
@@ -256,8 +256,8 @@ describe('a member read through a list of sensitive items is redacted', () => {
 })
 
 describe('computed values derived from sensitive values', () => {
-	test('a computed value that reads a derived computed value is derived too', () => {
-		const [result] = explain(
+	test('a computed value that reads a derived computed value is derived too', async () => {
+		const [result] = (await explain(
 			build(
 				{ account: { type: 'text', sensitive: true } },
 				{ shown: { expr: 'suffixed == ""', message: 'm' } },
@@ -267,14 +267,14 @@ describe('computed values derived from sensitive values', () => {
 				},
 			),
 			{ account: 'ab12' },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([{ path: 'suffixed', value: '[redacted] (string, length 6)' }])
 	})
 
 	const owners = { type: 'list' as const, item: { type: 'fieldset' as const, fields: { ssn: { type: 'text' as const, sensitive: true }, share: { type: 'number' as const } } } }
 	const ownerRows = [{ ssn: '111223333', share: 60 }, { ssn: '444556666', share: 40 }]
 
-	test('counting the rows of a list or a party role is not derived', () => {
+	test('counting the rows of a list or a party role is not derived', async () => {
 		const definition: Form = {
 			...build(
 				{ owners },
@@ -291,7 +291,7 @@ describe('computed values derived from sensitive values', () => {
 			),
 			parties: { sellers: { label: 'Seller', max: 3 } },
 		}
-		const results = form(definition)
+		const results = await (await form.load(definition))
 			.fill({ fields: { owners: ownerRows }, parties: { sellers: [{ id: 'sellers-0', name: 'Acme', taxId: '12-3456789' }] } } as never)
 			.validateRules().rules
 		expect(results.map((result) => result.explanation?.values)).toEqual([
@@ -301,35 +301,35 @@ describe('computed values derived from sensitive values', () => {
 		])
 	})
 
-	test('a count whose filter reads a sensitive member is derived', () => {
-		const [result] = explain(
+	test('a count whose filter reads a sensitive member is derived', async () => {
+		const [result] = (await explain(
 			build({ owners }, { none: { expr: 'matched > 5', message: 'm' } }, { matched: { type: 'number', value: 'count(fields.owners, fields.owners.ssn == "111223333")' } }),
 			{ owners: ownerRows },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([{ path: 'matched', value: '[redacted] (number, length 1)' }])
 	})
 
-	test('reading a row of a list whose rows hold a sensitive member is derived', () => {
-		const [result] = explain(
+	test('reading a row of a list whose rows hold a sensitive member is derived', async () => {
+		const [result] = (await explain(
 			build({ owners }, { none: { expr: 'firstSet > 5', message: 'm' } }, { firstSet: { type: 'number', value: 'fields.owners[0] == null ? 0 : 1' } }),
 			{ owners: ownerRows },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([{ path: 'firstSet', value: '[redacted] (number, length 1)' }])
 	})
 
-	test('a sum over members that are not sensitive is not derived', () => {
-		const [result] = explain(
+	test('a sum over members that are not sensitive is not derived', async () => {
+		const [result] = (await explain(
 			build({ owners }, { none: { expr: 'shares > 500', message: 'm' } }, { shares: { type: 'number', value: 'sum(fields.owners.share)' } }),
 			{ owners: ownerRows },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([{ path: 'shares', value: '100' }])
 	})
 
-	test('a computed value over non-sensitive values prints', () => {
-		const [result] = explain(
+	test('a computed value over non-sensitive values prints', async () => {
+		const [result] = (await explain(
 			build({ amount: { type: 'number' } }, { big: { expr: 'doubled > 100', message: 'm' } }, { doubled: { type: 'number', value: 'fields.amount * 2' } }),
 			{ amount: 7 },
-		)
+		))
 		expect(result?.explanation?.values).toEqual([{ path: 'doubled', value: '14' }])
 	})
 })
@@ -340,16 +340,16 @@ describe('organization and party identifiers are sensitive', () => {
 		...build({ org: { type: 'organization' }, publicOrg: { type: 'organization', sensitive: false } }, rules),
 		parties: { employer: { label: 'Employer', partyType: 'organization' } },
 	})
-	const run = (rules: Form['rules'], fields: Record<string, unknown> = {}) =>
-		form(withEmployer(rules)).fill({ fields, parties: { employer: { id: 'employer-0', ...employer } } } as never).validateRules().rules
+	const run = async (rules: Form['rules'], fields: Record<string, unknown> = {}) =>
+		(await form.load(withEmployer(rules))).fill({ fields, parties: { employer: { id: 'employer-0', ...employer } } } as never).validateRules().rules
 
-	test('a party taxId is redacted where the path ends in it', () => {
-		const [result] = run({ id: { expr: 'length(parties.employer.taxId) == 1', message: 'm' } })
+	test('a party taxId is redacted where the path ends in it', async () => {
+		const [result] = (await run({ id: { expr: 'length(parties.employer.taxId) == 1', message: 'm' } }))
 		expect(result?.explanation?.values).toEqual([{ path: 'parties.employer.taxId', value: '[redacted] (string, length 10)' }])
 	})
 
-	test('a whole party prints with its identifiers redacted', () => {
-		const [result] = run({ none: { expr: 'parties.employer == null', message: 'm' } })
+	test('a whole party prints with its identifiers redacted', async () => {
+		const [result] = (await run({ none: { expr: 'parties.employer == null', message: 'm' } }))
 		const printed = result?.explanation?.values[0]?.value ?? ''
 		expect(printed).toContain('"name": "Acme"')
 		expect(printed).toContain('"taxId": [redacted] (string, length 10)')
@@ -357,15 +357,15 @@ describe('organization and party identifiers are sensitive', () => {
 		expect(printed).not.toContain('12-3456789')
 	})
 
-	test('an organization field redacts its identifiers unless it sets sensitive false', () => {
-		const [org, publicOrg, whole] = run(
+	test('an organization field redacts its identifiers unless it sets sensitive false', async () => {
+		const [org, publicOrg, whole] = (await run(
 			{
 				org: { expr: 'length(fields.org.taxId) == 1', message: 'm' },
 				publicOrg: { expr: 'length(fields.publicOrg.taxId) == 1', message: 'm' },
 				whole: { expr: 'fields.org == null', message: 'm' },
 			},
 			{ org: employer, publicOrg: employer },
-		)
+		))
 		expect(org?.explanation?.values).toEqual([{ path: 'fields.org.taxId', value: '[redacted] (string, length 10)' }])
 		expect(publicOrg?.explanation?.values).toEqual([{ path: 'fields.publicOrg.taxId', value: '"12-3456789"' }])
 		expect(whole?.explanation?.values[0]?.value).toBe('{"name": "Acme", "taxId": [redacted] (string, length 10), "entityId": [redacted] (string, length 8)}')
@@ -373,18 +373,18 @@ describe('organization and party identifiers are sensitive', () => {
 })
 
 describe('a rule expression error', () => {
-	const failing = (sensitive: boolean) => explain(
+	const failing = async (sensitive: boolean) => (await explain(
 		build({ pattern: { type: 'text', sensitive } }, { shaped: { expr: 'matches("abc", fields.pattern)', message: 'm' } }),
 		{ pattern: '(secret' },
-	)[0]
+	))[0]
 
-	test('does not quote the error when the rule reads a sensitive value', () => {
-		const result = failing(true)
-		expect(result?.message).toBe('Rule expression error')
+	test('does not quote the error when the rule reads a sensitive value', async () => {
+		const result = await failing(true)
+		expect((await result)?.message).toBe('Rule expression error')
 		expect(JSON.stringify(result)).not.toContain('secret')
 	})
 
-	test('keeps the error when the rule reads no sensitive value', () => {
-		expect(failing(false)?.message).toMatch(/^Rule expression error: /)
+	test('keeps the error when the rule reads no sensitive value', async () => {
+		expect((await failing(false))?.message).toMatch(/^Rule expression error: /)
 	})
 })

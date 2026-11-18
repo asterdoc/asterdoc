@@ -66,8 +66,8 @@ export {
 export type { PartyValidationResult, ExtendedValidationResult } from './party'
 
 // Artifact validation
-export { validate as validateArtifact, validateLayers, parseArtifact } from './artifact'
-export type { LayerValidationIssue, ValidateLayersOptions, ValidateLayersResult } from './artifact'
+export { validate as validateArtifact, parseArtifact } from './artifact'
+export type { LayerValidationIssue } from './artifact'
 
 // Data validation
 export { validateFormData } from './data'

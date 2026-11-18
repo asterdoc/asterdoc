@@ -98,7 +98,7 @@ Total: {{fields.total}}
       .build()
 
     test('selects the renderer from the layer MIME type', async () => {
-      const filled = form.fill({ fields: { name: 'World' } })
+      const filled = (await a.form.load(form)).fill({ fields: { name: 'World' } })
       const markdown = await filled.render()
       expect(markdown).toContain('Hello')
       expect(markdown).toContain('World')
@@ -135,7 +135,7 @@ Total: {{fields.total}}
     })
 
     test('refuses to render a React layer without a registered renderer', async () => {
-      const filled = form.fill({ fields: { customer: 'Acme' } })
+      const filled = (await a.form.load(form)).fill({ fields: { customer: 'Acme' } })
       await expect(filled.render({ layer: 'composition' })).rejects.toThrow(UnregisteredLayerRendererError)
     })
   })

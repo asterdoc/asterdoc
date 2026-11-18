@@ -42,7 +42,7 @@ file. An inline layer with a React MIME type fails validation.
 
 ```json
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-12.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-17.json",
   "kind": "form",
   "name": "service-agreement",
   "version": "1.0.0",
@@ -132,18 +132,18 @@ Load it in a module that runs in the browser too:
 
 ```ts
 // agreement.ts
-import { loadFromObject } from '@asterdoc/core'
+import { load } from '@asterdoc/core'
 import agreementJson from './agreement.json'
 
-export const agreement = loadFromObject<'form'>(agreementJson)
+export const agreement = await load<'form'>(agreementJson)
 ```
 
-`loadFromObject` validates the object and checks `$schema`. Pass
+`load` validates the object and checks `$schema`. Pass
 `agreement.toJSON()` where a component wants a `Form` value.
 
 | Where the code runs | Load with |
 |---|---|
-| Anything a composition or preview imports | `loadFromObject(json)`, or a builder module (`a.form(spec)`) |
+| Anything a composition or preview imports | `await load(json)`, or `await a.form.load(spec)` |
 | Node-only scripts and tests | `a.load(await readFile(path, 'utf8'))` is also fine |
 
 ## Render through the layer

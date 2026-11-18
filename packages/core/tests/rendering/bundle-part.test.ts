@@ -60,15 +60,15 @@ const stubChecklist = () =>
 		defaultLayer: 'c',
 	})
 
-const tsxForm = () =>
-	form()
+const tsxForm = async () =>
+	await form.load(form()
 		.name('f')
 		.version('1.0.0')
 		.title('F')
 		.fields({ v: { type: 'text', label: 'V' } })
 		.fileLayer('c', { mimeType: 'text/tsx', path: 'f.tsx' })
 		.defaultLayer('c')
-		.build()
+		.build())
 
 const inlineBundle = (...keys: string[]): Bundle => ({
 	kind: 'bundle',
@@ -122,9 +122,9 @@ describe('rendering a document or form part', () => {
 	})
 
 	test('a form React layer with no registered renderer gets the error a direct render gives', async () => {
-		await expect(tsxForm().fill({ fields: {} }).render()).rejects.toBeInstanceOf(UnregisteredLayerRendererError)
+		await expect((async () => (await tsxForm()).fill({ fields: {} }).render())()).rejects.toBeInstanceOf(UnregisteredLayerRendererError)
 		await expect(
-			assembleBundle(inlineBundle('f'), { contents: { f: tsxForm().fill({ fields: {} }) } }),
+			assembleBundle(inlineBundle('f'), { contents: { f: (await tsxForm()).fill({ fields: {} }) } }),
 		).rejects.toBeInstanceOf(UnregisteredLayerRendererError)
 	})
 })
@@ -140,8 +140,8 @@ describe('what every member receives', () => {
 			},
 		}
 		const markdown = { mimeType: 'text/markdown', text: 'x' } as const
-		const f = form().name('f').version('1.0.0').title('F').fields({ v: { type: 'text', label: 'V' } })
-			.inlineLayer('md', markdown).defaultLayer('md').build()
+		const f = await form.load(form().name('f').version('1.0.0').title('F').fields({ v: { type: 'text', label: 'V' } })
+			.inlineLayer('md', markdown).defaultLayer('md').build())
 		const cl = checklist().name('cl').version('1.0.0').title('CL').item({ id: 'a', title: 'A' })
 			.inlineLayer('md', markdown).defaultLayer('md').build()
 		const doc = document({
@@ -183,14 +183,14 @@ describe('what every member receives', () => {
 
 describe('naming and sealing bytes parts', () => {
 	const slot: SignatureSlot = { party: { role: 'client' }, type: 'signature', placement: 'flow' }
-	const signedPart = () =>
-		form()
+	const signedPart = async () =>
+		await (await form.load(form()
 			.name('first').version('1.0.0').title('first')
 			.fields({ amount: { type: 'number', label: 'Amount', required: true } })
 			.parties({ client: { label: 'client', partyType: 'person', signature: { required: true } } })
 			.fileLayer('composition', { mimeType: 'text/tsx', path: 'first.tsx', signatures: { sig: slot } })
 			.defaultLayer('composition')
-			.build()
+			.build()))
 			.fill({ fields: { amount: 10 }, parties: { client: { id: 'client-0', name: 'client' } } })
 			.addSigner('s1', { person: { name: 'client' } })
 			.addSignatory('client', 'client-0', { signerId: 's1' })
@@ -200,14 +200,14 @@ describe('naming and sealing bytes parts', () => {
 		const annex = { kind: 'bytes' as const, content: cleanPdf, mimeType: 'Application/PDF' }
 		const assembled = await assembleBundle(packet, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: { first: signedPart(), annex },
+			contents: { first: (await signedPart()), annex },
 		})
 		expect(assembled.outputs.annex!.filename).toBe('annex.pdf')
 		expect(assembled.outputs.annex!.mimeType).toBe('application/pdf')
 
 		const sealed = await sealBundle(packet, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: { first: signedPart(), annex },
+			contents: { first: (await signedPart()), annex },
 		})
 		const part = sealed.parts.find((p) => p.key === 'annex')!
 		expect(part.attached).toBe(false)
@@ -218,7 +218,7 @@ describe('naming and sealing bytes parts', () => {
 		await expect(
 			sealBundle(packet, {
 				renderers: { 'text/tsx': reactRenderer() },
-				contents: { first: signedPart(), annex: { kind: 'bytes', content: png, mimeType: 'Application/PDF' } },
+				contents: { first: (await signedPart()), annex: { kind: 'bytes', content: png, mimeType: 'Application/PDF' } },
 			}),
 		).rejects.toBeInstanceOf(BundleSealError)
 	})
@@ -227,11 +227,11 @@ describe('naming and sealing bytes parts', () => {
 		const annex = { kind: 'bytes' as const, content: png, mimeType: 'image/png' }
 		const assembled = await assembleBundle(packet, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: { first: signedPart(), annex },
+			contents: { first: (await signedPart()), annex },
 		})
 		const sealed = await sealBundle(packet, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: { first: signedPart(), annex },
+			contents: { first: (await signedPart()), annex },
 		})
 		const part = sealed.parts.find((p) => p.key === 'annex')!
 		expect(part.mimeType).toBe('image/png')
@@ -242,7 +242,7 @@ describe('naming and sealing bytes parts', () => {
 	test('a bytes annex keeps the filename it names', async () => {
 		const assembled = await assembleBundle(packet, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: { first: signedPart(), annex: { kind: 'bytes', content: png, mimeType: 'image/png', filename: 'scan.png' } },
+			contents: { first: (await signedPart()), annex: { kind: 'bytes', content: png, mimeType: 'image/png', filename: 'scan.png' } },
 		})
 		expect(assembled.outputs.annex!.filename).toBe('scan.png')
 	})

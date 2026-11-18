@@ -27,7 +27,7 @@ const f0: Form = {
 }
 console.log(f0)
 
-const f1 = a.form({
+const f1 = await a.form.load({
   version: '1.0.0',
   name: 'pet-adoption',
   title: 'Pet Adoption Form',

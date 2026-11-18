@@ -16,6 +16,7 @@ import { findRepoRoot } from '../utils/project.js'
 import { ensureTsLoader } from '../utils/ts-loader.js'
 import { loadValidatedArtifact } from '../utils/artifact-file.js'
 import { formatPayloadErrors, validateFormPayload } from '../utils/validate-data.js'
+import { loadFormFile } from '../utils/load-form.js'
 import { CHECK_NEED, importPeer, MissingPeerError } from './dev/peers.js'
 import { loadSampleData } from './dev/sample-loader.js'
 
@@ -111,7 +112,7 @@ export function createCheckCommand(): Command {
         )
 
         const data = options.data
-          ? await explicitData(options.data, resolved.artifact)
+          ? await explicitData(options.data, resolved.artifact, resolved.artifactDir)
           : await discoverSampleData(compositionPath, projectRoot)
 
         const runCheck = await loadCheckComposition(projectRoot)
@@ -319,9 +320,9 @@ function pickLayer(
 }
 
 /** `--data` explicitly overrides sample discovery. */
-async function explicitData(value: string, form: Form): Promise<DocumentData> {
+async function explicitData(value: string, form: Form, baseDir: string): Promise<DocumentData> {
   const { data } = await parseDataInput(value)
-  const result = validateFormPayload(form, toFormPayload(data))
+  const result = validateFormPayload(await loadFormFile(form, baseDir), toFormPayload(data))
   if (!result.success) {
     throw new Error(formatPayloadErrors(result.errors, result.ruleErrors).join('\n'))
   }

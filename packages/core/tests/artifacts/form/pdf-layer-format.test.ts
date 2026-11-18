@@ -41,15 +41,15 @@ const definition = {
 	defaultLayer: 'pdf',
 }
 
-const filled = () => a.form(definition, { resolver }).fill({ fields: { amount: { amount: 12000, currency: 'USD' } } })
+const filled = async () => (await a.form.load(definition, { resolver })).fill({ fields: { amount: { amount: 12000, currency: 'USD' } } })
 
 const boxValue = async (bytes: unknown) => (await inspectAcroFormFields(bytes as Uint8Array))
 	.find((field) => field.name === 'name')?.value
 
 describe('a PDF layer that declares its money format', () => {
 	test('prints the amount without a symbol through the default renderers', async () => {
-		expect(await boxValue(await filled().render({ renderer: createLayerRenderer() }))).toBe('12,000.00')
-		expect(await boxValue(await filled().render({ renderer: pdfRenderer(), layer: 'pdf' }))).toBe('12,000.00')
+		expect(await boxValue(await (await filled()).render({ renderer: createLayerRenderer() }))).toBe('12,000.00')
+		expect(await boxValue(await (await filled()).render({ renderer: pdfRenderer(), layer: 'pdf' }))).toBe('12,000.00')
 	})
 
 	test('prints a date in the pattern the layer declares, and the formatter date elsewhere', async () => {
@@ -61,21 +61,21 @@ describe('a PDF layer that declares its money format', () => {
 				pdfPlain: { kind: 'file' as const, mimeType: 'application/pdf', path: 'form.pdf', bindingsFrom: 'pdf' },
 			},
 		}
-		const form = () => a.form(dated, { resolver }).fill({ fields: { signed: '2021-06-05' } })
-		expect(await boxValue(await form().render({ renderer: pdfRenderer(), layer: 'pdf' }))).toBe('06/05/2021')
-		expect(await boxValue(await form().render({ renderer: pdfRenderer(), layer: 'pdfPlain' }))).toBe('Jun 5, 2021')
+		const form = async () => (await a.form.load(dated, { resolver })).fill({ fields: { signed: '2021-06-05' } })
+		expect(await boxValue(await (await form()).render({ renderer: pdfRenderer(), layer: 'pdf' }))).toBe('06/05/2021')
+		expect(await boxValue(await (await form()).render({ renderer: pdfRenderer(), layer: 'pdfPlain' }))).toBe('Jun 5, 2021')
 	})
 
 	test('keeps the symbol on a layer that reuses its bindings but declares no format', async () => {
-		expect(await boxValue(await filled().render({ renderer: pdfRenderer(), layer: 'pdfSymbol' }))).toBe('$12,000.00')
+		expect(await boxValue(await (await filled()).render({ renderer: pdfRenderer(), layer: 'pdfSymbol' }))).toBe('$12,000.00')
 	})
 
 	test('keeps the symbol on a text layer of the same artifact', async () => {
-		expect(await filled().render({ renderer: createLayerRenderer(), layer: 'markdown' })).toBe('Amount: $12,000.00')
+		expect(await (await filled()).render({ renderer: createLayerRenderer(), layer: 'markdown' })).toBe('Amount: $12,000.00')
 	})
 
 	test('seals the PDF without a symbol', async () => {
-		const sealed = await a.form({
+		const sealed = await (await a.form.load({
 			...definition,
 			parties: { signer: { label: 'Signer', partyType: 'person' as const, signature: { required: true } } },
 			layers: {
@@ -86,7 +86,7 @@ describe('a PDF layer that declares its money format', () => {
 					},
 				},
 			},
-		}, { resolver })
+		}, { resolver }))
 			.fill({ fields: { amount: { amount: 12000, currency: 'USD' } }, parties: { signer: { id: 'signer-0', name: 'Ada' } } })
 			.addSigner('ada', { person: { name: 'Ada' } })
 			.addSignatory('signer', 'signer-0', { signerId: 'ada' })
@@ -99,19 +99,19 @@ describe('a PDF layer that declares its money format', () => {
 })
 
 describe('declaring a layer format', () => {
-	test('is refused on a layer that prints no values, naming the rule', () => {
-		expect(() => a.form({
+	test('is refused on a layer that prints no values, naming the rule', async () => {
+		await expect(a.form.load({
 			...definition,
 			layers: { data: { kind: 'file' as const, mimeType: 'application/json', path: 'a.json', format: { money: { currencyDisplay: 'none' as const } } } },
 			defaultLayer: 'data',
-		})).toThrow(`layers.data.format: ${LAYER_FORMAT_RULE}`)
+		})).rejects.toThrow(`layers.data.format: ${LAYER_FORMAT_RULE}`)
 	})
 
-	test('the layer builders declare it on every layer that prints values', () => {
+	test('the layer builders declare it on every layer that prints values', async () => {
 		const format = { money: { currencyDisplay: 'none' as const } }
 		expect(layer().file().path('1099.pdf').mimeType('application/pdf').format(format).build().format).toEqual(format)
 		expect(layer().file().path('1099.md').mimeType('text/markdown').format(format).build().format).toEqual(format)
 		expect(layer().inline().text('{{fields.amount}}').mimeType('text/plain').format(format).build().format).toEqual(format)
-		expect(a.form({ ...definition, layers: { markdown: layer().file().path('a.md').mimeType('text/markdown').format(format).build() }, defaultLayer: 'markdown' }).layers?.markdown?.format).toEqual(format)
+		expect((await a.form.load({ ...definition, layers: { markdown: layer().file().path('a.md').mimeType('text/markdown').format(format).build() }, defaultLayer: 'markdown' })).layers?.markdown?.format).toEqual(format)
 	})
 })

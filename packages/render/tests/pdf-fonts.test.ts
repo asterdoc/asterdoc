@@ -1,11 +1,12 @@
 /**
  * Font selection for PDF filling and overlays.
  *
- * Each value is drawn in the first font that can draw all of it: a render-time
- * font, then the layer's declared font, then the form's own embedded font for
- * the field, then Helvetica for WinAnsi text. Drawn characters and embedded
- * fonts are read back with pdf.js from the flattened output, not from this
- * package's own inspector.
+ * Each character of a value is drawn in the first font that has it: an
+ * overlay's own font, the layer's declared TrueType font, then the field's
+ * standard font: its binding's, else the layer's, else Helvetica, whatever
+ * font the PDF field itself names. Drawn characters and fonts are read back
+ * with pdf.js from the flattened output, not from this package's own
+ * inspector.
  */
 
 import { describe, expect, it } from 'vitest'
@@ -42,7 +43,7 @@ const field = (overrides: Partial<FixtureField> = {}): FixtureField => ({
 /** Fill one field, flatten, and read back the drawn text and the fonts pdf.js loaded. */
 async function fill(
   value: unknown,
-  options: Pick<RenderPdfOptions, 'font' | 'layerFont'> = {},
+  options: Pick<RenderPdfOptions, 'layerFont' | 'standardFont' | 'bindings'> = {},
   fixture: { field?: Partial<FixtureField>; form?: FixtureForm } = {},
 ) {
   const template = acroFieldsPdf([field(fixture.field)], fixture.form)
@@ -58,7 +59,7 @@ async function fill(
 async function fillError<T extends Error>(
   kind: new (...args: never[]) => T,
   value: unknown,
-  options: Pick<RenderPdfOptions, 'font' | 'layerFont'> = {},
+  options: Pick<RenderPdfOptions, 'layerFont' | 'standardFont' | 'bindings'> = {},
   form?: FixtureForm,
 ): Promise<T> {
   const template = acroFieldsPdf([field()], form)
@@ -103,45 +104,42 @@ describe('font order', () => {
     source: 'override.ttf',
   }
 
-  it('prefers the render-time font to the layer font', async () => {
-    const result = await fill('Жук', { font: override, layerFont: liberation })
-    expect(result.fonts.map((font) => font.name)).toEqual(['AsterdocTestOverride'])
-  })
-
-  it('falls through to the layer font for a value the render-time font cannot draw', async () => {
-    const result = await fill('Ωμέγα', { font: override, layerFont: liberation })
-    expect(result.text).toBe('Ωμέγα')
-    expect(result.fonts.map((font) => font.name)).toEqual(['LiberationSans'])
-  })
-
-  it('prefers the layer font to the form\'s own font', async () => {
-    const result = await fill('Жук', { layerFont: liberation }, {
-      field: { da: '/FormFont 10 Tf 0 g' },
-      form: { fonts: { FormFont: cyrillicOnly } },
-    })
-    expect(result.fonts.map((font) => font.name)).toEqual(['LiberationSans'])
+  it('draws each character in the first font that has it, so one value mixes the layer font and Helvetica', async () => {
+    const result = await fill('Жук Café', { layerFont: override })
+    expect(result.text.replace(/\s/g, '')).toBe('ЖукCafé')
+    expect(await fieldValuesWithPdfjs(result.filled)).toEqual({ name: 'Жук Café' })
+    expect(result.fonts.map((font) => font.name).sort()).toEqual(['AsterdocTestOverride', 'Helvetica'])
   })
 })
 
-describe('the form\'s own font', () => {
-  const form: FixtureForm = { fonts: { FormFont: cyrillicOnly } }
-  const ownFont = { field: { da: '/FormFont 10 Tf 0 g' }, form }
-
-  it('draws a value it covers with no font configured, embedded from the form', async () => {
-    const result = await fill('Жук', {}, ownFont)
-    expect(result.text).toBe('Жук')
-    expect(result.fonts).toEqual([{ name: 'AsterdocTestFormFont', missingFile: false }])
-  })
-
-  it('falls through to Helvetica for a Latin-1 value it does not cover', async () => {
-    const result = await fill('Café', {}, ownFont)
-    expect(result.text).toBe('Café')
+describe('the standard fonts', () => {
+  it('draws in Helvetica whatever standard font the PDF field itself names', async () => {
+    const result = await fill('Crème', {}, { field: { da: '/TiRo 10 Tf 0 g' }, form: { standardFonts: { TiRo: 'Times-Roman' } } })
+    expect(result.text).toBe('Crème')
     expect(result.fonts.map((font) => font.name)).toEqual(['Helvetica'])
   })
 
-  it('is only a candidate for the field whose appearance names it', async () => {
-    const error = await fillError(PdfFieldFillError, 'Жук', {}, form)
-    expect(error.reason).toBe('missing-glyph')
+  it('draws in Helvetica when the field\'s own font is an embedded one, which it does not use', async () => {
+    const result = await fill('Жук', {}, { field: { da: '/FormFont 10 Tf 0 g' }, form: { fonts: { FormFont: cyrillicOnly } } }).then(() => undefined, (error: unknown) => error)
+    expect(result).toBeInstanceOf(PdfFieldFillError)
+    const latin = await fill('Café', {}, { field: { da: '/FormFont 10 Tf 0 g' }, form: { fonts: { FormFont: cyrillicOnly } } })
+    expect(latin.fonts.map((font) => font.name)).toEqual(['Helvetica'])
+  })
+
+  it('draws every field of a layer that chooses Courier in Courier, over the field\'s own font', async () => {
+    const result = await fill('123456', { standardFont: 'Courier' }, { field: { da: '/TiRo 10 Tf 0 g' }, form: { standardFonts: { TiRo: 'Times-Roman' } } })
+    expect(result.fonts.map((font) => font.name)).toEqual(['Courier'])
+  })
+
+  it('draws a field whose binding chooses Courier in Courier, over the layer\'s font', async () => {
+    const result = await fill('123456', { standardFont: 'Helvetica', bindings: { name: { path: 'value', font: 'Courier' } } })
+    expect(result.fonts.map((font) => font.name)).toEqual(['Courier'])
+  })
+
+  it('refuses a character a standard font does not have, naming the font', async () => {
+    const error = await fillError(PdfFieldFillError, 'Łódź', { standardFont: 'Courier' })
+    expect([error.reason, error.character]).toEqual(['missing-glyph', 'Ł'])
+    expect(error.message).toContain('The field draws in Courier, a standard PDF font with the Windows Latin 1 characters only')
   })
 })
 
@@ -157,7 +155,7 @@ describe('Helvetica and missing glyphs', () => {
     const error = await fillError(PdfFieldFillError, 'Жук')
     expect([error.field, error.reason, error.character]).toEqual(['name', 'missing-glyph', 'Ж'])
     expect(error.message).toContain('U+0416')
-    expect(error.message).toContain('Declare a font')
+    expect(error.message).toContain('declare a TrueType font that has it')
   })
 
   it('never draws a mapped glyph that has no outline', async () => {
@@ -187,12 +185,10 @@ describe('font sources', () => {
     ['unreadable', new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])],
     ['unsupported-format', syntheticFont({ name: 'Cff', characters: 'a', signature: 'OTTO' })],
     ['not-embeddable', syntheticFont({ name: 'Restricted', characters: 'a', fsType: 0x0002 })],
-  ] as const)('fails naming the source of a %s font, from either option', async (problem, bytes) => {
-    for (const option of ['font', 'layerFont'] as const) {
-      const error = await fillError(PdfFontError, 'Hello', { [option]: { bytes, source: 'fonts/bad.ttf' } })
-      expect([error.source, error.problem]).toEqual(['fonts/bad.ttf', problem])
-      expect(error.message).toContain('fonts/bad.ttf')
-    }
+  ] as const)('fails naming the source of a %s font, as a layer font', async (problem, bytes) => {
+    const layer = await fillError(PdfFontError, 'Hello', { layerFont: { bytes, source: 'fonts/bad.ttf' } })
+    expect([layer.source, layer.problem]).toEqual(['fonts/bad.ttf', problem])
+    expect(layer.message).toContain('fonts/bad.ttf')
   })
 
   it('accepts a font whose license permits editable embedding', async () => {
@@ -202,7 +198,7 @@ describe('font sources', () => {
 })
 
 describe('overlays', () => {
-  const overlayPdf = async (text: string, options: Pick<RenderPdfOptions, 'font' | 'layerFont'> = {}, width?: number) =>
+  const overlayPdf = async (text: string, options: Pick<RenderPdfOptions, 'layerFont' | 'standardFont' | 'bindings'> = {}, width?: number) =>
     renderPdf({ template: pagePdf([[300, 300]]), data: {}, overlays: [{ page: 1, x: 20, y: 20, text, width }], ...options })
 
   it('draws overlay text in the declared font, embedded', async () => {
@@ -221,7 +217,7 @@ describe('overlays', () => {
     await expect(overlayPdf('שלום', { layerFont: liberation })).rejects.toMatchObject({ reason: 'unsupported-script', script: 'Hebrew' })
   })
 
-  it('draws each overlay in the font it names, in drawing order, before the render font', async () => {
+  it('draws each overlay in the font it names, in drawing order, before the layer font', async () => {
     const cyrillic: PdfFont = { bytes: syntheticFont({ name: 'AsterdocTestCyrillic', characters: 'Жук ' }), source: 'cyrillic.ttf' }
     const flat = await renderPdf({
       template: pagePdf([[300, 300]]),
@@ -231,7 +227,7 @@ describe('overlays', () => {
         { page: 1, x: 20, y: 60, text: 'Жук' },
         { page: 1, x: 20, y: 40, text: 'Жук', font: cyrillic },
       ],
-      font: liberation,
+      layerFont: liberation,
     })
     const items = await textItemsWithPdfjs(flat)
     expect(items.map((item) => item.text)).toEqual(['Жук', 'Жук', 'Жук'])
@@ -243,7 +239,7 @@ describe('overlays', () => {
 
   it('falls back from an overlay font that cannot draw the text, and names an unusable one', async () => {
     const cyrillic: PdfFont = { bytes: syntheticFont({ name: 'AsterdocTestCyrillic', characters: 'Жук' }), source: 'cyrillic.ttf' }
-    const flat = await renderPdf({ template: pagePdf([[300, 300]]), data: {}, overlays: [{ page: 1, x: 20, y: 20, text: 'Ωμέγα', font: cyrillic }], font: liberation })
+    const flat = await renderPdf({ template: pagePdf([[300, 300]]), data: {}, overlays: [{ page: 1, x: 20, y: 20, text: 'Ωμέγα', font: cyrillic }], layerFont: liberation })
     expect(await fontsWithPdfjs(flat)).toEqual([{ name: 'LiberationSans', missingFile: false }])
     const bad = renderPdf({ template: pagePdf([[300, 300]]), data: {}, overlays: [{ page: 1, x: 20, y: 20, text: 'a', font: { bytes: new Uint8Array(13), source: 'fonts/bad.ttf' } }] })
     await expect(bad).rejects.toMatchObject({ name: 'PdfFontError', source: 'fonts/bad.ttf', problem: 'unreadable' })
@@ -251,8 +247,8 @@ describe('overlays', () => {
 
   it('keeps earlier overlay text in its own font when a later render draws on the same page', async () => {
     const cyrillic: PdfFont = { bytes: syntheticFont({ name: 'AsterdocTestCyrillic', characters: 'Жук' }), source: 'cyrillic.ttf' }
-    const first = await renderPdf({ template: pagePdf([[300, 300]]), data: {}, overlays: [{ page: 1, x: 20, y: 20, text: 'Жук' }], font: cyrillic })
-    const second = await renderPdf({ template: first, data: {}, overlays: [{ page: 1, x: 20, y: 60, text: 'Ωμέγα' }], font: liberation })
+    const first = await renderPdf({ template: pagePdf([[300, 300]]), data: {}, overlays: [{ page: 1, x: 20, y: 20, text: 'Жук' }], layerFont: cyrillic })
+    const second = await renderPdf({ template: first, data: {}, overlays: [{ page: 1, x: 20, y: 60, text: 'Ωμέγα' }], layerFont: liberation })
     expect((await textItemsWithPdfjs(second)).map((item) => item.text)).toEqual(['Жук', 'Ωμέγα'])
     expect((await fontsWithPdfjs(second)).map((font) => font.name).sort()).toEqual(['AsterdocTestCyrillic', 'LiberationSans'])
   })
@@ -311,5 +307,21 @@ describe('output', () => {
     const updated = source.slice(source.lastIndexOf('/Fields'))
     expect(source).toContain('/NeedAppearances true')
     expect(updated).not.toContain('/NeedAppearances')
+  })
+})
+
+describe('embedding', () => {
+  it('embeds only the glyphs drawn, so a large font adds little to the file', async () => {
+    const template = acroFieldsPdf([field()])
+    const filled = await renderPdf({ template, data: { value: 'Жук' }, bindings: { name: 'value' }, layerFont: liberation })
+    const added = filled.length - template.length
+    expect(liberation.bytes.length).toBeGreaterThan(130_000)
+    expect(added).toBeLessThan(15_000)
+    expect((await textItemsWithPdfjs(await flattenPdf(filled))).map((item) => item.text).join('')).toBe('Жук')
+  })
+
+  it('refuses a character no font of the chain has, naming it', async () => {
+    const error = await fillError(PdfFieldFillError, 'Жук ☃', { layerFont: liberation })
+    expect([error.reason, error.character]).toEqual(['missing-glyph', '☃'])
   })
 })

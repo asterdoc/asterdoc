@@ -36,6 +36,8 @@ export interface TrueTypeFont {
   advance(glyph: number): number
   /** True when the glyph has outline data, so drawing it paints something. */
   hasOutline(glyph: number): boolean
+  /** Every code point the character map maps, in ascending order. */
+  codePoints(): number[]
 }
 
 interface Table { offset: number; length: number }
@@ -116,7 +118,7 @@ export function parseTrueType(bytes: Uint8Array): TrueTypeFont {
       return u16(hmtx + metric * 4)
     }
 
-    const glyphFor = characterMap(tables.get('cmap'), u16, u32)
+    const { glyphFor, codePoints } = characterMap(tables.get('cmap'), u16, u32)
     const postScriptName = nameOf(tables.get('name'), bytes, u16) ?? 'EmbeddedFont'
 
     return {
@@ -135,6 +137,7 @@ export function parseTrueType(bytes: Uint8Array): TrueTypeFont {
       },
       advance,
       hasOutline,
+      codePoints,
     }
   } catch (error) {
     if (error instanceof FontProgramError) throw error
@@ -147,7 +150,7 @@ function characterMap(
   table: Table | undefined,
   u16: (offset: number) => number,
   u32: (offset: number) => number,
-): (codePoint: number) => number {
+): { glyphFor: (codePoint: number) => number; codePoints: () => number[] } {
   if (!table) throw new FontProgramError('unreadable', 'it has no cmap table')
   const subtables: Array<{ platform: number; encoding: number; offset: number; format: number }> = []
   const count = u16(table.offset + 2)
@@ -161,7 +164,15 @@ function characterMap(
   const full = subtables.find((entry) => unicode(entry) && entry.format === 12)
   if (full) {
     const groups = u32(full.offset + 12)
-    return (codePoint) => {
+    const codePoints = () => {
+      const found: number[] = []
+      for (let index = 0; index < groups; index++) {
+        const group = full.offset + 16 + index * 12
+        for (let code = u32(group); code <= u32(group + 4); code++) found.push(code)
+      }
+      return found
+    }
+    const glyphFor = (codePoint: number) => {
       let low = 0
       let high = groups - 1
       while (low <= high) {
@@ -175,6 +186,7 @@ function characterMap(
       }
       return 0
     }
+    return { glyphFor, codePoints }
   }
   const basic = subtables.find((entry) => unicode(entry) && entry.format === 4)
   if (!basic) throw new FontProgramError('unsupported-format', 'it has no Unicode character map')
@@ -183,7 +195,15 @@ function characterMap(
   const starts = ends + segments * 2 + 2
   const deltas = starts + segments * 2
   const ranges = deltas + segments * 2
-  return (codePoint) => {
+  const codePoints = () => {
+    const found: number[] = []
+    for (let segment = 0; segment < segments; segment++) {
+      const end = u16(ends + segment * 2)
+      for (let code = u16(starts + segment * 2); code <= end && code < 0xffff; code++) found.push(code)
+    }
+    return found
+  }
+  const glyphFor = (codePoint: number) => {
     if (codePoint > 0xffff) return 0
     for (let segment = 0; segment < segments; segment++) {
       if (codePoint > u16(ends + segment * 2)) continue
@@ -197,6 +217,7 @@ function characterMap(
     }
     return 0
   }
+  return { glyphFor, codePoints }
 }
 
 /** The font's PostScript name (name ID 6). */
@@ -219,4 +240,110 @@ function nameOf(table: Table | undefined, bytes: Uint8Array, u16: (offset: numbe
     return String.fromCharCode(...raw)
   }
   return undefined
+}
+
+const SUBSET_TABLES = ['OS/2', 'cvt ', 'fpgm', 'glyf', 'head', 'hhea', 'hmtx', 'loca', 'maxp', 'prep']
+
+/**
+ * The font program with only `glyphs`, the glyphs their composites use, and
+ * glyph 0 left in it. Every glyph keeps its index, so text encoded by glyph
+ * index draws the same; an unused glyph has no outline. Only the tables a PDF
+ * TrueType font program needs are kept.
+ */
+export function subsetTrueType(bytes: Uint8Array, glyphs: Iterable<number>): Uint8Array {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const tables = new Map<string, Table>()
+  for (let index = 0; index < view.getUint16(4); index++) {
+    const record = 12 + index * 16
+    tables.set(tag(bytes, record), { offset: view.getUint32(record + 8), length: view.getUint32(record + 12) })
+  }
+  const head = tables.get('head')!
+  const loca = tables.get('loca')!
+  const glyf = tables.get('glyf')!
+  const numGlyphs = view.getUint16(tables.get('maxp')!.offset + 4)
+  const longLoca = view.getInt16(head.offset + 50) === 1
+  const offsetOf = (glyph: number) => longLoca ? view.getUint32(loca.offset + glyph * 4) : view.getUint16(loca.offset + glyph * 2) * 2
+
+  const kept = new Set<number>([0])
+  const pending = [...glyphs].filter((glyph) => glyph > 0 && glyph < numGlyphs)
+  while (pending.length > 0) {
+    const glyph = pending.pop()!
+    if (kept.has(glyph)) continue
+    kept.add(glyph)
+    const start = glyf.offset + offsetOf(glyph)
+    if (offsetOf(glyph + 1) <= offsetOf(glyph) || view.getInt16(start) >= 0) continue
+    let cursor = start + 10
+    let flags: number
+    do {
+      flags = view.getUint16(cursor)
+      pending.push(view.getUint16(cursor + 2))
+      cursor += 4 + (flags & 0x0001 ? 4 : 2) + (flags & 0x0008 ? 2 : flags & 0x0040 ? 4 : flags & 0x0080 ? 8 : 0)
+    } while (flags & 0x0020)
+  }
+
+  const outlines: Uint8Array[] = []
+  const offsets: number[] = [0]
+  let size = 0
+  for (let glyph = 0; glyph < numGlyphs; glyph++) {
+    if (kept.has(glyph) && offsetOf(glyph + 1) > offsetOf(glyph)) {
+      const outline = bytes.subarray(glyf.offset + offsetOf(glyph), glyf.offset + offsetOf(glyph + 1))
+      const padded = new Uint8Array((outline.length + 3) & ~3)
+      padded.set(outline)
+      outlines.push(padded)
+      size += padded.length
+    }
+    offsets.push(size)
+  }
+  const newGlyf = new Uint8Array(size)
+  let at = 0
+  for (const outline of outlines) {
+    newGlyf.set(outline, at)
+    at += outline.length
+  }
+  const newLoca = new Uint8Array(offsets.length * 4)
+  const locaView = new DataView(newLoca.buffer)
+  offsets.forEach((offset, index) => locaView.setUint32(index * 4, offset))
+  const newHead = bytes.slice(head.offset, head.offset + head.length)
+  const headView = new DataView(newHead.buffer)
+  headView.setUint32(8, 0)
+  headView.setInt16(50, 1)
+
+  const contents = new Map<string, Uint8Array>()
+  for (const name of SUBSET_TABLES) {
+    if (name === 'glyf') contents.set(name, newGlyf)
+    else if (name === 'loca') contents.set(name, newLoca)
+    else if (name === 'head') contents.set(name, newHead)
+    else {
+      const table = tables.get(name)
+      if (table) contents.set(name, bytes.subarray(table.offset, table.offset + table.length))
+    }
+  }
+  const names = [...contents.keys()].sort()
+  const headerSize = 12 + names.length * 16
+  let total = headerSize
+  for (const name of names) total += (contents.get(name)!.length + 3) & ~3
+  const out = new Uint8Array(total)
+  const outView = new DataView(out.buffer)
+  outView.setUint32(0, 0x00010000)
+  outView.setUint16(4, names.length)
+  const power = 2 ** Math.floor(Math.log2(names.length))
+  outView.setUint16(6, power * 16)
+  outView.setUint16(8, Math.log2(power))
+  outView.setUint16(10, names.length * 16 - power * 16)
+  let offset = headerSize
+  names.forEach((name, index) => {
+    const content = contents.get(name)!
+    const record = 12 + index * 16
+    for (let char = 0; char < 4; char++) out[record + char] = name.charCodeAt(char)
+    let checksum = 0
+    for (let word = 0; word < content.length; word += 4) {
+      checksum = (checksum + (((content[word] ?? 0) << 24) | ((content[word + 1] ?? 0) << 16) | ((content[word + 2] ?? 0) << 8) | (content[word + 3] ?? 0))) >>> 0
+    }
+    outView.setUint32(record + 4, checksum)
+    outView.setUint32(record + 8, offset)
+    outView.setUint32(record + 12, content.length)
+    out.set(content, offset)
+    offset += (content.length + 3) & ~3
+  })
+  return out
 }

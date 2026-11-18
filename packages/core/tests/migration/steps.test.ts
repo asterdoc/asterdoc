@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, it, test } from 'vitest'
 import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION, SCHEMA_VERSIONS, schemaVersionUrl } from '@asterdoc/schemas'
 import { MIGRATION_STEPS, SchemaMigrationError, migrateArtifact } from '@/migration'
 import { validate } from '@/validation/artifact'
@@ -61,7 +61,7 @@ describe('the 2026-11-10 to 2026-11-12 step', () => {
 			tenant: { type: 'text', label: 'Tenant' },
 			signed: { type: 'date', label: 'Signed on' },
 			home: { type: 'address', label: 'Home' },
-			rows: { type: 'list', label: 'Rows', item: { type: 'fieldset', label: 'Row', fields: { name: { type: 'text', label: 'Name' } } } },
+			rows: { type: 'list', label: 'Rows', maxItems: 2, item: { type: 'fieldset', label: 'Row', fields: { name: { type: 'text', label: 'Name' } } } },
 		},
 		defs: { total: { type: 'number', value: '1 + 1' } },
 		parties: { owner: { label: 'Owner', partyType: 'person' } },
@@ -182,5 +182,57 @@ describe('the 2026-11-10 to 2026-11-12 step', () => {
 		const before = structuredClone(input)
 		migrateArtifact(input)
 		expect(input).toEqual(before)
+	})
+})
+
+describe('the 2026-11-12 to 2026-11-17 step', () => {
+	const form = (phone: Record<string, unknown>) => ({
+		$schema: schemaVersionUrl('2026-11-12'),
+		kind: 'form',
+		name: 'contact',
+		version: '1.0.0',
+		title: 'Contact',
+		fields: { phone },
+		defaultLayer: 'pdf',
+		layers: { pdf: { kind: 'file', mimeType: 'application/pdf', path: './contact.pdf', bindings: { area: { path: 'phone', part: 'areaCode' } } } },
+	})
+
+	test('adds nothing: a phone that states its countryCode migrates with only $schema changed', () => {
+		const input = form({ type: 'phone', countryCode: '1' })
+		const result = migrateArtifact(input)
+		expect(result.status).toBe('migrated')
+		if (result.status !== 'migrated') return
+		const { $schema, ...rest } = result.artifact
+		const { $schema: _old, ...before } = input
+		expect($schema).toBe(ASTERDOC_SCHEMA_URL)
+		expect(rest).toEqual(before)
+	})
+
+	test('refuses to migrate an area code binding on a phone of every plan, naming the countryCode to add', () => {
+		const error = (() => {
+			try {
+				migrateArtifact(form({ type: 'phone' }))
+			} catch (caught) {
+				return caught
+			}
+		})()
+		expect(error).toBeInstanceOf(SchemaMigrationError)
+		expect((error as Error).message).toContain('layers.pdf.bindings.area: Layer "pdf", binding "area": prints phone, but the part "areaCode" exists only for +1 numbers, and fields.phone accepts numbers of every plan; give the field "countryCode": "1".')
+	})
+})
+
+describe('the step to 2026-11-17', () => {
+	const step = MIGRATION_STEPS.find((candidate) => candidate.to === '2026-11-17')
+
+	it('comes from 2026-11-12 and changes nothing in the artifact', () => {
+		expect(step?.from).toBe('2026-11-12')
+		const artifact = { kind: 'form', name: 'x', fields: {} }
+		expect(step?.apply(structuredClone(artifact) as never)).toEqual(artifact)
+	})
+
+	it('names in its summary each thing the date adds: countryCode and the two standard font names', () => {
+		expect(step?.summary).toContain('countryCode')
+		expect(step?.summary).toContain('"Helvetica"')
+		expect(step?.summary).toContain('"Courier"')
 	})
 })

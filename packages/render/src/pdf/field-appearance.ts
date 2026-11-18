@@ -62,12 +62,14 @@ export class PdfFieldFillError extends Error {
   }
 }
 
-/** A font that can draw a value: its metrics, its resource name, and how to encode text for it. */
+/** Fonts that draw a value: their metrics, and the operators that show text in them. */
 export interface DrawingFont extends FontMetrics {
-  /** Name the font has in a content stream's `/Font` resources. */
-  readonly resourceName: string
-  /** The string operand, delimiters included, that shows `text` in this font. */
-  encode(text: string): string
+  /**
+   * The `Tf` and `Tj` operators that show `text` at `size`, a PDF number,
+   * each run of characters in its own font. `names` gives the resource name a
+   * font has where it differs from its own.
+   */
+  show(text: string, size: string, names?: ReadonlyMap<string, string>): string
 }
 
 /** Smallest size a value shrinks to before filling fails with an overflow error. */
@@ -131,7 +133,7 @@ export interface FieldLayout {
 const format = (value: number) => String(Number(value.toFixed(3)))
 
 function show(font: DrawingFont, size: number, x: number, y: number, text: string): string {
-  return `/${font.resourceName} ${format(size)} Tf\n1 0 0 1 ${format(x)} ${format(y)} Tm\n${font.encode(text)} Tj`
+  return `1 0 0 1 ${format(x)} ${format(y)} Tm\n${font.show(text, format(size))}`
 }
 
 function alignedX(layout: FieldLayout, lineWidth: number): number {

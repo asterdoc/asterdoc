@@ -49,8 +49,8 @@ describe('sealing a React layer', () => {
 		},
 	})
 
-	const draft = (slots: Record<string, SignatureSlot> = FLOW_SLOTS) =>
-		form()
+	const draft = async (slots: Record<string, SignatureSlot> = FLOW_SLOTS) =>
+		await (await form.load(form()
 			.name('auto-contract')
 			.version('1.0.0')
 			.title('Auto Contract')
@@ -62,7 +62,7 @@ describe('sealing a React layer', () => {
 				signatures: slots,
 			})
 			.defaultLayer('composition')
-			.build()
+			.build()))
 			.fill({
 				fields: { amount: 10 },
 				parties: { client: { id: 'client-0', name: 'Cleo Client' } },
@@ -72,7 +72,7 @@ describe('sealing a React layer', () => {
 
 	test('seals with no adapter, because the renderer produces the PDF', async () => {
 		const passes: Pass[] = []
-		const sealed = await draft().seal({
+		const sealed = await (await draft()).seal({
 			renderers: { 'text/tsx': reactRenderer(passes) },
 		})
 
@@ -86,7 +86,7 @@ describe('sealing a React layer', () => {
 
 	test('hands the renderer one marker per flow slot, on the marker pass alone', async () => {
 		const passes: Pass[] = []
-		await draft().seal({ renderers: { 'text/tsx': reactRenderer(passes) } })
+		await (await draft()).seal({ renderers: { 'text/tsx': reactRenderer(passes) } })
 
 		// Two passes: markers, then clean. The clean pass is an ordinary render,
 		// which is what makes the sealed document the document.
@@ -107,7 +107,7 @@ describe('sealing a React layer', () => {
 
 	test('prepareSeal takes the same path and reports marker provenance', async () => {
 		const passes: Pass[] = []
-		const prepared = await draft().prepareSeal({ renderers: { 'text/tsx': reactRenderer(passes) } })
+		const prepared = await (await draft()).prepareSeal({ renderers: { 'text/tsx': reactRenderer(passes) } })
 
 		expect(prepared.signatureMap).toHaveLength(2)
 		expect(prepared.provenance).toEqual({ 'client-sig': 'marker', 'client-ini': 'marker' })
@@ -120,7 +120,7 @@ describe('sealing a React layer', () => {
 		// registry is the renderer the seal uses and the override is not called.
 		const passes: Pass[] = []
 		const override = { id: 'override', render: vi.fn(() => cleanPdf) }
-		const sealed = await draft().seal({
+		const sealed = await (await draft()).seal({
 			renderers: { 'text/tsx': reactRenderer(passes) },
 			renderer: override as unknown as AsterdocRenderer<RendererLayer, Uint8Array>,
 		})
@@ -134,13 +134,13 @@ describe('sealing a React layer', () => {
 		// Nothing registered for the type: the override is opaque to the marker
 		// injection, so the rejection stands exactly as it did.
 		const override = { id: 'override', render: () => cleanPdf }
-		await expect(
-			draft().seal({ renderer: override as unknown as AsterdocRenderer<RendererLayer, Uint8Array> }),
-		).rejects.toThrow(SealConfigError)
+		await expect((async () => 
+			(await draft()).seal({ renderer: override as unknown as AsterdocRenderer<RendererLayer, Uint8Array> })
+		)()).rejects.toThrow(SealConfigError)
 	})
 
 	test('a React layer with no renderer registered still asks for a converter', async () => {
-		await expect(draft().seal({})).rejects.toThrow(/without a converter/)
+		await expect((async () => (await draft()).seal({}))()).rejects.toThrow(/without a converter/)
 	})
 
 	test('a renderer that returns text rather than PDF bytes is a config error', async () => {
@@ -148,7 +148,7 @@ describe('sealing a React layer', () => {
 			id: 'text-stub',
 			render: () => 'not a pdf',
 		}
-		const attempt = draft().seal({
+		const attempt = (await draft()).seal({
 			renderers: { 'text/tsx': textRenderer as unknown as AsterdocRenderer<RendererLayer, Uint8Array> },
 		})
 		await expect(attempt).rejects.toThrow(SealConfigError)
@@ -161,7 +161,7 @@ describe('sealing a React layer', () => {
 		// they would be one; keyed by slot they are two, which is what the
 		// renderer needs to draw each in its own block.
 		const passes: Pass[] = []
-		const sealed = await draft().seal({ renderers: { 'text/tsx': reactRenderer(passes) } })
+		const sealed = await (await draft()).seal({ renderers: { 'text/tsx': reactRenderer(passes) } })
 
 		const markers = passes[0]!.markers
 		expect(markers).toHaveLength(2)
@@ -178,7 +178,7 @@ describe('sealing a React layer', () => {
 			id: 'unmarked-stub',
 			render: () => cleanPdf,
 		}
-		const attempt = draft().seal({ renderers: { 'text/tsx': unmarked } })
+		const attempt = (await draft()).seal({ renderers: { 'text/tsx': unmarked } })
 		await expect(attempt).rejects.toThrow(LocateError)
 		await expect(attempt).rejects.toThrow(/client-sig/)
 		await expect(attempt).rejects.toThrow(/glyph\s+coverage/)
@@ -204,8 +204,8 @@ describe('sealing a layer with a registered renderer of its own', () => {
 		},
 	}
 
-	const markdownDraft = () =>
-		form()
+	const markdownDraft = async () =>
+		await (await form.load(form()
 			.name('memo')
 			.version('1.0.0')
 			.title('Memo')
@@ -217,7 +217,7 @@ describe('sealing a layer with a registered renderer of its own', () => {
 				signatures: ABSOLUTE_SLOTS,
 			})
 			.defaultLayer('md')
-			.build()
+			.build()))
 			.fill({
 				fields: { amount: 10 },
 				parties: { client: { id: 'client-0', name: 'Cleo Client' } },
@@ -228,7 +228,7 @@ describe('sealing a layer with a registered renderer of its own', () => {
 	test('a registered non-React renderer renders the seal when no slot is in flow', async () => {
 		const render = vi.fn(() => 'RENDERED BY THE REGISTRY')
 		const converted: string[] = []
-		const sealed = await markdownDraft().seal({
+		const sealed = await (await markdownDraft()).seal({
 			renderers: { 'text/markdown': { id: 'markdown-stub', render } as AsterdocRenderer<RendererLayer, string> },
 			adapter: {
 				convert: async ({ document }) => {
@@ -248,7 +248,7 @@ describe('sealing a layer with a registered renderer of its own', () => {
 		const registered = vi.fn(() => 'FROM THE REGISTRY')
 		const override = vi.fn(() => 'FROM THE OVERRIDE')
 		const converted: string[] = []
-		await markdownDraft().seal({
+		await (await markdownDraft()).seal({
 			renderers: {
 				'text/markdown': { id: 'markdown-stub', render: registered } as AsterdocRenderer<RendererLayer, string>,
 			},
@@ -268,7 +268,7 @@ describe('sealing a layer with a registered renderer of its own', () => {
 
 	test('prepareSeal honours the registry the same way', async () => {
 		const render = vi.fn(() => 'RENDERED BY THE REGISTRY')
-		const prepared = await markdownDraft().prepareSeal({
+		const prepared = await (await markdownDraft()).prepareSeal({
 			renderers: { 'text/markdown': { id: 'markdown-stub', render } as AsterdocRenderer<RendererLayer, string> },
 			adapter: { convert: async () => ({ pdf: fixture('auto-clean.pdf') }) },
 		})

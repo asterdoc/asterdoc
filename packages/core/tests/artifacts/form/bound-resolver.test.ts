@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { form, a, renderLayer, UnboundResolverError } from '@/artifacts'
-import { BundleResolverError, LoadError, load, safeLoad, loadFromObject } from '@/serialization'
+import { BundleResolverError, LoadError, load, safeLoad } from '@/serialization'
 import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 
 /**
@@ -64,16 +64,15 @@ describe('a resolver bound at construction', () => {
 		},
 	})
 
-	const filled = () =>
-		a
-			.form(definition, { resolver })
+	const filled = async () =>
+		(await a.form.load(definition, { resolver }))
 			.fill({
 				fields: { name: 'Ada' },
 				parties: { signer: { id: 'signer-0', name: 'Ada' } },
 			})
 
 	test('survives a mutator on the way to render', async () => {
-		const output = await filled()
+		const output = await (await filled())
 			.addSigner('ada', { person: { name: 'Ada' } })
 			.render({ layer: 'markdown' })
 
@@ -81,7 +80,7 @@ describe('a resolver bound at construction', () => {
 	})
 
 	test('survives a mutator on the way to seal', async () => {
-		const sealed = await filled()
+		const sealed = await (await filled())
 			.addSigner('ada', { person: { name: 'Ada' } })
 			.addSignatory('signer', 'signer-0', { signerId: 'ada' })
 			.setTargetLayer('pdf')
@@ -92,33 +91,27 @@ describe('a resolver bound at construction', () => {
 	})
 
 	test('survives a clone, which cannot structurally copy a function', async () => {
-		const output = await filled().clone().render({ layer: 'markdown' })
+		const output = await (await filled()).clone().render({ layer: 'markdown' })
 
 		expect(output).toContain('Ada')
 	})
 
 	test('reaches the form instance render as well as the runtime one', async () => {
-		const output = await a
-			.form(definition, { resolver })
+		const output = await (await a.form.load(definition, { resolver }))
 			.render({ data: { fields: { name: 'Grace' } }, layer: 'markdown' })
 
 		expect(output).toContain('Grace')
 	})
 
-	test('is absent by name when the form was constructed without one', async () => {
-		const unbound = form.from(definition).fill({
-			fields: { name: 'Ada' },
-			parties: { signer: { id: 'signer-0', name: 'Ada' } },
-		})
-
-		await expect(unbound.render({ layer: 'markdown' })).rejects.toThrow(UnboundResolverError)
-		await expect(unbound.render({ layer: 'markdown' })).rejects.toThrow(
+	test('is absent by name when the form was loaded without one', async () => {
+		await expect(form.load(definition)).rejects.toThrow(UnboundResolverError)
+		await expect(form.load(definition)).rejects.toThrow(
 			/no resolver is bound to this artifact/,
 		)
 	})
 
 	test('reaches a form loaded from an object', async () => {
-		const loaded = loadFromObject(definition as { kind: 'form' }, { resolver })
+		const loaded = await load(definition as { kind: 'form' }, { resolver })
 		const output = await loaded
 			.fill({ fields: { name: 'Ada' }, parties: { signer: { id: 'signer-0', name: 'Ada' } } })
 			.addSigner('ada', { person: { name: 'Ada' } })
@@ -183,23 +176,23 @@ describe('a bundle offered a resolver', () => {
 		],
 	}
 
-	test('refuses it by name', () => {
-		expect(() => loadFromObject(bundleDefinition as unknown, { resolver })).toThrow(BundleResolverError)
+	test('refuses it by name', async () => {
+		await expect(load(bundleDefinition as unknown, { resolver })).rejects.toThrow(BundleResolverError)
 	})
 
-	test('loads without one', () => {
-		expect(loadFromObject(bundleDefinition as unknown).kind).toBe('bundle')
+	test('loads without one', async () => {
+		expect((await load(bundleDefinition as unknown)).kind).toBe('bundle')
 	})
 
 	// core-086: BundleResolverError extends LoadError, so safeLoad no longer
 	// re-wraps it and callers keep its specific type.
-	test('is itself a LoadError', () => {
-		expect(() => load('kind: bundle\nname: x', { resolver })).toThrow(LoadError)
-		expect(() => load('kind: bundle\nname: x', { resolver })).toThrow(BundleResolverError)
+	test('is itself a LoadError', async () => {
+		await expect(load('kind: bundle\nname: x', { resolver })).rejects.toThrow(LoadError)
+		await expect(load('kind: bundle\nname: x', { resolver })).rejects.toThrow(BundleResolverError)
 	})
 
-	test('safeLoad preserves the BundleResolverError type', () => {
-		const result = safeLoad('kind: bundle\nname: x', { resolver })
+	test('safeLoad preserves the BundleResolverError type', async () => {
+		const result = await safeLoad('kind: bundle\nname: x', { resolver })
 		expect(result.success).toBe(false)
 		if (!result.success) {
 			expect(result.error).toBeInstanceOf(BundleResolverError)

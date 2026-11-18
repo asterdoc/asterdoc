@@ -1002,9 +1002,13 @@ const resolver = createMemoryResolver({ contents });
  *
  * Authorization by which an employee authorizes their employer (directly or through a payroll service provider) to deposit net pay—in whole or split across up to four deposit accounts—via ACH credit entries to the named depository institution(s). Governed by NACHA Operating Rules and (for non-exempt employee protections) FLSA and state wage law.
  */
-export const achDirectDeposit = Object.assign(a.form(schema, { resolver }), {
+export const achDirectDeposit = {
   /** The raw form spec, exactly as released. */
   spec: schema,
-});
+  /** Reads the form's bundled layer files, for a host that loads the spec itself. */
+  resolver,
+  /** Load the form on its bundled files. */
+  load: () => a.form.load(schema, { resolver }),
+};
 
 export default achDirectDeposit;

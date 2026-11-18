@@ -17,7 +17,7 @@ Every file starts with `$schema`, `kind` and `name`:
 
 ```json schema=artifact
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-12.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-17.json",
   "kind": "form",
   "name": "pet-registration",
   "version": "1.0.0",
@@ -32,8 +32,8 @@ Every file starts with `$schema`, `kind` and `name`:
 The same file in YAML. `.yaml` and `.yml` both load. The comment line gives editors completion against the schema:
 
 ```yaml
-# yaml-language-server: $schema=https://schema.asterdoc.com/2026-11-12.json
-$schema: https://schema.asterdoc.com/2026-11-12.json
+# yaml-language-server: $schema=https://schema.asterdoc.com/2026-11-17.json
+$schema: https://schema.asterdoc.com/2026-11-17.json
 kind: form
 name: pet-registration
 version: 1.0.0
@@ -50,19 +50,19 @@ Every object in the schema is strict, so an unknown key is an error. Name the fi
 
 ## Schema version
 
-The current schema version is `2026-11-12`. Write `$schema` as its dated address, the same for every kind:
+The current schema version is `2026-11-17`. Write `$schema` as its dated address, the same for every kind:
 
 ```text
-https://schema.asterdoc.com/2026-11-12.json
+https://schema.asterdoc.com/2026-11-17.json
 ```
 
-A dated per-kind address such as `https://schema.asterdoc.com/2026-11-12/form.json` names the same version. The SDK writes the dated address on `toJSON()` and `toYAML()`. Every schema change gets a new date, and each new date ships with a migration step. A published date never changes.
+A dated per-kind address such as `https://schema.asterdoc.com/2026-11-17/form.json` names the same version. The SDK writes the dated address on `toJSON()` and `toYAML()`. Every schema change gets a new date, and each new date ships with a migration step. A published date never changes.
 
 A later SDK can load, validate and extract an artifact or filing written for an earlier date. Renders are not promised to be byte-identical across releases: the durable record of a filing is its sealed canonical PDF and its hash ([sealing.md](./sealing.md)).
 
 ### Loading rules
 
-These surfaces apply the same rules: `load()` and `loadFromObject()` in the SDK, every CLI command that reads an artifact file, `@asterdoc/ai-tools`, and `asterdoc add`. An earlier version is upgraded in memory and never written back to the file. A draft or sealed form keeps the definition as stored: its `toJSON()` writes the original date, and its `contentHash()` hashes it.
+These surfaces apply the same rules: `load()` and `form.load()` in the SDK, every CLI command that reads an artifact file, `@asterdoc/ai-tools`, and `asterdoc add`. An earlier version is upgraded in memory and never written back to the file. A draft or sealed form keeps the definition as stored: its `toJSON()` writes the original date, and its `contentHash()` hashes it.
 
 <!-- dep:C2 -->
 `a.form()` and each kind's `.from()` apply the same rules.
@@ -79,7 +79,7 @@ These surfaces apply the same rules: `load()` and `loadFromObject()` in the SDK,
 | Undated (`schema.json`) | `unknown-version` | `$schema ... names no schema version; ...` |
 | Unpublished earlier date, or not an Asterdoc address | `unknown-version` | `$schema names schema version <v>, which does not exist` or `... is not an Asterdoc schema address` |
 
-The SDK throws `SchemaVersionError` with that `code`. Run [migrate](#migrate) to rewrite the file at the current version. An object passed to `loadFromObject()`, `a.<kind>()`, `.from()`, `.safeFrom()` or a builder's `.from()`, or an inline `artifact` given to the AI tools, may leave out `$schema`; one it declares follows the rules above, and so does one on each inline part of a bundle. SDK `validate()` validates the upgraded artifact and reports a version error as an issue at `$schema`.
+The SDK throws `SchemaVersionError` with that `code`. Run [migrate](#migrate) to rewrite the file at the current version. An object passed to `load()`, `a.form.load()`, `a.<kind>()`, `.from()`, `.safeFrom()` or a builder's `.from()`, or an inline `artifact` given to the AI tools, may leave out `$schema`; one it declares follows the rules above, and so does one on each inline part of a bundle. SDK `validate()` validates the upgraded artifact and reports a version error as an issue at `$schema`.
 
 ### Migrate
 

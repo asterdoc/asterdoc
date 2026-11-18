@@ -43,8 +43,11 @@ const filledPdf = [
 	'%%EOF',
 	'',
 ].join('\n')
+const templateFiles = { fetch: (async () => new Response(new TextEncoder().encode(filledPdf))) as typeof globalThis.fetch }
+
 const extractInput = {
 	source: 'artifact' as const,
+	base_url: 'https://files.asterdoc.dev/intake/',
 	artifact: {
 		kind: 'form',
 		name: 'intake',
@@ -88,10 +91,10 @@ describe('AI SDK 7 Asterdoc tools', () => {
 	})
 
 	it('reads a filled PDF through the extract tool with the shared result', async () => {
-		const result = await resolveToolResult(asterdocTools().extract.execute(extractInput, executionOptions))
+		const result = await resolveToolResult(asterdocTools(templateFiles).extract.execute(extractInput, executionOptions))
 
 		expect(result).toMatchObject({ success: true, layer: 'pdf', data: { fields: { name: 'Ada Lovelace' } } })
-		expect(result).toEqual(await executeExtract(extractInput))
+		expect(result).toEqual(await executeExtract(extractInput, templateFiles))
 	})
 
 	it('uses canonical snake_case input without a second adapter parse', async () => {

@@ -1,8 +1,10 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
-import { form as formApi, isForm, type Form, type FormExtraction } from '@asterdoc/core'
+import { isForm, type Form,
+  type FormInstance, type FormExtraction } from '@asterdoc/core'
 import { LocalFileSystem } from '../../utils/local-fs.js'
 import { readTextInput, resolveArtifactTarget } from '../../utils/io.js'
+import { loadFormFile } from '../../utils/load-form.js'
 import { loadValidatedArtifact } from '../../utils/artifact-file.js'
 
 interface ExtractOptions {
@@ -20,14 +22,14 @@ function errorOf(error: unknown): { code: string; message: string } {
   return { code, message }
 }
 
-async function loadForm(target: string): Promise<Form> {
-  const { raw } = await readTextInput(await resolveArtifactTarget(target))
+async function loadForm(target: string): Promise<FormInstance<Form>> {
+  const { raw, baseDir } = await readTextInput(await resolveArtifactTarget(target))
   const { artifact } = loadValidatedArtifact(raw)
   if (!isForm(artifact)) {
     const kind = artifact.kind
     throw new Error(`Expected form artifact, but received kind "${kind}".`)
   }
-  return artifact as Form
+  return loadFormFile(artifact as Form, baseDir)
 }
 
 /**
@@ -46,7 +48,7 @@ export function createExtractCommand(): Command {
       try {
         if (!formTarget || formTarget === '-') throw new Error('Form file path required.')
         const storage = new LocalFileSystem()
-        const instance = formApi.from(await loadForm(formTarget))
+        const instance = await loadForm(formTarget)
 
         const pdfPath = storage.getAbsolutePath(pdfTarget)
         if (!(await storage.exists(pdfPath))) throw new Error(`File not found: ${pdfTarget}`)

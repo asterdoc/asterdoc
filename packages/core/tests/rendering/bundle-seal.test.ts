@@ -41,8 +41,8 @@ describe('sealing a bundle', () => {
 	/** A minimal TIFF, so a bytes entry declared image/tiff is one. */
 	const tiff = new Uint8Array([0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00])
 
-	const contract = (name: string, role: string, signer: string, edition?: { key: string; label: string }) =>
-		(edition ? form().edition(edition) : form())
+	const contract = async (name: string, role: string, signer: string, edition?: { key: string; label: string }) =>
+		(await form.load((edition ? form().edition(edition) : form())
 			.name(name)
 			.version('1.0.0')
 			.title(name)
@@ -56,7 +56,7 @@ describe('sealing a bundle', () => {
 				) as Record<string, SignatureSlot>,
 			})
 			.defaultLayer('composition')
-			.build()
+			.build()))
 			.fill({
 				fields: { amount: 10 },
 				parties: { [role]: { id: `${role}-0`, name: role } },
@@ -78,16 +78,16 @@ describe('sealing a bundle', () => {
 
 	// Two roles and two signer ids, so the packet's remap and sort have two
 	// signers to order rather than one repeated.
-	const contents = (annex: { content: Uint8Array; mimeType: string; filename?: string }) => ({
-		first: contract('first', 'client', 'client-signer'),
-		second: contract('second', 'vendor', 'vendor-signer'),
+	const contents = async (annex: { content: Uint8Array; mimeType: string; filename?: string }) => ({
+		first: await contract('first', 'client', 'client-signer'),
+		second: await contract('second', 'vendor', 'vendor-signer'),
 		annex: { kind: 'bytes' as const, ...annex },
 	})
 
-	const seal = () =>
+	const seal = async () =>
 		sealBundle(bundle, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: contents({ content: cleanPdf, mimeType: 'application/pdf', filename: 'annex.pdf' }),
+			contents: (await contents({ content: cleanPdf, mimeType: 'application/pdf', filename: 'annex.pdf' })),
 		})
 
 	test('lays the parts out on contiguous packet pages, in bundle order', async () => {
@@ -153,8 +153,8 @@ describe('sealing a bundle', () => {
 		const packet = await sealBundle(bundle, {
 			renderers: { 'text/tsx': reactRenderer() },
 			contents: {
-				first: contract('first', 'client', 'signer-1'),
-				second: contract('second', 'vendor', 'signer-1'),
+				first: (await contract('first', 'client', 'signer-1')),
+				second: (await contract('second', 'vendor', 'signer-1')),
 				annex: { kind: 'bytes', content: cleanPdf, mimeType: 'application/pdf' },
 			},
 		})
@@ -170,7 +170,7 @@ describe('sealing a bundle', () => {
 				'first/client-signer': 'acme-principal',
 				'second/vendor-signer': 'acme-principal',
 			},
-			contents: contents({ content: cleanPdf, mimeType: 'application/pdf' }),
+			contents: (await contents({ content: cleanPdf, mimeType: 'application/pdf' })),
 		})
 
 		expect(packet.signers).toEqual([
@@ -188,7 +188,7 @@ describe('sealing a bundle', () => {
 		const failure = await sealBundle(bundle, {
 			renderers: { 'text/tsx': reactRenderer() },
 			signers: { 'w-9/sb1': 'acme-principal' },
-			contents: contents({ content: cleanPdf, mimeType: 'application/pdf' }),
+			contents: (await contents({ content: cleanPdf, mimeType: 'application/pdf' })),
 		}).catch((error: unknown) => error)
 
 		expect(failure).toBeInstanceOf(BundleSealError)
@@ -206,7 +206,7 @@ describe('sealing a bundle', () => {
 	test('carries an annex it cannot paint beside the document, with its own digest', async () => {
 		const packet = await sealBundle(bundle, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: contents({ content: tiff, mimeType: 'image/tiff', filename: 'scan.tiff' }),
+			contents: (await contents({ content: tiff, mimeType: 'image/tiff', filename: 'scan.tiff' })),
 		})
 
 		const annex = packet.parts.find((part) => part.key === 'annex')!
@@ -219,11 +219,11 @@ describe('sealing a bundle', () => {
 		// covers it. A different attachment is a different packet.
 		const other = await sealBundle(bundle, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: contents({
+			contents: (await (await (await contents({
 				content: new Uint8Array([...tiff, 0x01]),
 				mimeType: 'image/tiff',
 				filename: 'scan.tiff',
-			}),
+			})))),
 		})
 		expect(other.canonicalPdfHash).toBe(packet.canonicalPdfHash)
 		expect(other.packetHash).not.toBe(packet.packetHash)
@@ -232,7 +232,7 @@ describe('sealing a bundle', () => {
 	test('names every part it carried rather than merged', async () => {
 		const packet = await sealBundle(bundle, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: contents({ content: tiff, mimeType: 'image/tiff', filename: 'scan.tiff' }),
+			contents: (await contents({ content: tiff, mimeType: 'image/tiff', filename: 'scan.tiff' })),
 		})
 		expect(packet.warnings).toContain('annex: carried as an attachment because it is image/tiff, which the packet cannot paint')
 	})
@@ -243,7 +243,7 @@ describe('sealing a bundle', () => {
 		const truncated = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37, 0x0a])
 		const packet = await sealBundle(bundle, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: contents({ content: truncated, mimeType: 'application/pdf', filename: 'scan.pdf' }),
+			contents: (await contents({ content: truncated, mimeType: 'application/pdf', filename: 'scan.pdf' })),
 		})
 
 		const annex = packet.parts.find((part) => part.key === 'annex')!
@@ -310,7 +310,7 @@ describe('sealing a bundle', () => {
 		}
 		const failure = await sealBundle(declaring, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: contents({ content: cleanPdf, mimeType: 'application/pdf' }),
+			contents: (await contents({ content: cleanPdf, mimeType: 'application/pdf' })),
 		}).catch((error: unknown) => error)
 
 		expect(failure).toBeInstanceOf(BundleSealError)
@@ -330,7 +330,7 @@ describe('sealing a bundle', () => {
 		}
 		const failure = await sealBundle(declaring, {
 			renderers: { 'text/tsx': reactRenderer() },
-			contents: contents({ content: cleanPdf, mimeType: 'application/pdf' }),
+			contents: (await contents({ content: cleanPdf, mimeType: 'application/pdf' })),
 		}).catch((error: unknown) => error)
 
 		expect(failure).toBeInstanceOf(BundleSealError)
@@ -351,8 +351,8 @@ describe('sealing a bundle', () => {
 		const packet = await sealBundle(declaring, {
 			renderers: { 'text/tsx': reactRenderer() },
 			contents: {
-				...contents({ content: cleanPdf, mimeType: 'application/pdf', filename: 'annex.pdf' }),
-				first: contract('first', 'client', 'client-signer', { key: '2024-03', label: 'Rev. March 2024' }),
+				...(await contents({ content: cleanPdf, mimeType: 'application/pdf', filename: 'annex.pdf' })),
+				first: (await contract('first', 'client', 'client-signer', { key: '2024-03', label: 'Rev. March 2024' })),
 			},
 		})
 		expect(packet.parts.map((part) => part.key)).toEqual(['first', 'second', 'annex'])
@@ -370,8 +370,8 @@ describe('sealing a bundle', () => {
 		const failure = await sealBundle(declaring, {
 			renderers: { 'text/tsx': reactRenderer() },
 			contents: {
-				...contents({ content: cleanPdf, mimeType: 'application/pdf' }),
-				first: contract('first', 'client', 'client-signer', { key: '2026-01', label: 'Rev. January 2026' }),
+				...(await contents({ content: cleanPdf, mimeType: 'application/pdf' })),
+				first: (await contract('first', 'client', 'client-signer', { key: '2026-01', label: 'Rev. January 2026' })),
 			},
 		}).catch((error: unknown) => error)
 
@@ -384,14 +384,14 @@ describe('sealing a bundle', () => {
 	test('refuses a rendered part that is not a PDF, naming it', async () => {
 		// A packet holds PDF pages. A part that rendered markdown is a
 		// configuration fault, not an annex somebody uploaded.
-		const markdown = form()
+		const markdown = await (await form.load(form()
 			.name('notice')
 			.version('1.0.0')
 			.title('Notice')
 			.fields({ body: { type: 'text', label: 'Body', required: true } })
 			.inlineLayer('markdown', { mimeType: 'text/markdown', text: '{{fields.body}}' })
 			.defaultLayer('markdown')
-			.build()
+			.build()))
 			.fill({ fields: { body: 'a notice' } })
 
 		const oneRendered: Bundle = {
@@ -415,7 +415,7 @@ describe('sealing a bundle', () => {
 		}
 		const failure = await sealBundle(bundle, {
 			renderers: { 'text/tsx': failing },
-			contents: contents({ content: cleanPdf, mimeType: 'application/pdf' }),
+			contents: (await contents({ content: cleanPdf, mimeType: 'application/pdf' })),
 		}).catch((error: unknown) => error)
 
 		expect(failure).toBeInstanceOf(BundleSealError)
@@ -424,7 +424,7 @@ describe('sealing a bundle', () => {
 	})
 })
 
-describe('assembling a bundle', () => {
+describe('assembling a bundle', async () => {
 	const bundle: Bundle = {
 		kind: 'bundle',
 		name: 'one-part',
@@ -436,14 +436,14 @@ describe('assembling a bundle', () => {
 		],
 	}
 
-	const draft = form()
+	const draft = await (await form.load(form()
 		.name('composed')
 		.version('1.0.0')
 		.title('Composed')
 		.fields({ amount: { type: 'number', label: 'Amount', required: true } })
 		.fileLayer('composition', { mimeType: 'text/tsx', path: 'composed.tsx' })
 		.defaultLayer('composition')
-		.build()
+		.build()))
 		.fill({ fields: { amount: 1 } })
 
 	const pdf = new TextEncoder().encode('%PDF-1.7 stand-in')
@@ -495,8 +495,8 @@ describe('a packet whose parts carry their own resolvers', () => {
 	)
 
 	/** A one-slot contract whose PDF layer is file-backed, so it needs a resolver. */
-	const fileBackedContract = (name: string, options?: { resolver: { read(path: string): Promise<Uint8Array> } }) =>
-		form()
+	const fileBackedContract = async (name: string, options?: { resolver: { read(path: string): Promise<Uint8Array> } }) =>
+		await (await form.load(form()
 			.name(name)
 			.version('1.0.0')
 			.title(name)
@@ -514,7 +514,7 @@ describe('a packet whose parts carry their own resolvers', () => {
 				},
 			})
 			.defaultLayer('pdf')
-			.build(options)
+			.build(), options))
 			.fill({ fields: { amount: 10 }, parties: { client: { id: 'client-0', name: 'client' } } })
 			.addSigner(`${name}-signer`, { person: { name: 'client' } })
 			.addSignatory('client', 'client-0', { signerId: `${name}-signer` })
@@ -532,33 +532,18 @@ describe('a packet whose parts carry their own resolvers', () => {
 
 	const resolver = { read: async (): Promise<Uint8Array> => pdf }
 
-	test('seals a part whose resolver is bound, and fails on the one whose is not', async () => {
-		const error = await sealBundle(twoParts, {
-			contents: {
-				bound: fileBackedContract('bound', { resolver }),
-				unbound: fileBackedContract('unbound'),
-			},
-		}).then(
-			() => undefined,
-			(err: unknown) => err,
-		)
-
-		// The bound part is first in bundle order and sealed without complaint;
-		// the failure belongs to the second, and says so.
-		expect(error).toBeInstanceOf(BundleSealError)
-		const failure = error as BundleSealError
-		expect(failure.part).toBe('unbound')
-		expect(failure.message).toContain('sealing part "unbound" failed')
-		expect(failure.cause).toBeInstanceOf(UnboundResolverError)
-		expect((failure.cause as UnboundResolverError).site).toBe('artifact')
-		expect((failure.cause as UnboundResolverError).path).toBe('unbound.pdf')
+	test('cannot load a part whose PDF layer has no resolver, so a bundle never seals one', async () => {
+		const error = await fileBackedContract('unbound').then(() => undefined, (caught: unknown) => caught)
+		expect(error).toBeInstanceOf(UnboundResolverError)
+		expect((error as UnboundResolverError).site).toBe('artifact')
+		expect((error as UnboundResolverError).path).toBe('unbound.pdf')
 	})
 
 	test('seals both parts once both are bound', async () => {
 		const packet = await sealBundle(twoParts, {
 			contents: {
-				bound: fileBackedContract('bound', { resolver }),
-				unbound: fileBackedContract('unbound', { resolver }),
+				bound: (await fileBackedContract('bound', { resolver })),
+				unbound: (await fileBackedContract('unbound', { resolver })),
 			},
 		})
 

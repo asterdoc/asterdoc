@@ -24,7 +24,6 @@ asterdoc render <artifact> [options]
 | Option | Description |
 |--------|-------------|
 | `--data <pathOrJson>` | Complete, valid data payload: file path (JSON/YAML), `-` for stdin, or inline JSON |
-| `--bindings <pathOrJson>` | PDF layers only: AcroForm field name to Asterdoc path, merged over the layer's own bindings (path to JSON/YAML or inline JSON) |
 | `--out <file>` | Write output to file (defaults to stdout) |
 | `--format <style>` | Summary format: `pretty` or `json` (default: pretty) |
 | `--layer <key>` | Layer key to use (defaults to `defaultLayer`, else the first declared layer) |
@@ -103,7 +102,9 @@ Dry run summary:
 
 An artifact argument may be a file path or an installed `@namespace/name` reference from `.asterdoc/lock.json`. An uninstalled reference fails with an error.
 
-`--data` and `--bindings` apply only to forms. Other artifact kinds ignore `--data` with a warning and reject `--bindings`. Invalid form data stops rendering. So does data that is not complete: a required field with no value, or a rule that is not met.
+`--data` applies only to forms. Other artifact kinds ignore it with a warning. A PDF layer fills from the bindings the artifact declares. Invalid form data stops rendering. So does data that is not complete: a required field with no value, or a rule that is not met.
 Add `--draft` to render data that is not complete. The command still refuses a value the form does not accept, and it lists on stderr each required field with no value and each rule that is not met. With `--format json` and `--out`, the list is in `draft.open`.
+
+Valid data that a PDF layer cannot draw stops rendering before anything is drawn: a value too wide for its field, longer than a comb, or with a character the field's font cannot draw. The command lists each one on stderr with its path; with `--format json` it prints `{ success: false, layer, renderProblems }`. It is the report of `asterdoc data validate --render-check <layer>`.
 
 Add `--check` to a PDF render with `--data` and `--out` to read the file back through the layer's bindings. The command prints one `Read back` line with the number of values that equal the data, and lists each value that differs, each value whose box is empty and each box that cannot be read as a value; with any of those it exits 1, and the file stays written. A value that prints in a form that does not read back as one value, such as a telephone number printed with no country code, is listed under `Not compared` with the text its box holds, and is not a fault. A value the form computes is not in the data, so it is not compared. With `--format json`, the result is in `check`. React layers also require an SDK React renderer; the CLI reports the core `UnregisteredLayerRendererError` for them.

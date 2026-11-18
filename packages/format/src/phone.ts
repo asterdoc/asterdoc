@@ -1,11 +1,13 @@
 import {
 	Metadata,
+	getCountries,
 	getCountryCallingCode,
 	isSupportedCountry,
 	parsePhoneNumberWithError,
 	type CountryCode,
 	type PhoneNumber,
 } from 'libphonenumber-js/min'
+import metadataJson from 'libphonenumber-js/min/metadata'
 import type { PhoneNumberDetails, PhoneProvider, ProvidedPhoneStyle } from '@asterdoc/types'
 
 export type { PhoneNumberDetails, PhoneProvider, ProvidedPhoneStyle } from '@asterdoc/types'
@@ -45,6 +47,13 @@ function parse(text: string, region?: string): PhoneNumberDetails | undefined {
 
 function callingCode(region: string): string | undefined {
 	return supportedRegion(region) ? getCountryCallingCode(region) : undefined
+}
+
+let countryCallingCodes: ReadonlySet<string> | undefined
+
+function knowsCallingCode(code: string): boolean {
+	countryCallingCodes ??= new Set([...getCountries().map((region) => getCountryCallingCode(region)), ...Object.keys(metadataJson.nonGeographic)])
+	return countryCallingCodes.has(code)
 }
 
 type Shapes = Readonly<Record<ProvidedPhoneStyle, string>>
@@ -114,4 +123,4 @@ function longest(style: ProvidedPhoneStyle, region?: string): string {
  * formatter.formatPhone('+12125551234', { style: 'national' }) // '(212) 555-1234'
  * ```
  */
-export const phoneProvider: PhoneProvider = Object.freeze({ parse, callingCode, longest })
+export const phoneProvider: PhoneProvider = Object.freeze({ parse, callingCode, knowsCallingCode, longest })

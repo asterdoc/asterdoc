@@ -55,7 +55,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'property',
   fields: {
     propertyBounds: { type: 'bbox', label: 'Property Boundaries' }

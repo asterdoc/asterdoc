@@ -193,7 +193,7 @@ import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 const resolver = createFsResolver({ root: '.' })
 
-const leaseAgreement = a.form({
+const leaseAgreement = await a.form.load({
   name: 'lease-agreement',
   title: 'Residential Lease Agreement',
   fields: {

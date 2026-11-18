@@ -3,8 +3,8 @@ import { bundle, checklist, form, runtimeChecklistFromJSON, runtimeFormFromJSON 
 
 const asOf = '2026-09-12T12:34:56-05:00'
 
-function createClockForm() {
-	return form({
+async function createClockForm() {
+	return await form.load({
 		kind: 'form',
 		name: 'clock-probe',
 		fields: {
@@ -18,9 +18,9 @@ function createClockForm() {
 }
 
 describe('runtime artifact clock context', () => {
-	test('uses an explicit clock for temporal expressions and retains it across lifecycles', () => {
-		const definition = createClockForm()
-		const draft = definition.fill(
+	test('uses an explicit clock for temporal expressions and retains it across lifecycles', async () => {
+		const definition = await createClockForm()
+		const draft = (await definition).fill(
 			{ fields: { deadline: '2026-09-10' } } as any,
 			{ context: { asOf } },
 		)
@@ -33,7 +33,7 @@ describe('runtime artifact clock context', () => {
 		expect(draft.getLogicValue('capturedNow')).toBe('2026-09-12T17:34:56.000Z')
 		const updated = draft.update({ fields: { deadline: '2026-09-20' } } as any)
 		const cloned = updated.clone()
-		const restored = runtimeFormFromJSON(updated.toJSON())
+		const restored = await runtimeFormFromJSON(updated.toJSON())
 		const signable = updated.prepareForSigning()
 		const executed = signable.finalize()
 
@@ -43,16 +43,16 @@ describe('runtime artifact clock context', () => {
 		}
 	})
 
-	test('captures the wall clock once when omitted and keeps later evaluation stable', () => {
+	test('captures the wall clock once when omitted and keeps later evaluation stable', async () => {
 		vi.useFakeTimers()
 		try {
 			vi.setSystemTime(new Date('2026-09-12T23:59:59.000Z'))
-			const draft = createClockForm().fill()
+			const draft = (await createClockForm()).fill()
 			const captured = draft.context
 
 			vi.setSystemTime(new Date('2026-09-13T00:00:01.000Z'))
 			const updated = draft.update({ fields: { deadline: '2026-09-01' } } as any)
-			const restored = runtimeFormFromJSON(draft.toJSON())
+			const restored = await runtimeFormFromJSON(draft.toJSON())
 
 			expect(captured).toEqual({
 				asOf: { date: '2026-09-12', datetime: '2026-09-12T23:59:59.000Z' },
@@ -66,20 +66,20 @@ describe('runtime artifact clock context', () => {
 		}
 	})
 
-	test('forwards context through safe fill paths and rejects invalid timestamps', () => {
-		const definition = createClockForm()
-		const safePartial = definition.safeFill(undefined, { context: { asOf } })
-		const safeFull = definition.safeFill(
+	test('forwards context through safe fill paths and rejects invalid timestamps', async () => {
+		const definition = await createClockForm()
+		const safePartial = (await definition).safeFill(undefined, { context: { asOf } })
+		const safeFull = (await definition).safeFill(
 			{ fields: { deadline: '2026-09-10' } } as any,
 			{ context: { asOf } },
 		)
 
 		expect(safePartial.success && safePartial.data.context.asOf.date).toBe('2026-09-12')
 		expect(safeFull.success && safeFull.data.context.asOf.datetime).toBe('2026-09-12T17:34:56.000Z')
-		expect(() => definition.fill(undefined, { context: { asOf: '2026-09-12' } })).toThrow(
+		await expect((async () => (await definition).fill(undefined, { context: { asOf: '2026-09-12' } }))()).rejects.toThrow(
 			/Invalid context\.asOf/,
 		)
-		expect(definition.safeFill(undefined, { context: { asOf: 'not-a-timestamp' } }).success).toBe(false)
+		expect((await definition).safeFill(undefined, { context: { asOf: 'not-a-timestamp' } }).success).toBe(false)
 	})
 
 	test('retains the same context for checklist instances and serialized bundle content', () => {

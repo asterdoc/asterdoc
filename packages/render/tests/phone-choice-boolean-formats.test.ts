@@ -3,7 +3,7 @@ import { createFormatter } from '@asterdoc/format'
 import { phoneProvider } from '@asterdoc/format/phone'
 import { zipSync, unzipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
-import { defaultFormatter } from '../src/index'
+import { defaultFormatter, PdfPrintRuleError } from '../src/index'
 import { checkPdfBindingFit, extractPdfData, findPdfLabelCollisions, PdfFieldFillError, renderPdf } from '../src/pdf'
 import { inspectAcroFormFields } from '../src/pdf/inspect'
 import { ArtifactFieldFormatError, renderText } from '../src/text'
@@ -15,7 +15,7 @@ const form = {
   name: 'phone-choice-boolean',
   version: '1.0.0',
   fields: {
-    us: { type: 'phone' },
+    us: { type: 'phone', countryCode: '1' },
     uk: { type: 'phone' },
     sg: { type: 'phone' },
     status: { type: 'enum', enum: [{ value: 'S', label: 'Single' }, { value: 'M', label: 'Married' }] },
@@ -75,9 +75,15 @@ describe('a phone style on a PDF layer', () => {
     expect(await fill(bindings)).toEqual({ number: '+442079460958', ext: '42' })
   })
 
-  it('refuses a national number of another plan than phone.region names', async () => {
-    const error = await renderError(() => renderPdf({ template: acroFormPdf(textBoxes('uk')), form, data, bindings: { uk: 'uk' }, format: { phone: { style: 'national', region: 'US' } } }))
-    expect(error.issues[0]).toMatchObject({ code: 'phone_region_mismatch', path: 'fields.uk.number' })
+  it('refuses a phone field that accepts every plan under a national phone.region, before any value', async () => {
+    const error = await renderPdf({ template: acroFormPdf(textBoxes('uk')), form, data: { fields: {} }, bindings: { uk: 'uk' }, format: { phone: { style: 'national', region: 'US' } } }).then(() => undefined, (caught: unknown) => caught)
+    expect(error).toBeInstanceOf(PdfPrintRuleError)
+    expect((error as Error).message).toBe('PDF field "uk" prints uk, but it prints as national under phone.region "US", which refuses a number of another plan, and fields.uk accepts numbers of every plan; give the field "countryCode": "1".')
+  })
+
+  it('refuses a national number of another plan than phone.region names that bypassed validation', async () => {
+    const error = await renderError(() => renderPdf({ template: acroFormPdf(textBoxes('us')), form, data: { fields: { us: data.fields.uk } }, bindings: { us: 'us' }, format: { phone: { style: 'national', region: 'US' } } }))
+    expect(error.issues[0]).toMatchObject({ code: 'phone_region_mismatch', path: 'fields.us.number' })
     expect(await fill({ uk: 'uk' }, { phone: { style: 'international', region: 'US' } })).toEqual({ uk: '+44 20 7946 0958 ext. 42' })
   })
 

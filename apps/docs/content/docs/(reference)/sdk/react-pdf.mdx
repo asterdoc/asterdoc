@@ -166,7 +166,7 @@ A form artifact can declare a layer with MIME type `text/tsx` or `text/jsx` whos
 import { a } from "@asterdoc/core";
 import { reactLayerRenderers } from "@asterdoc/react-pdf";
 
-const form = a.form(spec);
+const form = await a.form.load(spec);
 
 const bytes = await form.fill({ fields, parties }).render<Uint8Array>({
   layer: "document",

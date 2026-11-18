@@ -8,23 +8,23 @@
 import { expect, test } from 'vitest'
 import { form } from '@/artifacts'
 
-const lease = () =>
-	form()
+const lease = async () =>
+	await form.load(form()
 		.name('lease')
 		.version('1.0.0')
 		.title('Lease')
 		.fields({ tenantName: { type: 'text', label: 'Tenant name', required: true } })
-		.build()
+		.build())
 
-test('a missing required field makes isValid() false with no rules declared', () => {
-	const draft = lease().fill()
+test('a missing required field makes isValid() false with no rules declared', async () => {
+	const draft = (await lease()).fill()
 	expect(draft.validateRules().valid).toBe(true)
 	expect(draft.isValid()).toBe(false)
 	expect(draft.isValid()).toBe(draft.validate().valid)
 })
 
-test('a complete draft is valid', () => {
-	const draft = lease().fill({ fields: { tenantName: 'Ada' } })
+test('a complete draft is valid', async () => {
+	const draft = (await lease()).fill({ fields: { tenantName: 'Ada' } })
 	expect(draft.isValid()).toBe(true)
 	expect(draft.validate().valid).toBe(true)
 })

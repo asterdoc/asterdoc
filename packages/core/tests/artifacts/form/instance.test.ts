@@ -16,15 +16,15 @@ describe('FormInstance', () => {
   // Test Fixtures
   // ============================================================================
 
-  const createMinimalForm = () =>
-    form()
+  const createMinimalForm = async () =>
+    await form.load(form()
       .name('minimal-form')
       .version('1.0.0')
       .title('Minimal Form')
-      .build()
+      .build())
 
-  const createFormWithFields = () =>
-    form()
+  const createFormWithFields = async () =>
+    await form.load(form()
       .name('test-form')
       .version('1.0.0')
       .title('Test Form')
@@ -38,10 +38,10 @@ describe('FormInstance', () => {
         age: { type: 'number', label: 'Age', min: 0, max: 150 },
         subscribe: { type: 'boolean', label: 'Subscribe to newsletter' },
       })
-      .build()
+      .build())
 
-  const createFormWithLayer = () =>
-    form()
+  const createFormWithLayer = async () =>
+    await form.load(form()
       .name('form-with-layer')
       .version('1.0.0')
       .title('Form with Layer')
@@ -50,104 +50,104 @@ describe('FormInstance', () => {
       })
       .inlineLayer('default', { mimeType: 'text/plain', text: 'Hello, {{fields.name}}!' })
       .defaultLayer('default')
-      .build()
+      .build())
 
   // ============================================================================
   // Property Getters
   // ============================================================================
 
   describe('property getters', () => {
-    test('returns kind = "form"', () => {
-      const instance = createMinimalForm()
-      expect(instance.kind).toBe('form')
+    test('returns kind = "form"', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).kind).toBe('form')
     })
 
-    test('returns name', () => {
-      const instance = createMinimalForm()
-      expect(instance.name).toBe('minimal-form')
+    test('returns name', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).name).toBe('minimal-form')
     })
 
-    test('returns version', () => {
-      const instance = createMinimalForm()
-      expect(instance.version).toBe('1.0.0')
+    test('returns version', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).version).toBe('1.0.0')
     })
 
-    test('returns title', () => {
-      const instance = createMinimalForm()
-      expect(instance.title).toBe('Minimal Form')
+    test('returns title', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).title).toBe('Minimal Form')
     })
 
-    test('returns description when set', () => {
-      const instance = createFormWithFields()
-      expect(instance.description).toBe('A test form')
+    test('returns description when set', async () => {
+      const instance = await createFormWithFields()
+      expect((await instance).description).toBe('A test form')
     })
 
-    test('returns undefined description when not set', () => {
-      const instance = createMinimalForm()
-      expect(instance.description).toBeUndefined()
+    test('returns undefined description when not set', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).description).toBeUndefined()
     })
 
-    test('returns code when set', () => {
-      const instance = createFormWithFields()
-      expect(instance.code).toBe('TEST-001')
+    test('returns code when set', async () => {
+      const instance = await createFormWithFields()
+      expect((await instance).code).toBe('TEST-001')
     })
 
-    test('returns undefined code when not set', () => {
-      const instance = createMinimalForm()
-      expect(instance.code).toBeUndefined()
+    test('returns undefined code when not set', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).code).toBeUndefined()
     })
 
-    test('returns language when set', () => {
-      const instance = createFormWithFields()
-      expect(instance.language).toBe('en-US')
+    test('returns language when set', async () => {
+      const instance = await createFormWithFields()
+      expect((await instance).language).toBe('en-US')
     })
 
-    test('returns undefined language when not set', () => {
-      const instance = createMinimalForm()
-      expect(instance.language).toBeUndefined()
+    test('returns undefined language when not set', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).language).toBeUndefined()
     })
 
-    test('returns issuer and edition when set', () => {
+    test('returns issuer and edition when set', async () => {
       const edition = { key: '2024-01', label: 'Rev. January 2024', date: '2024-01', effectiveFrom: '2024-01-15' }
-      const instance = form()
+      const instance = await form.load(form()
         .name('dated-form')
         .version('1.0.0')
         .title('Dated Form')
         .issuer('Forms Office')
         .edition(edition)
-        .build()
+        .build())
       expect(instance.issuer).toBe('Forms Office')
       expect(instance.edition).toEqual(edition)
     })
 
-    test('returns undefined issuer and edition when not set', () => {
-      const instance = createMinimalForm()
-      expect(instance.issuer).toBeUndefined()
-      expect(instance.edition).toBeUndefined()
+    test('returns undefined issuer and edition when not set', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).issuer).toBeUndefined()
+      expect((await instance).edition).toBeUndefined()
     })
 
-    test('rejects an edition without a label', () => {
+    test('rejects an edition without a label', async () => {
       expect(() => form().name('dated-form').edition({ key: '2024-01' } as never).build()).toThrow()
     })
 
-    test('returns metadata when set', () => {
-      const instance = createFormWithFields()
-      expect(instance.metadata).toEqual({ author: 'Test', version: '1.0' })
+    test('returns metadata when set', async () => {
+      const instance = await createFormWithFields()
+      expect((await instance).metadata).toEqual({ author: 'Test', version: '1.0' })
     })
 
-    test('returns empty metadata when not set', () => {
-      const instance = createMinimalForm()
+    test('returns empty metadata when not set', async () => {
+      const instance = await createMinimalForm()
       // Builder initializes metadata to {} by default
-      expect(instance.metadata).toEqual({})
+      expect((await instance).metadata).toEqual({})
     })
 
-    test('returns inline instructions when set', () => {
-      const instance = form()
+    test('returns inline instructions when set', async () => {
+      const instance = await form.load(form()
         .name('with-instructions')
         .version('1.0.0')
         .title('With Instructions')
         .instructions({ kind: 'inline', text: 'Follow these steps carefully.' })
-        .build()
+        .build())
       expect(instance.instructions).toBeDefined()
       expect(instance.instructions?.kind).toBe('inline')
       if (instance.instructions?.kind === 'inline') {
@@ -155,8 +155,8 @@ describe('FormInstance', () => {
       }
     })
 
-    test('returns file instructions when set', () => {
-      const instance = form()
+    test('returns file instructions when set', async () => {
+      const instance = await form.load(form()
         .name('with-file-instructions')
         .version('1.0.0')
         .title('With File Instructions')
@@ -165,25 +165,25 @@ describe('FormInstance', () => {
           path: './instructions/guide.pdf',
           mimeType: 'application/pdf',
         })
-        .build()
+        .build())
       expect(instance.instructions?.kind).toBe('file')
       if (instance.instructions?.kind === 'file') {
         expect(instance.instructions.path).toBe('./instructions/guide.pdf')
       }
     })
 
-    test('returns undefined instructions when not set', () => {
-      const instance = createMinimalForm()
-      expect(instance.instructions).toBeUndefined()
+    test('returns undefined instructions when not set', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).instructions).toBeUndefined()
     })
 
-    test('returns inline agentInstructions when set', () => {
-      const instance = form()
+    test('returns inline agentInstructions when set', async () => {
+      const instance = await form.load(form()
         .name('with-agent-instructions')
         .version('1.0.0')
         .title('With Agent Instructions')
         .agentInstructions({ kind: 'inline', text: 'Use formal tone. Group fields logically.' })
-        .build()
+        .build())
       expect(instance.agentInstructions).toBeDefined()
       expect(instance.agentInstructions?.kind).toBe('inline')
       if (instance.agentInstructions?.kind === 'inline') {
@@ -191,8 +191,8 @@ describe('FormInstance', () => {
       }
     })
 
-    test('returns file agentInstructions when set', () => {
-      const instance = form()
+    test('returns file agentInstructions when set', async () => {
+      const instance = await form.load(form()
         .name('with-file-agent')
         .version('1.0.0')
         .title('With File Agent')
@@ -202,7 +202,7 @@ describe('FormInstance', () => {
           mimeType: 'text/markdown',
           title: 'Agent Prompt',
         })
-        .build()
+        .build())
       expect(instance.agentInstructions?.kind).toBe('file')
       if (instance.agentInstructions?.kind === 'file') {
         expect(instance.agentInstructions.path).toBe('./prompts/agent.md')
@@ -210,20 +210,20 @@ describe('FormInstance', () => {
       }
     })
 
-    test('returns undefined agentInstructions when not set', () => {
-      const instance = createMinimalForm()
-      expect(instance.agentInstructions).toBeUndefined()
+    test('returns undefined agentInstructions when not set', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).agentInstructions).toBeUndefined()
     })
 
-    test('returns fields when set', () => {
-      const instance = createFormWithFields()
-      expect(instance.fields).toBeDefined()
-      expect(Object.keys(instance.fields || {})).toHaveLength(4)
+    test('returns fields when set', async () => {
+      const instance = await createFormWithFields()
+      expect((await instance).fields).toBeDefined()
+      expect(Object.keys((await instance).fields || {})).toHaveLength(4)
     })
 
-    test('returns undefined fields when not set', () => {
-      const instance = createMinimalForm()
-      expect(instance.fields).toBeUndefined()
+    test('returns undefined fields when not set', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).fields).toBeUndefined()
     })
 
   })
@@ -233,18 +233,18 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('validate()', () => {
-    test('returns valid result for valid form', () => {
-      const instance = createMinimalForm()
-      const result = instance.validate()
+    test('returns valid result for valid form', async () => {
+      const instance = await createMinimalForm()
+      const result = (await instance).validate()
       expect('value' in result).toBe(true)
       if ('value' in result) {
         expect(result.value.kind).toBe('form')
       }
     })
 
-    test('returns valid result for form with all properties', () => {
-      const instance = createFormWithFields()
-      const result = instance.validate()
+    test('returns valid result for form with all properties', async () => {
+      const instance = await createFormWithFields()
+      const result = (await instance).validate()
       expect('value' in result).toBe(true)
     })
   })
@@ -254,14 +254,14 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('isValid()', () => {
-    test('returns true for valid form', () => {
-      const instance = createMinimalForm()
-      expect(instance.isValid()).toBe(true)
+    test('returns true for valid form', async () => {
+      const instance = await createMinimalForm()
+      expect((await instance).isValid()).toBe(true)
     })
 
-    test('returns true for form with all properties', () => {
-      const instance = createFormWithFields()
-      expect(instance.isValid()).toBe(true)
+    test('returns true for form with all properties', async () => {
+      const instance = await createFormWithFields()
+      expect((await instance).isValid()).toBe(true)
     })
   })
 
@@ -270,22 +270,22 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('toJSON()', () => {
-    test('returns raw data object when includeSchema is false', () => {
-      const instance = createMinimalForm()
-      const json = instance.toJSON({ includeSchema: false })
+    test('returns raw data object when includeSchema is false', async () => {
+      const instance = await createMinimalForm()
+      const json = (await instance).toJSON({ includeSchema: false })
       expect(json.kind).toBe('form')
       expect(json.name).toBe('minimal-form')
       expect(json.$schema).toBeUndefined()
     })
 
-    test('includes $schema by default', () => {
-      const instance = createMinimalForm()
-      const json = instance.toJSON()
+    test('includes $schema by default', async () => {
+      const instance = await createMinimalForm()
+      const json = (await instance).toJSON()
       expect(json.$schema).toBe(ASTERDOC_SCHEMA_URL)
     })
 
-    test('is JSON.stringify compatible', () => {
-      const instance = createFormWithFields()
+    test('is JSON.stringify compatible', async () => {
+      const instance = await createFormWithFields()
       const json = JSON.stringify(instance)
       const parsed = JSON.parse(json)
       expect(parsed.kind).toBe('form')
@@ -293,8 +293,8 @@ describe('FormInstance', () => {
       expect(parsed.fields.name.type).toBe('text')
     })
 
-    test('does not include instance methods in JSON', () => {
-      const instance = createMinimalForm()
+    test('does not include instance methods in JSON', async () => {
+      const instance = await createMinimalForm()
       const json = JSON.parse(JSON.stringify(instance))
       expect(json.validate).toBeUndefined()
       expect(json.isValid).toBeUndefined()
@@ -307,9 +307,9 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('toYAML()', () => {
-    test('returns valid YAML string', () => {
-      const instance = createMinimalForm()
-      const yaml = instance.toYAML()
+    test('returns valid YAML string', async () => {
+      const instance = await createMinimalForm()
+      const yaml = (await instance).toYAML()
       expect(typeof yaml).toBe('string')
       expect(yaml).toContain('kind: form')
       expect(yaml).toContain('name: minimal-form')
@@ -317,15 +317,15 @@ describe('FormInstance', () => {
       expect(yaml).toContain('title: Minimal Form')
     })
 
-    test('round-trips correctly', () => {
-      const instance = createFormWithFields()
-      const yaml = instance.toYAML()
+    test('round-trips correctly', async () => {
+      const instance = await createFormWithFields()
+      const yaml = (await instance).toYAML()
 
-      // Parse YAML back to object - use load() for YAML parsing
-      const parsed = load(yaml) as Form
-      expect(parsed.name).toBe(instance.name)
-      expect(parsed.title).toBe(instance.title)
-      expect(parsed.description).toBe(instance.description)
+      // Parse YAML back to object - use await load() for YAML parsing
+      const parsed = await load(yaml) as Form
+      expect(parsed.name).toBe((await instance).name)
+      expect(parsed.title).toBe((await instance).title)
+      expect(parsed.description).toBe((await instance).description)
     })
   })
 
@@ -334,31 +334,31 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('clone()', () => {
-    test('creates exact copy', () => {
-      const instance = createFormWithFields()
-      const copy = instance.clone()
+    test('creates exact copy', async () => {
+      const instance = await createFormWithFields()
+      const copy = (await instance).clone()
 
-      expect(copy.name).toBe(instance.name)
-      expect(copy.title).toBe(instance.title)
-      expect(copy.description).toBe(instance.description)
-      expect(copy.code).toBe(instance.code)
-      expect(copy.fields).toEqual(instance.fields)
+      expect(copy.name).toBe((await instance).name)
+      expect(copy.title).toBe((await instance).title)
+      expect(copy.description).toBe((await instance).description)
+      expect(copy.code).toBe((await instance).code)
+      expect(copy.fields).toEqual((await instance).fields)
     })
 
-    test('copy is independent (deep clone)', () => {
-      const instance = createFormWithFields()
-      const copy = instance.clone()
+    test('copy is independent (deep clone)', async () => {
+      const instance = await createFormWithFields()
+      const copy = (await instance).clone()
 
       // Verify they are different instances
       expect(copy).not.toBe(instance)
 
       // Verify the data is equal but not the same reference (deep clone)
-      expect(copy.toJSON({ includeSchema: false })).toEqual(instance.toJSON({ includeSchema: false }))
+      expect(copy.toJSON({ includeSchema: false })).toEqual((await instance).toJSON({ includeSchema: false }))
     })
 
-    test('copy is a FormInstance', () => {
-      const instance = createFormWithFields()
-      const copy = instance.clone()
+    test('copy is a FormInstance', async () => {
+      const instance = await createFormWithFields()
+      const copy = (await instance).clone()
 
       expect(copy.kind).toBe('form')
     })
@@ -369,40 +369,38 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('static from()', () => {
-    test('parses valid form object', () => {
+    test('parses valid form object', async () => {
       const input = {
         kind: 'form' as const,
         name: 'parsed-form',
         version: '1.0.0',
         title: 'Parsed Form',
       }
-      const instance = form.from(input)
+      const instance = await form.load(input)
 
       expect(instance.name).toBe('parsed-form')
       expect(instance.title).toBe('Parsed Form')
     })
 
-    test('throws for invalid input', () => {
-      expect(() => form.from({})).toThrow()
+    test('throws for invalid input', async () => {
+      await expect(form.load({})).rejects.toThrow()
     })
 
-    test('throws for missing required fields', () => {
-      expect(() => form.from({ name: 'test' })).toThrow()
+    test('throws for missing required fields', async () => {
+      await expect(form.load({ title: 'Test' })).rejects.toThrow()
     })
 
-    test('throws for wrong kind', () => {
-      expect(() =>
-        form.from({
+    test('throws for wrong kind', async () => {
+      await expect(form.load({
           kind: 'bundle',
           name: 'test',
           version: '1.0.0',
           title: 'Test',
           contents: [],
-        })
-      ).toThrow()
+        })).rejects.toThrow()
     })
 
-    // Note: String parsing (JSON/YAML) should be done via load() function
+    // Note: String parsing (JSON/YAML) should be done via await load() function
   })
 
   // ============================================================================
@@ -410,14 +408,14 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('static safeFrom()', () => {
-    test('returns success for valid input', () => {
+    test('returns success for valid input', async () => {
       const input = {
         kind: 'form' as const,
         name: 'safe-form',
         version: '1.0.0',
         title: 'Safe Form',
       }
-      const result = form.safeFrom(input)
+      const result = await form.safeLoad(input)
 
       expect(result.success).toBe(true)
       if (result.success) {
@@ -425,8 +423,8 @@ describe('FormInstance', () => {
       }
     })
 
-    test('returns error for invalid input', () => {
-      const result = form.safeFrom({})
+    test('returns error for invalid input', async () => {
+      const result = await form.safeLoad({})
 
       expect(result.success).toBe(false)
       if (!result.success) {
@@ -434,14 +432,14 @@ describe('FormInstance', () => {
       }
     })
 
-    test('returns error for missing required fields', () => {
-      const result = form.safeFrom({ name: 'test' })
+    test('returns error for missing required fields', async () => {
+      const result = await form.safeLoad({ title: 'Test' })
 
       expect(result.success).toBe(false)
     })
 
-    test('returns error for invalid name pattern', () => {
-      const result = form.safeFrom({
+    test('returns error for invalid name pattern', async () => {
+      const result = await form.safeLoad({
         name: '-invalid-',
         version: '1.0.0',
         title: 'Test',
@@ -456,8 +454,8 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('parseData()', () => {
-    test('validates and returns valid data', () => {
-      const instance = createFormWithFields()
+    test('validates and returns valid data', async () => {
+      const instance = await createFormWithFields()
       const data = {
         fields: {
           name: 'John Doe',
@@ -466,7 +464,7 @@ describe('FormInstance', () => {
           subscribe: true,
         },
       }
-      const result = instance.parseData(data)
+      const result = (await instance).parseData(data)
 
       expect(result.fields!.name).toBe('John Doe')
       expect(result.fields!.email).toBe('john@example.com')
@@ -474,22 +472,22 @@ describe('FormInstance', () => {
       expect(result.fields!.subscribe).toBe(true)
     })
 
-    test('validates minimal required data', () => {
-      const instance = createFormWithFields()
+    test('validates minimal required data', async () => {
+      const instance = await createFormWithFields()
       const data = {
         fields: {
           name: 'John Doe',
           email: 'john@example.com',
         },
       }
-      const result = instance.parseData(data)
+      const result = (await instance).parseData(data)
 
       expect(result.fields!.name).toBe('John Doe')
       expect(result.fields!.email).toBe('john@example.com')
     })
 
-    test('throws FormValidationError for missing required field', () => {
-      const instance = createFormWithFields()
+    test('throws FormValidationError for missing required field', async () => {
+      const instance = await createFormWithFields()
       const data = {
         fields: {
           name: 'John Doe',
@@ -497,11 +495,11 @@ describe('FormInstance', () => {
         },
       }
 
-      expect(() => instance.parseData(data)).toThrow(FormValidationError)
+      await expect((async () => (await instance).parseData(data))()).rejects.toThrow(FormValidationError)
     })
 
-    test('throws FormValidationError for missing required field', () => {
-      const instance = createFormWithFields()
+    test('throws FormValidationError for missing required field', async () => {
+      const instance = await createFormWithFields()
       const data = {
         fields: {
           name: 'John Doe',
@@ -509,11 +507,11 @@ describe('FormInstance', () => {
         },
       }
 
-      expect(() => instance.parseData(data)).toThrow(FormValidationError)
+      await expect((async () => (await instance).parseData(data))()).rejects.toThrow(FormValidationError)
     })
 
-    test('throws FormValidationError for age out of range', () => {
-      const instance = createFormWithFields()
+    test('throws FormValidationError for age out of range', async () => {
+      const instance = await createFormWithFields()
       const data = {
         fields: {
           name: 'John Doe',
@@ -522,13 +520,13 @@ describe('FormInstance', () => {
         },
       }
 
-      expect(() => instance.parseData(data)).toThrow(FormValidationError)
+      await expect((async () => (await instance).parseData(data))()).rejects.toThrow(FormValidationError)
     })
 
-    test('FormValidationError contains errors', () => {
-      const instance = createFormWithFields()
+    test('FormValidationError contains errors', async () => {
+      const instance = await createFormWithFields()
       try {
-        instance.parseData({ fields: { name: 'John' } }) // missing email
+        (await instance).parseData({ fields: { name: 'John' } }) // missing email
         expect.fail('Should have thrown')
       } catch (error) {
         expect(error).toBeInstanceOf(FormValidationError)
@@ -544,15 +542,15 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('safeParseData()', () => {
-    test('returns success for valid data', () => {
-      const instance = createFormWithFields()
+    test('returns success for valid data', async () => {
+      const instance = await createFormWithFields()
       const data = {
         fields: {
           name: 'John Doe',
           email: 'john@example.com',
         },
       }
-      const result = instance.safeParseData(data)
+      const result = (await instance).safeParseData(data)
 
       expect(result.success).toBe(true)
       if (result.success) {
@@ -560,15 +558,15 @@ describe('FormInstance', () => {
       }
     })
 
-    test('returns error for invalid data', () => {
-      const instance = createFormWithFields()
+    test('returns error for invalid data', async () => {
+      const instance = await createFormWithFields()
       const data = {
         fields: {
           name: 'John Doe',
           // missing email
         },
       }
-      const result = instance.safeParseData(data)
+      const result = (await instance).safeParseData(data)
 
       expect(result.success).toBe(false)
       if (!result.success) {
@@ -577,15 +575,15 @@ describe('FormInstance', () => {
       }
     })
 
-    test('returns error for missing required field', () => {
-      const instance = createFormWithFields()
+    test('returns error for missing required field', async () => {
+      const instance = await createFormWithFields()
       const data = {
         fields: {
           name: 'John Doe',
           // missing email (required)
         },
       }
-      const result = instance.safeParseData(data)
+      const result = (await instance).safeParseData(data)
 
       expect(result.success).toBe(false)
     })
@@ -596,23 +594,23 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('fill()', () => {
-    test('creates RuntimeForm with valid data', () => {
-      const instance = createFormWithFields()
+    test('creates RuntimeForm with valid data', async () => {
+      const instance = await createFormWithFields()
       const data = {
         fields: {
           name: 'John Doe',
           email: 'john@example.com',
         },
       }
-      const filled = instance.fill(data)
+      const filled = (await instance).fill(data)
 
       expect(filled.getField('name')).toBe('John Doe')
       expect(filled.getField('email')).toBe('john@example.com')
     })
 
-    test('DraftForm has access to form definition', () => {
-      const instance = createFormWithFields()
-      const filled = instance.fill({
+    test('DraftForm has access to form definition', async () => {
+      const instance = await createFormWithFields()
+      const filled = (await instance).fill({
         fields: {
           name: 'John',
           email: 'john@example.com',
@@ -620,12 +618,12 @@ describe('FormInstance', () => {
       })
 
       // DraftForm stores the raw form data (without $schema), not the FormInstance
-      expect(filled.form).toEqual(instance.toJSON({ includeSchema: false }))
+      expect(filled.form).toEqual((await instance).toJSON({ includeSchema: false }))
     })
 
-    test('accepts incomplete draft data', () => {
-      const instance = createFormWithFields()
-      expect(instance.fill({ fields: { name: 'John' } } as any).isValid()).toBe(false)
+    test('accepts incomplete draft data', async () => {
+      const instance = await createFormWithFields()
+      expect((await instance).fill({ fields: { name: 'John' } } as any).isValid()).toBe(false)
     })
   })
 
@@ -634,9 +632,9 @@ describe('FormInstance', () => {
   // ============================================================================
 
   describe('safeFill()', () => {
-    test('returns success with RuntimeForm for valid data', () => {
-      const instance = createFormWithFields()
-      const result = instance.safeFill({
+    test('returns success with RuntimeForm for valid data', async () => {
+      const instance = await createFormWithFields()
+      const result = (await instance).safeFill({
         fields: {
           name: 'John',
           email: 'john@example.com',
@@ -649,9 +647,9 @@ describe('FormInstance', () => {
       }
     })
 
-    test('accepts incomplete draft data', () => {
-      const instance = createFormWithFields()
-      const result = instance.safeFill({ fields: { name: 'John' } } as any)
+    test('accepts incomplete draft data', async () => {
+      const instance = await createFormWithFields()
+      const result = (await instance).safeFill({ fields: { name: 'John' } } as any)
       expect(result.success).toBe(true)
       if (result.success) expect(result.data.isValid()).toBe(false)
     })

@@ -80,11 +80,11 @@ describe('sensitive values stay out of AI tool output', () => {
 		expect(JSON.stringify(output)).not.toContain('SECRET-SSN-VALUE')
 	})
 
-	it('a render that cannot print a sensitive phone number for the box region does not quote it', async () => {
+	it('a render refused for a sensitive phone number of another plan does not quote it', async () => {
 		const phoned = {
 			kind: 'form' as const,
 			name: 'phoned',
-			fields: { phone: { type: 'phone' as const, sensitive: true } },
+			fields: { phone: { type: 'phone' as const, countryCode: '1', sensitive: true } },
 			layers: {
 				national: { kind: 'inline' as const, mimeType: 'text/plain', text: '{{ fields.phone }}', format: { phone: { style: 'national' as const, region: 'US' } } },
 				area: { kind: 'inline' as const, mimeType: 'text/plain', text: '{{ fields.phone | part="nationalNumber", phone.region="US" }}' },
@@ -98,11 +98,11 @@ describe('sensitive values stay out of AI tool output', () => {
 		}
 	})
 
-	it('a render that cannot name a sensitive address country does not quote it', async () => {
+	it('a render refused for a sensitive address country that names no country does not quote it', async () => {
 		const addressed = {
 			kind: 'form' as const,
 			name: 'addressed',
-			fields: { home: { type: 'address' as const, sensitive: true } },
+			fields: { home: { type: 'address' as const, codes: true, sensitive: true } },
 			layers: { main: { kind: 'inline' as const, mimeType: 'text/plain', text: '{{ fields.home | country.display="name" }}' } },
 		}
 		const home = { line1: '1 Main St', locality: 'Springfield', region: 'Neverwhere', postalCode: '62701', country: 'Atlantisland' }

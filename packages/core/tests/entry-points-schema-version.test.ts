@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION, SCHEMA_VERSIONS, schemaVersionUrl, type SchemaVersion } from '@asterdoc/schemas'
 import { bundle, checklist, document, form, runtimeBundleFromJSON, runtimeChecklistFromJSON, runtimeDocumentFromJSON, runtimeFormFromJSON } from '@/artifacts'
-import { SchemaVersionError, load, loadFromObject } from '@/serialization'
+import { SchemaVersionError, load } from '@/serialization'
 import { SchemaMigrationError, migrateArtifact, type ArtifactObject, type MigrationStep } from '@/migration'
 import { validate } from '@/validation/artifact'
 
@@ -65,52 +65,56 @@ const apis = { form, document, checklist, bundle } as unknown as Record<
 	}
 >
 
-const entryPoints: Record<string, (kind: Kind, input: Record<string, unknown>, options?: Options) => Built> = {
-	'p.<kind>(obj)': (kind, input, options) => apis[kind](input, options),
-	'.from': (kind, input, options) => apis[kind].from(input, options),
-	'.safeFrom': (kind, input, options) => {
-		const result = apis[kind].safeFrom(input, options)
+const entryPoints: Record<string, (kind: Kind, input: Record<string, unknown>, options?: Options) => Promise<Built>> = {
+	'p.<kind>(obj), or form.load': async (kind, input, options) => kind === 'form' ? await form.load(input, options) as unknown as Built : apis[kind](input, options),
+	'.from, or form.load': async (kind, input, options) => kind === 'form' ? await form.load(input, options) as unknown as Built : apis[kind].from(input, options),
+	'.safeFrom, or form.safeLoad': async (kind, input, options) => {
+		const result = kind === 'form' ? await form.safeLoad(input, options) as unknown as { success: true; data: Built } | { success: false; error: Error } : apis[kind].safeFrom(input, options)
 		if (!result.success) throw result.error
 		return result.data
 	},
-	load: (_kind, input, options) => load(JSON.stringify(input), options) as unknown as Built,
-	loadFromObject: (_kind, input, options) => loadFromObject(input, options) as unknown as Built,
+	load: async (_kind, input, options) => await load(JSON.stringify(input), options) as unknown as Built,
+	'load(object)': async (_kind, input, options) => await load(input, options) as unknown as Built,
 }
-const builder = (kind: Kind, input: Record<string, unknown>) => apis[kind]().from(input).build()
+const builder = async (kind: Kind, input: Record<string, unknown>): Promise<Built> => {
+	if (kind === 'form') return await form.load((form() as unknown as { from(input: unknown): { build(): unknown } }).from(input).build()) as unknown as Built
+	return apis[kind]().from(input).build()
+}
 
 const cases = KINDS.flatMap((kind) => Object.keys(entryPoints).map((entry) => [kind, entry] as const))
 
 const withSchema = (kind: Kind, $schema: unknown): Record<string, unknown> => ({ $schema, ...bodies[kind] })
 
-function versionError(run: () => unknown): SchemaVersionError {
+async function versionError(run: () => unknown): Promise<SchemaVersionError> {
 	try {
-		run()
+		await run()
 	} catch (error) {
 		if (error instanceof SchemaVersionError) return error
+		if (error instanceof Error && error.cause instanceof SchemaVersionError) return error.cause
 		throw error
 	}
 	throw new Error('Expected a SchemaVersionError')
 }
 
 describe('every entry point of every kind applies the schema version rule', () => {
-	test.each(cases)('%s via %s accepts the current $schema and records no migration', (kind, entry) => {
-		const instance = entryPoints[entry]!(kind, withSchema(kind, ASTERDOC_SCHEMA_URL))
+	test.each(cases)('%s via %s accepts the current $schema and records no migration', async (kind, entry) => {
+		const instance = await entryPoints[entry]!(kind, withSchema(kind, ASTERDOC_SCHEMA_URL))
 		expect(instance.name).toBe(bodies[kind].name)
 		expect(instance.migratedFrom).toBeUndefined()
 	})
 
-	test.each(cases)('%s via %s upgrades an earlier $schema in memory and records it', (kind, entry) => {
+	test.each(cases)('%s via %s upgrades an earlier $schema in memory and records it', async (kind, entry) => {
 		const input = withSchema(kind, EARLIER_URL)
 		const before = structuredClone(input)
-		const instance = entryPoints[entry]!(kind, input)
+		const instance = await entryPoints[entry]!(kind, input)
 		expect(instance.name).toBe(bodies[kind].name)
 		expect(instance.migratedFrom).toBe(PREVIOUS)
 		expect(instance.toJSON().$schema).toBe(ASTERDOC_SCHEMA_URL)
 		expect(input).toEqual(before)
 	})
 
-	test.each(cases)('%s via %s with strictSchema refuses an earlier $schema', (kind, entry) => {
-		const error = versionError(() => entryPoints[entry]!(kind, withSchema(kind, EARLIER_URL), { strictSchema: true }))
+	test.each(cases)('%s via %s with strictSchema refuses an earlier $schema', async (kind, entry) => {
+		const error = await versionError(() => entryPoints[entry]!(kind, withSchema(kind, EARLIER_URL), { strictSchema: true }))
 		expect(error.code).toBe('outdated-version')
 		expect(error.found).toBe(EARLIER_URL)
 		expect(error.message).toContain(PREVIOUS)
@@ -118,37 +122,37 @@ describe('every entry point of every kind applies the schema version rule', () =
 		expect(error.message).toContain('asterdoc migrate')
 	})
 
-	test.each(cases)('%s via %s refuses a newer $schema and asks for an SDK update', (kind, entry) => {
-		const error = versionError(() => entryPoints[entry]!(kind, withSchema(kind, NEWER_URL)))
+	test.each(cases)('%s via %s refuses a newer $schema and asks for an SDK update', async (kind, entry) => {
+		const error = await versionError(() => entryPoints[entry]!(kind, withSchema(kind, NEWER_URL)))
 		expect(error.code).toBe('newer-version')
 		expect(error.message).toContain('2999-01-01')
 		expect(error.message).toContain('newer than this SDK knows; update @asterdoc/core')
 	})
 
-	test.each(KINDS)('the %s builder upgrades an earlier $schema too', (kind) => {
-		expect(builder(kind, withSchema(kind, EARLIER_URL)).name).toBe(bodies[kind].name)
-		expect(versionError(() => builder(kind, withSchema(kind, NEWER_URL))).code).toBe('newer-version')
+	test.each(KINDS)('the %s builder upgrades an earlier $schema too', async (kind) => {
+		expect((await builder(kind, withSchema(kind, EARLIER_URL))).name).toBe(bodies[kind].name)
+		expect((await versionError(() => builder(kind, withSchema(kind, NEWER_URL)))).code).toBe('newer-version')
 	})
 
 	test.each([
 		['an unpublished earlier', 'https://schema.asterdoc.com/2026-11-01.json'],
 		['an undated', 'https://schema.asterdoc.com/schema.json'],
 		['a foreign', 'https://example.com/form.json'],
-	])('%s $schema is refused by every entry point of every kind', (_label, address) => {
+	])('%s $schema is refused by every entry point of every kind', async (_label, address) => {
 		for (const [kind, entry] of cases) {
-			const error = versionError(() => entryPoints[entry]!(kind, withSchema(kind, address)))
+			const error = await versionError(() => entryPoints[entry]!(kind, withSchema(kind, address)))
 			expect(error.code, `${kind} via ${entry}`).toBe('unknown-version')
 		}
 	})
 
-	test.each(KINDS)('an in-memory %s without $schema is built, and serializes as current', (kind) => {
-		const instance = apis[kind](bodies[kind])
+	test.each(KINDS)('an in-memory %s without $schema is built, and serializes as current', async (kind) => {
+		const instance = kind === 'form' ? await form.load(bodies[kind]) as unknown as Built : apis[kind](bodies[kind])
 		expect(instance.toJSON().$schema).toBe(ASTERDOC_SCHEMA_URL)
 		expect(instance.migratedFrom).toBeUndefined()
 	})
 
-	test('a clone keeps the version its definition was upgraded from', () => {
-		const instance = form.from(withSchema('form', EARLIER_URL))
+	test('a clone keeps the version its definition was upgraded from', async () => {
+		const instance = await form.load(withSchema('form', EARLIER_URL))
 		expect(instance.clone().migratedFrom).toBe(PREVIOUS)
 	})
 })
@@ -157,48 +161,48 @@ describe('restoring a runtime applies the rule to its definition', () => {
 	type Runtime = { phase: string; migratedFrom?: SchemaVersion; toJSON(): Record<string, any> }
 	const earlier = (kind: Kind) => withSchema(kind, EARLIER_URL)
 	const runtimes = {
-		form: [() => form.from(earlier('form')).fill({ fields: {} }), 'form', runtimeFormFromJSON],
+		form: [async () => (await form.load(earlier('form'))).fill({ fields: {} }), 'form', runtimeFormFromJSON],
 		document: [() => document.from(earlier('document')).prepare(), 'document', runtimeDocumentFromJSON],
 		checklist: [() => checklist.from(earlier('checklist')).fill({}), 'checklist', runtimeChecklistFromJSON],
 		bundle: [
 			() => bundle.from({ ...earlier('bundle'), contents: [{ type: 'inline', key: 'notice', artifact: bodies.document }] }).prepare(),
 			'bundle',
-			(json: unknown, options?: Options) => runtimeBundleFromJSON(json as never, undefined, options),
+			async (json: unknown, options?: Options) => await runtimeBundleFromJSON(json as never, undefined, options),
 		],
-	} as unknown as Record<Kind, [() => Runtime, string, (json: unknown, options?: Options) => Runtime]>
+	} as unknown as Record<Kind, [() => Runtime | Promise<Runtime>, string, (json: unknown, options?: Options) => Runtime | Promise<Runtime>]>
 
-	test.each(KINDS)('a %s runtime from an earlier definition serializes it as stored and restores with migratedFrom', (kind) => {
+	test.each(KINDS)('a %s runtime from an earlier definition serializes it as stored and restores with migratedFrom', async (kind) => {
 		const [start, key, restore] = runtimes[kind]
-		const runtime = start()
+		const runtime = await start()
 		expect(runtime.migratedFrom).toBe(PREVIOUS)
 		const json = runtime.toJSON()
 		expect(json[key].$schema).toBe(EARLIER_URL)
-		const restored = restore(structuredClone(json))
+		const restored = await restore(structuredClone(json))
 		expect(restored.phase).toBe(runtime.phase)
 		expect(restored.migratedFrom).toBe(PREVIOUS)
 		expect(restored.toJSON()[key].$schema).toBe(EARLIER_URL)
-		expect(restore(restored.toJSON()).migratedFrom).toBe(PREVIOUS)
+		expect((await restore(restored.toJSON())).migratedFrom).toBe(PREVIOUS)
 	})
 
-	test.each(KINDS)('a %s runtime from a current definition records no migration', (kind) => {
+	test.each(KINDS)('a %s runtime from a current definition records no migration', async (kind) => {
 		const [, key, restore] = runtimes[kind]
-		const json = runtimes[kind][0]().toJSON()
+		const json = (await runtimes[kind][0]()).toJSON()
 		const current = { ...json, [key]: { ...json[key], $schema: ASTERDOC_SCHEMA_URL } }
-		const restored = restore(current)
+		const restored = await restore(current)
 		expect(restored.migratedFrom).toBeUndefined()
 		expect(restored.toJSON()[key].$schema).toBe(ASTERDOC_SCHEMA_URL)
 	})
 
-	test.each(KINDS)('a %s runtime refuses an earlier definition with strictSchema, and a newer one always', (kind) => {
+	test.each(KINDS)('a %s runtime refuses an earlier definition with strictSchema, and a newer one always', async (kind) => {
 		const [start, key, restore] = runtimes[kind]
-		const json = start().toJSON()
-		expect(versionError(() => restore(json, { strictSchema: true })).code).toBe('outdated-version')
-		expect(versionError(() => restore({ ...json, [key]: { ...json[key], $schema: NEWER_URL } })).code).toBe('newer-version')
+		const json = (await start()).toJSON()
+		expect((await versionError(() => restore(json, { strictSchema: true }))).code).toBe('outdated-version')
+		expect((await versionError(() => restore({ ...json, [key]: { ...json[key], $schema: NEWER_URL } }))).code).toBe('newer-version')
 	})
 })
 
 describe('validate() applies the rule', () => {
-	test.each(KINDS)('an earlier %s is valid and returned upgraded, its input unchanged', (kind) => {
+	test.each(KINDS)('an earlier %s is valid and returned upgraded, its input unchanged', async (kind) => {
 		const input = withSchema(kind, EARLIER_URL)
 		const result = validate<Record<string, unknown>>(input)
 		expect(result.issues).toBeUndefined()
@@ -206,7 +210,7 @@ describe('validate() applies the rule', () => {
 		expect(input.$schema).toBe(EARLIER_URL)
 	})
 
-	test.each(KINDS)('an earlier %s with strictSchema is an issue at $schema', (kind) => {
+	test.each(KINDS)('an earlier %s with strictSchema is an issue at $schema', async (kind) => {
 		const result = validate(withSchema(kind, EARLIER_URL), { strictSchema: true })
 		expect(result.issues).toHaveLength(1)
 		expect(result.issues?.[0]?.path).toEqual(['$schema'])
@@ -214,19 +218,19 @@ describe('validate() applies the rule', () => {
 		expect(result.issues?.[0]?.message).toContain('asterdoc migrate')
 	})
 
-	test.each(KINDS)('a newer %s is an issue at $schema', (kind) => {
+	test.each(KINDS)('a newer %s is an issue at $schema', async (kind) => {
 		const result = validate(withSchema(kind, NEWER_URL))
 		expect(result.issues?.[0]?.path).toEqual(['$schema'])
 		expect(result.issues?.[0]?.message).toContain('newer than this SDK knows; update @asterdoc/core')
 	})
 
-	test.each(KINDS)('a current %s, or one without $schema, is valid', (kind) => {
+	test.each(KINDS)('a current %s, or one without $schema, is valid', async (kind) => {
 		expect(validate(withSchema(kind, ASTERDOC_SCHEMA_URL)).issues).toBeUndefined()
 		expect(validate(bodies[kind]).issues).toBeUndefined()
 		expect(validate(bodies[kind], { strictSchema: true }).issues).toBeUndefined()
 	})
 
-	test('with schema validation off, a version problem is not checked', () => {
+	test('with schema validation off, a version problem is not checked', async () => {
 		expect(validate(withSchema('form', NEWER_URL), { schema: false }).issues).toBeUndefined()
 	})
 })
@@ -245,66 +249,66 @@ describe('a bundle applies the rule to its inline parts', () => {
 	const partSchema = (instance: { toJSON(): unknown }) =>
 		((instance.toJSON() as { contents: { artifact: { $schema?: string } }[] }).contents[1] as { artifact: { $schema?: string } }).artifact.$schema
 
-	test.each(Object.keys(entryPoints))('an earlier inline part is upgraded via %s, and recorded', (entry) => {
-		const instance = entryPoints[entry]!('bundle', packet(earlierChild))
+	test.each(Object.keys(entryPoints))('an earlier inline part is upgraded via %s, and recorded', async (entry) => {
+		const instance = await entryPoints[entry]!('bundle', packet(earlierChild))
 		expect(instance.migratedFrom).toBe(PREVIOUS)
 		expect(partSchema(instance)).toBe(ASTERDOC_SCHEMA_URL)
 	})
 
-	test('a bundle built in memory upgrades an earlier inline part and stays without $schema', () => {
+	test('a bundle built in memory upgrades an earlier inline part and stays without $schema', async () => {
 		const instance = bundle.from(packet(earlierChild, null))
 		expect(instance.migratedFrom).toBe(PREVIOUS)
 		expect(instance._data.$schema).toBeUndefined()
 		expect(partSchema(instance)).toBe(ASTERDOC_SCHEMA_URL)
 	})
 
-	test('the earliest version among the root and its parts is recorded', () => {
+	test('the earliest version among the root and its parts is recorded', async () => {
 		const instance = bundle.from(packet({ $schema: schemaVersionUrl(EARLIEST), ...bodies.document }, EARLIER_URL))
 		expect(instance.migratedFrom).toBe(EARLIEST)
 	})
 
-	test.each(Object.keys(entryPoints))('strictSchema refuses an earlier inline part via %s, naming the part', (entry) => {
-		const error = versionError(() => entryPoints[entry]!('bundle', packet(earlierChild), { strictSchema: true }))
+	test.each(Object.keys(entryPoints))('strictSchema refuses an earlier inline part via %s, naming the part', async (entry) => {
+		const error = await versionError(() => entryPoints[entry]!('bundle', packet(earlierChild), { strictSchema: true }))
 		expect(error.code).toBe('outdated-version')
 		expect(error.message).toContain('"notice"')
 		expect(error.path).toEqual(['contents', 1, 'artifact', '$schema'])
 	})
 
-	test('a newer part of a nested inline bundle is refused at its path', () => {
+	test('a newer part of a nested inline bundle is refused at its path', async () => {
 		const nested = { kind: 'bundle', name: 'inner', contents: [{ type: 'inline', key: 'deep', artifact: { $schema: NEWER_URL, ...bodies.document } }] }
-		const error = versionError(() => bundle.from(packet(nested)))
+		const error = await versionError(() => bundle.from(packet(nested)))
 		expect(error.code).toBe('newer-version')
 		expect(error.message).toContain('"deep"')
 		expect(error.path).toEqual(['contents', 1, 'artifact', 'contents', 0, 'artifact', '$schema'])
 	})
 
-	test.each(Object.keys(entryPoints))('a part later than its earlier bundle is accepted via %s, each upgraded from its own date', (entry) => {
-		const instance = entryPoints[entry]!('bundle', packet({ $schema: ASTERDOC_SCHEMA_URL, ...bodies.document }, EARLIER_URL))
+	test.each(Object.keys(entryPoints))('a part later than its earlier bundle is accepted via %s, each upgraded from its own date', async (entry) => {
+		const instance = await entryPoints[entry]!('bundle', packet({ $schema: ASTERDOC_SCHEMA_URL, ...bodies.document }, EARLIER_URL))
 		expect(instance.migratedFrom).toBe(PREVIOUS)
 		expect(instance.toJSON().$schema).toBe(ASTERDOC_SCHEMA_URL)
 		expect(partSchema(instance)).toBe(ASTERDOC_SCHEMA_URL)
 		expect(validate(packet({ $schema: ASTERDOC_SCHEMA_URL, ...bodies.document }, EARLIER_URL)).issues).toBeUndefined()
 	})
 
-	test('a part on an unpublished date under an earlier bundle is refused, naming the part', () => {
-		const error = versionError(() => bundle.from(packet({ $schema: 'https://schema.asterdoc.com/2026-11-01.json', ...bodies.document }, EARLIER_URL)))
+	test('a part on an unpublished date under an earlier bundle is refused, naming the part', async () => {
+		const error = await versionError(() => bundle.from(packet({ $schema: 'https://schema.asterdoc.com/2026-11-01.json', ...bodies.document }, EARLIER_URL)))
 		expect(error.code).toBe('unknown-version')
 		expect(error.message).toContain('"notice"')
 		expect(error.path).toEqual(['contents', 1, 'artifact', '$schema'])
 	})
 
-	test('validate() reports a strict refusal of a part at its path', () => {
+	test('validate() reports a strict refusal of a part at its path', async () => {
 		const result = validate(packet(earlierChild), { strictSchema: true })
 		expect(result.issues?.[0]?.path).toEqual(['contents', 1, 'artifact', '$schema'])
 	})
 })
 
 describe('migrate rewrites an earlier artifact for good', () => {
-	test.each(KINDS)('an earlier %s migrates, and the result loads through every entry point as current', (kind) => {
+	test.each(KINDS)('an earlier %s migrates, and the result loads through every entry point as current', async (kind) => {
 		const result = migrateArtifact(withSchema(kind, EARLIER_URL), { steps })
 		expect(result).toMatchObject({ status: 'migrated', from: PREVIOUS, to: SCHEMA_VERSION })
 		for (const entry of Object.keys(entryPoints)) {
-			const instance = entryPoints[entry]!(kind, result.artifact as Record<string, unknown>, { strictSchema: true })
+			const instance = await entryPoints[entry]!(kind, result.artifact as Record<string, unknown>, { strictSchema: true })
 			expect(instance.name).toBe(bodies[kind].name)
 			expect(instance.migratedFrom).toBeUndefined()
 		}
@@ -325,7 +329,7 @@ describe('migrate rewrites an earlier artifact for good', () => {
 	const partOf = (artifact: Record<string, any>, ...keys: string[]) =>
 		keys.reduce((current, key) => current.contents.find((item: any) => item.key === key).artifact, artifact)
 
-	test('an earlier part two bundles deep migrates and is stamped current', () => {
+	test('an earlier part two bundles deep migrates and is stamped current', async () => {
 		const source = holding(EARLIER_URL, { kind: 'bundle', name: 'inner', contents: [{ type: 'inline', key: 'deep', artifact: oldForm(EARLIER_URL) }] })
 		const result = migrateArtifact(source, { steps })
 		const deep = partOf(result.artifact, 'order', 'deep')
@@ -334,7 +338,7 @@ describe('migrate rewrites an earlier artifact for good', () => {
 		expect(bundle.from(result.artifact).name).toBe('packet')
 	})
 
-	test('a current bundle with an earlier part migrates the part', () => {
+	test('a current bundle with an earlier part migrates the part', async () => {
 		const source = holding(ASTERDOC_SCHEMA_URL, oldForm(EARLIER_URL))
 		const result = migrateArtifact(source, { steps })
 		expect(result.status).toBe('migrated')
@@ -344,19 +348,19 @@ describe('migrate rewrites an earlier artifact for good', () => {
 		expect(bundle.from(result.artifact, { strictSchema: true }).name).toBe('packet')
 	})
 
-	test('a part without $schema follows its bundle through the steps', () => {
+	test('a part without $schema follows its bundle through the steps', async () => {
 		const result = migrateArtifact(holding(EARLIER_URL, oldForm()), { steps })
 		const part = partOf(result.artifact, 'order')
 		expect(part).not.toHaveProperty('$schema')
 		expect(part.parties.buyer).not.toHaveProperty('multiple')
 	})
 
-	test('a current bundle whose parts are all current is left as it is', () => {
+	test('a current bundle whose parts are all current is left as it is', async () => {
 		const source = holding(ASTERDOC_SCHEMA_URL, { $schema: ASTERDOC_SCHEMA_URL, ...bodies.document })
 		expect(migrateArtifact(source, { steps })).toMatchObject({ status: 'current', artifact: source })
 	})
 
-	test('a part later than its bundle migrates, and the bundle loads strictly', () => {
+	test('a part later than its bundle migrates, and the bundle loads strictly', async () => {
 		const result = migrateArtifact(holding(EARLIER_URL, { $schema: ASTERDOC_SCHEMA_URL, ...bodies.document }), { steps })
 		expect(result.status).toBe('migrated')
 		expect(partOf(result.artifact, 'order').$schema).toBe(ASTERDOC_SCHEMA_URL)
@@ -378,7 +382,7 @@ describe('migrate rewrites an earlier artifact for good', () => {
 		expect((error as SchemaMigrationError).message).toContain('"order"')
 	})
 
-	test('a newer artifact is refused with the SDK update message', () => {
+	test('a newer artifact is refused with the SDK update message', async () => {
 		expect(() => migrateArtifact(withSchema('form', NEWER_URL))).toThrow('newer than this SDK knows; update @asterdoc/core')
 	})
 })

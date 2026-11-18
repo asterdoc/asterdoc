@@ -20,8 +20,8 @@ const build = (sensitive: boolean, extra: Partial<Form> = {}): Form => ({
 	...extra,
 })
 
-const surfaces = (definition: Form, fields: Record<string, unknown>, test_?: object) => {
-	const instance = form(test_ ? { ...definition, tests: [test_ as never] } : definition)
+const surfaces = async (definition: Form, fields: Record<string, unknown>, test_?: object) => {
+	const instance = await form.load(test_ ? { ...definition, tests: [test_ as never] } : definition)
 	const draft = instance.fill({ fields } as never)
 	return {
 		issues: draft.getFillState().issues,
@@ -31,39 +31,39 @@ const surfaces = (definition: Form, fields: Record<string, unknown>, test_?: obj
 }
 
 describe('an expression error over a sensitive value names no value', () => {
-	test('a required condition and a computed value, on every surface', () => {
+	test('a required condition and a computed value, on every surface', async () => {
 		const fields = { pattern: '(SECRET' }
-		const found = surfaces(build(true), fields, { name: 'bad', input: { fields }, expect: { valid: false } })
-		expect(found.issues.map((issue) => issue.message).sort()).toEqual([
+		const found = await surfaces(build(true), fields, { name: 'bad', input: { fields }, expect: { valid: false } })
+		expect((await found).issues.map((issue) => issue.message).sort()).toEqual([
 			'Failed to evaluate computed value "shaped"',
 			'Failed to resolve form expression',
 		])
-		expect(found.issues.every((issue) => issue.originalError === undefined)).toBe(true)
-		expect(found.errors.length).toBeGreaterThan(0)
-		expect(found.tests?.length).toBeGreaterThan(0)
+		expect((await found).issues.every((issue) => issue.originalError === undefined)).toBe(true)
+		expect((await found).errors.length).toBeGreaterThan(0)
+		expect((await found).tests?.length).toBeGreaterThan(0)
 		expect(JSON.stringify(found)).not.toContain('SECRET')
 	})
 
-	test('a row condition reading a sensitive member through item', () => {
-		const found = surfaces(build(true), { rows: [{ code: '(SECRET' }] })
-		expect(found.issues.map((issue) => issue.message)).toEqual(['Failed to resolve form expression'])
+	test('a row condition reading a sensitive member through item', async () => {
+		const found = await surfaces(build(true), { rows: [{ code: '(SECRET' }] })
+		expect((await found).issues.map((issue) => issue.message)).toEqual(['Failed to resolve form expression'])
 		expect(JSON.stringify(found)).not.toContain('SECRET')
 	})
 
-	test('a fixed-choice argument read from a sensitive field', () => {
+	test('a fixed-choice argument read from a sensitive field', async () => {
 		const definition = build(true, { defs: { valid: { type: 'boolean', value: 'checkDigit("79927398713", fields.algorithm)' } } })
-		const found = surfaces(definition, { algorithm: 'SECRET-ALGO' })
-		expect(found.issues.map((issue) => issue.message)).toEqual(['Failed to evaluate computed value "valid"'])
+		const found = await surfaces(definition, { algorithm: 'SECRET-ALGO' })
+		expect((await found).issues.map((issue) => issue.message)).toEqual(['Failed to evaluate computed value "valid"'])
 		expect(JSON.stringify(found)).not.toContain('SECRET')
 	})
 
-	test('the same errors over values that are not sensitive keep their text', () => {
-		const found = surfaces(build(false), { pattern: '(open', rows: [{ code: '(open' }] })
-		expect(found.issues.map((issue) => issue.message)).toEqual(expect.arrayContaining([
+	test('the same errors over values that are not sensitive keep their text', async () => {
+		const found = await surfaces(build(false), { pattern: '(open', rows: [{ code: '(open' }] })
+		expect((await found).issues.map((issue) => issue.message)).toEqual(expect.arrayContaining([
 			'Failed to evaluate computed value "shaped": type-error: Invalid pattern: "(open"',
 			'Failed to resolve form expression: Invalid pattern: "(open"',
 		]))
-		expect(found.issues.every((issue) => issue.originalError !== undefined)).toBe(true)
+		expect((await found).issues.every((issue) => issue.originalError !== undefined)).toBe(true)
 	})
 })
 
@@ -184,8 +184,8 @@ describe('template expressions at render', () => {
 		defs: undefined,
 		layers: { main: { kind: 'inline', mimeType: 'text/plain', text } },
 	})
-	const render = (sensitive: boolean, text: string) =>
-		form(layered(sensitive, text)).fill({ fields: { pattern: '(SECRET', rows: [{ code: '(SECRET' }] } } as never).render()
+	const render = async (sensitive: boolean, text: string) =>
+		(await form.load(layered(sensitive, text))).fill({ fields: { pattern: '(SECRET', rows: [{ code: '(SECRET' }] } } as never).render()
 
 	test('a placeholder over a sensitive field fails without the value', async () => {
 		const failure = await render(true, 'X {{matches("abc", fields.pattern)}}').catch((error: Error) => error)

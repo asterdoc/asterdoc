@@ -12,8 +12,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const pdfs = path.resolve(__dirname, '../fixtures/pdfs')
 
 describe('Formatting values guide', () => {
-  describe('worked example', () => {
-    const intake = a.form({
+  describe('worked example', async () => {
+    const intake = await a.form.load({
       name: 'intake',
       fields: {
         name: { type: 'person', label: 'Name' },
@@ -80,7 +80,7 @@ describe('Formatting values guide', () => {
     })
 
     test('the same data prints as stored on a layer with no format', async () => {
-      const plain = a.form({
+      const plain = await a.form.load({
         name: 'intake-plain',
         fields: { birthCountry: { type: 'country', label: 'Country of birth' }, ssn: { type: 'text', label: 'SSN', mask: '###-##-####' } },
         layers: { summary: { kind: 'inline', mimeType: 'text/plain', text: '{{ fields.birthCountry }} {{ fields.ssn }}' } },
@@ -111,7 +111,7 @@ describe('Formatting values guide', () => {
 
   describe('template modifier check', () => {
     const definition = {
-      $schema: 'https://schema.asterdoc.com/2026-11-12.json',
+      $schema: 'https://schema.asterdoc.com/2026-11-17.json',
       kind: 'form',
       name: 'modifiers',
       version: '1.0.0',
@@ -132,9 +132,9 @@ describe('Formatting values guide', () => {
     })
   })
 
-  describe('reading a filled PDF back', () => {
+  describe('reading a filled PDF back', async () => {
     const P = 'topmostSubform[0].Page1[0].'
-    const w9 = a.form({
+    const w9 = await a.form.load({
       name: 'w9-format',
       fields: {
         name: { type: 'text', label: 'Name', required: true },
@@ -170,9 +170,9 @@ describe('Formatting values guide', () => {
     })
   })
 
-  describe('a PDF binding template', () => {
+  describe('a PDF binding template', async () => {
     const P = 'topmostSubform[0].Page1[0].'
-    const w9 = a.form({
+    const w9 = await a.form.load({
       name: 'w9-template',
       fields: {
         name: { type: 'text', label: 'Name', required: true },
@@ -202,7 +202,7 @@ describe('Formatting values guide', () => {
 
     test('a binding with both a path and a template does not validate', () => {
       const result = validate({
-        $schema: 'https://schema.asterdoc.com/2026-11-12.json',
+        $schema: 'https://schema.asterdoc.com/2026-11-17.json',
         kind: 'form',
         name: 'both',
         version: '1.0.0',

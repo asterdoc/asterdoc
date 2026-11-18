@@ -22,7 +22,7 @@ import { a, toYAML } from '@asterdoc/core';
 **Has Vaccination:** {{fields.hasVaccination}}
 `;
 
-	const f1 = a.form({
+	const f1 = await a.form.load({
 		kind: 'form',
 		version: '1.0.0',
 		name: 'pet-addendum',

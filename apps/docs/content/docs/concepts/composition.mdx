@@ -32,13 +32,13 @@ export const contactFields = {
 // forms/application.ts
 import { contactFields } from "../common/fields"
 
-const application = a.form()
+const application = await a.form.load(a.form()
   .name("application")
   .fields({
     ...contactFields,
     applicationDate: { type: "date", required: true },
   })
-  .build()
+  .build())
 ```
 
 Update `contactFields` and every form using it reflects the change.

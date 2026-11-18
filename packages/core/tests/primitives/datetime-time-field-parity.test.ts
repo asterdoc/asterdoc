@@ -7,10 +7,10 @@ import { validateFieldInput } from '@/validation'
 // The datetime and time primitives accepted values that a compiled field of the
 // same type rejected. A value a primitive builds or accepts must not fail
 // validation on a field of that type.
-const f = form().name('drift').fields({
+const f = await form.load(form().name('drift').fields({
 	when: { type: 'datetime' },
 	at: { type: 'time' },
-}).build()
+}).build())
 
 describe('core-072', () => {
 	test.each(['2024-01-01T10:00:00+02:00', '2024-01-01T10:00:00Z', '0099-01-01T10:00:00Z'])('datetime %s', (value) => {

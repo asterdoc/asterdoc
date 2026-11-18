@@ -28,6 +28,21 @@ function loadFixture(name: string) {
   return { artifact, data }
 }
 
+const FIXTURES_URL = 'https://fixtures.asterdoc.dev/'
+
+/** Serves the fixture files at FIXTURES_URL, so an inline artifact's file-backed layers load. */
+const fixtureFiles = {
+  fetch: (async (input: string | URL | Request) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+    if (!url.startsWith(FIXTURES_URL)) return new Response('Not found', { status: 404 })
+    try {
+      return new Response(new Uint8Array(readFileSync(join(fixturesDir, url.slice(FIXTURES_URL.length)))))
+    } catch {
+      return new Response('Not found', { status: 404 })
+    }
+  }) as typeof globalThis.fetch,
+}
+
 function createPetAddendumRegistryFetch(artifact: Record<string, unknown>): typeof globalThis.fetch {
   const { manifest, bodies } = registryFixture([{ artifact, path: 'pet-addendum/pet-addendum.json' }])
   return async (input) => {
@@ -79,7 +94,7 @@ describe('pet-addendum fixture (production artifact)', () => {
   })
 
   it('fills with valid data', async () => {
-    const result = await executeFill({ source: 'artifact' as const, artifact, data })
+    const result = await executeFill({ source: 'artifact' as const, artifact, base_url: FIXTURES_URL, data }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.artifact_kind).toBe('form')
     expect(result.data).toBeDefined()
@@ -93,6 +108,7 @@ describe('pet-addendum fixture (production artifact)', () => {
     const result = await executeFill({
       source: 'artifact' as const,
       artifact,
+      base_url: FIXTURES_URL,
       data: {
         fields: data.fields,
         parties: {
@@ -100,7 +116,7 @@ describe('pet-addendum fixture (production artifact)', () => {
           landlord: { name: 'Bob Landlord', legalName: 'Bob Landlord LLC' },
         },
       },
-    })
+    }, fixtureFiles)
 
     expect(result.accepted).toBe(true)
     expect(result.artifact_kind).toBe('form')
@@ -110,8 +126,9 @@ describe('pet-addendum fixture (production artifact)', () => {
     const result = await executeFill({
       source: 'artifact' as const,
       artifact,
+      base_url: FIXTURES_URL,
       data: { fields: {}, parties: data.parties },
-    })
+    }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.complete).toBe(false)
   })
@@ -123,7 +140,7 @@ describe('pet-addendum fixture (production artifact)', () => {
       data,
     })
     expect(result.success).toBe(false)
-    expect(result.error?.message).toContain('file-backed')
+    expect(result.error).toMatchObject({ code: 'layer_files_unreachable', message: expect.stringContaining('Give base_url') })
   })
 
   it('renders markdown via public registry', async () => {
@@ -217,7 +234,7 @@ describe('lease-agreement fixture', () => {
   })
 
   it('fills with valid data', async () => {
-    const result = await executeFill({ source: 'artifact' as const, artifact, data })
+    const result = await executeFill({ source: 'artifact' as const, artifact, base_url: FIXTURES_URL, data }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.artifact_kind).toBe('form')
     expect(result.data).toBeDefined()
@@ -237,7 +254,7 @@ describe('lease-agreement fixture', () => {
       },
       parties: data.parties,
     }
-    const result = await executeFill({ source: 'artifact' as const, artifact, data: partialData })
+    const result = await executeFill({ source: 'artifact' as const, artifact, base_url: FIXTURES_URL, data: partialData }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.data!.fields.petsAllowed).toBe(false)
     expect(result.data!.fields.smokingAllowed).toBe(false)
@@ -247,8 +264,9 @@ describe('lease-agreement fixture', () => {
     const result = await executeFill({
       source: 'artifact' as const,
       artifact,
+      base_url: FIXTURES_URL,
       data: { fields: {}, parties: data.parties },
-    })
+    }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.complete).toBe(false)
   })
@@ -257,8 +275,9 @@ describe('lease-agreement fixture', () => {
     const result = await executeRender({
       source: 'artifact' as const,
       artifact,
+      base_url: FIXTURES_URL,
       data,
-    })
+    }, fixtureFiles)
 
     expect(result.success).toBe(true)
     expect(result.artifact_kind).toBe('form')
@@ -297,7 +316,7 @@ describe('purchase-agreement fixture', () => {
   })
 
   it('fills with valid data', async () => {
-    const result = await executeFill({ source: 'artifact' as const, artifact, data })
+    const result = await executeFill({ source: 'artifact' as const, artifact, base_url: FIXTURES_URL, data }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.artifact_kind).toBe('form')
     expect(result.data).toBeDefined()
@@ -307,8 +326,9 @@ describe('purchase-agreement fixture', () => {
     const result = await executeFill({
       source: 'artifact' as const,
       artifact,
+      base_url: FIXTURES_URL,
       data: { fields: { quantity: 10 }, parties: data.parties },
-    })
+    }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.complete).toBe(false)
   })
@@ -317,8 +337,9 @@ describe('purchase-agreement fixture', () => {
     const result = await executeRender({
       source: 'artifact' as const,
       artifact,
+      base_url: FIXTURES_URL,
       data,
-    })
+    }, fixtureFiles)
 
     expect(result.success).toBe(true)
     expect(result.encoding).toBe('utf-8')
@@ -348,7 +369,7 @@ describe('w9-tax-form fixture', () => {
   })
 
   it('fills with valid data', async () => {
-    const result = await executeFill({ source: 'artifact' as const, artifact, data })
+    const result = await executeFill({ source: 'artifact' as const, artifact, base_url: FIXTURES_URL, data }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.artifact_kind).toBe('form')
     expect(result.data).toBeDefined()
@@ -365,7 +386,7 @@ describe('w9-tax-form fixture', () => {
         ein: '12-3456789',
       },
     }
-    const result = await executeFill({ source: 'artifact' as const, artifact, data: fullData })
+    const result = await executeFill({ source: 'artifact' as const, artifact, base_url: FIXTURES_URL, data: fullData }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.data!.fields.businessName).toBe('Smith Consulting LLC')
   })
@@ -374,8 +395,9 @@ describe('w9-tax-form fixture', () => {
     const result = await executeFill({
       source: 'artifact' as const,
       artifact,
+      base_url: FIXTURES_URL,
       data: { fields: { businessName: 'Test' } },
-    })
+    }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.complete).toBe(false)
   })
@@ -388,7 +410,7 @@ describe('w9-tax-form fixture', () => {
     })
 
     expect(result.success).toBe(false)
-    expect(result.error?.message).toContain('file-backed')
+    expect(result.error).toMatchObject({ code: 'layer_files_unreachable', message: expect.stringContaining('Give base_url') })
   })
 })
 
@@ -406,7 +428,7 @@ describe('onboarding-checklist fixture', () => {
   })
 
   it('fills with boolean values', async () => {
-    const result = await executeFill({ source: 'artifact' as const, artifact, data })
+    const result = await executeFill({ source: 'artifact' as const, artifact, base_url: FIXTURES_URL, data }, fixtureFiles)
     expect(result.accepted).toBe(true)
     expect(result.artifact_kind).toBe('checklist')
     expect(result.data).toBeDefined()
@@ -416,17 +438,18 @@ describe('onboarding-checklist fixture', () => {
     const result = await executeFill({
       source: 'artifact' as const,
       artifact,
+      base_url: FIXTURES_URL,
       data: {
         'signed-contract': false,
         'received-equipment': false,
         'completed-training': false,
       },
-    })
+    }, fixtureFiles)
     expect(result.accepted).toBe(true)
   })
 
   it('fills with empty data (all defaults)', async () => {
-    const result = await executeFill({ source: 'artifact' as const, artifact, data: {} })
+    const result = await executeFill({ source: 'artifact' as const, artifact, base_url: FIXTURES_URL, data: {} }, fixtureFiles)
     expect(result.accepted).toBe(true)
   })
 
@@ -434,8 +457,9 @@ describe('onboarding-checklist fixture', () => {
     const result = await executeRender({
       source: 'artifact' as const,
       artifact,
+      base_url: FIXTURES_URL,
       data,
-    })
+    }, fixtureFiles)
 
     expect(result.success).toBe(false)
     expect(result.artifact_kind).toBe('checklist')
@@ -469,7 +493,7 @@ describe('fixture validation edge cases', () => {
       source: 'artifact' as const,
       artifact: petArtifact,
       options: { schema: true, logic: false },
-    })
+    }, fixtureFiles)
     expect(result.valid).toBe(true)
   })
 })

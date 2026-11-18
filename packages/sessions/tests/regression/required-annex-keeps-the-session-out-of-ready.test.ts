@@ -7,8 +7,8 @@ import type { FormSession } from "../../src/engine/types";
 import { execute } from "../../src/engine/execute";
 import { deriveView } from "../../src/engine/derive";
 
-it("required annex keeps the session out of ready", () => {
-  const runtime = createAsterdocRuntime(artifact({ fields: { name: { type: "text", required: true } }, annexes: { proof: { required: true } } }));
+it("required annex keeps the session out of ready", async () => {
+  const runtime = await createAsterdocRuntime(artifact({ fields: { name: { type: "text", required: true } }, annexes: { proof: { required: true } } }));
   const r = execute(session(), runtime, { kind: "answer", fieldPath: "name", value: "Ada", source: "user" }, { kind: "user" });
   expect(r.ok).toBe(true);
   if (!r.ok) return;

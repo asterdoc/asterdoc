@@ -54,7 +54,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'shipping',
   fields: {
     shippingAddress: { type: 'address', label: 'Shipping Address' }

@@ -38,7 +38,7 @@ function artifactBaseUrl(artifactUrl: string): string {
 /**
  * Resolve the artifact a tool works on, under the rules every loading surface
  * applies. An artifact read from a URL or a registry is a file, so it must
- * carry `$schema`. An inline artifact is an object, as with `loadFromObject`:
+ * carry `$schema`. An inline artifact is an object, as with `load` of an object:
  * it may omit `$schema`. An earlier version is upgraded in memory: tools read
  * `artifact`, and `stored` keeps the artifact as given. A version newer than
  * this SDK knows, or one that cannot be upgraded, is refused.

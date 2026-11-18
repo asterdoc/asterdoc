@@ -265,7 +265,7 @@ describe('format modifiers on template placeholders', () => {
         home: { type: 'address', label: 'Home', codes: true },
         born: { type: 'country', label: 'Born' },
         state: { type: 'region', label: 'State', country: 'US' },
-        homes: { type: 'list', label: 'Homes', item: { type: 'address', label: 'Home' } },
+        homes: { type: 'list', label: 'Homes', item: { type: 'address', label: 'Home', codes: true } },
         note: { type: 'text', label: 'Note' },
       },
     } as unknown as Form
@@ -295,6 +295,12 @@ describe('format modifiers on template placeholders', () => {
       expect(placeRender('{{ fields.home.country | country.display="name", locale="fr-FR" }}|{{ fields.home.country }}')).toBe('Canada|CA')
       expect(placeRender('{{ fields.born | country.display="name", locale="fr-FR" }}')).toBe('Allemagne')
       expect(placeCheck('{{ fields.born | country.display="name" }}{{ fields.home.country | country.display="code" }}')).toEqual([])
+    })
+
+    it('refuse at check a place format on an address that stores what it is given, in a text or a Word template', () => {
+      expect(check('{{ fields.home | country.display="name" }}')).toEqual([expect.objectContaining({ code: 'print', message: 'country.display needs the country and region stored as codes, and fields.home stores what it is given; give the field "codes": true.' })])
+      expect(check('{{ fields.home.region | region.display="code" }}')).toHaveLength(1)
+      expect(check('{{ fields.home.locality | region.display="code" }}')).not.toEqual(expect.arrayContaining([expect.objectContaining({ code: 'print' })]))
     })
 
     it('print region fields and address regions as code, full code or name, reading the address country', () => {

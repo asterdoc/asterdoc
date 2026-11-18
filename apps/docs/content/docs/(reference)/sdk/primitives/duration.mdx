@@ -33,7 +33,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'subscription',
   fields: {
     term: { type: 'duration', label: 'Subscription Term' }

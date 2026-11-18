@@ -1,4 +1,6 @@
 import {
+	INVALID_PHONE,
+	redactedValue,
 	MASK_MISMATCH,
 	canonicalizeMasked,
 	countryName,
@@ -13,6 +15,7 @@ import {
 	type MaskInputForm,
 	type PlaceIssueCode,
 } from '@asterdoc/format'
+import { phoneProvider } from '@asterdoc/format/phone'
 import { regionsProvider as regions } from '@asterdoc/format/regions'
 import type { Form, FormField } from '@asterdoc/types'
 import type { ValidationError } from '@/types'
@@ -53,8 +56,11 @@ export interface CanonicalizeOptions {
 }
 
 /** Why an input could not be stored as a canonical value, with what to choose from instead. */
+/** The code a phone number fails with when it does not have its field's country calling code. */
+export const PHONE_COUNTRY_CODE = 'phone_country_code'
+
 export interface CanonicalizationIssue {
-	code: PlaceIssueCode | typeof MASK_MISMATCH
+	code: PlaceIssueCode | typeof MASK_MISMATCH | typeof INVALID_PHONE | typeof PHONE_COUNTRY_CODE
 	path: string
 	message: string
 	candidates: PlaceCandidate[]
@@ -77,11 +83,17 @@ function placeIssue(path: string, outcome: PlaceFailure, sensitive: boolean): Ca
 	return { code: outcome.code, path, message: outcome.message, candidates: [...outcome.candidates] }
 }
 
-/** Whether a field, or a field nested in it, stores a canonical form: place codes, or a masked value without its literals. */
+/**
+ * Whether a field, or a field nested in it, stores a canonical form (place
+ * codes, or a masked value without its literals) or is checked against a
+ * constraint the schema cannot state: a phone's country calling code.
+ */
 export function hasCanonicalValues(field: FormField): boolean {
 	switch (field.type) {
 		case 'text':
 			return field.mask !== undefined
+		case 'phone':
+			return field.countryCode !== undefined
 		case 'country':
 		case 'region':
 			return true
@@ -117,6 +129,19 @@ function canonicalAddress(value: Record<string, unknown>, options: CanonicalizeO
 	return next
 }
 
+function checkedPhone(countryCode: string, value: Record<string, unknown>, path: string, issues: CanonicalizationIssue[], sensitive: boolean): void {
+	const { number } = value
+	if (typeof number !== 'string') return
+	const shown = sensitive ? redactedValue(number) : number
+	const at = join(path, 'number')
+	const parsed = phoneProvider.parse(number)
+	if (!parsed) {
+		issues.push({ code: INVALID_PHONE, path: at, message: `${shown} is not a valid phone number of the +${countryCode} plan this field takes.`, candidates: [] })
+	} else if (parsed.countryCallingCode !== countryCode) {
+		issues.push({ code: PHONE_COUNTRY_CODE, path: at, message: `${shown} has country calling code +${parsed.countryCallingCode}; this field takes only +${countryCode} numbers.`, candidates: [] })
+	}
+}
+
 function mergedOver(current: unknown, value: Record<string, unknown>): Record<string, unknown> {
 	if (!isRecord(current)) return value
 	const merged: Record<string, unknown> = { ...current }
@@ -150,6 +175,9 @@ function canonicalize(field: FormField, value: unknown, options: CanonicalizeOpt
 			issues.push(placeIssue(path, outcome, sensitive))
 			return value
 		}
+		case 'phone':
+			if (isRecord(value) && field.countryCode !== undefined) checkedPhone(field.countryCode, value, path, issues, sensitive)
+			return value
 		case 'address':
 			return isRecord(value) ? canonicalAddress(mergedOver(current, value), options, path, issues, sensitive) : value
 		case 'fieldset': {

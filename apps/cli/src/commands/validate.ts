@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
 import {
-  loadFromObject,
+  form as formApi,
   validate as validateArtifact,
   validateLayers,
   type Artifact,
@@ -347,7 +347,7 @@ async function validateOneFile(artifactTarget: string, options: ValidateOptions)
   }
 
   const testChecks = !options.schemaOnly && !options.checksumOnly && artifact?.kind === 'form' && schemaIssues.length === 0
-    ? runFormTests(artifact as Form)
+    ? await runFormTests(artifact as Form, baseDir)
     : []
 
   // Aggregate
@@ -392,8 +392,19 @@ function testFailure(result: FormTestResult): string {
   return `Test "${result.name}" failed: ${problems.join('; ')}${errors.length > 0 ? ` (${errors.join('; ')})` : ''}`
 }
 
-function runFormTests(form: Form): TestCheckResult[] {
-  const report = loadFromObject<'form'>(form).runTests()
+async function runFormTests(form: Form, baseDir: string): Promise<TestCheckResult[]> {
+  const count = form.tests?.length ?? 0
+  if (count === 0) return []
+  const loaded = await formApi.safeLoad(form, { resolver: createFsResolver({ root: baseDir }) })
+  if (!loaded.success) {
+    const tests = count === 1 ? 'test' : `${count} tests`
+    return [{
+      name: 'tests',
+      passed: false,
+      issues: [{ message: `The form's ${tests} did not run: the form did not load. ${loaded.error.message}`, path: ['tests'], severity: 'error' }],
+    }]
+  }
+  const report = loaded.data.runTests()
   return report.results.map((result, index) => ({
     name: result.name,
     passed: result.passed,

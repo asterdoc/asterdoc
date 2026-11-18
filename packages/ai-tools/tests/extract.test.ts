@@ -32,7 +32,7 @@ async function filled(): Promise<Uint8Array> {
 describe('extract tool', () => {
 	it('returns the SDK result for a base64 PDF', async () => {
 		const pdf = await filled()
-		const result = await executeExtract({ source: 'artifact', artifact, pdf: bytesToBase64(pdf) })
+		const result = await executeExtract({ source: 'artifact', artifact, base_url, pdf: bytesToBase64(pdf) }, { fetch: fetchFixtures })
 
 		expect(result.success).toBe(true)
 		expect(result.data).toEqual({
@@ -40,12 +40,13 @@ describe('extract tool', () => {
 			parties: { tenant: { name: 'Jane Doe' }, landlord: { name: 'Acme Properties LLC' } },
 		})
 		const { form } = await import('@asterdoc/core')
-		const sdk = await form.from(artifact).extract(pdf)
+		const { createMemoryResolver } = await import('@asterdoc/resolvers/memory')
+		const sdk = await (await form.load(artifact, { resolver: createMemoryResolver({ contents: { 'pet-addendum.pdf': template, 'pet-addendum.md': '' } }) })).extract(pdf)
 		expect(result).toEqual({ success: true, artifact_kind: 'form', layer: sdk.layer, data: sdk.data, report: sdk.report })
 	})
 
 	it('flags each recovered entry lossy or not, as the contract declares', async () => {
-		const result = await executeExtract({ source: 'artifact', artifact, pdf: bytesToBase64(await filled()) })
+		const result = await executeExtract({ source: 'artifact', artifact, base_url, pdf: bytesToBase64(await filled()) }, { fetch: fetchFixtures })
 		const entries = result.report?.entries ?? []
 		expect(entries.some((entry) => entry.status === 'recovered')).toBe(true)
 		for (const entry of entries) expect(entry.lossy).toBe(entry.status === 'recovered' ? false : undefined)
@@ -56,8 +57,8 @@ describe('extract tool', () => {
 
 	it('reads the PDF from a URL through the configured fetch policy', async () => {
 		await filled()
-		const byUrl = await executeExtract({ source: 'artifact', artifact, pdf_url: `${base_url}/filled.pdf` }, { fetch: fetchFixtures })
-		const inline = await executeExtract({ source: 'artifact', artifact, pdf: bytesToBase64(await filled()) })
+		const byUrl = await executeExtract({ source: 'artifact', artifact, base_url, pdf_url: `${base_url}/filled.pdf` }, { fetch: fetchFixtures })
+		const inline = await executeExtract({ source: 'artifact', artifact, base_url, pdf: bytesToBase64(await filled()) }, { fetch: fetchFixtures })
 		expect(byUrl).toEqual(inline)
 
 		const refused = await executeExtract(
@@ -76,12 +77,12 @@ describe('extract tool', () => {
 	})
 
 	it('refuses text that is not base64', async () => {
-		const result = await executeExtract({ source: 'artifact', artifact, pdf: 'not base64!' })
+		const result = await executeExtract({ source: 'artifact', artifact, base_url, pdf: 'not base64!' }, { fetch: fetchFixtures })
 		expect(result.error?.code).toBe('invalid_input')
 	})
 
 	it('refuses a PDF over the layer size limit before decoding it', async () => {
-		const result = await executeExtract({ source: 'artifact', artifact, pdf: 'A'.repeat(Math.ceil((MAX_LAYER_FILE_SIZE + 3) / 3) * 4) })
+		const result = await executeExtract({ source: 'artifact', artifact, base_url, pdf: 'A'.repeat(Math.ceil((MAX_LAYER_FILE_SIZE + 3) / 3) * 4) }, { fetch: fetchFixtures })
 		expect(result.error?.code).toBe('pdf_too_large')
 	})
 
@@ -93,7 +94,7 @@ describe('extract tool', () => {
 
 	it('passes the extraction failure code through', async () => {
 		const plain = new TextEncoder().encode('%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n')
-		const result = await executeExtract({ source: 'artifact', artifact, pdf: bytesToBase64(plain) })
+		const result = await executeExtract({ source: 'artifact', artifact, base_url, pdf: bytesToBase64(plain) }, { fetch: fetchFixtures })
 		expect(result).toMatchObject({ success: false, error: { code: 'no_form_fields' } })
 	})
 })

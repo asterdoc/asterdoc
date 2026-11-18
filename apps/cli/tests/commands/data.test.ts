@@ -401,7 +401,7 @@ describe('CLI Data Commands', () => {
     /** The errors `form.fill(data).validate()` reports for the payload. */
     async function sdkErrors(payload: Record<string, unknown>): Promise<unknown[]> {
       const { form, FormValidationError } = await import('@asterdoc/core')
-      const filled = form.from(leaseForm as never).safeFill(payload as never)
+      const filled = (await form.load(leaseForm as never)).safeFill(payload as never)
       if (!filled.success) {
         if (!(filled.error instanceof FormValidationError)) throw filled.error
         return filled.error.errors
@@ -484,7 +484,7 @@ describe('CLI Data Commands', () => {
       await fs.writeFile(formPath, JSON.stringify(ruleForm))
       const payload = { fields: { hasPet: true, petName: 'Fido' }, parties: { tenant } }
       const { form } = await import('@asterdoc/core')
-      const sdk = form.from(ruleForm as never).fill(payload as never).validate()
+      const sdk = (await form.load(ruleForm as never)).fill(payload as never).validate()
       expect(sdk.errors).toEqual([])
       expect(sdk.rules.errors.length).toBe(1)
 
@@ -557,7 +557,7 @@ describe('CLI Data Commands', () => {
       const output = JSON.parse(result.stdout)
       expect(output.data).toEqual(values)
       const { form } = await import('@asterdoc/core')
-      const sdk = await form.from(extractForm as never).extract(new Uint8Array(await fs.readFile(pdfPath)))
+      const sdk = await (await form.load(extractForm as never, { resolver: (await import('@asterdoc/resolvers/fs')).createFsResolver({ root: path.dirname(formPath) }) })).extract(new Uint8Array(await fs.readFile(pdfPath)))
       expect(output).toEqual({ file: pdfPath, ...JSON.parse(JSON.stringify(sdk)) })
     })
 

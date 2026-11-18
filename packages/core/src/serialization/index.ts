@@ -3,7 +3,7 @@
  * 
  * This module handles:
  * - YAML/JSON serialization (toYAML, fromYAML, parse)
- * - Artifact loading from strings/objects (load, loadFromObject)
+ * - Artifact loading from strings and objects (load)
  * - Error handling (SerializationError, LoadError)
  */
 
@@ -29,9 +29,7 @@ export type {
 
 export {
   load,
-  loadFromObject,
   safeLoad,
-  safeLoadFromObject,
   BundleResolverError,
   LoadError,
   // Type guards for artifact instances

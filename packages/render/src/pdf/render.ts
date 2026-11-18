@@ -1,6 +1,6 @@
 import { defaultFormatter } from '../default-formatter'
 import { MASK_MISMATCH, formatMasked, maskGroup } from '@asterdoc/format'
-import type { BinaryContent, Bindings, Form, FormField, Formatter, LayerFormat, ValueFormat, ValuePart } from '@asterdoc/types'
+import type { BinaryContent, Bindings, Form, FormField, Formatter, LayerFormat, StandardPdfFont, ValueFormat, ValuePart } from '@asterdoc/types'
 import {
   ArtifactFieldFormatError,
   FormattedFieldValue,
@@ -10,15 +10,18 @@ import {
   unwrapFormattedValue,
   withoutSensitiveValues,
 } from '../text/field-formatter'
-import { getPath, pathSegments } from '../path'
+import { getPath } from '../path'
 import {
   artifactPath,
   assertBindingFormats,
   bindingDataPath,
   containsMask,
   fieldDefinition,
+  layerPrintProblems,
+  bindingFonts,
   parseBindings,
   PdfBindingKeyError,
+  PdfPrintRuleError,
   renderDataPath,
   splitPartIndex,
   type ParsedLayerBinding,
@@ -44,13 +47,10 @@ export interface RenderPdfOptions {
   expressions?: TemplateExpressionOptions
   formatter?: Formatter
   overlays?: PdfOverlay[]
-  /**
-   * A font supplied at render time. It is tried first for every text value,
-   * ahead of the layer's declared font.
-   */
-  font?: PdfFont
-  /** The font the artifact's PDF layer declares, tried after `font`. */
+  /** The TrueType font the artifact's PDF layer declares, tried first for every text value. */
   layerFont?: PdfFont
+  /** The standard font the artifact's PDF layer declares for every field it fills. */
+  standardFont?: StandardPdfFont
   /**
    * How the artifact's PDF layer prints values, applied over `formatter`, with
    * each binding's own format merged over it. `{ money: { currencyDisplay:
@@ -60,8 +60,8 @@ export interface RenderPdfOptions {
   format?: LayerFormat
 }
 
-export function assignedValue(field: AcroField, value: unknown): unknown {
-  return field.type === 'checkbox' || field.type === 'radio' || field.type === 'dropdown'
+export function assignedValue(type: AcroField['type'], value: unknown): unknown {
+  return type === 'checkbox' || type === 'radio' || type === 'dropdown'
     ? unwrapFormattedValue(value)
     : value
 }
@@ -101,52 +101,6 @@ function bindingCased(value: unknown, format: ValueFormat | undefined, locale: s
   return new FormattedFieldValue(unwrapFormattedValue(value), text.toLocaleUpperCase(locale))
 }
 
-function sourcePaths(bindings: readonly ParsedLayerBinding[]): string[][] {
-  return bindings.flatMap(({ parts }) => parts.map((part) => pathSegments(part.path)))
-}
-
-function displayPath(segments: string[]): string {
-  return segments.reduce((path, segment) => /^\d+$/.test(segment)
-    ? `${path}[${segment}]`
-    : path ? `${path}.${segment}` : segment, '')
-}
-
-function assertListBindingCapacity(
-  form: Form | undefined,
-  data: Record<string, unknown>,
-  bindings: readonly ParsedLayerBinding[],
-): void {
-  if (!form?.fields || bindings.length === 0) return
-  const paths = sourcePaths(bindings)
-
-  const visit = (field: FormField, value: unknown, prefix: string[]): void => {
-    if (field.type === 'list') {
-      if (!Array.isArray(value)) return
-      const indices = paths
-        .filter((path) => prefix.every((segment, index) => path[index] === segment))
-        .map((path) => path[prefix.length])
-        .filter((segment): segment is string => segment !== undefined && /^\d+$/.test(segment))
-        .map(Number)
-      if (indices.length > 0) {
-        const capacity = Math.max(...indices) + 1
-        if (value.length > capacity) {
-          throw new Error(`PDF bindings for "${displayPath(prefix)}" support ${capacity} list items, but received ${value.length}`)
-        }
-      }
-      value.forEach((item, index) => visit(field.item, item, [...prefix, String(index)]))
-      return
-    }
-
-    if (field.type === 'fieldset' && value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      for (const [key, nestedField] of Object.entries(field.fields)) {
-        visit(nestedField, (value as Record<string, unknown>)[key], [...prefix, key])
-      }
-    }
-  }
-
-  for (const [key, field] of Object.entries(form.fields)) visit(field, data[key], [key])
-}
-
 interface DataValues {
   data: Record<string, unknown>
   preprocessed: Record<string, unknown>
@@ -178,6 +132,8 @@ export function layerValues({ form, bindings, formatter = defaultFormatter, over
       validateFieldBindings(form, Object.fromEntries(sources.map((source, index) => [String(index), source])))
     }
     assertBindingFormats(form, parsed)
+    const [problem] = form ? layerPrintProblems(form, bindings, format) : []
+    if (problem) throw new PdfPrintRuleError(problem)
     asserted = true
   }
   const caseLocale = (bindingFormat: ValueFormat | undefined) => formatterFor(formatter, mergeFormats(format, bindingFormat)).locale
@@ -240,7 +196,6 @@ export function layerValues({ form, bindings, formatter = defaultFormatter, over
         return formatValueAt(data, form, formatterFor(formatter, effective), source, options)
       }
       const printTemplate = bindingTemplatePrinter({ data, form, formatter, format, expressions })
-      assertListBindingCapacity(form, data, parsed)
       return { data, preprocessed, read, printTemplate }
     },
   }
@@ -262,14 +217,14 @@ async function renderPdfWithValues({
   expressions,
   formatter = defaultFormatter,
   overlays = [],
-  font,
   layerFont,
+  standardFont,
   format,
 }: RenderPdfOptions): Promise<BinaryContent> {
   const layer = layerValues({ form, bindings, formatter, overlays, format })
   const values = layer.of(data, expressions)
   const model = await PdfModel.load(template)
-  const fonts = PdfFontSet.create(model, { font, layerFont })
+  const fonts = PdfFontSet.create(model, { layerFont, ...(standardFont && { standard: standardFont }), fieldFonts: bindingFonts(bindings) })
   let droppedXfa = false
 
   if (layer.fills) {
@@ -284,7 +239,6 @@ async function renderPdfWithValues({
 
     if (acroFormData) {
       const { acroForm, acroRef, catalogRef } = acroFormData
-      await fonts.readFormFonts(model.dict(acroForm.entries.get('DR')))
       // Every filled value carries its own appearance, drawn in the font
       // chosen for it. A viewer told to regenerate appearances would redraw
       // them in the form's default font instead.
@@ -298,7 +252,7 @@ async function renderPdfWithValues({
         const value = bound.value(values)
         if (value === null || value === undefined) continue
         try {
-          setAcroFieldValue(model, fonts, field, assignedValue(field, value))
+          setAcroFieldValue(model, fonts, field, assignedValue(field.type, value))
         } catch (error) {
           throw error instanceof PdfFieldFillError ? error.withPaths(bound.paths) : error
         }

@@ -13,10 +13,10 @@ const PREVIOUS = SCHEMA_VERSIONS.at(-2) as SchemaVersion
 const notice = JSON.stringify({ $schema: schemaVersionUrl(PREVIOUS), kind: 'document', name: 'notice' })
 
 describe('an upgrade this SDK has no step for', () => {
-	test('load refuses it as a missing migration path, not as a lossy one', () => {
+	test('load refuses it as a missing migration path, not as a lossy one', async () => {
 		let error: unknown
 		try {
-			load(notice)
+			await load(notice)
 		} catch (caught) {
 			error = caught
 		}

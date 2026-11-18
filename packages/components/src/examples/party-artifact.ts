@@ -61,7 +61,7 @@ const partyDemoSpec = {
 } as const;
 
 /** The parsed, validated party-demo form. */
-export const partyDemo = a.form(partyDemoSpec);
+export const partyDemo = await a.form.load(partyDemoSpec);
 
 /** The same validated artifact as a plain `Form`. */
 export const partyDemoForm: Form = partyDemo.toJSON() as Form;

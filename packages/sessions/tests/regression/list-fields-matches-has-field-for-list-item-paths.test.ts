@@ -5,8 +5,8 @@
 import { expect, it } from "vitest";
 import { createAsterdocRuntime } from "../../src/engine/asterdoc-runtime";
 
-it("listFields matches hasField for list item fields", () => {
-  const rt = createAsterdocRuntime(artifact({ fields: { items: { type: "list", item: { type: "fieldset", fields: { name: { type: "text" } } } } } }));
+it("listFields matches hasField for list item fields", async () => {
+  const rt = await createAsterdocRuntime(artifact({ fields: { items: { type: "list", item: { type: "fieldset", fields: { name: { type: "text" } } } } } }));
   expect(rt.hasField("items[0].name")).toBe(true);
   expect(rt.listFields().map((f) => f.fieldPath)).toContain("items[].name");
 });

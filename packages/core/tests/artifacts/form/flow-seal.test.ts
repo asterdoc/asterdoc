@@ -31,8 +31,8 @@ describe("'flow' placement", () => {
 		'client-ini': { party: { role: 'client' }, type: 'initials', placement: 'flow' },
 	}
 
-	const draft = (slots: Record<string, SignatureSlot> = FLOW_SLOTS) =>
-		form()
+	const draft = async (slots: Record<string, SignatureSlot> = FLOW_SLOTS) =>
+		await (await form.load(form()
 			.name('auto-contract')
 			.version('1.0.0')
 			.title('Auto Contract')
@@ -52,7 +52,7 @@ describe("'flow' placement", () => {
 				signatures: slots,
 			})
 			.defaultLayer('md')
-			.build()
+			.build()))
 			.fill({
 				fields: { amount: 10 },
 				parties: { client: { id: 'client-0', name: 'Cleo Client' } },
@@ -61,7 +61,7 @@ describe("'flow' placement", () => {
 			.addSignatory('client', 'client-0', { signerId: 'client-signer' })
 
 	test('markers resolve to real boxes and the clean PDF becomes canonical', async () => {
-		const sealed = await draft().seal({ adapter: chromishConverter() })
+		const sealed = await (await draft()).seal({ adapter: chromishConverter() })
 
 		expect(sealed.signatureMap).toHaveLength(2)
 		const [signature, initials] = sealed.signatureMap!
@@ -81,14 +81,14 @@ describe("'flow' placement", () => {
 		// A clean render with a different layout simulates a wrap/page shift
 		// caused by the marker run's width. Placement must refuse to seal.
 		const driftedClean = fixture('large-contract.pdf')
-		await expect(draft().seal({ adapter: chromishConverter(driftedClean) })).rejects.toThrow(/drifted/)
+		await expect((async () => (await draft()).seal({ adapter: chromishConverter(driftedClean) }))()).rejects.toThrow(/drifted/)
 	})
 
 	// prepareSeal and seal share one flow-placement implementation; these pin
 	// that prepareSeal places and verifies exactly as seal does.
 	test('prepareSeal places flow slots on the clean PDF, as seal does', async () => {
-		const prepared = await draft().prepareSeal({ adapter: chromishConverter() })
-		const sealed = await draft().seal({ adapter: chromishConverter() })
+		const prepared = await (await draft()).prepareSeal({ adapter: chromishConverter() })
+		const sealed = await (await draft()).seal({ adapter: chromishConverter() })
 
 		expect(prepared.pdf).toBe(cleanPdf)
 		expect(prepared.provenance).toEqual({ 'client-sig': 'marker', 'client-ini': 'marker' })
@@ -97,20 +97,20 @@ describe("'flow' placement", () => {
 
 	test('prepareSeal fails loud on layout drift, as seal does', async () => {
 		const driftedClean = fixture('large-contract.pdf')
-		await expect(draft().prepareSeal({ adapter: chromishConverter(driftedClean) })).rejects.toThrow(/drifted/)
+		await expect((async () => (await draft()).prepareSeal({ adapter: chromishConverter(driftedClean) }))()).rejects.toThrow(/drifted/)
 	})
 
 	test("'flow' on unsupported field types is a config error before rendering", async () => {
-		await expect(
-			draft({
+		await expect((async () => 
+			(await draft({
 				'client-date': { party: { role: 'client' }, type: 'date_signed', placement: 'flow' },
 				...FLOW_SLOTS,
-			}).seal({ adapter: chromishConverter() }),
-		).rejects.toThrowError(SealConfigError)
+			})).seal({ adapter: chromishConverter() })
+		)()).rejects.toThrowError(SealConfigError)
 	})
 
 	test("'flow' without a converter is a config error", async () => {
-		await expect(draft().seal()).rejects.toThrowError(SealConfigError)
+		await expect((async () => (await draft()).seal())()).rejects.toThrowError(SealConfigError)
 	})
 
 	// prepareSeal and seal run one planner, so each refusal holds for both
@@ -137,7 +137,7 @@ describe("'flow' placement", () => {
 
 		test('a flow slot of a type flow cannot place', async () => {
 			const adapter = untouchedConverter()
-			const target = draft({
+			const target = await draft({
 				'client-date': { party: { role: 'client' }, type: 'date_signed', placement: 'flow' },
 				...FLOW_SLOTS,
 			})
@@ -151,7 +151,7 @@ describe("'flow' placement", () => {
 		test('a flow slot beside a renderer override', async () => {
 			const adapter = untouchedConverter()
 			const override = { id: 'override', render: async () => 'rendered' }
-			const error = await refusal(() => draft()[entry]({ adapter, renderer: override }))
+			const error = await refusal(async () => (await draft())[entry]({ adapter, renderer: override }))
 			expect(error.problems).toEqual([
 				"'flow' placement is incompatible with a custom renderer override; core must inject markers during rendering",
 			])
@@ -159,13 +159,13 @@ describe("'flow' placement", () => {
 		})
 
 		test('a flow slot with no converter', async () => {
-			const error = await refusal(() => draft()[entry]())
+			const error = await refusal(async () => (await draft())[entry]())
 			expect(error.problems).toEqual(['missing converter'])
 			expect(error.message).toMatch(/without a converter/)
 		})
 
 		test('a flow slot on a PDF layer', async () => {
-			const pdfDraft = form()
+			const pdfDraft = await (await form.load(form()
 				.name('pdf-flow')
 				.version('1.0.0')
 				.title('PDF Flow')
@@ -173,7 +173,7 @@ describe("'flow' placement", () => {
 				.parties({ client: { label: 'Client', partyType: 'person', signature: { required: true } } })
 				.fileLayer('pdf', { mimeType: 'application/pdf', path: '/forms/contract.pdf', signatures: FLOW_SLOTS })
 				.defaultLayer('pdf')
-				.build({ resolver: { read: async () => cleanPdf } })
+				.build(), { resolver: { read: async () => cleanPdf } }))
 				.fill({ fields: { amount: 10 }, parties: { client: { id: 'client-0', name: 'Cleo Client' } } })
 				.addSigner('client-signer', { person: { name: 'Cleo Client' } })
 				.addSignatory('client', 'client-0', { signerId: 'client-signer' })

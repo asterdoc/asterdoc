@@ -10,7 +10,7 @@ const form = { fields: {} } as never
 // The type checks below fail `pnpm check-types` if the options come back.
 describe('PDF renderer options', () => {
   it('pdfRenderer takes its supported options and renders', async () => {
-    const renderer = pdf.pdfRenderer({ font: undefined })
+    const renderer = pdf.pdfRenderer({ formatter: undefined })
     const output = await renderer.render({
       kind: 'form',
       template: { type: 'pdf', mimeType: 'application/pdf', content: pagePdf([[300, 300]]) },
@@ -18,6 +18,11 @@ describe('PDF renderer options', () => {
       data: { fields: {} },
     } as never)
     expect((await pdf.inspectPdf(output)).pageCount).toBe(1)
+  })
+
+  it('pdfRenderer takes no render-time font: fonts travel with the form instance', () => {
+    // @ts-expect-error font is not a PDF renderer option
+    expect(pdf.pdfRenderer({ font: undefined }).id).toBe('pdf')
   })
 
   it('pdfRenderer rejects signatureOptions', () => {

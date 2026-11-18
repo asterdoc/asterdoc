@@ -138,7 +138,7 @@ React compositions use the `partial` option instead; see [@asterdoc/react](/sdk/
 import { createFormatter, a, createLayerRenderer, phoneProvider, regionsProvider } from '@asterdoc/sdk'
 
 const formatter = createFormatter({ locale: 'fr-FR', providers: { phone: phoneProvider, regions: regionsProvider } })
-const output = await a.form(formDefinition).fill(data).render({
+const output = (await a.form.load(formDefinition)).fill(data).render({
   renderer: createLayerRenderer({ formatter }),
   layer: 'markdown',
 })

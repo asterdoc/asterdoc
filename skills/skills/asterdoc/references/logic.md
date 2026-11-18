@@ -339,8 +339,8 @@ Form `fill()` and `update()` reject `NaN` and `Infinity` before expressions run.
 ```typescript
 import { a } from "@asterdoc/sdk";
 
-const form = a.form({
-  $schema: "https://schema.asterdoc.com/2026-11-12.json",
+const form = await a.form.load({
+  $schema: "https://schema.asterdoc.com/2026-11-17.json",
   name: "age-check",
   kind: "form",
   fields: { birthDate: { type: "date" } },
@@ -544,17 +544,17 @@ Naming: boolean defs start with `is` or `has` (`isHighRisk`). Computed values sa
 
 ## SDK
 
-In `a.form({ ... })`, `defs` and `rules` take the same objects as the JSON above. The builder adds a def with `.def(name, expression)`: a string makes a boolean def; pass `{ type, value }` for any other type.
+In `await a.form.load({ ... })`, `defs` and `rules` take the same objects as the JSON above. The builder adds a def with `.def(name, expression)`: a string makes a boolean def; pass `{ type, value }` for any other type.
 
 ```typescript
 import { a, validateLogic } from "@asterdoc/sdk";
 
-const term = a.form()
+const term = await a.form.load(a.form()
   .name("term")
   .fields({ leaseTermMonths: { type: "number" } })
   .def("isLongTerm", "fields.leaseTermMonths >= 12")
   .def("termYears", { type: "number", value: "fields.leaseTermMonths / 12" })
-  .build();
+  .build());
 
 const draft = term.fill({ fields: { leaseTermMonths: 18 } });
 draft.getLogicValue("isLongTerm"); // true

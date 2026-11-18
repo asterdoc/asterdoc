@@ -19,8 +19,8 @@ const fields = {
 	id: { type: "identification" },
 };
 
-function runtime(options?: Parameters<typeof createAsterdocRuntime>[1]) {
-	return createAsterdocRuntime(
+async function runtime(options?: Parameters<typeof createAsterdocRuntime>[1]) {
+	return await createAsterdocRuntime(
 		{
 			$schema: "https://schema.asterdoc.com/2026-11-06.json",
 			kind: "form",
@@ -61,12 +61,12 @@ describe("validateField coercion: accepted", () => {
 		["org", "Acme Inc", { name: "Acme Inc" }],
 		["home", { street: "1 Main St", city: "Springfield", state: "IL", zip: "62701", country: "US" }, address],
 		["home", JSON.stringify(address), address],
-	])("%s: %j -> %j", (path, input, expected) => {
-		expect(runtime().validateField(path, input)).toEqual({ ok: true, value: expected });
+	])("%s: %j -> %j", async (path, input, expected) => {
+		expect((await runtime()).validateField(path, input)).toEqual({ ok: true, value: expected });
 	});
 
-	it("puts the caller's default calling code before a number without one", () => {
-		expect(runtime({ defaultCallingCode: "+91" }).validateField("tel", "98765 43210")).toEqual({
+	it("puts the caller's default calling code before a number without one", async () => {
+		expect((await runtime({ defaultCallingCode: "+91" })).validateField("tel", "98765 43210")).toEqual({
 			ok: true,
 			value: { number: "+919876543210" },
 		});
@@ -97,19 +97,19 @@ describe("validateField coercion: left for the validator to reject", () => {
 		["tel", "15551234567"],
 		["id", "D1234567"],
 		["home", "1 Main St, Springfield"],
-	])("%s: %j is rejected", (path, input) => {
-		expect(runtime().validateField(path, input)).toMatchObject({ ok: false });
+	])("%s: %j is rejected", async (path, input) => {
+		expect((await runtime()).validateField(path, input)).toMatchObject({ ok: false });
 	});
 
-	it("does not put a default calling code before a national number with a trunk 0", () => {
-		expect(runtime({ defaultCallingCode: "+44" }).validateField("tel", "020 7946 0958")).toMatchObject({
+	it("does not put a default calling code before a national number with a trunk 0", async () => {
+		expect((await runtime({ defaultCallingCode: "+44" })).validateField("tel", "020 7946 0958")).toMatchObject({
 			ok: false,
 		});
 	});
 
-	it("refuses a malformed default calling code when the runtime is built", () => {
-		expect(() => runtime({ defaultCallingCode: "1" })).toThrow(/defaultCallingCode/);
-		expect(() => runtime({ defaultCallingCode: "+0" })).toThrow(/defaultCallingCode/);
+	it("refuses a malformed default calling code when the runtime is built", async () => {
+		await expect(runtime({ defaultCallingCode: "1" })).rejects.toThrow(/defaultCallingCode/);
+		await expect(runtime({ defaultCallingCode: "+0" })).rejects.toThrow(/defaultCallingCode/);
 	});
 });
 
@@ -120,7 +120,7 @@ describe("address aliases", () => {
 		for (const member of Object.values(ADDRESS_ALIASES)) expect(members).toContain(member);
 	});
 
-	it("keep a member the input already gives", () => {
-		expect(runtime().validateField("home", { ...address, city: "Shelbyville" })).toMatchObject({ ok: false });
+	it("keep a member the input already gives", async () => {
+		expect((await runtime()).validateField("home", { ...address, city: "Shelbyville" })).toMatchObject({ ok: false });
 	});
 });

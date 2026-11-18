@@ -2,8 +2,8 @@ import { describe, expect, test } from 'vitest'
 import { bundle, checklist, document, form, runtimeFormFromJSON } from '@/artifacts'
 
 describe('runtime definition snapshots', () => {
-	test('keeps a form instance on its original constraints and rules', () => {
-		const definition = form({
+	test('keeps a form instance on its original constraints and rules', async () => {
+		const definition = await form.load({
 			name: 'mutable-form',
 			version: '1.0.0',
 			title: 'Mutable form',
@@ -96,8 +96,8 @@ describe('runtime definition snapshots', () => {
 		expect(() => original.setContent('updated', content)).toThrow('not found')
 	})
 
-	test('rejects malformed authoring definitions before creating new instances', () => {
-		const definition = form({
+	test('rejects malformed authoring definitions before creating new instances', async () => {
+		const definition = await form.load({
 			name: 'invalid-after-edit',
 			version: '1.0.0',
 			title: 'Invalid after edit',
@@ -115,8 +115,8 @@ describe('runtime definition snapshots', () => {
 		}
 	})
 
-	test('detaches a restored runtime definition from the serialized input', () => {
-		const definition = form({
+	test('detaches a restored runtime definition from the serialized input', async () => {
+		const definition = await form.load({
 			name: 'restored-form',
 			version: '1.0.0',
 			title: 'Restored form',
@@ -124,7 +124,7 @@ describe('runtime definition snapshots', () => {
 		})
 		const runtime = definition.fill({ fields: { age: 20 } })
 		const serialized = runtime.toJSON()
-		const restored = runtimeFormFromJSON(serialized)
+		const restored = await runtimeFormFromJSON(serialized)
 		const restoredDefinition = serialized.form as unknown as { fields?: Record<string, { min?: number }> }
 		;(restoredDefinition.fields!.age as { min?: number }).min = 50
 

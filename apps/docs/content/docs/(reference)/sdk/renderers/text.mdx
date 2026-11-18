@@ -16,7 +16,7 @@ are formatted from their schema types.
 import { a } from '@asterdoc/core'
 import { textRenderer } from '@asterdoc/render/text'
 
-const form = a.form({
+const form = await a.form.load({
   name: 'receipt',
   fields: {
     customer: { type: 'text', label: 'Customer' },
@@ -192,7 +192,7 @@ Modifiers are a comma-separated list of `key=literal`. Keys are paths into the l
 When a form schema is provided, field values are automatically serialized based on their types:
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'demo',
   fields: {
     price: { type: 'money' },
@@ -254,7 +254,7 @@ Signing directives place signature and initials marks. They are template directi
 ### Example with Signatures
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'lease',
   fields: { /* ... */ },
   parties: {

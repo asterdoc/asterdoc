@@ -1,17 +1,17 @@
 /**
- * Validate a form data payload the way the SDK does: `form.fill(data).validate()`.
+ * Validate a form data payload the way the SDK does: `(await form.load(definition)).fill(data).validate()`.
  *
  * `asterdoc data validate` and `asterdoc data fill` both use this, so the CLI
  * accepts and rejects exactly what the SDK accepts and rejects.
  */
 
 import {
-  form as formApi,
   FormValidationError,
   type DraftForm,
   type FillBatch,
   type FillBatchProblem,
   type Form,
+  type FormInstance,
   type FormValidationResult,
   type ValidationError,
 } from '@asterdoc/core'
@@ -51,9 +51,9 @@ export function batchProblems(batch: FillBatch): FillBatchProblem[] {
   return [...batch.issues, ...batch.notApplicable, ...batch.unprintedNames]
 }
 
-/** Fill the form with the payload and validate it, as the SDK does. */
-export function validateFormPayload(formDef: Form, payload: Record<string, unknown>): PayloadValidationResult {
-  const filled = formApi.from(formDef).safeFill(payload as never)
+/** Fill the loaded form with the payload and validate it, as the SDK does: whether the data matches the artifact. */
+export function validateFormPayload(instance: FormInstance<Form>, payload: Record<string, unknown>): PayloadValidationResult {
+  const filled = instance.safeFill(payload as never)
   if (!filled.success) return fillFailure(filled.error)
 
   const draft = filled.data
@@ -74,8 +74,8 @@ const TARGET_ROOTS = { field: 'fields', party: 'parties', annex: 'annexes' } as 
  * do not: each is returned in `open`, as the line `validateFormPayload`
  * reports for it.
  */
-export function validateDraftPayload(formDef: Form, payload: Record<string, unknown>): DraftValidationResult {
-  const filled = formApi.from(formDef).safeFill(payload as never)
+export function validateDraftPayload(instance: FormInstance<Form>, payload: Record<string, unknown>): DraftValidationResult {
+  const filled = instance.safeFill(payload as never)
   if (!filled.success) return fillFailure(filled.error)
 
   const draft = filled.data
@@ -98,6 +98,11 @@ export function printPayloadErrors(errors: ValidationError[], ruleErrors: RuleVa
 }
 
 /** Format validation errors for command error messages. */
+/** One line per value a layer cannot render: the path, then what fails, as the render check reports it. */
+export function formatRenderProblems(problems: readonly ValidationError[]): string[] {
+  return problems.map((problem) => `${problem.field}: ${problem.message.replace(/^Layer "[^"]*": /, '')}`)
+}
+
 export function formatPayloadErrors(
   errors: ValidationError[],
   ruleErrors: RuleValidationResult[]

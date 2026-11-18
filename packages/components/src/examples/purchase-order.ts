@@ -294,7 +294,7 @@ export const purchaseOrderSpec = {
 } as const;
 
 /** The parsed, validated purchase order form. */
-export const purchaseOrder = a.form(purchaseOrderSpec);
+export const purchaseOrder = await a.form.load(purchaseOrderSpec);
 
 /**
  * The same validated artifact as a plain `Form`. Everything that renders or

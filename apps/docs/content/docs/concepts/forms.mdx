@@ -14,14 +14,14 @@ In this section, we introduce the fundamental building blocks of a Form.
 Fields define what data a form collects. They are strongly typed, can represent different data types, and can be grouped into fieldsets. All fields have common base properties such as `label`, `description`, `required`, and `visible` that define their behavior in a form.
 
 ```ts
-const form = a.form()
+const form = await a.form.load(a.form()
   .name("application")
   .fields({
     fullName: { type: "text", label: "Full Name", required: true },
     age: { type: "number", label: "Age" },
     startDate: { type: "date", label: "Start Date" },
   })
-  .build()
+  .build())
 ```
 
 ### Primitives
@@ -49,13 +49,13 @@ Parties are the roles that interact with a form. A lease might have `landlord` a
 Parties define **roles**, not identities. At runtime, actual people or organizations are assigned to these roles.
 
 ```ts
-const form = a.form()
+const form = await a.form.load(a.form()
   .name("lease")
   .parties({
     landlord: a.party().label("Landlord"),
     tenant: a.party().label("Tenant").max(4),
   })
-  .build()
+  .build())
 ```
 
 ### Signatures
@@ -78,13 +78,13 @@ Signature requirements are part of the artifact definition. How signatures are c
 Annexes are file attachments that accompany the form—things like photo IDs, proof of income, or supporting documents.
 
 ```ts
-const form = a.form()
+const form = await a.form.load(a.form()
   .name("lease-application")
   .annexes({
     photoId: a.annex().title("Photo ID").required(true),
     proofOfIncome: a.annex().title("Proof of Income").required(true),
   })
-  .build()
+  .build())
 ```
 
 Annexes can have conditional visibility and requirements using [Logic](/concepts/logic).

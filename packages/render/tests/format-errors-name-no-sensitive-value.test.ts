@@ -9,15 +9,15 @@ const form = (sensitive: boolean): Form => ({
   kind: 'form',
   name: 'sensitive-formats',
   fields: {
-    phone: { type: 'phone', sensitive },
+    phone: { type: 'phone', countryCode: '1', sensitive },
     born: { type: 'date', sensitive },
     stay: { type: 'duration', sensitive },
-    refund: { type: 'money', sensitive },
-    yen: { type: 'money', sensitive },
+    refund: { type: 'money', currency: 'USD', min: 0, sensitive },
+    yen: { type: 'money', currency: 'USD', min: 0, sensitive },
     status: { type: 'enum', sensitive, enum: [{ value: 'a', label: 'A' }] },
     ssn: { type: 'text', mask: '###-##-####', sensitive },
     land: { type: 'country', sensitive },
-    home: { type: 'address', sensitive },
+    home: { type: 'address', codes: true, sensitive },
   },
 } as unknown as Form)
 

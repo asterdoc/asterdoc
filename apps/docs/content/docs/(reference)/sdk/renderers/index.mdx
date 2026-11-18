@@ -20,7 +20,7 @@ npm install @asterdoc/render
 import { a } from '@asterdoc/core'
 
 // Create a form with a template layer
-const form = a.form({
+const form = await a.form.load({
   name: 'invoice',
   fields: {
     customer: { type: 'text', label: 'Customer' },
@@ -110,7 +110,6 @@ function createLayerRenderer(options?: CreateLayerRendererOptions): AsterdocRend
   { name: 'formatter', type: 'Formatter', description: 'Presentation formatter shared by every supported format.', isOptional: true },
   { name: 'progressive', type: 'FormatterProgressivePolicy', description: 'Text for missing and incomplete values in a preview.', isOptional: true },
   { name: 'textSignatureOptions', type: 'TextSignatureOptions', description: 'Signature rendering options for text layers.', isOptional: true },
-  { name: 'pdfFont', type: 'PdfFont', description: 'Font the PDF engine tries before a font declared by the layer.', isOptional: true },
   { name: 'docxSignatureOptions', type: 'DocxSignatureOptions', description: 'Signature rendering options for DOCX layers.', isOptional: true },
   { name: 'expressions', type: '{ functions?, signatures? }', description: 'Host functions available to text and DOCX templates, with their signatures.', isOptional: true },
 ]} />

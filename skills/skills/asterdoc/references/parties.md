@@ -84,7 +84,7 @@ Resolve the amount with `resolvePartyPayment(form, payment, data)` from `@asterd
 ```typescript
 import { a, resolvePartyPayment } from "@asterdoc/sdk";
 
-const form = a.form({
+const form = await a.form.load({
   name: "app-fee",
   fields: { units: { type: "number", min: 1 } },
   parties: {
@@ -225,12 +225,12 @@ Expressions and templates read parties as `parties.<role>` and through the party
 
 ## SDK
 
-`a.form({ ... })` takes plain role objects. The builder chain takes `a.party()` builders or plain objects.
+`await a.form.load({ ... })` takes plain role objects. The builder chain takes `a.party()` builders or plain objects.
 
 ```typescript
 import { a } from "@asterdoc/sdk";
 
-const lease = a
+const lease = await a.form.load(a
   .form()
   .name("lease")
   .parties({
@@ -239,7 +239,7 @@ const lease = a
     guarantor: a.party().label("Guarantor").required("fields.creditScore < 650"),
   })
   .fields({ creditScore: { type: "number" } })
-  .build();
+  .build());
 ```
 
 | Method | Sets |

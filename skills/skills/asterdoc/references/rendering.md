@@ -29,7 +29,7 @@ import { a } from "@asterdoc/sdk";
 import { createFsResolver } from "@asterdoc/resolvers/fs";
 
 const schema = JSON.parse(await readFile("lease.json", "utf8"));
-const form = a.form(schema, { resolver: createFsResolver({ root: "." }) });
+const form = await a.form.load(schema, { resolver: createFsResolver({ root: "." }) });
 
 const draft = form.fill({
   fields: { tenantName: "Ada Lovelace", monthlyRent: { amount: 1500, currency: "USD" } },
@@ -42,7 +42,7 @@ await writeFile("lease.pdf", pdf);
 
 - Text layers return a `string`. PDF, DOCX and React layers return a `Uint8Array`.
 - The resolver root is the artifact file's directory. Layer paths resolve inside it.
-- Every instance derived from the form (each `fill`, each `update`) carries the resolver. Bind it the same way with `a.load(content, { resolver })`, `a.document(def, { resolver })`, `a.checklist(def, { resolver })` or a builder's `.build({ resolver })`.
+- Every instance derived from the form (each `fill`, each `update`) carries the resolver. Bind it the same way with `await a.load(content, { resolver })`, `await a.form.load(a.form()...build(), { resolver })`, `a.document(def, { resolver })` or `a.checklist(def, { resolver })`.
 - Inline layers need no resolver.
 - A draft renders before every required field is filled. `progressive` sets how missing values print. Pass `require: "complete"` to refuse an incomplete draft.
 - A file layer or font with a `checksum` is checked against the bytes the resolver returns; a mismatch throws `LayerChecksumError`.
@@ -89,7 +89,6 @@ const html = await draft.render({
 | `formatter`, `progressive` | all | As in [Render options](#render-options) |
 | `textSignatureOptions` | text | `format` (`"text"`, `"html"`, `"markdown"`; defaults from the layer's MIME type), `placeholder` and `captured` text per directive (a string or a function of the context), `altText`, `cssClass` |
 | `docxSignatureOptions` | DOCX | `placeholder` and `captured` text per directive |
-| `pdfFont` | PDF | `{ bytes, source }`: a TrueType font tried before the layer's `font` ([pdf.md](./pdf.md)) |
 | `expressions` | text, DOCX | `{ functions, signatures }`: host functions templates can call. A function needs a signature ([logic.md](./logic.md)) |
 
 `placeholder` and `captured` take keys `signature`, `initials`, `signatureDate`, `capacity` and `printedName`. The default output of each directive is in [templates.md](./templates.md#directive-output).
@@ -171,7 +170,6 @@ asterdoc render lease.json --dry-run                          # resolve the laye
 | `--layer <key>` | Layer to render. Default: `defaultLayer`, then the first declared layer |
 | `--out <file>` | Write to a file and print a summary. Without it, the content goes to stdout |
 | `--format json` | Prints the `--out` or `--dry-run` summary as JSON. It does not change rendered content |
-| `--bindings <pathOrJson>` | PDF bindings merged over the layer's own |
 | `--dry-run` | Validate and resolve the layer only |
 
 The CLI resolves layer files from the artifact's directory. It renders text, PDF and DOCX layers. For React layers use the SDK with `renderers`; `asterdoc check` finds faults and `asterdoc dev` previews compositions. Neither produces final React-layer output. Preview incomplete data through the SDK's progressive fill and render flow because CLI `--data` requires a complete valid payload.

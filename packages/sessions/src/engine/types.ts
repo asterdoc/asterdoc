@@ -24,6 +24,12 @@ export type FormSession = {
 		 * is later mutated.
 		 */
 		snapshot?: Record<string, unknown>;
+		/**
+		 * Where the snapshot's file layers are read from, as the session found
+		 * them at start, so every later turn reads the files of the same
+		 * version.
+		 */
+		baseUrl?: string;
 		/** Human-facing instructions content (Markdown), if the artifact provides any. */
 		instructions?: string;
 		/** Author-supplied agent-specific instructions (Markdown), if any. */

@@ -265,7 +265,7 @@ export const arabicLetterSpec = {
 } as const;
 
 /** The parsed, validated letter form. */
-export const arabicLetter = a.form(arabicLetterSpec);
+export const arabicLetter = await a.form.load(arabicLetterSpec);
 
 /** The same validated artifact as a plain `Form`. */
 export const arabicLetterForm: Form = arabicLetter.toJSON() as Form;

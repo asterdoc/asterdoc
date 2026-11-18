@@ -26,7 +26,7 @@ All tools except `get_registry` and `get_artifact` work on an artifact that you 
 
 | Mode | Fields | Resolution |
 |------|--------|------------|
-| `source: "artifact"` | `artifact`, `base_url?` | Artifact JSON passed inline. File-backed layers resolve against `base_url`. |
+| `source: "artifact"` | `artifact`, `base_url?` | Artifact JSON passed inline. File-backed layers resolve against `base_url`. A form with a PDF file layer needs it for every form tool, since loading the form reads the PDF; without it the tool returns `layer_files_unreachable`. |
 | `source: "url"` | `url` | Fetches the artifact JSON. File-backed layers resolve against the URL's directory. |
 | `source: "registry"` | `registry_url?`, `artifact_name`, `edition?`, `version?` | Fetches `registry.json`, finds the edition and version, then fetches that file and checks its SHA-256. Without `edition` or `version`, uses the current edition and the latest version. Without `registry_url`, uses `defaultRegistryUrl` from the [config](/ai-tools/api#configuration). |
 

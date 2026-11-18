@@ -3,6 +3,7 @@ import kleur from 'kleur'
 import { isDeepStrictEqual } from 'node:util'
 import YAML from 'yaml'
 import { LocalFileSystem } from '../utils/local-fs.js'
+import type { Artifact } from '@asterdoc/core'
 import { loadValidatedArtifact } from '../utils/artifact-file.js'
 import { writeTypedOutput, type TypedOutputFormat } from '../utils/typed-output.js'
 
@@ -140,7 +141,7 @@ export function createGenerateCommand(): Command {
           console.log(kleur.gray('You can now import the artifact with full type safety:'))
           console.log(kleur.cyan(`  import schema from './${baseFileName}.json'`))
           console.log(kleur.cyan(`  import { a } from '@asterdoc/sdk'`))
-          console.log(kleur.cyan(`  const ${result.exportName} = a.${artifact.kind}(schema)`))
+          console.log(kleur.cyan(`  const ${result.exportName} = ${constructorHint(artifact)}`))
         }
       } catch (error) {
         console.error(kleur.red('Failed to generate types'))
@@ -150,4 +151,10 @@ export function createGenerateCommand(): Command {
     })
 
   return generate
+}
+
+function constructorHint(artifact: Artifact): string {
+  if (artifact.kind !== 'form') return `a.${artifact.kind}(schema)`
+  const fileBacked = Object.values(artifact.layers ?? {}).some((layer) => layer.kind === 'file')
+  return fileBacked ? 'await a.form.load(schema, { resolver })' : 'await a.form.load(schema)'
 }

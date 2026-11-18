@@ -96,14 +96,34 @@ function printTable(fields: PdfFieldInfo[], sourcePath?: string): void {
   const rows = fields.map((field) => [
     field.name,
     field.type,
+    widgetPages(field),
     field.required ? 'yes' : 'no',
     field.multiline === undefined ? '' : field.multiline ? 'yes' : 'no',
     formatFieldValue(field.value),
   ])
 
   console.log(kleur.cyan(`Fields from ${sourcePath ?? 'stdin'}:`))
-  console.log(formatTable(['Name', 'Type', 'Required', 'Multi-line', 'Value'], rows))
+  console.log(formatTable(['Name', 'Type', 'Pages', 'Required', 'Multi-line', 'Value'], rows))
+  for (const line of widgetLines(fields)) console.log(line)
   for (const line of optionLines(fields)) console.log(line)
+}
+
+function widgetPages(field: PdfFieldInfo): string {
+  return [...new Set(field.widgets.map((widget) => widget.page ?? '?'))].join(', ')
+}
+
+function widgetLines(fields: PdfFieldInfo[]): string[] {
+  const repeated = fields.filter((field) => field.widgets.length > 1)
+  if (repeated.length === 0) return []
+  const lines = ['', kleur.cyan('Fields with more than one widget (a value prints in each):')]
+  for (const field of repeated) {
+    lines.push(`  ${field.name}:`)
+    for (const widget of field.widgets) {
+      const rect = widget.rect ? ` at [${widget.rect.map((value) => Math.round(value * 100) / 100).join(', ')}]` : ''
+      lines.push(`    page ${widget.page ?? '?'}${rect}`)
+    }
+  }
+  return lines
 }
 
 function optionLines(fields: PdfFieldInfo[]): string[] {

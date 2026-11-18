@@ -311,8 +311,8 @@ describe('evaluating row references', () => {
 // ============================================================================
 
 describe('fill state with row references', () => {
-	test('adding a row that requires an explanation makes that explanation the next target', () => {
-		const expenses = form(expenseLines())
+	test('adding a row that requires an explanation makes that explanation the next target', async () => {
+		const expenses = await form.load(expenseLines())
 
 		const before = expenses.fill({ fields: { lines: [{ kind: 'travel', amount: 10 }] } } as never).getFillState()
 		expect(before.next).toBeNull()
@@ -324,8 +324,8 @@ describe('fill state with row references', () => {
 		expect(after.openRequired.map((item) => item.key)).toEqual(['lines[1].explanation'])
 	})
 
-	test('a nested row requirement driven by parent reaches the fill state', () => {
-		const orders = form(nestedParts())
+	test('a nested row requirement driven by parent reaches the fill state', async () => {
+		const orders = await form.load(nestedParts())
 		const state = orders.fill({
 			fields: { lines: [{ flagged: true, parts: [{ cost: 50 }, { cost: 200 }] }] },
 		} as never).getFillState()

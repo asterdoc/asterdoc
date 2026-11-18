@@ -138,7 +138,7 @@ Sessions pass the full field definition and the session locale:
 ```ts
 import { createAsterdocRuntime } from '@asterdoc/sessions'
 
-const runtime = createAsterdocRuntime(definition, { locale: 'fr-FR' })
+const runtime = await createAsterdocRuntime(definition, { locale: 'fr-FR' })
 ```
 
 A refused value keeps its `code` and `candidates` through the runtime.

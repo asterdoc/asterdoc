@@ -16,7 +16,45 @@ function candidatesOf(value: unknown): Candidates | undefined {
 	)
 }
 
+interface LayerFileError extends Error {
+	readonly layerKey: string
+	readonly path: string
+}
+
+function layerFileError(error: unknown, name: string): LayerFileError | undefined {
+	for (let current = error, depth = 0; current instanceof Error && depth < 5; current = current.cause, depth++) {
+		if (current.name === name && typeof (current as Partial<LayerFileError>).layerKey === 'string') return current as LayerFileError
+	}
+	return undefined
+}
+
+function causeText(error: Error): string {
+	return error.cause instanceof Error ? error.cause.message : error.message
+}
+
+function layerToolError(error: unknown): ToolError | undefined {
+	const unbound = layerFileError(error, 'UnboundResolverError')
+	if (unbound) {
+		return toolError(
+			'layer_files_unreachable',
+			`This artifact keeps its layer "${unbound.layerKey}" in the file "${unbound.path}", and that file cannot be read: the artifact came without base_url. ` +
+				"Give base_url, the URL of the folder that holds the artifact's files, or name the artifact by its registry name or its URL.",
+		)
+	}
+	const unreadable = layerFileError(error, 'LayerReadError')
+	if (unreadable) {
+		return toolError('layer_file_unreadable', `The file "${unreadable.path}" of this artifact's layer "${unreadable.layerKey}" could not be read: ${causeText(unreadable)}. Check base_url, or try again.`, undefined, true)
+	}
+	const mismatch = layerFileError(error, 'LayerChecksumError')
+	if (mismatch) {
+		return toolError('layer_checksum_mismatch', `The file "${mismatch.path}" of this artifact's layer "${mismatch.layerKey}" is not the file the artifact declares: its checksum does not match. The artifact cannot be used with these files.`)
+	}
+	return undefined
+}
+
 export function errorFromUnknown(error: unknown, fallbackCode = 'execution_error'): ToolError {
+	const layer = layerToolError(error)
+	if (layer) return layer
 	if (error instanceof ZodError) {
 		return toolError('invalid_input', error.message)
 	}

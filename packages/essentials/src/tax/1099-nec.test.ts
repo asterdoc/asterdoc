@@ -54,23 +54,23 @@ const happyPathInputs = {
 } as const;
 
 describe("1099-nec", () => {
-  it("loads via a.form()", () => {
-    expect(f1099NEC.isValid()).toBe(true);
+  it("loads via a.form.load()", async () => {
+    expect((await f1099NEC.load()).isValid()).toBe(true);
   });
 
-  it("accepts the bundled passing vector (llm.happy-path-individual-recipient)", () => {
-    const result = f1099NEC.safeFill(happyPathInputs as any);
+  it("accepts the bundled passing vector (llm.happy-path-individual-recipient)", async () => {
+    const result = (await f1099NEC.load()).safeFill(happyPathInputs as any);
     expect(result.success).toBe(true);
   });
 
-  it("passes its own test cases", () => {
-    const report = f1099NEC.runTests();
+  it("passes its own test cases", async () => {
+    const report = (await f1099NEC.load()).runTests();
     expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
     expect(report.results).toHaveLength(1);
   });
 
   it("renders the markdown layer on the bound resolver", async () => {
-    const result = f1099NEC.safeFill(happyPathInputs as any);
+    const result = (await f1099NEC.load()).safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");
     const output = await result.data.render({ layer: "markdown" });
     expect(typeof output).toBe("string");
@@ -78,7 +78,7 @@ describe("1099-nec", () => {
   });
 
   it("renders the PDF layer through the default renderer", async () => {
-    const result = f1099NEC.safeFill(happyPathInputs as any);
+    const result = (await f1099NEC.load()).safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");
     const output = await result.data.render({ layer: "pdfCopyA" });
     expect(output).toBeInstanceOf(Uint8Array);

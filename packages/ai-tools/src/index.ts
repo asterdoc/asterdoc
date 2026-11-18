@@ -55,6 +55,7 @@ export type { ToolResultOutput } from './model-output'
 export type { ToolExecutionContext, RequestCache } from './context'
 export type { AsterdocToolsConfig } from './config'
 export { resolveSource } from './resolve-source'
+export { artifactFileResolver } from './form-loader'
 export type { ResolvedSource } from './resolve-source'
 export {
 	safeFetch,

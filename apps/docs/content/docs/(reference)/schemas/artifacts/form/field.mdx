@@ -607,6 +607,12 @@ Phone number input field.
     description: 'Discriminator for phone field type',
   },
   {
+    name: 'countryCode',
+    type: 'string',
+    description: 'Country calling code every number must have, without `+`, such as `1` for the North American plan. Fill refuses a number of another plan, or one that is not valid in the plan. A PDF binding to `areaCode` or `subscriberNumber` needs `1`; a `phone.region` format that refuses other plans needs the region\'s code. Omit to accept any plan',
+    isOptional: true,
+  },
+  {
     name: 'default',
     type: 'Phone',
     description: 'Default value for the field',

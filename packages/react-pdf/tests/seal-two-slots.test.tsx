@@ -72,7 +72,7 @@ const spec = {
   },
 } as const;
 
-const rider = a.form(spec);
+const rider = await a.form.load(spec);
 
 /** The composition: one block per slot, both for the same party. */
 function LeaseRider({ artifact, data }: { artifact: Form; data: DocumentData }) {

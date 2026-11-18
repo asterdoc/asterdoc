@@ -1,3 +1,4 @@
+import type { Resolver } from "@asterdoc/types";
 /**
  * A scripted session driver.
  *
@@ -49,8 +50,8 @@ export function emptySession(name: string): FormSession {
 }
 
 /** The engine's runtime over a raw artifact definition. */
-export function runtimeFor(spec: unknown): ArtifactRuntime {
-  return createAsterdocRuntime(spec as Record<string, unknown>);
+export async function runtimeFor(spec: unknown, resolver?: Resolver): Promise<ArtifactRuntime> {
+  return await createAsterdocRuntime(spec as Record<string, unknown>, resolver ? { resolver } : {});
 }
 
 /** What one step of a fill did. */
@@ -121,8 +122,8 @@ export interface FilledSession {
 }
 
 /** Runs a script to the end of the fill. */
-export function fillBySession(name: string, spec: unknown, script: FillScript): FilledSession {
-  const runtime = runtimeFor(spec);
+export async function fillBySession(name: string, spec: unknown, script: FillScript, resolver?: Resolver): Promise<FilledSession> {
+  const runtime = await runtimeFor(spec, resolver);
   let session = emptySession(name);
   const order: string[] = [];
 

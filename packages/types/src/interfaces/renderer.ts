@@ -6,7 +6,7 @@
 
 import type { Checklist, Document, Form } from "../schemas/artifacts";
 import type { Formatter, FormatterProgressivePolicy } from "./formatter";
-import type { Bindings, LayerFormat } from "../schemas/artifacts/shared";
+import type { Bindings, LayerFormat, StandardPdfFont } from "../schemas/artifacts/shared";
 import type { ChecklistData, FormData } from "../runtime";
 
 /**
@@ -61,10 +61,13 @@ export interface RendererLayer {
   bindings?: Bindings;
 
   /**
-   * The font the layer declares, read through the same resolver as its file.
-   * A PDF renderer draws filled values and overlay text with it.
+   * The TrueType font the layer declares, read through the same resolver as
+   * its file. A PDF renderer draws filled values and overlay text with it.
    */
   font?: RendererLayerFont;
+
+  /** The standard font the layer declares for every field it fills. */
+  standardFont?: StandardPdfFont;
 
   /**
    * How the layer declares its values print. A renderer applies it over the

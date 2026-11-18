@@ -1,6 +1,6 @@
 import { a, toYAML } from '@/index'
 
-const myForm = a.form({
+const myForm = await a.form.load({
   kind: 'form',
   version: '1.0.0',
   name: 'pet-addendum',

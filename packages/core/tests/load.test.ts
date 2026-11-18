@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { ASTERDOC_SCHEMA_URL } from '@asterdoc/schemas'
-import { load, safeLoad, loadFromObject, safeLoadFromObject, LoadError, type AnyArtifactInstance } from '@/serialization'
+import { load, safeLoad, LoadError, type AnyArtifactInstance } from '@/serialization'
 import type { FormInstance } from '@/artifacts'
 
 /**
@@ -75,34 +75,34 @@ items:
 `
 
   // ============================================================================
-  // load() Function
+  // await load() Function
   // ============================================================================
 
-  describe('load()', () => {
+  describe('await load()', () => {
     describe('from YAML string', () => {
-      test('loads form from YAML', () => {
-        const instance = load(formYAML)
+      test('loads form from YAML', async () => {
+        const instance = await load(formYAML)
 
         expect(instance.kind).toBe('form')
         expect(instance.name).toBe('test-form')
       })
 
-      test('loads document from YAML', () => {
-        const instance = load(documentYAML)
+      test('loads document from YAML', async () => {
+        const instance = await load(documentYAML)
 
         expect(instance.kind).toBe('document')
         expect(instance.name).toBe('test-document')
       })
 
-      test('loads bundle from YAML', () => {
-        const instance = load(bundleYAML)
+      test('loads bundle from YAML', async () => {
+        const instance = await load(bundleYAML)
 
         expect(instance.kind).toBe('bundle')
         expect(instance.name).toBe('test-bundle')
       })
 
-      test('loads checklist from YAML', () => {
-        const instance = load(checklistYAML)
+      test('loads checklist from YAML', async () => {
+        const instance = await load(checklistYAML)
 
         expect(instance.kind).toBe('checklist')
         expect(instance.name).toBe('test-checklist')
@@ -110,14 +110,14 @@ items:
     })
 
     describe('from JSON string', () => {
-      test('loads form from JSON', () => {
-        const instance = load(formJSON)
+      test('loads form from JSON', async () => {
+        const instance = await load(formJSON)
 
         expect(instance.kind).toBe('form')
         expect(instance.name).toBe('test-form')
       })
 
-      test('loads bundle from JSON', () => {
+      test('loads bundle from JSON', async () => {
         const json = JSON.stringify({
           $schema: ASTERDOC_SCHEMA_URL,
           kind: 'bundle',
@@ -126,7 +126,7 @@ items:
           title: 'JSON Bundle',
           contents: [],
         })
-        const instance = load(json)
+        const instance = await load(json)
 
         expect(instance.kind).toBe('bundle')
         expect(instance.name).toBe('json-bundle')
@@ -134,21 +134,21 @@ items:
     })
 
     describe('error cases', () => {
-      test('throws LoadError for invalid YAML/JSON', () => {
-        expect(() => load('{ invalid json')).toThrow(LoadError)
+      test('throws LoadError for invalid YAML/JSON', async () => {
+        await expect(load('{ invalid json')).rejects.toThrow(LoadError)
       })
 
-      test('throws LoadError for missing kind', () => {
+      test('throws LoadError for missing kind', async () => {
         const yaml = `
 name: no-kind
 version: 1.0.0
 title: No Kind
 `
-        expect(() => load(yaml)).toThrow(LoadError)
-        expect(() => load(yaml)).toThrow(/missing or invalid "kind" field/)
+        await expect(load(yaml)).rejects.toThrow(LoadError)
+        await expect(load(yaml)).rejects.toThrow(/missing or invalid "kind" field/)
       })
 
-      test('throws LoadError for unknown kind', () => {
+      test('throws LoadError for unknown kind', async () => {
         const yaml = `
 $schema: ${ASTERDOC_SCHEMA_URL}
 kind: unknown
@@ -156,19 +156,19 @@ name: unknown
 version: 1.0.0
 title: Unknown
 `
-        expect(() => load(yaml)).toThrow(LoadError)
-        expect(() => load(yaml)).toThrow(/Unknown artifact kind/)
+        await expect(load(yaml)).rejects.toThrow(LoadError)
+        await expect(load(yaml)).rejects.toThrow(/Unknown artifact kind/)
       })
 
-      test('throws LoadError for non-object content', () => {
-        expect(() => load('"just a string"')).toThrow(LoadError)
-        expect(() => load('123')).toThrow(LoadError)
-        expect(() => load('null')).toThrow(LoadError)
+      test('throws LoadError for non-object content', async () => {
+        await expect(load('"just a string"')).rejects.toThrow(LoadError)
+        await expect(load('123')).rejects.toThrow(LoadError)
+        await expect(load('null')).rejects.toThrow(LoadError)
       })
 
-      test('LoadError has cause property for parse errors', () => {
+      test('LoadError has cause property for parse errors', async () => {
         try {
-          load('{ invalid')
+          await load('{ invalid')
           expect.fail('Should have thrown')
         } catch (error) {
           expect(error).toBeInstanceOf(LoadError)
@@ -179,8 +179,8 @@ title: Unknown
     })
 
     describe('type narrowing', () => {
-      test('can narrow by kind', () => {
-        const instance = load(formYAML)
+      test('can narrow by kind', async () => {
+        const instance = await load(formYAML)
 
         if (instance.kind === 'form') {
           // TypeScript should know this is FormInstance
@@ -188,21 +188,21 @@ title: Unknown
         }
       })
 
-      test('returns AnyArtifactInstance union type', () => {
-        const instance: AnyArtifactInstance = load(formYAML)
+      test('returns AnyArtifactInstance union type', async () => {
+        const instance: AnyArtifactInstance = await load(formYAML)
         expect(instance).toBeDefined()
       })
     })
   })
 
   // ============================================================================
-  // safeLoad() Function
+  // await safeLoad() Function
   // ============================================================================
 
-  describe('safeLoad()', () => {
+  describe('await safeLoad()', () => {
     describe('success cases', () => {
-      test('returns success for valid YAML', () => {
-        const result = safeLoad(formYAML)
+      test('returns success for valid YAML', async () => {
+        const result = await safeLoad(formYAML)
 
         expect(result.success).toBe(true)
         if (result.success) {
@@ -211,8 +211,8 @@ title: Unknown
         }
       })
 
-      test('returns success for valid JSON', () => {
-        const result = safeLoad(formJSON)
+      test('returns success for valid JSON', async () => {
+        const result = await safeLoad(formJSON)
 
         expect(result.success).toBe(true)
         if (result.success) {
@@ -220,11 +220,11 @@ title: Unknown
         }
       })
 
-      test('returns correct instance type for each artifact kind', () => {
-        const formResult = safeLoad(formYAML)
-        const documentResult = safeLoad(documentYAML)
-        const bundleResult = safeLoad(bundleYAML)
-        const checklistResult = safeLoad(checklistYAML)
+      test('returns correct instance type for each artifact kind', async () => {
+        const formResult = await safeLoad(formYAML)
+        const documentResult = await safeLoad(documentYAML)
+        const bundleResult = await safeLoad(bundleYAML)
+        const checklistResult = await safeLoad(checklistYAML)
 
         expect(formResult.success && formResult.data.kind).toBe('form')
         expect(documentResult.success && documentResult.data.kind).toBe('document')
@@ -234,8 +234,8 @@ title: Unknown
     })
 
     describe('error cases', () => {
-      test('returns error for invalid YAML/JSON', () => {
-        const result = safeLoad('{ invalid')
+      test('returns error for invalid YAML/JSON', async () => {
+        const result = await safeLoad('{ invalid')
 
         expect(result.success).toBe(false)
         if (!result.success) {
@@ -243,13 +243,13 @@ title: Unknown
         }
       })
 
-      test('returns error for missing kind', () => {
+      test('returns error for missing kind', async () => {
         const yaml = `
 name: no-kind
 version: 1.0.0
 title: No Kind
 `
-        const result = safeLoad(yaml)
+        const result = await safeLoad(yaml)
 
         expect(result.success).toBe(false)
         if (!result.success) {
@@ -257,7 +257,7 @@ title: No Kind
         }
       })
 
-      test('returns error for unknown kind', () => {
+      test('returns error for unknown kind', async () => {
         const yaml = `
 $schema: ${ASTERDOC_SCHEMA_URL}
 kind: unknown
@@ -265,7 +265,7 @@ name: unknown
 version: 1.0.0
 title: Unknown
 `
-        const result = safeLoad(yaml)
+        const result = await safeLoad(yaml)
 
         expect(result.success).toBe(false)
         if (!result.success) {
@@ -273,7 +273,7 @@ title: Unknown
         }
       })
 
-      test('returns error for validation failures', () => {
+      test('returns error for validation failures', async () => {
         const yaml = `
 $schema: ${ASTERDOC_SCHEMA_URL}
 kind: form
@@ -281,7 +281,7 @@ name: ""
 version: 1.0.0
 title: Empty Name
 `
-        const result = safeLoad(yaml)
+        const result = await safeLoad(yaml)
 
         expect(result.success).toBe(false)
       })
@@ -289,37 +289,37 @@ title: Empty Name
   })
 
   // ============================================================================
-  // loadFromObject() Function
+  // await load() Function
   // ============================================================================
 
-  describe('loadFromObject()', () => {
+  describe('await load()', () => {
     describe('success cases', () => {
-      test('loads form from object', () => {
+      test('loads form from object', async () => {
         const obj = {
           kind: 'form',
           name: 'object-form',
           version: '1.0.0',
           title: 'Object Form',
         }
-        const instance = loadFromObject(obj)
+        const instance = await load(obj)
 
         expect(instance.kind).toBe('form')
         expect(instance.name).toBe('object-form')
       })
 
-      test('loads document from object', () => {
+      test('loads document from object', async () => {
         const obj = {
           kind: 'document',
           name: 'object-document',
           version: '1.0.0',
           title: 'Object Document',
         }
-        const instance = loadFromObject(obj)
+        const instance = await load(obj)
 
         expect(instance.kind).toBe('document')
       })
 
-      test('loads bundle from object', () => {
+      test('loads bundle from object', async () => {
         const obj = {
           kind: 'bundle',
           name: 'object-bundle',
@@ -327,12 +327,12 @@ title: Empty Name
           title: 'Object Bundle',
           contents: [],
         }
-        const instance = loadFromObject(obj)
+        const instance = await load(obj)
 
         expect(instance.kind).toBe('bundle')
       })
 
-      test('loads checklist from object', () => {
+      test('loads checklist from object', async () => {
         const obj = {
           kind: 'checklist',
           name: 'object-checklist',
@@ -340,91 +340,81 @@ title: Empty Name
           title: 'Object Checklist',
           items: [],
         }
-        const instance = loadFromObject(obj)
+        const instance = await load(obj)
 
         expect(instance.kind).toBe('checklist')
       })
     })
 
     describe('error cases', () => {
-      test('throws LoadError for null', () => {
-        expect(() => loadFromObject(null)).toThrow(LoadError)
-        expect(() => loadFromObject(null)).toThrow(/expected an object/)
+      test('throws LoadError for null', async () => {
+        await expect(load(null)).rejects.toThrow(LoadError)
+        await expect(load(null)).rejects.toThrow(/expected an object/)
       })
 
-      test('throws LoadError for undefined', () => {
-        expect(() => loadFromObject(undefined)).toThrow(LoadError)
+      test('throws LoadError for undefined', async () => {
+        await expect(load(undefined)).rejects.toThrow(LoadError)
       })
 
-      test('throws LoadError for non-object', () => {
-        expect(() => loadFromObject('string')).toThrow(LoadError)
-        expect(() => loadFromObject(123)).toThrow(LoadError)
-        expect(() => loadFromObject(true)).toThrow(LoadError)
+      test('throws LoadError for non-object', async () => {
+        await expect(load('string')).rejects.toThrow(LoadError)
+        await expect(load(123)).rejects.toThrow(LoadError)
+        await expect(load(true)).rejects.toThrow(LoadError)
       })
 
-      test('throws LoadError for missing kind', () => {
-        expect(() =>
-          loadFromObject({
+      test('throws LoadError for missing kind', async () => {
+        await expect(load({
             name: 'no-kind',
             version: '1.0.0',
             title: 'No Kind',
-          })
-        ).toThrow(LoadError)
-        expect(() =>
-          loadFromObject({
+          })).rejects.toThrow(LoadError)
+        await expect(load({
             name: 'no-kind',
             version: '1.0.0',
             title: 'No Kind',
-          })
-        ).toThrow(/missing or invalid "kind" field/)
+          })).rejects.toThrow(/missing or invalid "kind" field/)
       })
 
-      test('throws LoadError for non-string kind', () => {
-        expect(() =>
-          loadFromObject({
+      test('throws LoadError for non-string kind', async () => {
+        await expect(load({
             kind: 123,
             name: 'invalid-kind',
             version: '1.0.0',
             title: 'Invalid Kind',
-          })
-        ).toThrow(LoadError)
+          })).rejects.toThrow(LoadError)
       })
 
-      test('throws LoadError for unknown kind', () => {
-        expect(() =>
-          loadFromObject({
+      test('throws LoadError for unknown kind', async () => {
+        await expect(load({
             kind: 'unknown',
             name: 'unknown',
             version: '1.0.0',
             title: 'Unknown',
-          })
-        ).toThrow(LoadError)
-        expect(() =>
-          loadFromObject({
+          })).rejects.toThrow(LoadError)
+        await expect(load({
             kind: 'unknown',
             name: 'unknown',
             version: '1.0.0',
             title: 'Unknown',
-          })
-        ).toThrow(/Unknown artifact kind: "unknown"/)
+          })).rejects.toThrow(/Unknown artifact kind: "unknown"/)
       })
     })
   })
 
   // ============================================================================
-  // safeLoadFromObject() Function
+  // await safeLoad() Function
   // ============================================================================
 
-  describe('safeLoadFromObject()', () => {
+  describe('await safeLoad()', () => {
     describe('success cases', () => {
-      test('returns success for valid form object', () => {
+      test('returns success for valid form object', async () => {
         const obj = {
           kind: 'form',
           name: 'safe-form',
           version: '1.0.0',
           title: 'Safe Form',
         }
-        const result = safeLoadFromObject(obj)
+        const result = await safeLoad(obj)
 
         expect(result.success).toBe(true)
         if (result.success) {
@@ -432,7 +422,7 @@ title: Empty Name
         }
       })
 
-      test('returns success for all artifact kinds', () => {
+      test('returns success for all artifact kinds', async () => {
         const artifacts = [
           { kind: 'form', name: 'f', version: '1.0.0', title: 'F' },
           { kind: 'document', name: 'd', version: '1.0.0', title: 'D' },
@@ -441,15 +431,15 @@ title: Empty Name
         ]
 
         for (const artifact of artifacts) {
-          const result = safeLoadFromObject(artifact)
+          const result = await safeLoad(artifact)
           expect(result.success).toBe(true)
         }
       })
     })
 
     describe('error cases', () => {
-      test('returns error for null', () => {
-        const result = safeLoadFromObject(null)
+      test('returns error for null', async () => {
+        const result = await safeLoad(null)
 
         expect(result.success).toBe(false)
         if (!result.success) {
@@ -457,8 +447,8 @@ title: Empty Name
         }
       })
 
-      test('returns error for missing kind', () => {
-        const result = safeLoadFromObject({
+      test('returns error for missing kind', async () => {
+        const result = await safeLoad({
           name: 'no-kind',
           version: '1.0.0',
           title: 'No Kind',
@@ -467,8 +457,8 @@ title: Empty Name
         expect(result.success).toBe(false)
       })
 
-      test('returns error for unknown kind', () => {
-        const result = safeLoadFromObject({
+      test('returns error for unknown kind', async () => {
+        const result = await safeLoad({
           kind: 'unknown',
           name: 'unknown',
           version: '1.0.0',
@@ -481,8 +471,8 @@ title: Empty Name
         }
       })
 
-      test('returns error for validation failures', () => {
-        const result = safeLoadFromObject({
+      test('returns error for validation failures', async () => {
+        const result = await safeLoad({
           kind: 'form',
           name: '',
           version: '1.0.0',
@@ -532,8 +522,8 @@ title: Empty Name
   // ============================================================================
 
   describe('integration', () => {
-    test('loaded instance has all expected methods', () => {
-      const instance = load(formYAML) as FormInstance<any>
+    test('loaded instance has all expected methods', async () => {
+      const instance = await load(formYAML) as FormInstance<any>
 
       // Base instance methods
       expect(typeof instance.validate).toBe('function')
@@ -549,33 +539,33 @@ title: Empty Name
       expect(typeof instance.safeFill).toBe('function')
     })
 
-    test('loaded instance can be cloned', () => {
-      const instance = load(formYAML)
+    test('loaded instance can be cloned', async () => {
+      const instance = await load(formYAML)
       const clone = instance.clone()
 
       expect(clone.name).toBe(instance.name)
       expect(clone).not.toBe(instance)
     })
 
-    test('loaded instance can be serialized back to YAML', () => {
-      const instance = load(formYAML)
+    test('loaded instance can be serialized back to YAML', async () => {
+      const instance = await load(formYAML)
       const yaml = instance.toYAML()
 
       expect(yaml).toContain('kind: form')
       expect(yaml).toContain('name: test-form')
     })
 
-    test('loaded form can parse data', () => {
-      const instance = load(formYAML) as FormInstance<any>
+    test('loaded form can parse data', async () => {
+      const instance = await load(formYAML) as FormInstance<any>
       const result = instance.safeParseData({ fields: { name: 'John' } })
 
       expect(result.success).toBe(true)
     })
 
-    test('round-trip: YAML -> load -> toYAML -> load', () => {
-      const instance1 = load(formYAML)
+    test('round-trip: YAML -> load -> toYAML -> load', async () => {
+      const instance1 = await load(formYAML)
       const yaml = instance1.toYAML()
-      const instance2 = load(yaml)
+      const instance2 = await load(yaml)
 
       expect(instance2.kind).toBe(instance1.kind)
       expect(instance2.name).toBe(instance1.name)

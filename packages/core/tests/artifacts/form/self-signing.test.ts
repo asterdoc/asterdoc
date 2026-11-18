@@ -20,8 +20,8 @@ const slot = (role: string, required?: boolean): SignatureSlot => ({
 	...(required !== undefined && { required }),
 })
 
-const definition = (partyType: 'person' | 'organization', required?: boolean) =>
-	form()
+const definition = async (partyType: 'person' | 'organization', required?: boolean) =>
+	await form.load(form()
 		.name('self-signing')
 		.version('1.0.0')
 		.title('Self Signing')
@@ -36,15 +36,15 @@ const definition = (partyType: 'person' | 'organization', required?: boolean) =>
 			signatures: { sign: slot('tenant', required), 'landlord-sign': slot('landlord') },
 		})
 		.defaultLayer('md')
-		.build()
+		.build())
 
 const landlord = { id: 'landlord-0', name: 'Lee' }
 
-const person = () =>
-	definition('person').fill({ fields: { a: 'x' }, parties: { tenant: { id: 'tenant-0', name: 'Ada' }, landlord } })
+const person = async () =>
+	(await definition('person')).fill({ fields: { a: 'x' }, parties: { tenant: { id: 'tenant-0', name: 'Ada' }, landlord } })
 
-const organization = (required?: boolean) =>
-	definition('organization', required).fill({
+const organization = async (required?: boolean) =>
+	(await definition('organization', required)).fill({
 		fields: { a: 'x' },
 		parties: { tenant: { id: 'tenant-0', name: 'Acme', legalName: 'Acme LLC' }, landlord },
 	})
@@ -68,8 +68,8 @@ describe('partySignerIds', () => {
 
 describe('a person with no signatories', () => {
 	test('seals and prepares with the slot bound to its party id', async () => {
-		const prepared = await person().prepareSeal({ adapter })
-		const sealed = await person().seal({ adapter })
+		const prepared = await (await person()).prepareSeal({ adapter })
+		const sealed = await (await person()).seal({ adapter })
 		expect(sealed.signatureMap).toEqual(prepared.signatureMap)
 		expect(sealed.signatureMap?.map((field) => [field.id, field.signerId])).toEqual([
 			['sign', 'tenant-0'],
@@ -78,7 +78,7 @@ describe('a person with no signatories', () => {
 	})
 
 	test('captures as its party id, and its signing status completes', async () => {
-		const sealed = await person().seal({ adapter })
+		const sealed = await (await person()).seal({ adapter })
 		expect(sealed.getSignatureStatus('tenant').complete).toBe(false)
 		expect(sealed.getSignatureStatus('tenant').parties[0]?.hasSignatory).toBe(true)
 
@@ -88,14 +88,14 @@ describe('a person with no signatories', () => {
 	})
 
 	test('rejects a capture by any other signer', async () => {
-		const sealed = await person().seal({ adapter })
+		const sealed = await (await person()).seal({ adapter })
 		expect(() => sealed.captureSignature('tenant', 'tenant-0', 'someone', 'sign')).toThrow(
 			'Signer with ID "someone" not found in registry',
 		)
 	})
 
 	test('once a delegate is listed, the delegate signs and the party does not', async () => {
-		const delegated = person()
+		const delegated = (await person())
 			.addSigner('agent', { person: { name: 'Agent' } })
 			.addSignatory('tenant', 'tenant-0', { signerId: 'agent' })
 		const sealed = await delegated.seal({ adapter })
@@ -109,18 +109,18 @@ describe('a person with no signatories', () => {
 
 describe('an organization with no signatories', () => {
 	test('is refused a required slot, before converting', async () => {
-		const error = await organization().seal({ adapter }).catch((caught: unknown) => caught)
+		const error = await (await organization()).seal({ adapter }).catch((caught: unknown) => caught)
 		expect(error).toBeInstanceOf(SealConfigError)
 		expect((error as SealConfigError).problems).toEqual(['slot "sign" (tenant[0]) has no signatory'])
 	})
 
 	test('skips a slot marked required: false', async () => {
-		const sealed = await organization(false).seal({ adapter })
+		const sealed = await (await organization(false)).seal({ adapter })
 		expect(sealed.signatureMap?.map((field) => field.id)).toEqual(['landlord-sign'])
 	})
 
 	test('cannot capture as its party id, and has no signatory in its status', async () => {
-		const bound = organization()
+		const bound = (await organization())
 			.addSigner('officer', { person: { name: 'Officer' } })
 			.addSignatory('tenant', 'tenant-0', { signerId: 'officer' })
 		const sealed = await bound.seal({ adapter })
@@ -128,8 +128,8 @@ describe('an organization with no signatories', () => {
 			'Signer with ID "tenant-0" not found in registry',
 		)
 
-		const unbound = organization(false)
-		const unboundSealed = await unbound.seal({ adapter })
+		const unbound = await organization(false)
+		const unboundSealed = await (await unbound).seal({ adapter })
 		expect(unboundSealed.getSignatureStatus('tenant').parties[0]?.hasSignatory).toBe(false)
 		expect(() => unboundSealed.captureSignature('tenant', 'tenant-0', 'tenant-0', 'sign')).toThrow(
 			'is not a signatory for party "tenant-0"',

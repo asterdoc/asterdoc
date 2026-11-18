@@ -30,8 +30,8 @@ describe('Formal Signing', () => {
 	const flattenedFixture = async (): Promise<Uint8Array> => flattenPdf(fixturePdf)
 	const expectedHash = async (): Promise<string> => sha256Of(await flattenedFixture())
 
-	const createFormWithSignature = (signatures?: Record<string, SignatureSlot>) =>
-		form()
+	const createFormWithSignature = async (signatures?: Record<string, SignatureSlot>) =>
+		await form.load(form()
 			.name('lease-agreement')
 			.version('1.0.0')
 			.title('Lease Agreement')
@@ -59,10 +59,10 @@ describe('Formal Signing', () => {
 				...(signatures && { signatures }),
 			})
 			.defaultLayer('markdown')
-			.build()
+			.build())
 
-	const createFormWithoutSignature = () =>
-		form()
+	const createFormWithoutSignature = async () =>
+		await form.load(form()
 			.name('simple-form')
 			.version('1.0.0')
 			.title('Simple Form')
@@ -78,7 +78,7 @@ describe('Formal Signing', () => {
 			})
 			.inlineLayer('markdown', { mimeType: 'text/markdown', text: 'Simple template' })
 			.defaultLayer('markdown')
-			.build()
+			.build())
 
 	const defaultSignatureMap = (): SigningField[] => [
 		{ id: 'sig-landlord-0', signerIndex: 0, signerId: 'landlord-signer', type: 'signature', page: 1, x: 100, y: 500, width: 200, height: 50 },
@@ -123,9 +123,9 @@ describe('Formal Signing', () => {
 	// ============================================================================
 
 	describe('SignableForm.isFormal', () => {
-		test('returns false when no signatureMap', () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance.fill({
+		test('returns false when no signatureMap', async () => {
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance).fill({
 				fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 				parties: {
 					landlord: { id: 'landlord-0', name: 'John Landlord' },
@@ -140,8 +140,8 @@ describe('Formal Signing', () => {
 		})
 
 		test('returns true when signatureMap and canonicalPdfHash are present', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -168,9 +168,9 @@ describe('Formal Signing', () => {
 	// ============================================================================
 
 	describe('SignableForm.getSignerForField', () => {
-		test('returns undefined when form is not formal', () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance.fill({
+		test('returns undefined when form is not formal', async () => {
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance).fill({
 				fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 				parties: {
 					landlord: { id: 'landlord-0', name: 'John Landlord' },
@@ -183,8 +183,8 @@ describe('Formal Signing', () => {
 		})
 
 		test('returns correct signer for valid field ID', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -209,8 +209,8 @@ describe('Formal Signing', () => {
 		})
 
 		test('returns undefined for invalid field ID', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -234,9 +234,9 @@ describe('Formal Signing', () => {
 	// ============================================================================
 
 	describe('SignableForm.getFieldsForSigner', () => {
-		test('returns empty array when form is not formal', () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance.fill({
+		test('returns empty array when form is not formal', async () => {
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance).fill({
 				fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 				parties: {
 					landlord: { id: 'landlord-0', name: 'John Landlord' },
@@ -249,8 +249,8 @@ describe('Formal Signing', () => {
 		})
 
 		test('returns correct fields for valid signer ID', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -277,8 +277,8 @@ describe('Formal Signing', () => {
 		})
 
 		test('returns empty array for invalid signer ID', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -303,8 +303,8 @@ describe('Formal Signing', () => {
 
 	describe('DraftForm.seal - Happy Path', () => {
 		test('creates SignableForm with formal signing fields', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -332,7 +332,7 @@ describe('Formal Signing', () => {
 		})
 
 		test('canonicalizes the converted PDF: flattened bytes, hash of those bytes', async () => {
-			const draft = createFormWithSignature()
+			const draft = (await createFormWithSignature())
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -352,7 +352,7 @@ describe('Formal Signing', () => {
 		})
 
 		test('a different converted PDF yields a different hash', async () => {
-			const draft = createFormWithSignature()
+			const draft = (await createFormWithSignature())
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -381,8 +381,8 @@ describe('Formal Signing', () => {
 	// ============================================================================
 
 	describe('setTargetLayer after seal', () => {
-		const createTwoLayerForm = () =>
-			form({
+		const createTwoLayerForm = async () =>
+			await form.load({
 				kind: 'form',
 				name: 'two-layer-lease',
 				version: '1.0.0',
@@ -396,8 +396,8 @@ describe('Formal Signing', () => {
 				defaultLayer: 'text',
 			} as const)
 
-		const buildDraft = () =>
-			createTwoLayerForm()
+		const buildDraft = async () =>
+			(await createTwoLayerForm())
 				.fill({
 					fields: { rentAmount: 1500 },
 					parties: { landlord: { id: 'landlord-0', name: 'John Landlord' } },
@@ -406,7 +406,7 @@ describe('Formal Signing', () => {
 				.addSignatory('landlord', 'landlord-0', { signerId: 'landlord-signer' })
 
 		test('refuses to retarget a sealed form, so no stale hash or map survives', async () => {
-			const sealed = await buildDraft().seal(sealOptions())
+			const sealed = await (await buildDraft()).seal(sealOptions())
 			expect(sealed.canonicalPdfHash).toBe(await expectedHash())
 
 			expect(() => sealed.setTargetLayer('markdown')).toThrow(
@@ -422,7 +422,7 @@ describe('Formal Signing', () => {
 					{ id: 'sig-landlord-0', signerIndex: 0, signerId: 'landlord-signer', type: 'signature', page: 1, x: 100, y: 500, width: 200, height: 50 },
 				],
 			})
-			const sealed = await buildDraft().seal(landlordOnly)
+			const sealed = await (await buildDraft()).seal(landlordOnly)
 			const executed = sealed
 				.captureSignature('landlord', 'landlord-0', 'landlord-signer', 'sig-landlord-0')
 				.finalize()
@@ -433,11 +433,11 @@ describe('Formal Signing', () => {
 			)
 		})
 
-		test('still retargets a draft and an unsealed signable form', () => {
-			const draft = buildDraft().setTargetLayer('markdown')
+		test('still retargets a draft and an unsealed signable form', async () => {
+			const draft = (await buildDraft()).setTargetLayer('markdown')
 			expect(draft.targetLayer).toBe('markdown')
 
-			const signable = buildDraft().prepareForSigning().setTargetLayer('markdown')
+			const signable = (await buildDraft()).prepareForSigning().setTargetLayer('markdown')
 			expect(signable.phase).toBe('signable')
 			expect(signable.targetLayer).toBe('markdown')
 			expect(signable.canonicalPdfHash).toBeUndefined()
@@ -454,7 +454,7 @@ describe('Formal Signing', () => {
 				'JVBERi0xLjUKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAzMDAgMzAwXSAvUmVzb3VyY2VzIDw8ID4+ID4+CmVuZG9iagp4cmVmCjAgNAowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNCAvUm9vdCAxIDAgUiA+PgpzdGFydHhyZWYKMjAzCiUlRU9GCg==',
 				'base64',
 			))
-			const formDef = form()
+			const formDef = await form.load(form()
 				.name('pdf-form')
 				.version('1.0.0')
 				.title('PDF Form')
@@ -480,7 +480,7 @@ describe('Formal Signing', () => {
 					},
 				})
 				.defaultLayer('pdf')
-				.build({ resolver: { read: async () => pdf } })
+				.build(), { resolver: { read: async () => pdf } })
 
 			const draft = formDef
 				.fill({
@@ -514,7 +514,7 @@ describe('Formal Signing', () => {
 					return { pdf }
 				},
 			}
-			const formDef = form()
+			const formDef = await form.load(form()
 				.name('markdown-form')
 				.version('1.0.0')
 				.title('Markdown Form')
@@ -532,7 +532,7 @@ describe('Formal Signing', () => {
 					},
 				})
 				.defaultLayer('markdown')
-				.build()
+				.build())
 			const draft = formDef
 				.fill({ fields: { name: 'Ada' }, parties: { signer: { id: 'signer-0', name: 'Ada' } } })
 				.addSigner('ada', { person: { name: 'Ada' } })
@@ -559,7 +559,7 @@ describe('Formal Signing', () => {
 				},
 			}
 			const render = vi.fn(async () => '# Custom document')
-			const formDef = form()
+			const formDef = await form.load(form()
 				.name('custom-rendered-form')
 				.fields({ name: { type: 'text', label: 'Name' } })
 				.parties({ signer: { label: 'Signer', partyType: 'person', signature: { required: true } } })
@@ -571,7 +571,7 @@ describe('Formal Signing', () => {
 					},
 				})
 				.defaultLayer('markdown')
-				.build()
+				.build())
 			const draft = formDef
 				.fill({ fields: { name: 'Ada' }, parties: { signer: { id: 'signer-0', name: 'Ada' } } })
 				.addSigner('ada', { person: { name: 'Ada' } })
@@ -588,7 +588,7 @@ describe('Formal Signing', () => {
 		})
 
 		test('throws error when no parties exist', async () => {
-			const formDef = form()
+			const formDef = await form.load(form()
 				.name('no-party-form')
 				.version('1.0.0')
 				.title('No Party Form')
@@ -597,7 +597,7 @@ describe('Formal Signing', () => {
 				})
 				.inlineLayer('markdown', { mimeType: 'text/markdown', text: 'Template' })
 				.defaultLayer('markdown')
-				.build()
+				.build())
 
 			const draft = formDef.fill({
 				fields: { name: 'Test' },
@@ -609,8 +609,8 @@ describe('Formal Signing', () => {
 		})
 
 		test('throws error when no required signatures exist', async () => {
-			const formInstance = createFormWithoutSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithoutSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { name: 'Test' },
 					parties: { applicant: { id: 'applicant-0', name: 'Test Applicant' } },
@@ -624,8 +624,8 @@ describe('Formal Signing', () => {
 		})
 
 		test('a person with no signatory counts as a signing party', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance.fill({
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance).fill({
 				fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 				parties: {
 					landlord: { id: 'landlord-0', name: 'John Landlord' },
@@ -657,7 +657,7 @@ describe('Formal Signing', () => {
 		}
 
 		test('binds the slot to the party id (signerId = party id)', async () => {
-			const sealed = await createFormWithSignature(slots)
+			const sealed = await (await createFormWithSignature(slots))
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -681,8 +681,8 @@ describe('Formal Signing', () => {
 
 	describe('Serialization round-trip', () => {
 		test('toJSON preserves formal signing fields', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -704,8 +704,8 @@ describe('Formal Signing', () => {
 		})
 
 		test('fromJSON restores formal signing fields', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -722,7 +722,7 @@ describe('Formal Signing', () => {
 			const json = formal.toJSON()
 
 			// Restore from JSON
-			const restored = runtimeFormFromJSON(json)
+			const restored = await runtimeFormFromJSON(json)
 
 			expect(restored.isFormal).toBe(true)
 			expect(restored.signatureMap).toHaveLength(3)
@@ -733,9 +733,9 @@ describe('Formal Signing', () => {
 			expect(restored.getFieldsForSigner('tenant-signer')).toHaveLength(2)
 		})
 
-		test('toJSON omits formal signing fields when not present', () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance.fill({
+		test('toJSON omits formal signing fields when not present', async () => {
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance).fill({
 				fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 				parties: {
 					landlord: { id: 'landlord-0', name: 'John Landlord' },
@@ -750,8 +750,8 @@ describe('Formal Signing', () => {
 		})
 
 		test('YAML round-trip preserves formal signing fields', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -769,15 +769,15 @@ describe('Formal Signing', () => {
 
 			// Restore from YAML
 			const parsed = fromYAML(yaml) as any
-			const restored = runtimeFormFromJSON(parsed)
+			const restored = await runtimeFormFromJSON(parsed)
 
 			expect(restored.isFormal).toBe(true)
 			expect(restored.signatureMap).toHaveLength(3)
 			expect(restored.canonicalPdfHash).toBe(await expectedHash())
 		})
 
-		const sealedDraft = () =>
-			createFormWithSignature()
+		const sealedDraft = async () =>
+			(await createFormWithSignature())
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -791,7 +791,7 @@ describe('Formal Signing', () => {
 				.addSignatory('tenant', 'tenant-0', { signerId: 'tenant-signer' })
 
 		test('executed form JSON round-trip preserves signatureMap and canonicalPdfHash', async () => {
-			const executed = captureDefaultSlots(await sealedDraft().seal(sealOptions())).finalize()
+			const executed = captureDefaultSlots(await (await sealedDraft()).seal(sealOptions())).finalize()
 			expect(executed.isFormal).toBe(true)
 
 			const json = executed.toJSON()
@@ -799,7 +799,7 @@ describe('Formal Signing', () => {
 			expect('signatureMap' in json && json.signatureMap).toEqual(executed.signatureMap)
 			expect('canonicalPdfHash' in json && json.canonicalPdfHash).toBe(await expectedHash())
 
-			const restored = runtimeFormFromJSON(json)
+			const restored = await runtimeFormFromJSON(json)
 			expect(restored.phase).toBe('executed')
 			expect(restored.isFormal).toBe(true)
 			expect(restored.canonicalPdfHash).toBe(executed.canonicalPdfHash)
@@ -810,9 +810,9 @@ describe('Formal Signing', () => {
 		})
 
 		test('executed form YAML round-trip preserves signatureMap and canonicalPdfHash', async () => {
-			const executed = captureDefaultSlots(await sealedDraft().seal(sealOptions())).finalize()
+			const executed = captureDefaultSlots(await (await sealedDraft()).seal(sealOptions())).finalize()
 
-			const restored = runtimeFormFromJSON(fromYAML(executed.toYAML()) as any)
+			const restored = await runtimeFormFromJSON(fromYAML(executed.toYAML()) as any)
 			expect(restored.phase).toBe('executed')
 			expect(restored.isFormal).toBe(true)
 			expect(restored.canonicalPdfHash).toBe(executed.canonicalPdfHash)
@@ -820,24 +820,24 @@ describe('Formal Signing', () => {
 		})
 
 		test('executed form JSON is a copy: mutating it leaves the form unchanged', async () => {
-			const executed = captureDefaultSlots(await sealedDraft().seal(sealOptions())).finalize()
+			const executed = captureDefaultSlots(await (await sealedDraft()).seal(sealOptions())).finalize()
 			const json = executed.toJSON() as any
 			json.signatureMap[0].x = 999
 
 			expect(executed.signatureMap?.[0]?.x).toBe(100)
 		})
 
-		test('unsealed signable form cannot finalize with required signatures missing', () => {
-			expect(() => sealedDraft().prepareForSigning().finalize()).toThrow(/required signatures/)
+		test('unsealed signable form cannot finalize with required signatures missing', async () => {
+			await expect((async () => (await sealedDraft()).prepareForSigning().finalize())()).rejects.toThrow(/required signatures/)
 		})
 
 		test('canonicalPdfBytes are not serialized', async () => {
-			const executed = await sealedDraft().seal(sealOptions({ signatureMap: [] }))
+			const executed = await (await sealedDraft()).seal(sealOptions({ signatureMap: [] }))
 			expect(executed.canonicalPdfBytes).toEqual(await flattenedFixture())
 
 			const json = executed.toJSON()
 			expect('canonicalPdfBytes' in json).toBe(false)
-			expect(runtimeFormFromJSON(json).canonicalPdfBytes).toBeUndefined()
+			expect((await runtimeFormFromJSON(json)).canonicalPdfBytes).toBeUndefined()
 		})
 
 		const carriesBytes = (value: unknown): boolean =>
@@ -845,7 +845,7 @@ describe('Formal Signing', () => {
 			(typeof value === 'object' && value !== null && 'canonicalPdfBytes' in value)
 
 		test('clone and transitions share the sealed bytes instead of copying them', async () => {
-			const sealed = await sealedDraft().seal(sealOptions())
+			const sealed = await (await sealedDraft()).seal(sealOptions())
 			const bytes = await flattenedFixture()
 
 			const spy = vi.spyOn(globalThis, 'structuredClone')
@@ -862,7 +862,7 @@ describe('Formal Signing', () => {
 
 		test('a clone stays independent of the original and of the converted PDF', async () => {
 			const converted = fixturePdf.slice()
-			const sealed = await sealedDraft().seal(sealOptions({ pdf: converted }))
+			const sealed = await (await sealedDraft()).seal(sealOptions({ pdf: converted }))
 			const original = sealed.canonicalPdfBytes!.slice()
 			converted.fill(0)
 			expect(sealed.canonicalPdfBytes).toEqual(original)
@@ -908,8 +908,8 @@ describe('Formal Signing', () => {
 				],
 			})
 
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -931,8 +931,8 @@ describe('Formal Signing', () => {
 		})
 
 		test('can clone formal SignableForm', async () => {
-			const formInstance = createFormWithSignature()
-			const draft = formInstance
+			const formInstance = await createFormWithSignature()
+			const draft = (await formInstance)
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -962,8 +962,8 @@ describe('Formal Signing', () => {
 	// ============================================================================
 
 	describe('Capacity & Printed Name captures', () => {
-		const buildSignableForm = () =>
-			createFormWithSignature()
+		const buildSignableForm = async () =>
+			(await createFormWithSignature())
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -977,8 +977,8 @@ describe('Formal Signing', () => {
 				.addSignatory('tenant', 'tenant-0', { signerId: 'tenant-signer' })
 				.prepareForSigning()
 
-		test('captureCapacity adds a capture with type capacity and text', () => {
-			const signed = buildSignableForm().captureCapacity(
+		test('captureCapacity adds a capture with type capacity and text', async () => {
+			const signed = (await buildSignableForm()).captureCapacity(
 				'landlord',
 				'landlord-0',
 				'landlord-signer',
@@ -994,8 +994,8 @@ describe('Formal Signing', () => {
 			expect(capture?.timestamp).toBeDefined()
 		})
 
-		test('capturePrintedName adds a capture with type printed_name and text', () => {
-			const signed = buildSignableForm().capturePrintedName(
+		test('capturePrintedName adds a capture with type printed_name and text', async () => {
+			const signed = (await buildSignableForm()).capturePrintedName(
 				'tenant',
 				'tenant-0',
 				'tenant-signer',
@@ -1010,9 +1010,9 @@ describe('Formal Signing', () => {
 			expect(capture?.image).toBeUndefined()
 		})
 
-		test('captureCapacity respects custom timestamp and method', () => {
+		test('captureCapacity respects custom timestamp and method', async () => {
 			const ts = '2024-06-01T12:00:00.000Z'
-			const signed = buildSignableForm().captureCapacity(
+			const signed = (await buildSignableForm()).captureCapacity(
 				'landlord',
 				'landlord-0',
 				'landlord-signer',
@@ -1026,8 +1026,8 @@ describe('Formal Signing', () => {
 			expect(capture?.method).toBe('typed')
 		})
 
-		test('getCapture distinguishes capacity from signature at the same locationId', () => {
-			const signed = buildSignableForm()
+		test('getCapture distinguishes capacity from signature at the same locationId', async () => {
+			const signed = (await buildSignableForm())
 				.captureSignature('landlord', 'landlord-0', 'landlord-signer', 'sb-shared')
 				.captureCapacity('landlord', 'landlord-0', 'landlord-signer', 'sb-shared', 'CEO')
 
@@ -1039,10 +1039,8 @@ describe('Formal Signing', () => {
 			expect(cap?.text).toBe('CEO')
 		})
 
-		test('captureCapacity throws when signerId is unknown', () => {
-			expect(() =>
-				buildSignableForm().captureCapacity('landlord', 'landlord-0', 'unknown-signer', 'sb-cap', 'President'),
-			).toThrow(/Signer with ID "unknown-signer" not found/)
+		test('captureCapacity throws when signerId is unknown', async () => {
+			await expect((async () => (await buildSignableForm()).captureCapacity('landlord', 'landlord-0', 'unknown-signer', 'sb-cap', 'President'))()).rejects.toThrow(/Signer with ID "unknown-signer" not found/)
 		})
 	})
 
@@ -1051,8 +1049,8 @@ describe('Formal Signing', () => {
 	// ============================================================================
 
 	describe('Capture slot validation', () => {
-		const buildDraft = () =>
-			createFormWithSignature()
+		const buildDraft = async () =>
+			(await createFormWithSignature())
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -1065,8 +1063,8 @@ describe('Formal Signing', () => {
 				.addSignatory('landlord', 'landlord-0', { signerId: 'landlord-signer' })
 				.addSignatory('tenant', 'tenant-0', { signerId: 'tenant-signer' })
 
-		const sealWithAllTypes = () =>
-			buildDraft().seal(
+		const sealWithAllTypes = async () =>
+			(await buildDraft()).seal(
 				sealOptions({
 					signatureMap: [
 						{ id: 'sig-landlord-0', signerIndex: 0, signerId: 'landlord-signer', type: 'signature', page: 1, x: 0, y: 0, width: 200, height: 50 },
@@ -1119,7 +1117,7 @@ describe('Formal Signing', () => {
 
 		test('rejects an unknown role on formal and informal forms', async () => {
 			const formal = await sealWithAllTypes()
-			const informal = buildDraft().prepareForSigning()
+			const informal = (await buildDraft()).prepareForSigning()
 			for (const signable of [formal, informal]) {
 				expect(() => signable.captureSignature('NOT_A_ROLE', 'landlord-0', 'landlord-signer', 'sig-landlord-0'))
 					.toThrow('Role "NOT_A_ROLE" not found in form. Valid roles: landlord, tenant')
@@ -1128,7 +1126,7 @@ describe('Formal Signing', () => {
 
 		test('rejects an unknown partyId on formal and informal forms', async () => {
 			const formal = await sealWithAllTypes()
-			const informal = buildDraft().prepareForSigning()
+			const informal = (await buildDraft()).prepareForSigning()
 			for (const signable of [formal, informal]) {
 				expect(() => signable.captureCapacity('landlord', 'landlord-9', 'landlord-signer', 'cap-landlord-0', 'Owner'))
 					.toThrow('Cannot captureCapacity: party "landlord-9" not found for role "landlord"')
@@ -1137,15 +1135,15 @@ describe('Formal Signing', () => {
 
 		test('rejects a signer who is not a signatory for the party', async () => {
 			const formal = await sealWithAllTypes()
-			const informal = buildDraft().prepareForSigning()
+			const informal = (await buildDraft()).prepareForSigning()
 			for (const signable of [formal, informal]) {
 				expect(() => signable.captureSignature('landlord', 'landlord-0', 'tenant-signer', 'sig-landlord-0'))
 					.toThrow('Cannot captureSignature: signer "tenant-signer" is not a signatory for party "landlord-0" in role "landlord"')
 			}
 		})
 
-		test('informal form without a signatureMap accepts any locationId for a bound signatory', () => {
-			const signed = buildDraft().prepareForSigning()
+		test('informal form without a signatureMap accepts any locationId for a bound signatory', async () => {
+			const signed = (await buildDraft()).prepareForSigning()
 				.capturePrintedName('tenant', 'tenant-0', 'tenant-signer', 'any-location', 'JANE')
 			expect(signed.getCapture('tenant', 'tenant-0', 'tenant-signer', 'any-location', 'printed_name')?.text).toBe('JANE')
 		})
@@ -1169,8 +1167,8 @@ describe('Formal Signing', () => {
 			expect(signed.getCapture('landlord', 'landlord-0', 'landlord-signer', 'sig-landlord-0', 'signature')?.image).toBe('FIRST')
 		})
 
-		test('an informal form also rejects a second capture of the same slot', () => {
-			const signed = buildDraft().prepareForSigning()
+		test('an informal form also rejects a second capture of the same slot', async () => {
+			const signed = (await buildDraft()).prepareForSigning()
 				.captureSignature('tenant', 'tenant-0', 'tenant-signer', 'any-location')
 			expect(() => signed.captureSignature('tenant', 'tenant-0', 'tenant-signer', 'any-location'))
 				.toThrow('Cannot captureSignature: location "any-location" already has a signature capture for signer "tenant-signer"')
@@ -1188,8 +1186,8 @@ describe('Formal Signing', () => {
 	})
 
 	describe('Finalize completeness', () => {
-		const buildDraft = () =>
-			createFormWithSignature()
+		const buildDraft = async () =>
+			(await createFormWithSignature())
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -1203,7 +1201,7 @@ describe('Formal Signing', () => {
 				.addSignatory('tenant', 'tenant-0', { signerId: 'tenant-signer' })
 
 		test('refuses to finalize a formal form with no captures, listing every missing slot', async () => {
-			const formal = await buildDraft().seal(sealOptions())
+			const formal = await (await buildDraft()).seal(sealOptions())
 			expect(() => formal.finalize()).toThrow(
 				'Cannot finalize: required signing slots have no capture: ' +
 					'"sig-landlord-0" (signature, signer "landlord-signer"), ' +
@@ -1213,7 +1211,7 @@ describe('Formal Signing', () => {
 		})
 
 		test('lists only the slots that are still missing', async () => {
-			const partial = (await buildDraft().seal(sealOptions()))
+			const partial = (await (await buildDraft()).seal(sealOptions()))
 				.captureSignature('landlord', 'landlord-0', 'landlord-signer', 'sig-landlord-0')
 				.captureSignature('tenant', 'tenant-0', 'tenant-signer', 'sig-tenant-0')
 			expect(() => partial.finalize()).toThrow(
@@ -1222,13 +1220,13 @@ describe('Formal Signing', () => {
 		})
 
 		test('finalizes a formal form once every required slot is captured', async () => {
-			const executed = captureDefaultSlots(await buildDraft().seal(sealOptions())).finalize()
+			const executed = captureDefaultSlots(await (await buildDraft()).seal(sealOptions())).finalize()
 			expect(executed.phase).toBe('executed')
 			expect(executed.captures).toHaveLength(3)
 		})
 
 		test('skips slots marked required: false and date_signed slots', async () => {
-			const formal = await buildDraft().seal(
+			const formal = await (await buildDraft()).seal(
 				sealOptions({
 					signatureMap: [
 						{ id: 'sig-landlord-0', signerIndex: 0, signerId: 'landlord-signer', type: 'signature', page: 1, x: 0, y: 0, width: 200, height: 50 },
@@ -1246,7 +1244,7 @@ describe('Formal Signing', () => {
 		})
 
 		test('a formal form sealed with an empty signatureMap still enforces required roles', async () => {
-			const formal = await buildDraft().seal(sealOptions({ signatureMap: [] }))
+			const formal = await (await buildDraft()).seal(sealOptions({ signatureMap: [] }))
 			expect(formal.isFormal).toBe(true)
 			expect(() => formal.finalize()).toThrow(/required signatures/)
 		})
@@ -1277,8 +1275,8 @@ describe('Formal Signing', () => {
 			'sb-tenant-sig': slot('signature', 620, 'Tenant signature', 'tenant'),
 		}
 
-		const buildDraft = () =>
-			createFormWithSignature(slots)
+		const buildDraft = async () =>
+			(await createFormWithSignature(slots))
 				.fill({
 					fields: { rentAmount: 1500, moveInDate: '2024-01-01' },
 					parties: {
@@ -1292,7 +1290,7 @@ describe('Formal Signing', () => {
 				.addSignatory('tenant', 'tenant-0', { signerId: 'tenant-signer' })
 
 		test('each slot becomes a SigningField with its type, label, and signer', async () => {
-			const formal = await buildDraft().seal(sealOptions())
+			const formal = await (await buildDraft()).seal(sealOptions())
 
 			expect(formal.signatureMap?.map((field) => [field.id, field.type, field.label, field.signerId])).toEqual([
 				['sb-landlord-sig', 'signature', 'Landlord signature', 'landlord-signer'],
@@ -1325,8 +1323,8 @@ describe('Formal Signing', () => {
 			},
 		}
 
-		const createFormWithAnchorSlots = () =>
-			form()
+		const createFormWithAnchorSlots = async () =>
+			await form.load(form()
 				.name('anchor-lease')
 				.version('1.0.0')
 				.title('Anchor Lease Agreement')
@@ -1351,7 +1349,7 @@ describe('Formal Signing', () => {
 					signatures: anchorSlots,
 				})
 				.defaultLayer('markdown')
-				.build()
+				.build())
 
 		/**
 		 * A converter that returns a real PDF, plus a locator stub that resolves
@@ -1379,8 +1377,8 @@ describe('Formal Signing', () => {
 			return { options: { adapter, locate } satisfies SealOptions, requests, located }
 		}
 
-		const fillAnchorForm = () =>
-			createFormWithAnchorSlots()
+		const fillAnchorForm = async () =>
+			(await createFormWithAnchorSlots())
 				.fill({
 					fields: { rentAmount: 1200 },
 					parties: {
@@ -1391,14 +1389,14 @@ describe('Formal Signing', () => {
 				.addSigner('landlord-signer', { person: { name: 'John Landlord' } })
 				.addSignatory('landlord', 'landlord-0', { signerId: 'landlord-signer' })
 
-		const buildAnchorDraft = () =>
-			fillAnchorForm()
+		const buildAnchorDraft = async () =>
+			(await fillAnchorForm())
 				.addSigner('tenant-signer', { person: { name: 'Jane Tenant' } })
 				.addSignatory('tenant', 'tenant-0', { signerId: 'tenant-signer' })
 
 		test('binds the anchor of a person with no signatory to the party id', async () => {
 			const { options, requests } = createAnchorOptions()
-			await fillAnchorForm().seal(options)
+			await (await fillAnchorForm()).seal(options)
 
 			const tenantField = requests[0]!.anchorFields?.find((field) => field.id === 'anc-tenant-sig')
 			expect(tenantField?.signerId).toBe('tenant-0')
@@ -1406,7 +1404,7 @@ describe('Formal Signing', () => {
 
 		test('passes anchorFields to the adapter with correct signer bindings', async () => {
 			const { options, requests } = createAnchorOptions()
-			await buildAnchorDraft().seal(options)
+			await (await buildAnchorDraft()).seal(options)
 
 			expect(requests).toHaveLength(1)
 			const anchorFields = requests[0]!.anchorFields
@@ -1430,7 +1428,7 @@ describe('Formal Signing', () => {
 
 		test('resolves anchors on the converted PDF and applies the declared offsets', async () => {
 			const { options, located } = createAnchorOptions()
-			const formal = await buildAnchorDraft().seal(options)
+			const formal = await (await buildAnchorDraft()).seal(options)
 
 			// The locator reads the converted PDF, as prepareSeal's does; the
 			// hash covers that PDF flattened.
@@ -1461,14 +1459,14 @@ describe('Formal Signing', () => {
 					return (await options.locate.locate(pdf, queries)).filter((hit) => hit.id !== 'anc-tenant-sig')
 				},
 			}
-			await expect(buildAnchorDraft().seal({ ...options, locate: partial })).rejects.toThrow(
+			await expect((async () => (await buildAnchorDraft()).seal({ ...options, locate: partial }))()).rejects.toThrow(
 				'Locator did not resolve anchor slot "anc-tenant-sig".',
 			)
 		})
 	})
 
 	test('a non-PDF layer with no slots requires an adapter', async () => {
-		const formDef = form()
+		const formDef = await form.load(form()
 			.name('no-slots-markdown')
 			.version('1.0.0')
 			.title('No Slots Markdown')
@@ -1478,7 +1476,7 @@ describe('Formal Signing', () => {
 			})
 			.inlineLayer('markdown', { mimeType: 'text/markdown', text: 'Markdown content' })
 			.defaultLayer('markdown')
-			.build()
+			.build())
 
 		const draft = formDef
 			.fill({ fields: { name: 'Test' }, parties: { signer: { id: 'signer-0', name: 'Signer' } } })

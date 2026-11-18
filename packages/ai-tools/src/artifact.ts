@@ -64,8 +64,12 @@ export function encodeOutput(bytes: Uint8Array | string): { content: string; enc
 	return { content: bytesToBase64(bytes), encoding: 'base64', byte_length: bytes.byteLength }
 }
 
-/** Resolve layer files beneath the artifact's base URL through the tools' fetch policy. */
-export function makeResolver(base_url: string | undefined, config?: AsterdocToolsConfig) {
+/**
+ * The resolver for an artifact's layer files: each path is read beneath the
+ * artifact's `base_url`, through the tools' fetch policy. `undefined` when
+ * there is no base URL.
+ */
+export function layerFileResolver(base_url: string | undefined, config?: AsterdocToolsConfig) {
 	if (!base_url) return undefined
 	const policy = fetchPolicyFromConfig(config)
 	return createHttpResolver({

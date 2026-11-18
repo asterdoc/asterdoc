@@ -49,7 +49,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'location',
   fields: {
     meetingPoint: { type: 'coordinate', label: 'Meeting Point' }

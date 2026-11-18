@@ -28,9 +28,9 @@ describe('Artifacts Concept', () => {
       expect(Object.keys(lease.fields!)).toEqual(['tenant', 'rent'])
     })
 
-    test('fills form at runtime', () => {
+    test('fills form at runtime', async () => {
       // Runtime: fill and render
-      const filled = lease.fill({
+      const filled = (await a.form.load(lease)).fill({
         fields: { tenant: 'Jane Doe', rent: { amount: 1500, currency: 'USD' } },
       })
 
@@ -44,7 +44,7 @@ describe('Artifacts Concept', () => {
   // Schema-Driven
   // ============================================================================
 
-  test('loads JSON artifact', () => {
+  test('loads JSON artifact', async () => {
     const json = {
       $schema: ASTERDOC_SCHEMA_URL,
       kind: 'form',
@@ -56,7 +56,7 @@ describe('Artifacts Concept', () => {
       },
     }
 
-    const loaded = a.load(JSON.stringify(json))
+    const loaded = await a.load(JSON.stringify(json))
     expect(loaded.kind).toBe('form')
     expect(loaded.name).toBe('residential-lease')
   })

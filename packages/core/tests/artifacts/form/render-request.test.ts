@@ -11,7 +11,7 @@ import type { FormData, AsterdocRenderer, RendererLayer, RenderRequest } from '@
 
 const photo = { name: 'photo.png', mimeType: 'image/png' }
 
-const application = form({
+const application = await form.load({
 	kind: 'form',
 	name: 'application',
 	version: '1.0.0',

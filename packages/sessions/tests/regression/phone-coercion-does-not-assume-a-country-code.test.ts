@@ -4,14 +4,14 @@
 import { expect, it } from "vitest";
 import { createAsterdocRuntime } from "../../src/engine/asterdoc-runtime";
 
-const rt = () => createAsterdocRuntime(artifact({ fields: { tel: { type: "phone" } } }));
+const rt = async () => await createAsterdocRuntime(artifact({ fields: { tel: { type: "phone" } } }));
 
-it("10-digit number without a country code is not assumed US", () => {
-  const r = rt().validateField("tel", "9876543210");
+it("10-digit number without a country code is not assumed US", async () => {
+  const r = (await rt()).validateField("tel", "9876543210");
   expect(r.ok ? (r.value as { number: string }).number : "rejected").not.toBe("+19876543210");
 });
-it("national number with a trunk 0 is not turned into +0...", () => {
-  const r = rt().validateField("tel", "020 7946 0958");
+it("national number with a trunk 0 is not turned into +0...", async () => {
+  const r = (await rt()).validateField("tel", "020 7946 0958");
   expect(r.ok ? (r.value as { number: string }).number : "rejected").not.toBe("+02079460958");
 });
 

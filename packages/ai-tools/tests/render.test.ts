@@ -137,7 +137,7 @@ describe('executeRender', () => {
       })
 
       expect(result.success).toBe(false)
-      expect(result.error?.message).toContain('file-backed')
+      expect(result.error).toMatchObject({ code: 'layer_files_unreachable', message: expect.stringContaining('Give base_url') })
     })
   })
 

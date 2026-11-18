@@ -47,7 +47,7 @@ const rating = a.rating.parse(userInput, {
 ### Using with forms
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'review',
   fields: {
     overallRating: { type: 'rating', label: 'Overall Rating', min: 1, max: 5 },

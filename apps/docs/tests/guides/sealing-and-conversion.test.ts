@@ -12,7 +12,7 @@ const canonicalPdf = readFileSync(path.resolve(__dirname, '../fixtures/pdfs/w9.p
 
 describe('Sealing and Conversion Guide', () => {
   test('seals a PDF layer locally without an adapter', async () => {
-    const form = a.form(
+    const form = await a.form.load(
       {
         name: 'local-pdf',
         fields: {},
@@ -58,7 +58,7 @@ describe('Sealing and Conversion Guide', () => {
         },
       })
     })
-    const form = a.form({
+    const form = await a.form.load({
       name: 'hosted-markdown',
       fields: { name: { type: 'text', required: true } },
       parties: { signer: { label: 'Signer', partyType: 'person', signature: { required: true } } },
@@ -93,7 +93,7 @@ describe('Sealing and Conversion Guide', () => {
 
   describe('integrity', () => {
     const digest = `sha256:${createHash('sha256').update(canonicalPdf).digest('hex')}`
-    const signingForm = (checksum?: string) => a.form(
+    const signingForm = async (checksum?: string) => await a.form.load(
       {
         name: 'integrity-pdf',
         version: '1.0.0',
@@ -112,29 +112,29 @@ describe('Sealing and Conversion Guide', () => {
       },
       { resolver: { read: async () => Uint8Array.from(canonicalPdf) } },
     )
-    const seal = (form: ReturnType<typeof signingForm>) => form
+    const seal = (form: Awaited<ReturnType<typeof signingForm>>) => form
       .fill({ fields: {}, parties: { signer: { id: 'signer-0', name: 'Ada' } } })
       .addSigner('ada', { person: { name: 'Ada' } })
       .addSignatory('signer', 'signer-0', { signerId: 'ada' })
       .seal()
 
     test('a seal records the content hash, and nothing uncovered when every file has a checksum', async () => {
-      const form = signingForm(digest)
+      const form = await signingForm(digest)
       const signable = await seal(form)
       expect(signable.integrity).toEqual({ contentHash: await form.contentHash(), sdkVersion: expect.any(String), uncovered: [] })
     })
 
     test('a layer without a checksum is listed as uncovered', async () => {
-      const signable = await seal(signingForm())
+      const signable = await seal(await signingForm())
       expect(signable.integrity?.uncovered).toEqual([{ kind: 'layer', layer: 'pdf', path: 'w9.pdf' }])
     })
 
-    test('a checksum that does not match the bytes throws LayerChecksumError', async () => {
-      await expect(seal(signingForm(`sha256:${'0'.repeat(64)}`))).rejects.toBeInstanceOf(LayerChecksumError)
+    test('a checksum that does not match the bytes fails the load with LayerChecksumError', async () => {
+      await expect(signingForm(`sha256:${'0'.repeat(64)}`)).rejects.toBeInstanceOf(LayerChecksumError)
     })
 
-    test('a runtime definition is frozen', () => {
-      const draft = signingForm(digest).fill({})
+    test('a runtime definition is frozen', async () => {
+      const draft = (await signingForm(digest)).fill({})
       expect(() => { (draft.form.fields as Record<string, unknown>).extra = {} }).toThrow(TypeError)
     })
   })

@@ -24,9 +24,9 @@ describe('schema versions', () => {
 		expect(schemaVersionUrl(SCHEMA_VERSION)).toBe(ASTERDOC_SCHEMA_URL);
 	});
 
-	it('lists 2026-10-28, 2026-11-06, 2026-11-10, then the current 2026-11-12 on schema.asterdoc.com', () => {
-		expect([...SCHEMA_VERSIONS]).toEqual(['2026-10-28', '2026-11-06', '2026-11-10', '2026-11-12']);
-		expect(ASTERDOC_SCHEMA_URL).toBe('https://schema.asterdoc.com/2026-11-12.json');
+	it('lists 2026-10-28, 2026-11-06, 2026-11-10, 2026-11-12, then the current 2026-11-17 on schema.asterdoc.com', () => {
+		expect([...SCHEMA_VERSIONS]).toEqual(['2026-10-28', '2026-11-06', '2026-11-10', '2026-11-12', '2026-11-17']);
+		expect(ASTERDOC_SCHEMA_URL).toBe('https://schema.asterdoc.com/2026-11-17.json');
 	});
 
 	it('publishes the current dated bundle as an Asterdoc schema', () => {

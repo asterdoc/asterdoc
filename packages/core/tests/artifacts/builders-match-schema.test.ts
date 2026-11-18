@@ -7,6 +7,7 @@
  */
 
 import { describe, expect, test } from 'vitest'
+import { pdfFiles } from '../support/pdf-files'
 import {
 	BundleSchema,
 	ChecklistSchema,
@@ -246,28 +247,28 @@ describe('layer builder signatures()', () => {
 		},
 	}
 
-	const formWithLayer = (layerDef: ReturnType<typeof layer.file> | ReturnType<typeof layer.inline>) =>
-		form()
+	const formWithLayer = async (layerDef: ReturnType<typeof layer.file> | ReturnType<typeof layer.inline>) =>
+		await form.load(form()
 			.name('signed')
 			.party('applicant', party().label('Applicant'))
 			.layer('main', layerDef)
-			.build()
+			.build(), { resolver: pdfFiles() })
 
-	test('file layer builds with signature slots', () => {
+	test('file layer builds with signature slots', async () => {
 		const built = layer.file().path('form.pdf').mimeType('application/pdf').signatures(slots).build()
 		expect(built.signatures).toEqual(slots)
-		expect(formWithLayer(layer.file().path('form.pdf').mimeType('application/pdf').signatures(slots)).layers?.main?.signatures).toEqual(slots)
+		expect((await formWithLayer(layer.file().path('form.pdf').mimeType('application/pdf').signatures(slots))).layers?.main?.signatures).toEqual(slots)
 	})
 
-	test('inline layer builds with signature slots', () => {
+	test('inline layer builds with signature slots', async () => {
 		const built = layer.inline().text('Sign here').mimeType('text/plain').signatures(slots).build()
 		expect(built.signatures).toEqual(slots)
-		expect(formWithLayer(layer.inline().text('Sign here').mimeType('text/plain').signatures(slots)).layers?.main?.signatures).toEqual(slots)
+		expect((await formWithLayer(layer.inline().text('Sign here').mimeType('text/plain').signatures(slots))).layers?.main?.signatures).toEqual(slots)
 	})
 
-	test('a form rejects an invalid signature slot set through signatures()', () => {
+	test('a form rejects an invalid signature slot set through signatures()', async () => {
 		const invalid = { applicant: { ...slots.applicant, type: 'stamp' } } as unknown as Record<string, SignatureSlot>
-		expect(() => formWithLayer(layer.inline().text('Sign here').mimeType('text/plain').signatures(invalid))).toThrow(
+		await expect(formWithLayer(layer.inline().text('Sign here').mimeType('text/plain').signatures(invalid))).rejects.toThrow(
 			/signatures\.applicant\.type/,
 		)
 	})
@@ -293,52 +294,50 @@ describe('form builder rules()', () => {
 		rules,
 	}
 
-	const objectForm = () => form(definition)
-	const builderForm = () =>
-		form()
+	const objectForm = async () => await form.load(definition)
+	const builderForm = async () =>
+		await form.load(form()
 			.name('rules-parity')
 			.field('age', field.number().label('Age'))
 			.field('income', field.number().label('Income'))
 			.rules(rules)
-			.build()
+			.build())
 	// from() does not carry the definition's field types, so its instance is widened here.
-	const fromForm = () => form().from(definition).build() as unknown as ReturnType<typeof objectForm>
+	const fromForm = async () => await form.load(form().from(definition).build()) as unknown as ReturnType<typeof objectForm>
 
 	const rulesResult = (
 		instance: { fill(payload: { fields: Record<string, number> }): { validate(): { rules: FormRulesValidationResult } } },
 		fields: Record<string, number>,
 	) => instance.fill({ fields }).validate().rules
 
-	test('builder.rules() and builder.from() keep the rules the object pattern keeps', () => {
-		const expected = objectForm().toJSON().rules
+	test('builder.rules() and builder.from() keep the rules the object pattern keeps', async () => {
+		const expected = (await objectForm()).toJSON().rules
 		expect(Object.keys(expected ?? {})).toEqual(['ageLimit', 'incomeHint'])
-		expect(builderForm().toJSON().rules).toEqual(expected)
-		expect(fromForm().toJSON().rules).toEqual(expected)
+		expect((await builderForm()).toJSON().rules).toEqual(expected)
+		expect((await fromForm()).toJSON().rules).toEqual(expected)
 	})
 
 	test.each([
 		['failing', { age: 16, income: 0 }],
 		['passing', { age: 30, income: 1000 }],
-	] as const)('validate().rules matches the object pattern when %s', (_label, fields) => {
-		const expected = rulesResult(objectForm(), fields)
-		expect(rulesResult(builderForm(), fields)).toEqual(expected)
-		expect(rulesResult(fromForm(), fields)).toEqual(expected)
+	] as const)('validate().rules matches the object pattern when %s', async (_label, fields) => {
+		const expected = rulesResult((await objectForm()), fields)
+		expect(rulesResult((await builderForm()), fields)).toEqual(expected)
+		expect(rulesResult((await fromForm()), fields)).toEqual(expected)
 	})
 
-	test('a failing rule is reported through the builder', () => {
-		const result = rulesResult(builderForm(), { age: 16, income: 0 })
+	test('a failing rule is reported through the builder', async () => {
+		const result = rulesResult((await builderForm()), { age: 16, income: 0 })
 		expect(result.valid).toBe(false)
 		expect(result.errors.map((error) => error.ruleId)).toEqual(['ageLimit'])
 		expect(result.warnings.map((warning) => warning.ruleId)).toEqual(['incomeHint'])
 	})
 
-	test('rules() rejects a rule with no message', () => {
-		expect(() =>
-			form()
+	test('rules() rejects a rule with no message', async () => {
+		expect(() => form()
 				.name('bad-rules')
 				.rules({ broken: { expr: 'true' } } as never)
-				.build(),
-		).toThrow(/message/)
+				.build()).toThrow(/message/)
 	})
 })
 
@@ -375,8 +374,8 @@ describe('form builder from()', () => {
 		expect(Object.keys(everyKey).sort()).toEqual(objectKeys(FormSchema).filter((key) => key !== '$schema').sort())
 	})
 
-	test('keeps every key the object pattern keeps', () => {
-		expect(form().from(everyKey).build().toJSON()).toEqual(form(everyKey).toJSON())
+	test('keeps every key the object pattern keeps', async () => {
+		expect((await form.load(form().from(everyKey).build())).toJSON()).toEqual((await form.load(everyKey)).toJSON())
 	})
 
 	test('rejects an invalid definition', () => {

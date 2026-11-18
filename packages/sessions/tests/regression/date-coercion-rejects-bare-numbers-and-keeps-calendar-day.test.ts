@@ -4,14 +4,14 @@
 import { expect, it } from "vitest";
 import { createAsterdocRuntime } from "../../src/engine/asterdoc-runtime";
 
-const rt = () => createAsterdocRuntime(artifact({ fields: { dob: { type: "date" } } }));
+const rt = async () => await createAsterdocRuntime(artifact({ fields: { dob: { type: "date" } } }));
 
-it("bare number is not a date", () => {
-  const r = rt().validateField("dob", "5");
+it("bare number is not a date", async () => {
+  const r = (await rt()).validateField("dob", "5");
   expect(r).toMatchObject({ ok: false });
 });
-it("long-form date keeps its calendar day in any time zone", () => {
-  const r = rt().validateField("dob", "March 4, 2025");
+it("long-form date keeps its calendar day in any time zone", async () => {
+  const r = (await rt()).validateField("dob", "March 4, 2025");
   if (r.ok) expect(r.value).toBe("2025-03-04");
 });
 

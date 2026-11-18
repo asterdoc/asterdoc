@@ -207,16 +207,16 @@ Your data is used to provide and improve our services.
       expect(yaml).toContain('name: privacy-policy')
     })
 
-    test('round-trips through JSON', () => {
+    test('round-trips through JSON', async () => {
       const jsonStr = JSON.stringify(privacyPolicy.toJSON())
-      const loaded = a.load(jsonStr)
+      const loaded = await a.load(jsonStr)
       expect(loaded.kind).toBe('document')
       expect(loaded.name).toBe('privacy-policy')
     })
 
-    test('round-trips through YAML', () => {
+    test('round-trips through YAML', async () => {
       const yaml = privacyPolicy.toYAML()
-      const loaded = a.load(yaml)
+      const loaded = await a.load(yaml)
       expect(loaded.kind).toBe('document')
       expect(loaded.name).toBe('privacy-policy')
     })

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createAsterdocRuntime } from "./asterdoc-runtime";
 
 describe("createAsterdocRuntime", () => {
-	it("keeps a core expression failure unresolved instead of offering fallback state", () => {
-		const runtime = createAsterdocRuntime({
+	it("keeps a core expression failure unresolved instead of offering fallback state", async () => {
+		const runtime = await createAsterdocRuntime({
 			$schema: "https://schema.asterdoc.com/2026-11-06.json",
 			kind: "form",
 			name: "runtime-failure",
@@ -58,15 +58,15 @@ describe("createAsterdocRuntime", () => {
 		defaultLayer: "composition",
 	});
 
-	it("keeps asking for required fields while computed values are missing their inputs", () => {
-		const state = createAsterdocRuntime(pricedArtifact()).getFillState({}, {}, {});
+	it("keeps asking for required fields while computed values are missing their inputs", async () => {
+		const state = (await createAsterdocRuntime(pricedArtifact())).getFillState({}, {}, {});
 		expect(state.resolved).toBe(true);
 		expect(state.diagnostics).toBeUndefined();
 		expect(state.openRequired.map((field) => field.fieldPath)).toEqual(["quantity", "divisor", "note"]);
 	});
 
-	it("reports a failing computed value as a diagnostic and keeps asking for the rest", () => {
-		const state = createAsterdocRuntime(pricedArtifact()).getFillState({ quantity: 3, divisor: 0 }, {}, {});
+	it("reports a failing computed value as a diagnostic and keeps asking for the rest", async () => {
+		const state = (await createAsterdocRuntime(pricedArtifact())).getFillState({ quantity: 3, divisor: 0 }, {}, {});
 		expect(state.resolved).toBe(true);
 		expect(state.diagnostics).toEqual([expect.stringContaining("division-by-zero")]);
 		expect(state.openRequired.map((field) => field.fieldPath)).toEqual(["note"]);
@@ -74,7 +74,7 @@ describe("createAsterdocRuntime", () => {
 	});
 
 	describe("a masked text field", () => {
-		const masked = () => createAsterdocRuntime({
+		const masked = async () => await createAsterdocRuntime({
 			$schema: "https://schema.asterdoc.com/2026-11-06.json",
 			kind: "form",
 			name: "masked",
@@ -86,13 +86,13 @@ describe("createAsterdocRuntime", () => {
 			defaultLayer: "composition",
 		});
 
-		it("stores a value given with or without separators without them", () => {
-			expect(masked().validateField("ssn", "123-45-6789")).toEqual({ ok: true, value: "123456789" });
-			expect(masked().validateField("ssn", "123456789")).toEqual({ ok: true, value: "123456789" });
+		it("stores a value given with or without separators without them", async () => {
+			expect((await masked()).validateField("ssn", "123-45-6789")).toEqual({ ok: true, value: "123456789" });
+			expect((await masked()).validateField("ssn", "123456789")).toEqual({ ok: true, value: "123456789" });
 		});
 
-		it("keeps the mask_mismatch code and the expected shape on a refusal", () => {
-			expect(masked().validateField("ssn", "123-456-789")).toEqual({
+		it("keeps the mask_mismatch code and the expected shape on a refusal", async () => {
+			expect((await masked()).validateField("ssn", "123-456-789")).toEqual({
 				ok: false,
 				issues: [{ fieldPath: "fields.ssn", code: "mask_mismatch", candidates: [], message: expect.stringContaining("Expected ###-##-####") }],
 			});

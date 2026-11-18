@@ -224,16 +224,16 @@ describe('Checklists Guide', () => {
       expect(yaml).toContain('name: employee-onboarding')
     })
 
-    test('round-trips through JSON', () => {
+    test('round-trips through JSON', async () => {
       const jsonStr = JSON.stringify(onboarding.toJSON())
-      const loaded = a.load(jsonStr)
+      const loaded = await a.load(jsonStr)
       expect(loaded.kind).toBe('checklist')
       expect(loaded.name).toBe('employee-onboarding')
     })
 
-    test('round-trips through YAML', () => {
+    test('round-trips through YAML', async () => {
       const yaml = onboarding.toYAML()
-      const loaded = a.load(yaml)
+      const loaded = await a.load(yaml)
       expect(loaded.kind).toBe('checklist')
       expect(loaded.name).toBe('employee-onboarding')
     })

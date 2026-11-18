@@ -67,23 +67,23 @@ const happyPathInputs = {
 } as const;
 
 describe("ach-credit-authorization", () => {
-  it("loads via a.form()", () => {
-    expect(achCreditAuthorization.isValid()).toBe(true);
+  it("loads via a.form.load()", async () => {
+    expect((await achCreditAuthorization.load()).isValid()).toBe(true);
   });
 
-  it("accepts the bundled passing vector (synth.required.payeephone.present-payeetype-organization)", () => {
-    const result = achCreditAuthorization.safeFill(happyPathInputs as any);
+  it("accepts the bundled passing vector (synth.required.payeephone.present-payeetype-organization)", async () => {
+    const result = (await achCreditAuthorization.load()).safeFill(happyPathInputs as any);
     expect(result.success).toBe(true);
   });
 
-  it("passes its own test cases", () => {
-    const report = achCreditAuthorization.runTests();
+  it("passes its own test cases", async () => {
+    const report = (await achCreditAuthorization.load()).runTests();
     expect(report.results.filter((r) => !r.passed).map((r) => r.name)).toEqual([]);
     expect(report.results).toHaveLength(2);
   });
 
   it("renders the markdown layer on the bound resolver", async () => {
-    const result = achCreditAuthorization.safeFill(happyPathInputs as any);
+    const result = (await achCreditAuthorization.load()).safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");
     const output = await result.data.render({ layer: "markdown" });
     expect(typeof output).toBe("string");
@@ -91,7 +91,7 @@ describe("ach-credit-authorization", () => {
   });
 
   it("renders the PDF layer through the default renderer", async () => {
-    const result = achCreditAuthorization.safeFill(happyPathInputs as any);
+    const result = (await achCreditAuthorization.load()).safeFill(happyPathInputs as any);
     if (!result.success) throw new Error("passing vector should be accepted");
     const output = await result.data.render({ layer: "pdf" });
     expect(output).toBeInstanceOf(Uint8Array);

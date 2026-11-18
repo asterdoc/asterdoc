@@ -101,8 +101,8 @@ afterEach(() => {
   container.remove();
 });
 
-function purchaseOrderRuntime(): ArtifactRuntime {
-  return runtimeFor(purchaseOrderSpec);
+async function purchaseOrderRuntime(): Promise<ArtifactRuntime> {
+  return await runtimeFor(purchaseOrderSpec);
 }
 
 /** Answers, or skips, whatever the session asks for next, from the sample. */
@@ -118,7 +118,7 @@ function step(session: FormSession, runtime: ArtifactRuntime) {
  * there is nothing for React to do — which is claim 3, and it is a property of
  * the engine's contract rather than of anything this package memoizes.
  */
-const PREVIEW_RUNTIME = purchaseOrderRuntime();
+const PREVIEW_RUNTIME = await purchaseOrderRuntime();
 
 function Preview({ session }: { session: FormSession }) {
   const data = useMemo(
@@ -176,8 +176,8 @@ interface FillState {
   did: string | null;
 }
 
-function walkFill(): FillState[] {
-  const runtime = purchaseOrderRuntime();
+async function walkFill(): Promise<FillState[]> {
+  const runtime = await purchaseOrderRuntime();
   const states: FillState[] = [{ session: emptySession(NAME), did: null }];
   for (;;) {
     const current = states[states.length - 1]!;
@@ -188,7 +188,7 @@ function walkFill(): FillState[] {
   }
 }
 
-const FILL = walkFill();
+const FILL = await walkFill();
 
 describe("a purchase order filled by a session", () => {
   // Claim 1: every state from empty to complete renders. Claim 2: each answer,
@@ -230,13 +230,13 @@ describe("a purchase order filled by a session", () => {
   it("ends the walk ready, with the answers printed", async () => {
     const { session } = FILL[FILL.length - 1]!;
     expect(FILL.map((state) => state.did)).toContain("orderNumber");
-    expect(deriveView(session, purchaseOrderRuntime()).phase).toBe("ready");
+    expect(deriveView(session, await purchaseOrderRuntime()).phase).toBe("ready");
     await show(session);
     expect(fieldText("orderNumber")).toContain(purchaseOrderData.fields.orderNumber as string);
   });
 
-  it("asks for every field the seal needs, including the one nothing prints", () => {
-    const { order } = fillBySession(NAME, purchaseOrderSpec, purchaseOrderAnswers);
+  it("asks for every field the seal needs, including the one nothing prints", async () => {
+    const { order } = await fillBySession(NAME, purchaseOrderSpec, purchaseOrderAnswers);
 
     // The buyer's contact is the person the seal binds the buyer's signer to.
     // The composition prints no `Field` for it, which is the composition's
@@ -246,15 +246,15 @@ describe("a purchase order filled by a session", () => {
     expect(order).toContain("party:supplier");
   });
 
-  it("asks for the first answer while the totals it computes are still missing", () => {
+  it("asks for the first answer while the totals it computes are still missing", async () => {
     // The totals read rows and a rate nobody has answered yet. They are missing,
     // not failed, so the session still has something to ask.
-    const state = runtimeFor(purchaseOrderSpec).getFillState({}, {}, {});
+    const state = (await runtimeFor(purchaseOrderSpec)).getFillState({}, {}, {});
     expect(state.resolved).toBe(true);
     expect(state.diagnostics).toBeUndefined();
     expect(state.openRequired.map((field) => field.fieldPath)).toContain("orderNumber");
 
-    const view = deriveView(emptySession(NAME), runtimeFor(purchaseOrderSpec));
+    const view = deriveView(emptySession(NAME), await runtimeFor(purchaseOrderSpec));
     expect(view.phase).not.toBe("unresolved");
     expect(view.next).not.toBeNull();
   });
@@ -273,14 +273,14 @@ describe("a purchase order filled by a session", () => {
     const fromTheSample = keeps().get("totals")?.textContent;
     expect(fromTheSample).toMatch(/\$[\d,]+\.\d\d/);
 
-    const { session } = fillBySession(NAME, purchaseOrderSpec, purchaseOrderAnswers);
+    const { session } = await fillBySession(NAME, purchaseOrderSpec, purchaseOrderAnswers);
     await show(session);
     expect(keeps().get("totals")?.textContent).toBe(fromTheSample);
   });
 
   it("leaves the document exactly as it was when a value is rejected", async () => {
-    const runtime = purchaseOrderRuntime();
-    const { session } = fillBySession(NAME, purchaseOrderSpec, purchaseOrderAnswers);
+    const runtime = await purchaseOrderRuntime();
+    const { session } = await fillBySession(NAME, purchaseOrderSpec, purchaseOrderAnswers);
     await show(session);
 
     const painted = stack().outerHTML;

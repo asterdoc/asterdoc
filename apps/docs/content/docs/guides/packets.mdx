@@ -22,7 +22,7 @@ Start from the agreement in the [React Layers](/guides/react-layers) guide. The 
 ```ts title="documents/statement-of-work.ts"
 import { a } from '@asterdoc/core'
 
-export const statementOfWork = a
+export const statementOfWork = await a.form.load(a
   .form()
   .name('statement-of-work')
   .version('1.0.0')
@@ -41,7 +41,7 @@ export const statementOfWork = a
     },
   })
   .defaultLayer('composition')
-  .build()
+  .build())
 ```
 
 ```tsx title="compositions/statement-of-work-document.tsx"

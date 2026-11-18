@@ -10,8 +10,8 @@ import { expect, test } from 'vitest'
 import { form } from '@/artifacts'
 import type { FormData, AsterdocRenderer, RendererLayer } from '@asterdoc/types'
 
-const definition = () =>
-	form()
+const definition = async () =>
+	await form.load(form()
 		.name('f')
 		.version('1.0.0')
 		.title('F')
@@ -21,7 +21,7 @@ const definition = () =>
 		})
 		.inlineLayer('md', { mimeType: 'text/markdown', text: 'P: {{fields.parties}}' })
 		.defaultLayer('md')
-		.build()
+		.build())
 
 const recordingRenderer = () => {
 	const seen: FormData[] = []
@@ -40,7 +40,7 @@ test('field values named "parties" and "fields" stay under fields', async () => 
 	const { renderer, seen } = recordingRenderer()
 	const data = { fields: { parties: 'Acme and Bob', fields: 'Plumbing' } }
 
-	await definition().render({ renderer, data })
+	await (await definition()).render({ renderer, data })
 
 	expect(seen).toEqual([{ fields: { parties: 'Acme and Bob', fields: 'Plumbing' } }])
 })
@@ -48,7 +48,7 @@ test('field values named "parties" and "fields" stay under fields', async () => 
 test('bare field values are refused', async () => {
 	const { renderer, seen } = recordingRenderer()
 
-	await expect(definition().render({ renderer, data: { parties: 'Acme and Bob' } } as never)).rejects.toThrow(
+	await expect((async () => (await definition()).render({ renderer, data: { parties: 'Acme and Bob' } } as never))()).rejects.toThrow(
 		/render `data` must be FormData/,
 	)
 	expect(seen).toEqual([])

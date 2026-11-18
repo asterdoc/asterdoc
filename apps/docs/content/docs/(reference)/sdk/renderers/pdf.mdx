@@ -17,7 +17,7 @@ import { writeFileSync } from 'node:fs'
 
 const resolver = createFsResolver({ root: process.cwd() })
 
-const form = a.form({
+const form = await a.form.load({
   name: 'w9',
   fields: {
     name: { type: 'text', label: 'Name' },
@@ -95,7 +95,6 @@ function pdfRenderer(options?: PdfRendererOptions): AsterdocRenderer<
 
 <PropertiesTable properties={[
   { name: 'formatter', type: 'Formatter', description: 'Artifact value formatter. Defaults to en-US.', isOptional: true },
-  { name: 'font', type: 'PdfFont', description: 'A font supplied at render time. It is tried first, before the font the layer declares. See [Fonts](#fonts).', isOptional: true },
   { name: 'expressions', type: '{ functions?, signatures? }', description: 'Host-configured expression functions that binding templates can call, with their signatures. A template cannot call a function without a signature.', isOptional: true },
 ]} />
 
@@ -126,8 +125,8 @@ async function renderPdf(options: RenderPdfOptions): Promise<Uint8Array>
   { name: 'expressions', type: 'TemplateExpressionOptions', description: 'The expression context and configured `functions` and `signatures` that binding templates read', isOptional: true },
   { name: 'formatter', type: 'Formatter', description: 'Artifact value formatter. Defaults to en-US.', isOptional: true },
   { name: 'overlays', type: 'PdfOverlay[]', description: 'Text or image overlays drawn at page coordinates', isOptional: true },
-  { name: 'font', type: 'PdfFont', description: 'A font supplied at render time, tried first', isOptional: true },
-  { name: 'layerFont', type: 'PdfFont', description: "The font the artifact's PDF layer declares, tried after `font`", isOptional: true },
+  { name: 'layerFont', type: 'PdfFont', description: "The TrueType font the artifact's PDF layer declares, tried first", isOptional: true },
+  { name: 'standardFont', type: "'Helvetica' | 'Courier'", description: "The standard font the artifact's PDF layer declares for every field. See [Fonts](#fonts)", isOptional: true },
   { name: 'format', type: 'LayerFormat', description: "How the artifact's PDF layer prints values, applied over `formatter`, with each binding's own format over it. See [Artifact formatting](#artifact-formatting)", isOptional: true },
 ]} />
 
@@ -371,9 +370,9 @@ A value that does not fit is reduced in size, down to `MIN_FONT_SIZE` (6 points)
 
 ## Checking bindings before filling
 
-`validate()` fails a binding whose value is not a known Asterdoc path, and `validateLayers()` fails a binding whose key is not an AcroForm field in the template. Both errors name the layer and the key.
+`validate()` fails a binding whose value is not a known Asterdoc path, and `validateLayers()` fails a binding whose key is not an AcroForm field in the template. Both errors name the layer and the key. `form.load` refuses such a key too, with the `PdfBindingKeyError` a render throws. `validateLayers()` also fails a binding to a text or choice field with more than one widget, naming the field and its pages, since a value would print in each widget. `inspectAcroFormFields` lists every widget of a field in `widgets`.
 
-`validateLayers()`, `asterdoc validate`, and the `validate_artifact` AI tool also check each binding of a form's PDF layer to a text field before any data exists. The check builds values the bound field accepts and lays them out with the same code filling uses, in the font filling would choose: the layer's declared font, then the form's own font for the field, then Helvetica. A font supplied only at render time is not known to the check.
+`validateLayers()`, `asterdoc validate`, and the `validate_artifact` AI tool also check each binding of a form's PDF layer to a text field before any data exists. The check builds values the bound field accepts and lays them out with the same code filling uses, in the fonts filling would choose: the layer's declared TrueType font, then the standard font of the binding or the layer (Helvetica unless the artifact chooses Courier). The font a PDF field itself names is not used. A value that passes this check can still be too wide for its box, or need a character no font has. `validate()` reads no layer: the render check, `draft.renderProblems(layer)`, checks each actual value, and `render()`, `prepareSeal()` and `seal()` run it first and throw `RenderRefusedError` with its report.
 
 A text, email, uuid, or uri field is checked at its length bound: `maxLength` characters, or the length its `pattern` bounds, whichever is shorter. A uuid field without a pattern takes its 36-character canonical form. Two values of that length are laid out:
 
@@ -402,35 +401,40 @@ const issues = await checkPdfBindingFit({ template: pdfBytes, form, bindings })
 
 ## Fonts
 
-For each text value, filling uses the first font that can draw every character of the value:
+Filled values draw in the standard PDF fonts every viewer has, so nothing is embedded: Helvetica, or Courier (monospace), each with the Windows Latin 1 (WinAnsi) characters. The font the PDF field itself names is not used. A field draws in:
 
-1. a font supplied at render time;
-2. the font the artifact's PDF layer declares;
-3. the form's own embedded font for that field, when it has every glyph the value needs;
-4. standard Helvetica, for Latin-1 (WinAnsi) text only.
+1. the font its binding chooses: `{ "path": "fields.ssn", "font": "Courier" }`;
+2. else the font its PDF layer chooses: `"font": "Courier"`;
+3. else Helvetica.
 
-Most official forms need no font configuration: their values are Latin-1 and fill in Helvetica. For names in Latin Extended, Greek, Cyrillic, or CJK scripts, declare a TrueType font (`.ttf`) on the PDF layer. The font is read through the same resolver as the layer's PDF, so it travels with the artifact:
+An artifact may choose `"Helvetica"` or `"Courier"`. The choice is in the artifact, not in the data, because whether a value fits depends on it, and the render check measures with it:
 
 ```json
 "pdf": {
   "kind": "file",
   "mimeType": "application/pdf",
   "path": "w-9.pdf",
-  "font": { "path": "fonts/NotoSans-Regular.ttf" }
+  "font": "Courier",
+  "bindings": { "f1_01": { "path": "fields.name", "font": "Helvetica" } }
 }
 ```
 
-A host application can supply a font at render time, for example a licensed corporate font. It wins over the layer's font:
+A standard font cannot draw a character outside Windows Latin 1, such as Chinese, Arabic, Cyrillic, Greek, Polish ł, Czech č, Turkish ğ or Vietnamese ễ. The render check reports such a value, and a render refuses it with the same report.
 
-```ts
-import { createLayerRenderer } from '@asterdoc/render'
+### A layer font
 
-const output = await filled.render({
-  renderer: createLayerRenderer({ pdfFont: { bytes: corporateFont, source: 'corporate.ttf' } }),
-})
+A layer can declare its own TrueType font (`.ttf`) instead, as a design choice. It is read through the same resolver as the layer's PDF, so it travels with the artifact. Each character draws in it when it has the glyph, else in the field's standard font, so one value can mix the two. It is embedded as a subset of the glyphs drawn, so a large font adds kilobytes to the output. Only TrueType-outline fonts are supported; an OpenType font with CFF outlines, a font collection, or a WOFF file is refused.
+
+```json
+"pdf": {
+  "kind": "file",
+  "mimeType": "application/pdf",
+  "path": "w-9.pdf",
+  "font": { "path": "fonts/Corporate-Regular.ttf" }
+}
 ```
 
-`pdfRenderer({ font })` and `renderPdf({ font, layerFont })` take the same `PdfFont`: the font's `bytes` and a `source` that errors name it by. Every font used to draw is embedded in the output, so the PDF displays the same in any viewer. Only TrueType-outline fonts are supported; an OpenType font with CFF outlines, a font collection, or a WOFF file is refused.
+There is no render-time font: the fonts belong to the artifact, so the render check and the render measure the same text with the same fonts.
 
 To lay out overlay text yourself, measure it first. `pdfFontMetrics(font)` reads a `PdfFont` and returns `canDraw(text)`, true when every character has a glyph and none needs shaping, and `width(text, size)`, the width in points that an overlay draws:
 
@@ -443,34 +447,34 @@ if (metrics.canDraw(name) && metrics.width(name, 10) <= 495) {
 }
 ```
 
-Filling draws one glyph per character, left to right. It does not shape text, so Arabic, Hebrew, Devanagari, Thai, and other scripts that need shaping or right-to-left ordering are refused, whatever font is available. Render documents in those scripts from a [React composition layer](/guides/react-layers).
+Filling draws one glyph per character, left to right. It does not shape text, so Arabic, Hebrew, Devanagari, Thai, and other scripts that need shaping or right-to-left ordering are refused, whatever font is available. The render check reports such a value first. Render documents in those scripts from a [React composition layer](/guides/react-layers).
 
 ## Errors
 
 A value that cannot be drawn faithfully fails with `PdfFieldFillError`. It names the field (or the text overlay), the artifact paths the field prints, and the reason. `field` is the PDF field name. `paths` holds the paths as fill data writes them, such as `['fields.nameInNativeAlphabet']` or `['parties.client.lastName']`; a template binding gives each path of its template. An overlay with fixed text has no `paths`.
 
 ```text
-Cannot fill PDF field "form1[0].Page1[0].NativeName[0]" with fields.nameInNativeAlphabet: no available font can draw "王" (U+738B). Declare a font that has this character on the PDF layer of the artifact: "font": { "path": "<file>.ttf" }. The SDK can also take a font for one render: pdfRenderer({ font }).
+Cannot fill PDF field "form1[0].Page1[0].NativeName[0]" with fields.nameInNativeAlphabet: no available font can draw "Հ" (U+0540). The field draws in Helvetica, a standard PDF font with the Windows Latin 1 characters only. To print this character, declare a TrueType font that has it on the PDF layer of the artifact: "font": { "path": "<file>.ttf" }.
 ```
 
 | `reason` | When | Detail |
 |---|---|---|
 | `overflow` | The value does not fit at the minimum size | `limit`: the minimum size in points |
 | `comb-length` | The value has more characters than the comb field has boxes | `limit`: the number of boxes |
-| `missing-glyph` | No available font can draw a character | `character`: the character. Declare a font on the PDF layer that has it, or pass one at render time. |
-| `unsupported-script` | The value is in a script that needs shaping | `script`: the script, such as `Arabic`. No font corrects this. |
+| `missing-glyph` | No available font can draw a character | `character`: the character. Declare a TrueType font on the PDF layer that has it. |
+| `unsupported-script` | The value is in a script that needs shaping | `script`: the script, such as `Arabic`; `character`: its first character in the value. No font corrects this. |
 
-### Checking test values before a render
+### Checking values before a render
 
-`validateLayers()`, `asterdoc validate`, and the `validate_artifact` AI tool print the values of each test in a form's `tests` with the fonts of each PDF layer, without drawing. A value that would fail with `missing-glyph` or `unsupported-script` is an error that names the layer and the test and carries the message of the render error. A font supplied only at render time is not known to the check.
+`validate()` answers whether the data matches the artifact; it reads no layer. Whether valid data renders on a PDF layer is the layer's render check: `draft.renderProblems(layer)` reports every value the layer would refuse, with the code rendering draws with, before any render. A render runs the same check first and refuses with the same report, `RenderRefusedError`, before it draws anything: see [Rendering a layer](/sdk/artifacts/form#rendering-a-layer). `validateLayers()`, `asterdoc validate`, and the `validate_artifact` AI tool run the render check on the values of each test in a form's `tests` whose data is valid, and report each problem as an error that names the layer, the test, the PDF field and the path.
 
-`pdfFontCheck()` is the renderer behind that check. It draws nothing: for a render request it returns the `PdfFieldFillError` of each bound field whose text no font can draw, or an empty list.
+`readPdfPrintProfile()` and `pdfPrintFailures()` are the functions behind that check: the first reads a PDF layer once, the second checks data against it and reads no file.
 
 ```ts
-import { pdfFontCheck } from '@asterdoc/render/pdf'
+import { pdfPrintFailures, readPdfPrintProfile } from '@asterdoc/render/pdf'
 
-const refused = await filled.render({ layer: 'pdf', renderer: pdfFontCheck() })
-for (const error of refused) console.error(error.paths, error.character ?? error.script)
+const profile = await readPdfPrintProfile({ template, form, bindings })
+for (const failure of pdfPrintFailures(profile, { data })) console.error(failure.field, failure.paths, failure.message)
 ```
 
 A supplied or declared font that cannot be used fails with `PdfFontError`, naming its `source` and the `problem`: `unreadable`, `unsupported-format`, or `not-embeddable` (its license forbids embedding). A declared font the resolver cannot find fails the same way a missing layer file does.

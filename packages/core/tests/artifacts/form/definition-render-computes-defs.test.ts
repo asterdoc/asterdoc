@@ -33,29 +33,29 @@ function recorder() {
 describe('rendering a form definition with a payload', () => {
 	test('gives the renderer the computed values that a filled form gives it', async () => {
 		const fromDefinition = recorder()
-		await form.from(definition).render({ data: { fields: { lastName: 'Kabongo', rehired: true } }, renderer: fromDefinition.renderer })
+		await (await form.load(definition)).render({ data: { fields: { lastName: 'Kabongo', rehired: true } }, renderer: fromDefinition.renderer })
 		const fromFilled = recorder()
-		await form.from(definition).fill({ fields: { lastName: 'Kabongo', rehired: true } }).render({ renderer: fromFilled.renderer })
+		await (await form.load(definition)).fill({ fields: { lastName: 'Kabongo', rehired: true } }).render({ renderer: fromFilled.renderer })
 		expect(fromDefinition.seen).toEqual([{ supplementName: 'Kabongo' }])
 		expect(fromDefinition.seen).toEqual(fromFilled.seen)
 	})
 
 	test('computes them from the payload, so a condition that is false leaves the value empty', async () => {
 		const { seen, renderer } = recorder()
-		await form.from(definition).render({ data: { fields: { lastName: 'Kabongo', rehired: false } }, renderer })
+		await (await form.load(definition)).render({ data: { fields: { lastName: 'Kabongo', rehired: false } }, renderer })
 		expect(seen).toEqual([{ supplementName: '' }])
 	})
 
 	test('keeps the computed values that the caller sends', async () => {
 		const { seen, renderer } = recorder()
-		await form.from(definition).render({ data: { fields: { lastName: 'Kabongo', rehired: true }, defs: { supplementName: 'Sent by the caller' } }, renderer })
+		await (await form.load(definition)).render({ data: { fields: { lastName: 'Kabongo', rehired: true }, defs: { supplementName: 'Sent by the caller' } }, renderer })
 		expect(seen).toEqual([{ supplementName: 'Sent by the caller' }])
 	})
 
 	test('adds nothing for a form that has no computed values', async () => {
 		const { defs: _defs, ...plain } = definition
 		const { seen, renderer } = recorder()
-		await form.from(plain).render({ data: { fields: { lastName: 'Kabongo' } }, renderer })
+		await (await form.load(plain)).render({ data: { fields: { lastName: 'Kabongo' } }, renderer })
 		expect(seen).toEqual([undefined])
 	})
 })

@@ -4,6 +4,98 @@ All notable changes to Asterdoc (named Paradoc through 0.8). Packages are versio
 
 ## [Unreleased]
 
+Under this release, valid data never fails at render without warning. `validate()` answers one question, whether the data matches the artifact, and reads no layer. Whether valid data renders on a PDF layer is that layer's render check, `draft.renderProblems(layer)`; a render runs the same check first and refuses with the same report before drawing. A form loads with `await form.load(definition, { resolver })`, which reads every PDF layer once for that check. PDF text draws in the standard PDF fonts, which an artifact may choose per layer or per binding. Prints that fail for some value the artifact accepts are refused at artifact validation, and the field gets the constraint that keeps such values out. It adds schema version 2026-11-17.
+
+### Highlights
+
+- `await form.load(definition, { resolver })` is the one way to get a form instance. It reads every PDF layer into a print profile of each field.
+- `draft.renderProblems(layer)` is the render check of a layer: a value that overflows its field, does not fit a comb, or has a character the field's font cannot draw, each at `fields.<path>` with code `unprintable`, the `layer` and the `pdfField`. `render()`, `prepareSeal()` and `seal()` run it first and throw `RenderRefusedError` with the same `problems`. The check and the render measure with the same code.
+- PDF text draws in Helvetica, a standard PDF font every viewer has, so nothing is embedded, whatever font the PDF field itself names. An artifact may choose Courier (monospace) for a PDF layer (`"font": "Courier"`), or `"Helvetica"` or `"Courier"` for a binding object, over the layer (`{ "path": "fields.ssn", "font": "Courier" }`). A layer's TrueType font stays opt-in; it is tried first and embedded as a subset of the glyphs drawn.
+- A phone field takes `countryCode`, the country calling code every number must have (`"1"` for the North American plan). Fill refuses a number of another plan, or one that is not valid in the plan.
+- Artifact validation reports a list a PDF layer binds by row that can hold more items than the rows bound, binds rows with a gap, or binds fewer members in a later row, or binds a row at or past its `maxItems`, which never fills. Give the list `maxItems`. Render no longer throws at fill time for too many items.
+- Artifact validation reports `country.display` or `region.display` on an address without `"codes": true`, in PDF, text and DOCX layers.
+- Artifact validation reports a PDF binding or placeholder that prints `areaCode` or `subscriberNumber` of a phone field without `"countryCode": "1"`, a `phone.region` style on a phone field of another plan, and a money `units` or `cents` part on a field that accepts other currencies or amounts below zero. Each message names the field and what to add. Before, such a form rendered for some data and failed at render for other valid data.
+
+### Breaking changes
+
+#### Schemas
+
+- Schema 2026-11-17 adds `countryCode` to phone fields, and a standard font name (`"Helvetica"` or `"Courier"`) as a PDF layer's `font` and as a binding object's `font`. An artifact on 2026-11-12 or earlier loads with nothing added. If it binds `areaCode` or `subscriberNumber`, or prints a phone under `phone.region` with `national`, `digits` or a part, on a phone field without the matching `countryCode`, `validate` and `npx asterdoc migrate` refuse it and name the field and the code to add.
+
+#### Core
+
+- `a.form(definition)`, `form.from`, `form.safeFrom`, `loadFromObject`, `safeLoadFromObject` and `validateFormData` are removed. Use `await a.form.load(definition, options)` or `await a.form.safeLoad(...)`. A form builder's `.build()` returns the definition; pass it to `a.form.load`. `a.form()` with an argument throws a `TypeError` that names `form.load`.
+- `load()` and `safeLoad()` are async and take a string or an object. `runtimeFormFromJSON`, `runtimeBundleFromJSON` and `runtimeContentFromJSON` are async.
+- A form with a PDF layer needs its resolver at load. A layer that cannot be read throws `LayerReadError`, naming the file that failed, and a missing resolver throws `UnboundResolverError`.
+- A render of valid data that a PDF layer cannot draw throws `RenderRefusedError` before drawing, in place of a `PdfFieldFillError` from the middle of the render. `seal()` and `prepareSeal()` refuse the same way.
+- The `bindings` render option is removed, and `render()` refuses an option it does not have. A PDF layer fills from the bindings the artifact declares, the same bindings the render check reads. To change a binding, edit the artifact.
+- Artifact validation refuses a phone `countryCode` that no numbering plan has (a country's, or a non-geographic one such as +800), and a default number whose parsed calling code is not the field's `countryCode`. The schema checks only the code's shape.
+- Artifact validation refuses a binding to a PDF text or choice field with more than one widget, naming the field and its pages: a value would print in every widget. Split the field in the PDF into one field per widget.
+- Artifact validation with the layer files (`validateLayers`, `asterdoc validate`) refuses a field `default` that a PDF layer cannot print: it does not fit its box, or has a character the field's font cannot draw. The error names the field, the layer and the cause.
+- `validateLayers` and `asterdoc validate` run the full render check (overflow, comb length, mask, glyphs) on the values of each test in `tests` whose data is valid; 0.13 checked only that the layer's fonts could draw them. A test whose data is not valid is not rendered. A valid test whose values do not print is now an error.
+- `form.load` refuses a PDF layer binding key that is not a field of the PDF, with the `PdfBindingKeyError` a render throws.
+- `asterdoc generate` for a form writes `schema` and `load<Name>(options)` in place of a constructed instance.
+- Artifact validation refuses a bound list without `maxItems` within its bound rows, a place format on an address without `codes: true`, and the prints above. Give the phone field `"countryCode": "1"` (or the region's code), and the money field a two-decimal `currency` and `"min": 0`.
+
+#### Render
+
+- A PDF render refuses, before any value, a layer that prints a phone `areaCode` or `subscriberNumber` on a field without `"countryCode": "1"`, a `phone.region` style or part on a field of another plan, or a money `units` or `cents` part on a field that accepts other currencies or amounts below zero, with `PdfPrintRuleError`.
+- `pdfRenderer({ font })` and the `font` option of `createLayerRenderer` are removed. A layer's TrueType font travels with the artifact; `RenderPdfOptions` takes `layerFont` and `standardFont`.
+- The font a PDF field itself names (an embedded font, Times-Roman or Courier) is no longer drawn with: the field draws in Helvetica unless the artifact chooses Courier.
+- `pdfFontCheck` and `fontCoverage` are removed. The render check does the work.
+
+#### Format
+
+- `PhoneProvider` has `knowsCallingCode(code)`. A custom phone provider must add it.
+
+#### Essentials
+
+- Each essential exports `{ spec, resolver, load() }`. `await w9.load()` returns the form instance.
+
+#### Sessions
+
+- `createAsterdocRuntime` is async and takes `resolver`.
+
+#### AI tools
+
+- A form tool loads its form with `form.load`, with the resolver of its `base_url`. `complete` is `draft.isValid()`: the data matches the artifact. The render tool returns the render check's report as `errors`, with `error.code` `render_refused`, when a layer cannot draw the data.
+- `artifactFileResolver(artifact, base_url, config)` is exported: the resolver the tools read an artifact's layer files with, for a host that loads the form itself.
+- A form tool needs `base_url` for a form with a PDF file layer, since loading the form reads the PDF. Without it, the tool returns `error.code` `layer_files_unreachable`, which says what to give; a file it cannot read returns `layer_file_unreadable`. A layer file that matches its declared checksum is kept for the tools config that read it, so later calls through that config do not fetch it again. A host that serves several tenants gives each tenant its own config. Every artifact kind gets these codes, and `layer_checksum_mismatch` for a file that does not match its checksum.
+
+#### CLI
+
+- A form whose PDF file is missing fails to load with a message that names the layer and the path.
+- `asterdoc data validate` takes `--render-check <layer>`, and `asterdoc render` prints the render check's report when it refuses.
+- `asterdoc inspect` lists every widget of a field: a `Pages` column, a list of each widget of a field with several, and `widgets` in `--format json`.
+- `asterdoc render --bindings` is removed. A PDF layer fills from the bindings the artifact declares.
+- `asterdoc validate` fails a form whose own tests did not run because the form did not load, for example from stdin with its PDF out of reach, and names why. Before, the tests were skipped and the form was valid.
+
+### Upgrading from 0.13
+
+1. Replace `a.form(definition)`, `form.from`, `loadFromObject` and `.build({ resolver })` with `await a.form.load(definition, { resolver })`, and await `load()`, `runtimeFormFromJSON` and `createAsterdocRuntime`. Remove `pdfRenderer({ font })`.
+2. Where a caller relied on a render error for a value that does not fit, call `draft.renderProblems(layer)` before the render, or catch `RenderRefusedError`.
+3. Run `npx asterdoc validate` on your artifacts. For each print it names, add the `countryCode`, `currency` or `min` it asks for.
+4. For each valid test that `npx asterdoc validate` now says does not print, bound the field (a `maxLength` that fits the box), bind its parts, or change the test's values.
+5. Run `npx asterdoc migrate <file>` to write the new `$schema`. This step is optional: older dates load upgraded in memory.
+
+### Core
+
+- `phoneField().countryCode('1')` in the field builders.
+
+### Render
+
+- `PdfFieldInfo` has `widgets`: each widget's `page` and `rect`. `page` and `rect` stay the first widget's, and `page` is now also found through the page's annotations.
+- `readPdfPrintProfile` and `pdfPrintFailures` read a PDF layer's print profile and check data against it.
+- `layerPrintProblems(form, bindings, format)` lists the prints of a PDF layer that fail for some accepted value. `BindingTemplate.slots` lists every placeholder of a binding template.
+
+### Sessions
+
+- `FormSession.artifactRef.baseUrl` keeps the base URL of the version a session opened, so a later turn reads that version's layer files, not the latest version's.
+
+### Skills
+
+- The asterdoc skill describes `countryCode`, schema 2026-11-17, `form.load`, the standard PDF fonts and the render check.
+
 ## [0.13.0] - 2026-11-16
 
 0.13 lets one PDF field print several values with a binding template, and adds a batch fill path for agents: `fillBatch()`, `asterdoc data next`, `render --draft` and `render --check`, and the new asterdoc-fill skill. It adds schema version 2026-11-12. Artifacts on older schema versions keep loading: the SDK upgrades them in memory, and turns each comma-joined binding into a template.

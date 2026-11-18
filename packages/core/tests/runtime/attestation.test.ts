@@ -23,7 +23,7 @@ const signable = async () => {
 			}
 		},
 	}
-	return form()
+	return await (await form.load(form()
 		.name('sale')
 		.version('1.0.0')
 		.title('Sale')
@@ -31,7 +31,7 @@ const signable = async () => {
 		.parties({ buyer: { label: 'Buyer', partyType: 'person', signature: { required: true } } })
 		.inlineLayer('text', { mimeType: 'text/plain', text: 'Buyer {{parties.buyer.name}}' })
 		.defaultLayer('text')
-		.build()
+		.build()))
 		.fill({})
 		.setParty('buyer', { name: 'Bea Buyer' })
 		.addSigner('bea', { person: { name: 'Bea Signer' } })

@@ -35,3 +35,9 @@ layers:
     kind: file
     mimeType: application/pdf
     path: ./pet-addendum-bindings.pdf
+    bindings:
+      pet_name: fields.name
+      petWeight:
+        path: fields.weight
+        format:
+          locale: de-DE

@@ -15,8 +15,8 @@ import type { SealAdapter } from '@asterdoc/types'
 const pdf = new Uint8Array(readFileSync(join(__dirname, 'fixtures', 'large-contract.pdf')))
 const adapter: SealAdapter = { convert: async () => ({ pdf }) }
 
-const draftWithLayerKey = (key: string) =>
-	form()
+const draftWithLayerKey = async (key: string) =>
+	await (await form.load(form()
 		.name('f')
 		.version('1.0.0')
 		.title('F')
@@ -24,16 +24,16 @@ const draftWithLayerKey = (key: string) =>
 		.parties({ client: { label: 'Client', partyType: 'person', signature: { required: true } } })
 		.inlineLayer(key, { mimeType: 'text/markdown', text: 'Hello' })
 		.defaultLayer(key)
-		.build()
+		.build()))
 		.fill({ fields: { a: 'x' }, parties: { client: { id: 'client-0', name: 'C' } } })
 		.addSigner('sg', { person: { name: 'C' } })
 		.addSignatory('client', 'client-0', { signerId: 'sg' })
 
 test.each(['markdown', 'body'])('a markdown layer keyed "%s" seals with an adapter', async (key) => {
-	const sealed = await draftWithLayerKey(key).seal({ adapter })
+	const sealed = await (await draftWithLayerKey(key)).seal({ adapter })
 	expect(sealed.canonicalPdfHash).toMatch(/^sha256:/)
 })
 
 test.each(['markdown', 'body'])('a markdown layer keyed "%s" refuses to seal without an adapter', async (key) => {
-	await expect(draftWithLayerKey(key).seal()).rejects.toThrow(SealConfigError)
+	await expect((async () => (await draftWithLayerKey(key)).seal())()).rejects.toThrow(SealConfigError)
 })

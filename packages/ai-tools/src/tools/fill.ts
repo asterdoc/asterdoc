@@ -1,6 +1,7 @@
 import type { AsterdocToolsConfig } from '../config'
 import { FillInputSchema, type FillInput, type FillOutput } from '../contracts'
-import { artifactKind, contextOptions, contextSnapshot, formDraftPayload, asChecklistPayload, asFormPayload, makeResolver } from '../artifact'
+import { artifactKind, contextOptions, contextSnapshot, formDraftPayload, asChecklistPayload, asFormPayload } from '../artifact'
+import { loadToolForm, artifactFileResolver } from '../form-loader'
 import { errorFromUnknown, validationErrors } from '../errors'
 import { resolveSource } from '../resolve-source'
 
@@ -10,11 +11,11 @@ export async function executeFill(
 ): Promise<FillOutput> {
 	try {
 		const normalized = FillInputSchema.parse(input)
-		const { isChecklist, isForm, loadFromObject, placeDisplayNames } = await import('@asterdoc/core')
+		const { isChecklist, isForm, load, placeDisplayNames } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		const kind = artifactKind(artifact)
 		if (isForm(artifact)) {
-			const instance = loadFromObject<'form'>(artifact, { resolver: makeResolver(base_url, config) })
+			const instance = await loadToolForm(artifact, base_url, config)
 			const result = instance.safeFill(asFormPayload(normalized.data) as never, contextOptions(normalized.evaluation_context))
 			if (!result.success) {
 				return {
@@ -38,7 +39,7 @@ export async function executeFill(
 		}
 
 		if (isChecklist(artifact)) {
-			const instance = loadFromObject<'checklist'>(artifact, { resolver: makeResolver(base_url, config) })
+			const instance = await load<'checklist'>(artifact, { resolver: artifactFileResolver(artifact, base_url, config) })
 			const result = instance.safeFill(asChecklistPayload(normalized.data) as never, contextOptions(normalized.evaluation_context))
 			if (!result.success) {
 				return {

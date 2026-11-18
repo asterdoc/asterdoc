@@ -21,13 +21,13 @@ const definition = (tests: FormTestCase[]): Form => ({
 	tests,
 })
 
-const run = (...tests: FormTestCase[]) => form(definition(tests)).runTests()
+const run = async (...tests: FormTestCase[]) => (await form.load(definition(tests))).runTests()
 
 const valid = { ssn: '123-45-6789', startDate: '2026-12-01', term: 36 }
 
 describe('form test cases', () => {
-	test('a case whose outcome matches passes, with input canonicalized through update()', () => {
-		const report = run({
+	test('a case whose outcome matches passes, with input canonicalized through update()', async () => {
+		const report = await run({
 			name: 'complete',
 			input: { fields: valid },
 			context: { asOf: '2026-11-10T12:00:00Z' },
@@ -47,70 +47,70 @@ describe('form test cases', () => {
 		})
 	})
 
-	test('a case whose outcome differs fails, and so does the report', () => {
-		const report = run({
+	test('a case whose outcome differs fails, and so does the report', async () => {
+		const report = await run({
 			name: 'short ssn',
 			input: { fields: { ...valid, ssn: '1234' } },
 			context: { asOf: '2026-11-10T12:00:00Z' },
 			expect: { valid: true },
 		})
-		expect(report.passed).toBe(false)
-		expect(report.results[0]).toMatchObject({ passed: false, valid: false, failures: ['ssnLength'] })
+		expect((await report).passed).toBe(false)
+		expect((await report).results[0]).toMatchObject({ passed: false, valid: false, failures: ['ssnLength'] })
 	})
 
-	test('asOf fixes the clock today() reads', () => {
+	test('asOf fixes the clock today() reads', async () => {
 		const late = { name: 'late', input: { fields: valid }, context: { asOf: '2027-01-15T00:00:00Z' }, expect: { valid: false, failures: ['notPast'] } }
 		const early = { name: 'early', input: { fields: valid }, context: { asOf: '2026-01-15T00:00:00Z' }, expect: { valid: true, failures: [] } }
-		expect(run(late, early).results.map((result) => [result.name, result.passed])).toEqual([['late', true], ['early', true]])
+		expect((await run(late, early)).results.map((result) => [result.name, result.passed])).toEqual([['late', true], ['early', true]])
 	})
 
-	test('without asOf, today() reads the current instant', () => {
-		const report = run({ name: 'long ago', input: { fields: { ...valid, startDate: '2000-01-01' } }, expect: { valid: false, failures: ['notPast'] } })
-		expect(report.passed).toBe(true)
+	test('without asOf, today() reads the current instant', async () => {
+		const report = await run({ name: 'long ago', input: { fields: { ...valid, startDate: '2000-01-01' } }, expect: { valid: false, failures: ['notPast'] } })
+		expect((await report).passed).toBe(true)
 	})
 
-	test('failures are compared as a set and include warnings, and an omitted list is not compared', () => {
+	test('failures are compared as a set and include warnings, and an omitted list is not compared', async () => {
 		const input = { fields: { ...valid, ssn: '1', term: 480 } }
 		const context = { asOf: '2026-11-10T12:00:00Z' }
-		const report = run(
+		const report = await run(
 			{ name: 'any order', input, context, expect: { valid: false, failures: ['termShort', 'ssnLength'] } },
 			{ name: 'missing one', input, context, expect: { valid: false, failures: ['ssnLength'] } },
 			{ name: 'not compared', input, context, expect: { valid: false } },
 		)
-		expect(report.results.map((result) => [result.name, result.passed, result.failures])).toEqual([
+		expect((await report).results.map((result) => [result.name, result.passed, result.failures])).toEqual([
 			['any order', true, ['ssnLength', 'termShort']],
 			['missing one', false, ['ssnLength', 'termShort']],
 			['not compared', true, ['ssnLength', 'termShort']],
 		])
 	})
 
-	test('a warning-only draft is valid', () => {
-		const report = run({
+	test('a warning-only draft is valid', async () => {
+		const report = await run({
 			name: 'long term',
 			input: { fields: { ...valid, term: 480 } },
 			context: { asOf: '2026-11-10T12:00:00Z' },
 			expect: { valid: true, failures: ['termShort'] },
 		})
-		expect(report.passed).toBe(true)
+		expect((await report).passed).toBe(true)
 	})
 
-	test('an input update() refuses makes the draft invalid with no rule failures, and reports why without the value', () => {
-		const report = run({ name: 'bad mask', input: { fields: { ssn: '12-345' } }, expect: { valid: false, failures: [] } })
-		expect(report.results[0]).toMatchObject({ passed: true, valid: false, failures: [] })
-		expect(report.results[0]?.errors[0]).toMatchObject({ field: 'fields.ssn' })
-		expect(report.results[0]?.errors[0]).not.toHaveProperty('value')
-		expect(run({ name: 'bad mask', input: { fields: { ssn: '12-345' } }, expect: { valid: true } }).passed).toBe(false)
+	test('an input update() refuses makes the draft invalid with no rule failures, and reports why without the value', async () => {
+		const report = await run({ name: 'bad mask', input: { fields: { ssn: '12-345' } }, expect: { valid: false, failures: [] } })
+		expect((await report).results[0]).toMatchObject({ passed: true, valid: false, failures: [] })
+		expect((await report).results[0]?.errors[0]).toMatchObject({ field: 'fields.ssn' })
+		expect((await report).results[0]?.errors[0]).not.toHaveProperty('value')
+		expect((await run({ name: 'bad mask', input: { fields: { ssn: '12-345' } }, expect: { valid: true } })).passed).toBe(false)
 	})
 
-	test('names the sensitive fields an input sets, identification included', () => {
-		const report = run(
+	test('names the sensitive fields an input sets, identification included', async () => {
+		const report = await run(
 			{ name: 'both', input: { fields: { ssn: '123456789', taxId: { type: 'ein', number: '121234567' }, term: 1 } }, expect: { valid: false } },
 			{ name: 'neither', input: { fields: { term: 1 } }, expect: { valid: false } },
 		)
-		expect(report.results.map((result) => result.sensitiveInputs)).toEqual([['fields.ssn', 'fields.taxId'], []])
+		expect((await report).results.map((result) => result.sensitiveInputs)).toEqual([['fields.ssn', 'fields.taxId'], []])
 	})
 
-	test('names sensitive fields set inside a fieldset and in list rows', () => {
+	test('names sensitive fields set inside a fieldset and in list rows', async () => {
 		const nested: Form = {
 			kind: 'form',
 			name: 'owners',
@@ -126,10 +126,10 @@ describe('form test cases', () => {
 				expect: { valid: true },
 			}],
 		}
-		expect(form(nested).runTests().results[0]?.sensitiveInputs).toEqual(['fields.applicant.ssn', 'fields.owners[1].ssn'])
+		expect((await form.load(nested)).runTests().results[0]?.sensitiveInputs).toEqual(['fields.applicant.ssn', 'fields.owners[1].ssn'])
 	})
 
-	test('names organization and party identifiers an input sets', () => {
+	test('names organization and party identifiers an input sets', async () => {
 		const identified: Form = {
 			kind: 'form',
 			name: 'employer',
@@ -146,10 +146,10 @@ describe('form test cases', () => {
 				expect: { valid: true },
 			}],
 		}
-		expect(form(identified).runTests().results[0]?.sensitiveInputs).toEqual(['fields.org.taxId', 'parties.employer.entityId'])
+		expect((await form.load(identified)).runTests().results[0]?.sensitiveInputs).toEqual(['fields.org.taxId', 'parties.employer.entityId'])
 	})
 
-	test('asOf reaches now(), computed values, and required and visible conditions', () => {
+	test('asOf reaches now(), computed values, and required and visible conditions', async () => {
 		const clocked: Form = {
 			kind: 'form',
 			name: 'clocked',
@@ -163,35 +163,35 @@ describe('form test cases', () => {
 			defs: { isLate: { type: 'boolean', value: 'today() > fields.deadline' } },
 			rules: { notFuture: { expr: 'fields.filedAt <= now()', message: 'Filed in the future' } },
 		}
-		const run = (asOf: string) => form({
+		const run = async (asOf: string) => (await form.load({
 			...clocked,
 			tests: [{ name: 'on time', input: { fields: { deadline: '2026-12-01', filedAt: '2026-11-20T10:00:00Z' } }, context: { asOf }, expect: { valid: true, failures: [] } }],
-		}).runTests().results[0]
-		expect(run('2026-11-25T00:00:00Z')).toMatchObject({ passed: true, valid: true, failures: [] })
-		const late = run('2026-12-15T00:00:00Z')
+		})).runTests().results[0]
+		expect(await run('2026-11-25T00:00:00Z')).toMatchObject({ passed: true, valid: true, failures: [] })
+		const late = await run('2026-12-15T00:00:00Z')
 		expect(late).toMatchObject({ passed: false, valid: false, failures: [] })
-		expect(late?.errors.map((error) => error.field)).toEqual(['fields.lateReason'])
-		expect(run('2026-11-19T00:00:00Z')).toMatchObject({ passed: false, valid: false, failures: ['notFuture'] })
+		expect((await late)?.errors.map((error) => error.field)).toEqual(['fields.lateReason'])
+		expect(await run('2026-11-19T00:00:00Z')).toMatchObject({ passed: false, valid: false, failures: ['notFuture'] })
 	})
 
-	test('a form without tests passes with no results', () => {
+	test('a form without tests passes with no results', async () => {
 		const { tests: _tests, ...rest } = definition([])
-		expect(form(rest as Form).runTests()).toEqual({ passed: true, results: [] })
+		expect((await form.load(rest as Form)).runTests()).toEqual({ passed: true, results: [] })
 	})
 })
 
 describe('the builder takes test cases', () => {
-	test('read-only cases, as in an as-const artifact, are set and run', () => {
+	test('read-only cases, as in an as-const artifact, are set and run', async () => {
 		const cases = [
 			{ name: 'a nine-digit code passes', input: { fields: { code: '123456789' } }, expect: { valid: true, failures: [] } },
 			{ name: 'a short code fails codeLength', input: { fields: { code: '123' } }, expect: { valid: false, failures: ['codeLength'] } },
 		] as const
-		const report = form()
+		const report = await (await form.load(form()
 			.name('coded')
 			.field('code', field.text())
 			.rules({ codeLength: { expr: 'length(code) == 9', message: 'The code has nine digits', paths: ['fields.code'] as const } })
 			.tests(cases)
-			.build()
+			.build()))
 			.runTests()
 		expect(report.results.map((result) => [result.name, result.passed])).toEqual([
 			['a nine-digit code passes', true],

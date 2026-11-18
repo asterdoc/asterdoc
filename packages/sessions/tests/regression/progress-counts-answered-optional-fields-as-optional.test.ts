@@ -7,8 +7,8 @@ import type { FormSession } from "../../src/engine/types";
 import { execute } from "../../src/engine/execute";
 import { deriveView } from "../../src/engine/derive";
 
-it("progress totals", () => {
-  const runtime = createAsterdocRuntime(artifact({ fields: {
+it("progress totals", async () => {
+  const runtime = await createAsterdocRuntime(artifact({ fields: {
     name: { type: "text", required: true }, note: { type: "text" }, dob: { type: "date" }, fee: { type: "money" },
   } }));
   const r = execute(session(), runtime, { kind: "answer", fieldPath: "note", value: "hi", source: "user" }, { kind: "user" });

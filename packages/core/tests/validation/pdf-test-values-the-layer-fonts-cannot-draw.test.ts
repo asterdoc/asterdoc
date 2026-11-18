@@ -59,10 +59,16 @@ describe('validateLayers on the values of a form\'s tests', () => {
   it('reports a value no font of the PDF layer can draw, naming the layer, the test, the PDF field and the path', async () => {
     const result = await validateLayers(artifact([latin, cyrillic]), { resolver })
     expect(result.issues).toEqual([{
-      message: expect.stringMatching(/^Layer "pdf", test "a name in Cyrillic": a render of the values of this test fails\. Cannot fill PDF field "nativeName" with fields\.nameInNativeAlphabet: no available font can draw "Ж" \(U\+0416\)\. Declare a font that has this character on the PDF layer/),
+      message: expect.stringMatching(/^Layer "pdf", test "a name in Cyrillic": a render of the values of this test fails\. Cannot fill PDF field "nativeName" with fields\.nameInNativeAlphabet: no available font can draw "Ж" \(U\+0416\)\. The field draws in Helvetica, a standard PDF font with the Windows Latin 1 characters only\. To print this character, declare a TrueType font that has it on the PDF layer/),
       path: ['layers', 'pdf', 'bindings', 'nativeName'],
       severity: 'error',
     }])
+  })
+
+  it('does not render a test whose data is not valid, which an unhappy-path test means to show', async () => {
+    const invalid: TestCase = { name: 'a Cyrillic name with no city fails', input: { fields: { nameInNativeAlphabet: 'Жук' } }, expect: { valid: false } }
+    const result = await validateLayers(artifact([latin, invalid]), { resolver })
+    expect(result.issues).toBeUndefined()
   })
 
   it('reports nothing when every test value is Latin-1', async () => {
@@ -94,12 +100,6 @@ describe('validateLayers on the values of a form\'s tests', () => {
     expect(message).toContain('test "a name in Arabic"')
     expect(message).toContain('with fields.nameInNativeAlphabet: the value contains Arabic script')
     expect(message).not.toContain('Declare a font')
-  })
-
-  it('checks a test that expects an invalid draft, since a draft still prints its values', async () => {
-    const incomplete: TestCase = { name: 'a name with no city', input: { fields: { nameInNativeAlphabet: 'Жук' } }, expect: { valid: false } }
-    const result = await validateLayers(artifact([incomplete]), { resolver })
-    expect(result.issues?.map((issue) => issue.path)).toEqual([['layers', 'pdf', 'bindings', 'nativeName']])
   })
 
   it('passes over a test whose input the form refuses, since nothing of it is rendered', async () => {

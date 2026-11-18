@@ -18,38 +18,38 @@ const definition: Form = {
 	layers: { main: { kind: 'inline', mimeType: 'text/plain', text: 'Amount: {{fields.amount}}' } },
 }
 
-const draft = (fields: Record<string, unknown>) => form(definition).fill({ fields } as never)
+const draft = async (fields: Record<string, unknown>) => (await form.load(definition)).fill({ fields } as never)
 
 describe('render with require complete', () => {
 	test('refuses a draft with a missing required value', async () => {
-		await expect(draft({}).render({ require: 'complete' })).rejects.toBeInstanceOf(FormValidationError)
+		await expect((async () => (await draft({})).render({ require: 'complete' }))()).rejects.toBeInstanceOf(FormValidationError)
 	})
 
 	test('refuses a draft whose error-severity rule fails', async () => {
-		const rejection = draft({ amount: -5 }).render({ require: 'complete' })
+		const rejection = (await draft({ amount: -5 })).render({ require: 'complete' })
 		await expect(rejection).rejects.toBeInstanceOf(FormRuleViolationError)
 		await expect(rejection).rejects.toMatchObject({ ruleResult: { errors: [{ ruleId: 'amountPositive' }] } })
 	})
 
 	test('renders a draft whose only failing rule is a warning', async () => {
-		const warned = draft({ amount: 1000, term: 480 })
-		expect(warned.validateRules().warnings.map((rule) => rule.ruleId)).toEqual(['termShort'])
-		await expect(warned.render({ require: 'complete' })).resolves.toBe('Amount: 1,000')
+		const warned = await draft({ amount: 1000, term: 480 })
+		expect((await warned).validateRules().warnings.map((rule) => rule.ruleId)).toEqual(['termShort'])
+		await expect((async () => (await warned).render({ require: 'complete' }))()).resolves.toBe('Amount: 1,000')
 	})
 
 	test('renders a complete draft', async () => {
-		await expect(draft({ amount: 1000, term: 36 }).render({ require: 'complete' })).resolves.toBe('Amount: 1,000')
+		await expect((async () => (await draft({ amount: 1000, term: 36 })).render({ require: 'complete' }))()).resolves.toBe('Amount: 1,000')
 	})
 
 	test('without require, an incomplete draft still renders', async () => {
-		await expect(draft({ amount: -5 }).render()).resolves.toBe('Amount: -5')
-		await expect(draft({}).render()).resolves.toBe('Amount: ')
+		await expect((async () => (await draft({ amount: -5 })).render())()).resolves.toBe('Amount: -5')
+		await expect((async () => (await draft({})).render())()).resolves.toBe('Amount: ')
 	})
 
 	test('refuses what prepareForSigning refuses, with the same error', async () => {
-		const incomplete = draft({ amount: -5 })
-		expect(() => incomplete.prepareForSigning()).toThrow(FormRuleViolationError)
-		await expect(incomplete.render({ require: 'complete' })).rejects.toThrow(
+		const incomplete = await draft({ amount: -5 })
+		await expect((async () => (await incomplete).prepareForSigning())()).rejects.toThrow(FormRuleViolationError)
+		await expect((async () => (await incomplete).render({ require: 'complete' }))()).rejects.toThrow(
 			'Form rules validation failed: Amount must be positive',
 		)
 	})
@@ -59,8 +59,8 @@ describe('require where it cannot apply', () => {
 	const layers = { main: { kind: 'inline' as const, mimeType: 'text/plain', text: 'Hello' } }
 
 	test('a form definition refuses it', async () => {
-		await expect(form(definition).render({ require: 'complete' } as never)).rejects.toThrow(/cannot render with require: "complete"/)
-		await expect(form(definition).render({ require: 'complete' } as never)).rejects.toThrow(/only a filled form's render\(\) checks completeness/)
+		await expect((async () => (await form.load(definition)).render({ require: 'complete' } as never))()).rejects.toThrow(/cannot render with require: "complete"/)
+		await expect((async () => (await form.load(definition)).render({ require: 'complete' } as never))()).rejects.toThrow(/only a filled form's render\(\) checks completeness/)
 	})
 
 	test('a document refuses it', async () => {
@@ -81,6 +81,6 @@ describe('require where it cannot apply', () => {
 	})
 
 	test('a filled form refuses an unknown value', async () => {
-		await expect(draft({ amount: 1000 }).render({ require: 'everything' } as never)).rejects.toThrow(/the one value is 'complete'/)
+		await expect((async () => (await draft({ amount: 1000 })).render({ require: 'everything' } as never))()).rejects.toThrow(/the one value is 'complete'/)
 	})
 })

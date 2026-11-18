@@ -35,7 +35,7 @@ Each property is a ContentRef: inline text or a file reference.
 
 ```json schema=artifact
 {
-  "$schema": "https://schema.asterdoc.com/2026-11-12.json",
+  "$schema": "https://schema.asterdoc.com/2026-11-17.json",
   "name": "rental-application",
   "kind": "form",
   "instructions": {
@@ -114,15 +114,15 @@ Use a formal tone. When confirming ssn or ein, show only the last 4 digits.
 ```typescript
 import { a } from "@asterdoc/sdk";
 
-const w2 = a
+const w2 = await a.form.load(a
   .form()
   .name("w2-wage-statement")
   .instructions({ kind: "file", path: "instructions/w2.instructions.md", mimeType: "text/markdown" })
   .agentInstructions({ kind: "inline", text: "Ask for employerEin before wages." })
   .fields({ employerEin: a.field.text().label("Employer EIN") })
-  .build();
+  .build());
 
 w2.agentInstructions; // { kind: "inline", text: "Ask for employerEin before wages." }
 ```
 
-In the object form, `instructions` and `agentInstructions` are top-level properties of the definition passed to `a.form({ ... })`.
+In the object form, `instructions` and `agentInstructions` are top-level properties of the definition passed to `await a.form.load({ ... })`.

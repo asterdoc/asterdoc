@@ -1,6 +1,7 @@
 import type { AsterdocToolsConfig } from '../config'
 import { RenderInputSchema, type RenderInput, type RenderOutput } from '../contracts'
-import { artifactKind, asChecklistPayload, asFormPayload, boundedPresentation, contextOptions, encodeOutput, makeResolver } from '../artifact'
+import { artifactKind, asChecklistPayload, asFormPayload, boundedPresentation, contextOptions, encodeOutput } from '../artifact'
+import { loadToolForm, artifactFileResolver } from '../form-loader'
 import { errorFromUnknown, validationErrors } from '../errors'
 import { resolveSource } from '../resolve-source'
 
@@ -66,7 +67,7 @@ export async function executeRender(
 ): Promise<RenderOutput> {
 	try {
 		const normalized = RenderInputSchema.parse(input)
-		const { isChecklist, isDocument, isForm, loadFromObject, validate } = await import('@asterdoc/core')
+		const { isChecklist, isDocument, isForm, load, validate } = await import('@asterdoc/core')
 		const { artifact, base_url } = await resolveSource(normalized, config)
 		const kind = artifactKind(artifact)
 		const validation = validate(artifact)
@@ -85,11 +86,11 @@ export async function executeRender(
 		const layer = selectedLayer(artifact, normalized.layer)
 		if (!layer.key) return { success: false, ...(kind ? { artifact_kind: kind } : {}), error: { code: 'missing_layer', message: 'Artifact has no renderable layers.' } }
 		const renderOptions = { renderer: await renderer(), layer: layer.key }
-		const resolver = makeResolver(base_url, config)
+		const resolver = artifactFileResolver(artifact, base_url, config)
 
 		if (isForm(artifact)) {
 			if (!normalized.blank && !hasValues(normalized.data)) return missingData('form')
-			const instance = loadFromObject<'form'>(artifact, { resolver })
+			const instance = await loadToolForm(artifact, base_url, config)
 			const result = instance.safeFill(asFormPayload(normalized.data) as never, contextOptions(normalized.evaluation_context))
 			if (!result.success) return { success: false, artifact_kind: 'form', errors: validationErrors(result.error), error: errorFromUnknown(result.error, 'validation_error') }
 			const content = await result.data.render(renderOptions)
@@ -97,14 +98,14 @@ export async function executeRender(
 		}
 
 		if (isDocument(artifact)) {
-			const instance = loadFromObject<'document'>(artifact, { resolver })
+			const instance = await load<'document'>(artifact, { resolver })
 			const content = await instance.render(renderOptions)
 			return outputResult('document', content, layer.mime_type, normalized.presentation)
 		}
 
 		if (isChecklist(artifact)) {
 			if (!normalized.blank && !hasValues(normalized.data)) return missingData('checklist')
-			const instance = loadFromObject<'checklist'>(artifact, { resolver })
+			const instance = await load<'checklist'>(artifact, { resolver })
 			const result = instance.safeFill(asChecklistPayload(normalized.data) as never, contextOptions(normalized.evaluation_context))
 			if (!result.success) return { success: false, artifact_kind: 'checklist', errors: validationErrors(result.error), error: errorFromUnknown(result.error, 'validation_error') }
 			const content = await result.data.render(renderOptions)
@@ -113,6 +114,10 @@ export async function executeRender(
 
 		return { success: false, ...(kind ? { artifact_kind: kind } : {}), error: { code: 'unsupported_artifact', message: 'Rendering supports form, document, and checklist artifacts.' } }
 	} catch (error) {
+		if (error instanceof Error && error.name === 'RenderRefusedError') {
+			const { problems } = error as Error & { problems: unknown }
+			return { success: false, artifact_kind: 'form', errors: validationErrors(problems), error: { code: 'render_refused', message: error.message } }
+		}
 		return { success: false, error: errorFromUnknown(error, 'render_error') }
 	}
 }

@@ -1,11 +1,12 @@
 import { Command } from 'commander'
 import kleur from 'kleur'
-import { form as formApi, FormValidationError, isForm, type FillBatch, type FillBatchTarget, type Form } from '@asterdoc/core'
+import { FormValidationError, isForm, type FillBatch, type FillBatchTarget, type Form, type FormInstance } from '@asterdoc/core'
 import { resolveLayerBindings } from '@asterdoc/render'
 import { pdfBindingPages } from '@asterdoc/render/pdf'
 import { createFsResolver } from '@asterdoc/resolvers/fs'
 
 import { readTextInput, resolveArtifactTarget } from '../../utils/io.js'
+import { loadFormFile } from '../../utils/load-form.js'
 import { parseDataInput, toFormPayload } from '../../utils/data-input.js'
 import { loadValidatedArtifact } from '../../utils/artifact-file.js'
 import { batchProblems } from '../../utils/validate-data.js'
@@ -73,8 +74,8 @@ interface Problem {
 
 type NextResult = { problems: Problem[]; rules: Problem[]; batch: FillBatch | null }
 
-function nextBatch(form: Form, payload: Record<string, unknown>): NextResult {
-  const filled = formApi.from(form).safeFill(payload as never)
+function nextBatch(instance: FormInstance<Form>, payload: Record<string, unknown>): NextResult {
+  const filled = instance.safeFill(payload as never)
   if (!filled.success) {
     const problems =
       filled.error instanceof FormValidationError
@@ -257,7 +258,7 @@ export function createNextCommand(): Command {
         if (!isForm(artifact)) throw new Error(`Expected form artifact, but received kind "${artifact.kind}".`)
         const form = artifact as Form
         const payload = options.data === undefined ? {} : toFormPayload((await parseDataInput(options.data)).data)
-        const result = nextBatch(form, payload)
+        const result = nextBatch(await loadFormFile(form, baseDir), payload)
         const source = await pageSource(form, baseDir, options.layer)
 
         if (options.json) {

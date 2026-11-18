@@ -34,7 +34,7 @@ export function uncoveredByLayer(layerKey: string, layer: Layer, drawing: LayerD
 		if (!layer.checksum || isReactLayerMimeType(layer.mimeType)) {
 			uncovered.push({ kind: 'layer', layer: layerKey, path: layer.path })
 		}
-		if (layer.font && !layer.font.checksum) {
+		if (typeof layer.font === 'object' && !layer.font.checksum) {
 			uncovered.push({ kind: 'font', layer: layerKey, path: layer.font.path })
 		}
 	}

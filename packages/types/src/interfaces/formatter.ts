@@ -148,6 +148,8 @@ export interface PhoneProvider {
 	parse(text: string, region?: string): PhoneNumberDetails | undefined
 	/** The country calling code of a region, without `+`, or undefined for a region the data does not know. */
 	callingCode(region: string): string | undefined
+	/** Whether a numbering plan, of a country or a non-geographic one such as +800, has the calling code `code`, given without `+`. */
+	knowsCallingCode(code: string): boolean
 	/**
 	 * The longest text a style prints, for a number of `region`'s plan or of
 	 * any plan, with every digit written `0`. Fit checks measure it.

@@ -93,10 +93,16 @@ describe('country and region formats on PDF bindings', () => {
     expect(await values(pdf)).toMatchObject({ country: 'Canada', region: 'CA-ON', born: 'DE', state: 'CA' })
   })
 
-  it('fail for a bound value that does not normalize, naming its path', async () => {
+  it('refuse a place format on an address that stores what it is given, before any value', async () => {
     const bindings: Bindings = { country: { path: 'legacy.country', format: { country: { display: 'name' } } } }
-    await expect(renderPdf({ template: template(), form, data, bindings })).rejects.toBeInstanceOf(ArtifactFieldFormatError)
-    await expect(renderPdf({ template: template(), form, data, bindings })).rejects.toMatchObject({ issues: [{ code: 'unknown_country', path: 'fields.legacy.country' }] })
+    await expect(renderPdf({ template: template(), form, data, bindings })).rejects.toThrow('PDF field "country" prints legacy.country, but country.display needs the country and region stored as codes, and fields.legacy stores what it is given; give the field "codes": true.')
+  })
+
+  it('fail for a stored value that does not normalize and bypassed validation, naming its path', async () => {
+    const bindings: Bindings = { country: { path: 'home.country', format: { country: { display: 'name' } } } }
+    const legacy = { ...data, fields: { ...data.fields, home: { ...data.fields.home, country: 'Atlantisland' } } }
+    await expect(renderPdf({ template: template(), form, data: legacy, bindings })).rejects.toBeInstanceOf(ArtifactFieldFormatError)
+    await expect(renderPdf({ template: template(), form, data: legacy, bindings })).rejects.toMatchObject({ issues: [{ code: 'unknown_country', path: 'fields.home.country' }] })
   })
 
   it('leave an unbound address that does not normalize alone', async () => {

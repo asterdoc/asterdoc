@@ -594,9 +594,13 @@ const resolver = createMemoryResolver({ contents });
  *
  * Request transcripts of previously filed tax returns or related information returns from the IRS. Filed by taxpayers (or authorized representatives) to obtain Return Transcripts, Account Transcripts, Records of Account, Verification of Non-filing, or Wage & Income transcripts.
  */
-export const f4506T = Object.assign(a.form(schema, { resolver }), {
+export const f4506T = {
   /** The raw form spec, exactly as released. */
   spec: schema,
-});
+  /** Reads the form's bundled layer files, for a host that loads the spec itself. */
+  resolver,
+  /** Load the form on its bundled files. */
+  load: () => a.form.load(schema, { resolver }),
+};
 
 export default f4506T;

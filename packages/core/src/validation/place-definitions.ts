@@ -1,5 +1,6 @@
 import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { findSubdivision, isCountryCode, resolveAddressRegion, resolveCountry, resolveRegion, type PlaceOutcome } from '@asterdoc/format'
+import { phoneProvider } from '@asterdoc/format/phone'
 import { regionsProvider as regions } from '@asterdoc/format/regions'
 import type { Form, FormField, LayerFormat } from '@asterdoc/types'
 import type { LayerValidationIssue } from './pdf-layers'
@@ -37,6 +38,21 @@ function visit(field: FormField, path: Path, issues: StandardSchemaV1.Issue[]): 
 			}
 			return
 		}
+		case 'phone': {
+			const { countryCode } = field
+			if (countryCode !== undefined && !phoneProvider.knowsCallingCode(countryCode)) {
+				issues.push({ path: [...path, 'countryCode'], message: `+${countryCode} is not the country calling code of any country's phone plan.` })
+				return
+			}
+			if (countryCode === undefined || field.default === undefined) return
+			const parsed = phoneProvider.parse(field.default.number)
+			if (!parsed) {
+				issues.push({ path: [...path, 'default', 'number'], message: `The default ${field.default.number} is not a valid phone number of the +${countryCode} plan this field takes.` })
+			} else if (parsed.countryCallingCode !== countryCode) {
+				issues.push({ path: [...path, 'default', 'number'], message: `The default ${field.default.number} has country calling code +${parsed.countryCallingCode}; this field takes only +${countryCode} numbers.` })
+			}
+			return
+		}
 		case 'fieldset':
 			for (const [key, child] of Object.entries(field.fields)) visit(child, [...path, 'fields', key], issues)
 			return
@@ -49,9 +65,10 @@ function visit(field: FormField, path: Path, issues: StandardSchemaV1.Issue[]): 
 }
 
 /**
- * The country and region codes a form's field definitions state: a region's
- * `country` constraint and the defaults of `country`, `region` and
- * `codes: true` address fields must be codes in the shipped lists.
+ * The country, region and phone codes a form's field definitions state: a
+ * region's `country` constraint, a phone's `countryCode`, and the defaults of
+ * `country`, `region`, `phone` and `codes: true` address fields must be codes
+ * in the shipped lists.
  */
 export function validatePlaceDefinitions(form: Form): StandardSchemaV1.Issue[] {
 	const issues: StandardSchemaV1.Issue[] = []

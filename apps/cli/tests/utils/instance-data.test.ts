@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateFormData, type Form } from '@asterdoc/core'
+import { form as formApi, type Form } from '@asterdoc/core'
 import { makeInstanceTemplate } from '../../src/utils/instance-template.js'
 import { validateFormPayload, type PayloadValidationResult } from '../../src/utils/validate-data.js'
 
@@ -37,11 +37,12 @@ describe('makeInstanceTemplate composite defaults', () => {
     expect(fields.group).toEqual({ inner: { lat: 0, lon: 0 } })
   })
 
-  it('produces a template whose shapes the core schema validator accepts', () => {
+  it('produces a template whose shapes the core schema validator accepts', async () => {
     const template = makeInstanceTemplate(form)
     // Core accepts every composite shape, and rejects only the empty-string
     // placeholders, which fail their length and pattern rules until filled in.
-    const errors = validateFormData(form, template as unknown as Record<string, unknown>).errors ?? []
+    const loaded = await formApi.load(form)
+    const errors = loaded.safeParseData(template as unknown as Record<string, unknown>).errors ?? []
     expect(errors.map((error) => error.field)).toEqual([
       'fields.addr.line1',
       'fields.addr.locality',
@@ -64,28 +65,28 @@ describe('makeInstanceTemplate composite defaults', () => {
       org: { name: 'Acme Inc.' },
       doc: { type: 'passport', number: 'X1234567' },
     }
-    expect(validateFormPayload(form, { fields: filled })).toMatchObject({ success: true })
+    expect(validateFormPayload(loaded, { fields: filled })).toMatchObject({ success: true })
   })
 })
 
 describe('validateFormPayload composite shapes', () => {
-  it('rejects a coordinate that uses lng instead of lon', () => {
-    const result = validateFormPayload(form, { fields: { loc: { lat: 0, lng: 0 } } })
+  it('rejects a coordinate that uses lng instead of lon', async () => {
+    const result = validateFormPayload(await formApi.load(form), { fields: { loc: { lat: 0, lng: 0 } } })
     expect(result.success).toBe(false)
     expect(errorsOf(result).map((error) => error.field)).toEqual(['fields.loc.lon', 'fields.loc'])
     expect(errorsOf(result)[1]?.message).toContain('lng')
   })
 
-  it('rejects a bbox with flat north/south/east/west keys', () => {
-    const result = validateFormPayload(form, { fields: { area: { north: 0, south: 0, east: 0, west: 0 } } })
+  it('rejects a bbox with flat north/south/east/west keys', async () => {
+    const result = validateFormPayload(await formApi.load(form), { fields: { area: { north: 0, south: 0, east: 0, west: 0 } } })
     expect(result.success).toBe(false)
     expect(errorsOf(result).map((error) => error.field)).toEqual(
       expect.arrayContaining(['fields.area.southWest', 'fields.area.northEast']),
     )
   })
 
-  it('rejects an address with street/city/state keys', () => {
-    const result = validateFormPayload(form, {
+  it('rejects an address with street/city/state keys', async () => {
+    const result = validateFormPayload(await formApi.load(form), {
       fields: { addr: { street: '', city: '', state: '', postalCode: '', country: '' } },
     })
     expect(result.success).toBe(false)
@@ -94,26 +95,26 @@ describe('validateFormPayload composite shapes', () => {
     )
   })
 
-  it('rejects a person without the required name', () => {
-    const result = validateFormPayload(form, { fields: { who: { firstName: 'Ada', lastName: 'Lovelace' } } })
+  it('rejects a person without the required name', async () => {
+    const result = validateFormPayload(await formApi.load(form), { fields: { who: { firstName: 'Ada', lastName: 'Lovelace' } } })
     expect(result.success).toBe(false)
     expect(errorsOf(result).map((error) => error.field)).toContain('fields.who.name')
   })
 
-  it('rejects a wrong shape nested in a fieldset', () => {
-    const result = validateFormPayload(form, { fields: { group: { inner: { lat: 1, lng: 2 } } } })
+  it('rejects a wrong shape nested in a fieldset', async () => {
+    const result = validateFormPayload(await formApi.load(form), { fields: { group: { inner: { lat: 1, lng: 2 } } } })
     expect(result.success).toBe(false)
     expect(errorsOf(result).map((error) => error.field)).toContain('fields.group.inner.lon')
   })
 
-  it('rejects a non-object composite value', () => {
-    const result = validateFormPayload(form, { fields: { price: [100, 'USD'] } })
+  it('rejects a non-object composite value', async () => {
+    const result = validateFormPayload(await formApi.load(form), { fields: { price: [100, 'USD'] } })
     expect(result.success).toBe(false)
     expect(errorsOf(result)[0]?.field).toBe('fields.price')
   })
 
-  it('accepts filled canonical shapes', () => {
-    const result = validateFormPayload(form, {
+  it('accepts filled canonical shapes', async () => {
+    const result = validateFormPayload(await formApi.load(form), {
       fields: {
         loc: { lat: 40.7, lon: -74 },
         area: { southWest: { lat: 40, lon: -75 }, northEast: { lat: 41, lon: -73 } },
@@ -143,8 +144,8 @@ describe('validateFormPayload annex values', () => {
     },
   } as unknown as Form
 
-  it('accepts an Attachment and leaves an optional annex out', () => {
-    const result = validateFormPayload(annexForm, {
+  it('accepts an Attachment and leaves an optional annex out', async () => {
+    const result = validateFormPayload(await formApi.load(annexForm), {
       fields: {},
       annexes: { proof: { name: 'proof.pdf', mimeType: 'application/pdf' } },
     })
@@ -154,17 +155,17 @@ describe('validateFormPayload annex values', () => {
     })
   })
 
-  it('rejects a missing required annex and a null annex, as the SDK does', () => {
-    const result = validateFormPayload(annexForm, { fields: {}, annexes: { extra: null } })
+  it('rejects a missing required annex and a null annex, as the SDK does', async () => {
+    const result = validateFormPayload(await formApi.load(annexForm), { fields: {}, annexes: { extra: null } })
     expect(result.success).toBe(false)
     expect(errorsOf(result).map((error) => error.field)).toEqual(['annexes.extra'])
-    const missing = validateFormPayload(annexForm, { fields: {} })
+    const missing = validateFormPayload(await formApi.load(annexForm), { fields: {} })
     expect(missing.success).toBe(false)
     expect(errorsOf(missing).map((error) => error.field)).toEqual(['annexes.proof'])
   })
 
-  it('rejects an annex value that is not an Attachment, naming the annex', () => {
-    const result = validateFormPayload(annexForm, {
+  it('rejects an annex value that is not an Attachment, naming the annex', async () => {
+    const result = validateFormPayload(await formApi.load(annexForm), {
       fields: {},
       annexes: { proof: { filename: 'proof.pdf' } },
     })

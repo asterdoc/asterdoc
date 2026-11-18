@@ -122,7 +122,7 @@ export interface FixtureField {
   name: string
   /** Lower-left x, lower-left y, upper-right x, upper-right y. */
   rect: [number, number, number, number]
-  type?: 'Tx' | 'Ch'
+  type?: 'Tx' | 'Ch' | 'Btn'
   da?: string
   q?: number
   flags?: number
@@ -139,6 +139,8 @@ export interface FixtureForm {
   da?: string
   /** TrueType programs embedded in the form's default resources, keyed by resource name. */
   fonts?: Record<string, Uint8Array>
+  /** Standard Type1 fonts in the form's default resources: resource name to `/BaseFont`. */
+  standardFonts?: Record<string, string>
   /** Ask viewers to regenerate field appearances. */
   needAppearances?: boolean
 }
@@ -176,6 +178,12 @@ export function acroFieldsPdf(fields: FixtureField[], form: FixtureForm = {}): U
       { id: id + 2, body: `<< /Length ${program.length} /Length1 ${program.length} >>\nstream\n`, stream: program },
     ]
   })
+  const standardStart = acroFormId + 1 + fontObjects.length
+  fontObjects.push(...Object.entries(form.standardFonts ?? {}).map(([name, base], index) => ({
+    id: standardStart + index,
+    name,
+    body: `<< /Type /Font /Subtype /Type1 /BaseFont /${base} /Encoding /WinAnsiEncoding >>`,
+  })))
   const resources = fontObjects.filter((object) => object.name).map((object) => `/${object.name} ${object.id} 0 R`).join(' ')
   return assemblePdf([
     { id: 1, body: `<< /Type /Catalog /Pages 2 0 R /AcroForm ${acroFormId} 0 R >>` },

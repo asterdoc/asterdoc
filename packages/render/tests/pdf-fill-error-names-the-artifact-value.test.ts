@@ -1,6 +1,6 @@
-import type { Form, RenderRequest, RendererLayer } from '@asterdoc/types'
+import type { Form, LayerFormat } from '@asterdoc/types'
 import { describe, expect, it } from 'vitest'
-import { flattenPdf, pdfFontCheck, PdfFieldFillError, renderPdf, type PdfFont, type RenderPdfOptions } from '../src/pdf'
+import { flattenPdf, PdfFieldFillError, pdfPrintFailures, readPdfPrintProfile, renderPdf, type PdfFont, type RenderPdfOptions } from '../src/pdf'
 import { liberationSans, syntheticFont } from './font-fixtures'
 import { acroFieldsPdf, pagePdf, type FixtureField } from './pdf-fixtures'
 import { textItemsWithPdfjs } from './pdfjs-reference'
@@ -39,10 +39,10 @@ describe('a value no font can draw', () => {
     expect(error.message).toContain('Cannot fill PDF field "TextField20[1]" with fields.nameInNativeAlphabet: no available font can draw "王" (U+738B)')
   })
 
-  it('tells each reader what to do: a font on the PDF layer, or one from the SDK', async () => {
+  it('names the standard font the field draws in, and tells the reader to declare a font on the PDF layer', async () => {
     const { message } = await refusal(nativeName)
+    expect(message).toContain('The field draws in Helvetica, a standard PDF font with the Windows Latin 1 characters only')
     expect(message).toContain('on the PDF layer of the artifact: "font": { "path": "<file>.ttf" }')
-    expect(message).toContain('pdfRenderer({ font })')
   })
 
   it('is drawn when the layer declares a font that has its characters', async () => {
@@ -137,7 +137,7 @@ describe('a text overlay', () => {
   })
 })
 
-describe('the PDF font check', () => {
+describe('the print check of a PDF layer', () => {
   const form = {
     kind: 'form',
     name: 'font-check',
@@ -152,71 +152,60 @@ describe('the PDF font check', () => {
   const template = acroFieldsPdf([box('surname'), box('surnameAgain'), box('given'), box('memo', { rect: [100, 500, 130, 512] })])
   const cyrillic = syntheticFont({ name: 'AsterdocTestUpper', characters: 'ЖУК ' })
 
-  const request = (
-    fields: Record<string, unknown>,
-    layer: Partial<RendererLayer> = {},
-  ): RenderRequest<RendererLayer> => ({
-    kind: 'form',
-    artifact: form,
-    data: { fields },
-    template: {
-      type: 'pdf',
-      mimeType: 'application/pdf',
-      content: template,
-      bindings: { surname: 'surname', surnameAgain: 'fields.surname', given: 'given', memo: 'memo' },
-      ...layer,
-    },
-  })
+  const bindings = { surname: 'surname', surnameAgain: 'fields.surname', given: 'given', memo: 'memo' }
+  const check = async (fields: Record<string, unknown>, layer: { font?: { content: Uint8Array; path: string }; format?: LayerFormat } = {}) => {
+    const profile = await readPdfPrintProfile({
+      template,
+      form,
+      bindings,
+      ...(layer.font && { layerFont: { bytes: layer.font.content, source: layer.font.path } }),
+      ...(layer.format && { format: layer.format }),
+    })
+    return pdfPrintFailures(profile, { data: { fields } }).map((failure) => failure.error as PdfFieldFillError)
+  }
 
   it('returns the error a render throws for each field whose text no font can draw', async () => {
     const data = { surname: 'Жук', given: 'Łukasz', memo: 'ok' }
-    const refused = await pdfFontCheck().render(request(data))
+    const refused = await check(data)
     expect(refused.map((error) => [error.field, error.paths, error.character])).toEqual([
       ['surname', ['fields.surname'], 'Ж'],
       ['surnameAgain', ['fields.surname'], 'Ж'],
       ['given', ['fields.given'], 'Ł'],
     ])
-    const thrown = await refusal({ template, form, data: { fields: data }, bindings: request(data).template.bindings })
+    const thrown = await refusal({ template, form, data: { fields: data }, bindings })
     expect(refused[0]!.message).toBe(thrown.message)
   })
 
   it('returns nothing for Latin-1 values', async () => {
-    expect(await pdfFontCheck().render(request({ surname: 'Crème', given: 'Zoë', memo: 'ok' }))).toEqual([])
+    expect(await check({ surname: 'Crème', given: 'Zoë', memo: 'ok' })).toEqual([])
   })
 
   it('returns nothing when the layer font has the characters', async () => {
     const font = { content: liberationSans(), path: 'fonts/LiberationSans-Regular.ttf' }
-    expect(await pdfFontCheck().render(request({ surname: 'Жук', given: 'Łukasz' }, { font }))).toEqual([])
+    expect(await check({ surname: 'Жук', given: 'Łukasz' }, { font })).toEqual([])
   })
 
   it('checks the text as the layer format prints it', async () => {
     const font = { content: cyrillic, path: 'fonts/upper.ttf' }
-    const check = pdfFontCheck()
-    expect(await check.render(request({ surname: 'жук' }, { font, format: { case: 'upper' } }))).toEqual([])
-    const lower = await check.render(request({ surname: 'жук' }, { font }))
+    expect(await check({ surname: 'жук' }, { font, format: { case: 'upper' } })).toEqual([])
+    const lower = await check({ surname: 'жук' }, { font })
     expect(lower.map((error) => [error.field, error.character])).toEqual([['surname', 'ж'], ['surnameAgain', 'ж']])
   })
 
   it('reports a script that needs shaping', async () => {
-    const [error] = await pdfFontCheck().render(request({ given: 'שלום' }))
+    const [error] = await check({ given: 'שלום' })
     expect([error!.field, error!.reason, error!.script, error!.paths]).toEqual(['given', 'unsupported-script', 'Hebrew', ['fields.given']])
   })
 
-  it('does not report a value that fails for another reason', async () => {
+  it('reports a value that does not fit its box, as a render refuses it', async () => {
     const memo = 'A value far too long for a box of thirty points'
-    expect(await pdfFontCheck().render(request({ memo }))).toEqual([])
+    expect((await check({ memo })).map((error) => [error.field, error.reason])).toEqual([['memo', 'overflow']])
     await expect(renderPdf({ template, form, data: { fields: { memo } }, bindings: { memo: 'memo' } })).rejects.toMatchObject({ reason: 'overflow' })
   })
 
   it('takes many sets of data for one layer', async () => {
-    const check = pdfFontCheck()
     const counts: number[] = []
-    for (const surname of ['Жук', 'Smith', 'Ωμέγα']) counts.push((await check.render(request({ surname }))).length)
+    for (const surname of ['Жук', 'Smith', 'Ωμέγα']) counts.push((await check({ surname })).length)
     expect(counts).toEqual([2, 0, 2])
-  })
-
-  it('refuses a layer that carries no PDF bytes', async () => {
-    const text = { ...request({}), template: { type: 'text' as const, content: 'plain' } }
-    await expect(pdfFontCheck().render(text)).rejects.toThrow('needs a PDF layer that carries its bytes')
   })
 })

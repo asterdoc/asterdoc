@@ -1763,9 +1763,13 @@ const resolver = createMemoryResolver({ contents });
  *
  * Used by U.S. employers to verify the identity and employment authorization of every new hire. Section 1 captures the employee's self-attestation of citizenship or immigration status; Section 2 captures the employer's certification that they physically examined acceptable List A or List B+C documents.
  */
-export const i9 = Object.assign(a.form(schema, { resolver }), {
+export const i9 = {
   /** The raw form spec, exactly as released. */
   spec: schema,
-});
+  /** Reads the form's bundled layer files, for a host that loads the spec itself. */
+  resolver,
+  /** Load the form on its bundled files. */
+  load: () => a.form.load(schema, { resolver }),
+};
 
 export default i9;

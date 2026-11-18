@@ -19,8 +19,8 @@ describe('Signature slots', () => {
 		convert: async () => ({ pdf: contractPdf }),
 	}
 
-	const buildForm = (slots: Record<string, SignatureSlot>) =>
-		form()
+	const buildForm = async (slots: Record<string, SignatureSlot>) =>
+		await form.load(form()
 			.name('slot-contract')
 			.version('1.0.0')
 			.title('Slot Contract')
@@ -35,16 +35,16 @@ describe('Signature slots', () => {
 				signatures: slots,
 			})
 			.defaultLayer('md')
-			.build()
+			.build())
 
-	const fillAndSign = (draft: ReturnType<ReturnType<typeof buildForm>['fill']>) =>
+	const fillAndSign = (draft: ReturnType<Awaited<ReturnType<typeof buildForm>>['fill']>) =>
 		draft
 			.addSigner('client-signer', { person: { name: 'Cleo Client' } })
 			.addSignatory('client', 'client-0', { signerId: 'client-signer' })
 
-	const filled = (slots: Record<string, SignatureSlot>) =>
+	const filled = async (slots: Record<string, SignatureSlot>) =>
 		fillAndSign(
-			buildForm(slots).fill({
+			(await buildForm(slots)).fill({
 				fields: { amount: 5 },
 				parties: {
 					client: { id: 'client-0', name: 'Cleo Client' },
@@ -54,13 +54,13 @@ describe('Signature slots', () => {
 		)
 
 	test('absolute placement resolves without any locator work', async () => {
-		const sealed = await filled({
+		const sealed = await (await filled({
 			'client-sig': {
 				party: { role: 'client' },
 				type: 'signature',
 				placement: { page: 2, x: 72, y: 500, width: 200, height: 50 },
 			},
-		}).seal({ adapter: pureConverter })
+		})).seal({ adapter: pureConverter })
 
 		expect(sealed.signatureMap).toEqual([
 			expect.objectContaining({
@@ -77,7 +77,7 @@ describe('Signature slots', () => {
 	})
 
 	test('anchor placement resolves through the built-in locator, offsets applied', async () => {
-		const sealed = await filled({
+		const sealed = await (await filled({
 			'client-sig': {
 				party: { role: 'client' },
 				type: 'signature',
@@ -87,7 +87,7 @@ describe('Signature slots', () => {
 					height: 44,
 				},
 			},
-		}).seal({ adapter: pureConverter })
+		})).seal({ adapter: pureConverter })
 
 		const field = sealed.signatureMap![0]!
 		expect(field.page).toBeGreaterThan(1)
@@ -97,8 +97,8 @@ describe('Signature slots', () => {
 	})
 
 	test('anchor occurrence picks a repeated match deterministically', async () => {
-		const at = (occurrence: number) =>
-			filled({
+		const at = async (occurrence: number) =>
+			(await filled({
 				'client-sig': {
 					party: { role: 'client' },
 					type: 'signature',
@@ -108,14 +108,14 @@ describe('Signature slots', () => {
 						height: 40,
 					},
 				},
-			}).seal({ adapter: pureConverter })
+			})).seal({ adapter: pureConverter })
 
-		const [first, third] = await Promise.all([at(1), at(3)])
+		const [first, third] = await Promise.all([await at(1), await at(3)])
 		expect(first.signatureMap![0]!.page).toBeLessThan(third.signatureMap![0]!.page)
 	})
 
 	test('mixed absolute and anchor slots merge into one map in slot order', async () => {
-		const sealed = await filled({
+		const sealed = await (await filled({
 			'client-sig': {
 				party: { role: 'client' },
 				type: 'signature',
@@ -126,7 +126,7 @@ describe('Signature slots', () => {
 				type: 'date_signed',
 				placement: { page: 1, x: 400, y: 700, width: 100, height: 20 },
 			},
-		}).seal({ adapter: pureConverter })
+		})).seal({ adapter: pureConverter })
 
 		expect(sealed.signatureMap!.map((field) => field.id)).toEqual(['client-sig', 'client-date'])
 		expect(sealed.signatureMap![1]!.type).toBe('date_signed')
@@ -157,7 +157,7 @@ describe('Signature slots', () => {
 
 		test('seal() sends anchor-placed slots', async () => {
 			const { adapter, requests } = capturing()
-			await filled({ 'client-sig': anchorSlot, 'client-date': absoluteSlot }).seal({ adapter })
+			await (await filled({ 'client-sig': anchorSlot, 'client-date': absoluteSlot })).seal({ adapter })
 
 			expect(requests).toHaveLength(1)
 			expect(requests[0]!.anchorFields).toEqual([
@@ -178,7 +178,7 @@ describe('Signature slots', () => {
 
 		test('prepareSeal() sends anchor-placed unified slots', async () => {
 			const { adapter, requests } = capturing()
-			await filled({ 'client-sig': anchorSlot }).prepareSeal({ adapter })
+			await (await filled({ 'client-sig': anchorSlot })).prepareSeal({ adapter })
 
 			expect(requests.length).toBeGreaterThan(0)
 			for (const request of requests) {
@@ -188,7 +188,7 @@ describe('Signature slots', () => {
 
 		test('is absent when no slot uses anchor placement', async () => {
 			const { adapter, requests } = capturing()
-			await filled({ 'client-date': absoluteSlot }).seal({ adapter })
+			await (await filled({ 'client-date': absoluteSlot })).seal({ adapter })
 
 			expect(requests).toHaveLength(1)
 			expect(requests[0]).not.toHaveProperty('anchorFields')
@@ -196,10 +196,10 @@ describe('Signature slots', () => {
 
 		test('is absent when the only anchor slot targets an unfilled party index', async () => {
 			const { adapter, requests } = capturing()
-			await filled({
+			await (await filled({
 				'client-date': absoluteSlot,
 				'client-2-sig': { ...anchorSlot, party: { role: 'client', index: 3 } },
-			}).seal({ adapter })
+			})).seal({ adapter })
 
 			expect(requests).toHaveLength(1)
 			expect(requests[0]).not.toHaveProperty('anchorFields')
@@ -215,13 +215,13 @@ describe('Signature slots', () => {
 			},
 		}
 		await expect(
-			filled({
+			(await filled({
 				bad: {
 					party: { role: 'ghost' },
 					type: 'signature',
 					placement: 'flow',
 				},
-			}).seal({ adapter: trackingConverter }),
+			})).seal({ adapter: trackingConverter }),
 		).rejects.toThrowError(SealConfigError)
 		expect(converted).toBe(false)
 	})
@@ -230,24 +230,24 @@ describe('Signature slots', () => {
 		// 'client' requires a signature; a slot map that only places the witness
 		// would produce a sealed document the client can never sign.
 		await expect(
-			filled({
+			(await filled({
 				'witness-sig': {
 					party: { role: 'witness' },
 					type: 'signature',
 					placement: { page: 1, x: 0, y: 0, width: 100, height: 30 },
 				},
-			}).seal({ adapter: pureConverter }),
+			})).seal({ adapter: pureConverter }),
 		).rejects.toThrow(/requires a signature but no slot places it/)
 	})
 
 	test('a person with no signatory signs its slot as itself (signerId = party id)', async () => {
-		const draft = buildForm({
+		const draft = (await buildForm({
 			'client-sig': {
 				party: { role: 'client' },
 				type: 'signature',
 				placement: { page: 1, x: 0, y: 0, width: 100, height: 30 },
 			},
-		}).fill({
+		})).fill({
 			fields: { amount: 5 },
 			parties: {
 				client: { id: 'client-0', name: 'Cleo Client' },
@@ -259,7 +259,7 @@ describe('Signature slots', () => {
 	})
 
 	test('slots for unfilled party indexes are skipped, not errors', async () => {
-		const sealed = await filled({
+		const sealed = await (await filled({
 			'client-sig': {
 				party: { role: 'client' },
 				type: 'signature',
@@ -270,19 +270,19 @@ describe('Signature slots', () => {
 				type: 'signature',
 				placement: { page: 1, x: 10, y: 100, width: 100, height: 30 },
 			},
-		}).seal({ adapter: pureConverter })
+		})).seal({ adapter: pureConverter })
 		expect(sealed.signatureMap).toHaveLength(1)
 	})
 
 	test('non-PDF layer without a converter is a config error naming the gap', async () => {
 		await expect(
-			filled({
+			(await filled({
 				'client-sig': {
 					party: { role: 'client' },
 					type: 'signature',
 					placement: { page: 1, x: 0, y: 0, width: 100, height: 30 },
 				},
-			}).seal(),
+			})).seal(),
 		).rejects.toThrow(/without a converter/)
 	})
 })

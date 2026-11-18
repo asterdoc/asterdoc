@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest'
+import { pdfFiles } from '../../support/pdf-files'
 import { a } from '@/artifacts'
 
 /**
@@ -32,7 +33,7 @@ function oneFieldPdf(valueHex: string): Uint8Array {
 	return encoder.encode(body)
 }
 
-const form = a.form({
+const form = await a.form.load({
 	kind: 'form',
 	name: 'extract-text-strings',
 	version: '1.0.0',
@@ -42,7 +43,7 @@ const form = a.form({
 		pdf: { kind: 'file', mimeType: 'application/pdf', path: 'form.pdf', bindings: { name: 'name' } },
 	},
 	defaultLayer: 'pdf',
-})
+}, { resolver: pdfFiles({}, ['name']) })
 
 describe('form.extract text strings', () => {
 	test('reads a UTF-16BE CJK value', async () => {

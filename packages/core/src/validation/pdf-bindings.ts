@@ -14,7 +14,7 @@ import type { StandardSchemaV1 } from '@standard-schema/spec'
 import { isPdfMimeType } from '@asterdoc/schemas'
 import type { BindingValue, Form } from '@asterdoc/types'
 import { parseMask } from '@asterdoc/format'
-import { bindingFormatProblem, bindingPartProblem, fieldDefinition, parseBinding, PdfBindingSyntaxError, splitPartIndex, type ParsedPdfBinding } from '@asterdoc/render'
+import { bindingFormatProblem, bindingPartProblem, fieldDefinition, layerPrintProblems, parseBinding, PdfBindingSyntaxError, resolveLayerBindings, splitPartIndex, type ParsedPdfBinding } from '@asterdoc/render'
 import { ArtifactFieldFormatError, checkTextTemplate, formValueResolver, validateFieldBindings, type TemplateCheckOptions, type TemplateDiagnostic } from '@asterdoc/render/text'
 import type { TypeEnv } from '@asterdoc/expr'
 import { buildTemplateTypeEnvironment, type TemplateArtifact } from '@/logic/design-time/validation/validate-templates'
@@ -46,7 +46,7 @@ function bindingProblems(form: Form, bindingKey: string, value: BindingValue, ch
     if (!(error instanceof PdfBindingSyntaxError)) throw error
     return [error.message.replace(/\.$/, '')]
   }
-  if (parsed.template) return checkTextTemplate(parsed.template.source, checks.env(), checks.options).map(templateProblem)
+  if (parsed.template) return checkTextTemplate(parsed.template.source, checks.env(), checks.options).filter((diagnostic) => diagnostic.code !== 'print').map(templateProblem)
   for (const { source } of parsed.parts) {
     try {
       validateFieldBindings(form, { [bindingKey]: source })
@@ -92,6 +92,36 @@ export function validatePdfBindingPaths(form: Form): StandardSchemaV1.Issue[] {
       for (const problem of bindingProblems(form, bindingKey, value, checks)) {
         issues.push({ message: `Layer "${layerKey}", binding "${bindingKey}": ${problem}.${inverted}`, path: ['layers', layerKey, 'bindings', bindingKey] })
       }
+    }
+  }
+  return [...issues, ...validatePdfLayerPrints(form)]
+}
+
+/**
+ * Each print of each PDF layer that fails for some value the form accepts: a
+ * phone part or a `phone.region` style on a phone field whose `countryCode`
+ * does not hold it, or a money part on a money field that accepts another
+ * currency or an amount below zero. Rendering refuses such a layer, so
+ * `validate()` reports each one first, naming the field and what to add.
+ */
+function validatePdfLayerPrints(form: Form): StandardSchemaV1.Issue[] {
+  const layers = form.layers ?? {}
+  const issues: StandardSchemaV1.Issue[] = []
+  for (const [layerKey, layer] of Object.entries(layers)) {
+    if (layer.kind !== 'file' || !isPdfMimeType(layer.mimeType)) continue
+    let bindings
+    try {
+      bindings = resolveLayerBindings(layers, layer)
+    } catch {
+      continue
+    }
+    const reused = layer.bindings ? undefined : layer.bindingsFrom
+    for (const { binding, rows, problem } of layerPrintProblems(form, bindings, layer.format)) {
+      const where = binding !== undefined ? `, binding "${binding}"${reused ? ` (from layer "${reused}")` : ''}` : rows ? '' : ', fields filled by id'
+      issues.push({
+        message: `Layer "${layerKey}"${where}: ${problem}.`,
+        path: reused ? ['layers', layerKey, 'bindingsFrom'] : binding !== undefined ? ['layers', layerKey, 'bindings', binding] : rows ? ['layers', layerKey, 'bindings'] : ['layers', layerKey, 'format'],
+      })
     }
   }
   return issues

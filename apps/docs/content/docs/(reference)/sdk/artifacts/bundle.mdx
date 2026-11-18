@@ -10,7 +10,7 @@ Create Bundle artifacts to group multiple documents, forms, and checklists into 
 ### Creating a bundle
 
 ```ts
-const lease = a.form({
+const lease = await a.form.load({
   name: 'lease',
   fields: {
     pets: { type: 'list', item: { type: 'text' } },
@@ -388,9 +388,9 @@ rebuilds it:
 ```ts
 import { runtimeBundleFromJSON, runtimeContentFromJSON } from '@asterdoc/sdk'
 
-const reloaded = runtimeBundleFromJSON(JSON.parse(stored))
+const reloaded = await runtimeBundleFromJSON(JSON.parse(stored))
 // Bind a resolver for file-backed layers:
-const withFiles = runtimeBundleFromJSON(JSON.parse(stored), (member) => runtimeContentFromJSON(member, { resolver }))
+const withFiles = await runtimeBundleFromJSON(JSON.parse(stored), async (member) => await runtimeContentFromJSON(member, { resolver }))
 ```
 
 Loading runs the same checks as `prepare()` and the phase transitions: an

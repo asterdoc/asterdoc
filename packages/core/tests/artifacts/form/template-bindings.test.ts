@@ -40,28 +40,28 @@ const data = {
 	parties: { tenant: { id: 'tenant-0', name: 'Ada Lovelace' } },
 }
 
-const filled = (binding: unknown, text?: string) => a.form(definition(binding, text) as never, { resolver }).fill(data as never)
+const filled = async (binding: unknown, text?: string) => (await a.form.load(definition(binding, text) as never, { resolver })).fill(data as never)
 const boxValue = async (bytes: unknown) => (await inspectAcroFormFields(bytes as Uint8Array)).find((field) => field.name === 'name')?.value
 
 describe('a template binding of a form', () => {
 	test('prints several values with the text between them', async () => {
 		expect(validate(definition({ template: CITY_LINE })).issues).toBeUndefined()
-		expect(await boxValue(await filled({ template: CITY_LINE }).render({ renderer: createLayerRenderer() }))).toBe('Boston, MA 02110')
+		expect(await boxValue(await (await filled({ template: CITY_LINE })).render({ renderer: createLayerRenderer() }))).toBe('Boston, MA 02110')
 	})
 
 	test('reads a party, and a computed value by its name, as a text layer does', async () => {
 		const text = '{{parties.tenant.name}} pays {{total}}{{#if long}} over {{fields.months}} months{{/if}}'
-		const draft = filled({ template: text }, text)
+		const draft = await filled({ template: text }, text)
 		expect(validate(definition({ template: text }, text)).issues).toBeUndefined()
-		expect(await boxValue(await draft.render({ renderer: createLayerRenderer() }))).toBe('Ada Lovelace pays 14,400 over 12 months')
-		expect(await draft.render({ renderer: createLayerRenderer(), layer: 'markdown' })).toBe('Ada Lovelace pays 14,400 over 12 months')
+		expect(await boxValue(await (await draft).render({ renderer: createLayerRenderer() }))).toBe('Ada Lovelace pays 14,400 over 12 months')
+		expect(await (await draft).render({ renderer: createLayerRenderer(), layer: 'markdown' })).toBe('Ada Lovelace pays 14,400 over 12 months')
 	})
 
 	test('prints a choice as its option value where a text layer prints its label', async () => {
 		const text = 'Kind: {{fields.kind}}'
-		const draft = filled({ template: text }, text)
-		expect(await boxValue(await draft.render({ renderer: createLayerRenderer() }))).toBe('Kind: P')
-		expect(await draft.render({ renderer: createLayerRenderer(), layer: 'markdown' })).toBe('Kind: Partnership')
+		const draft = await filled({ template: text }, text)
+		expect(await boxValue(await (await draft).render({ renderer: createLayerRenderer() }))).toBe('Kind: P')
+		expect(await (await draft).render({ renderer: createLayerRenderer(), layer: 'markdown' })).toBe('Kind: Partnership')
 	})
 
 	test('passes validateLayers on a single-line field, and fails there with a line break', async () => {
@@ -72,16 +72,9 @@ describe('a template binding of a form', () => {
 		])
 	})
 
-	test('is taken as a render-time binding, and refused there with both a path and a template', async () => {
-		const draft = filled('fields.rent')
-		expect(await boxValue(await draft.render({ renderer: createLayerRenderer(), bindings: { name: { template: CITY_LINE } } }))).toBe('Boston, MA 02110')
-		await expect(draft.render({ renderer: createLayerRenderer(), bindings: { name: { path: 'rent', template: CITY_LINE } as never } }))
-			.rejects.toThrow('The bindings render option for layer "pdf", binding "name", is not a valid binding object: (root): A binding object holds either path, which prints one value, or template, which prints several; never both')
-	})
-
 	test('reads back from the filled PDF', async () => {
 		const form = definition({ template: CITY_LINE })
-		const pdf = await filled({ template: CITY_LINE }).render({ renderer: createLayerRenderer() }) as Uint8Array
+		const pdf = await (await filled({ template: CITY_LINE })).render({ renderer: createLayerRenderer() }) as Uint8Array
 		const result = await extractPdfData({ pdf, form: form as unknown as Form, bindings: form.layers.pdf.bindings as never })
 		expect(result.data.fields).toEqual({ home: { locality: 'Boston', region: 'MA', postalCode: '02110' } })
 	})

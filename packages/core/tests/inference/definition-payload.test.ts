@@ -4,8 +4,8 @@ import { a, type InferFormPayload, type ProgressiveFormPayload } from '@/index'
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false
 
 describe('definition payload inference', () => {
-	test('keeps requiredness equivalent between literal and builder forms', () => {
-		const literal = a.form({
+	test('keeps requiredness equivalent between literal and builder forms', async () => {
+		const literal = await a.form.load({
 			kind: 'form',
 			name: 'literal',
 			fields: {
@@ -30,10 +30,10 @@ describe('definition payload inference', () => {
 		expect(literalPayload).toEqual(builtPayload)
 		expect(payloadTypesMatch).toBe(true)
 
-		expect(built.fill({ fields: {} }).isValid()).toBe(false)
+		expect((await a.form.load(built)).fill({ fields: {} }).isValid()).toBe(false)
 	})
 
-	test('allows optional party and annex sections to be omitted', () => {
+	test('allows optional party and annex sections to be omitted', async () => {
 		const form = a
 			.form()
 			.name('optional-sections')
@@ -42,11 +42,11 @@ describe('definition payload inference', () => {
 			.annexes({ proof: a.annex().title('Proof').required(false) })
 			.build()
 
-		const draft = form.fill({ fields: { age: 42 } })
+		const draft = (await a.form.load(form)).fill({ fields: { age: 42 } })
 		expect(draft.fields.age).toBe(42)
 	})
 
-	test('keeps singular builder definitions in the inferred payload', () => {
+	test('keeps singular builder definitions in the inferred payload', async () => {
 		const form = a
 			.form()
 			.name('singular-builder')
@@ -57,10 +57,10 @@ describe('definition payload inference', () => {
 
 		type Payload = InferFormPayload<typeof form>
 		const payload: Payload = { fields: { age: 42 } }
-		expect(form.fill(payload).fields.age).toBe(42)
+		expect((await a.form.load(form)).fill(payload).fields.age).toBe(42)
 	})
 
-	test('accepts extra annex keys only when the form allows additional annexes', () => {
+	test('accepts extra annex keys only when the form allows additional annexes', async () => {
 		const attachment = { name: 'extra.pdf', mimeType: 'application/pdf' }
 		const openBuilt = a
 			.form()
@@ -68,20 +68,20 @@ describe('definition payload inference', () => {
 			.annexes({ proof: a.annex().required(true) })
 			.allowAdditionalAnnexes(true)
 			.build()
-		const openLiteral = a.form({
+		const openLiteral = await a.form.load({
 			kind: 'form',
 			name: 'open-literal',
 			annexes: { proof: { required: true } },
 			allowAdditionalAnnexes: true,
 		})
-		const closedBuilt = a.form().name('closed-built').annexes({ proof: a.annex().required(true) }).build()
+		const closedBuilt = await a.form.load(a.form().name('closed-built').annexes({ proof: a.annex().required(true) }).build())
 		const closedExplicit = a
 			.form()
 			.name('closed-explicit')
 			.annexes({ proof: a.annex().required(true) })
 			.allowAdditionalAnnexes(false)
 			.build()
-		const closedLiteral = a.form({ kind: 'form', name: 'closed-literal', annexes: { proof: { required: true } } })
+		const closedLiteral = await a.form.load({ kind: 'form', name: 'closed-literal', annexes: { proof: { required: true } } })
 
 		const openBuiltPayload: InferFormPayload<typeof openBuilt> = {
 			fields: {},
@@ -103,14 +103,14 @@ describe('definition payload inference', () => {
 		// @ts-expect-error a literal form without the flag rejects an undeclared annex key
 		const closedLiteralPayload: InferFormPayload<typeof closedLiteral> = { fields: {}, annexes: { proof: attachment, extra: attachment } }
 
-		expect(openBuilt.fill(openBuiltPayload).getAnnex('extra')).toEqual(attachment)
+		expect((await a.form.load(openBuilt)).fill(openBuiltPayload).getAnnex('extra')).toEqual(attachment)
 		expect(openLiteral.fill(openLiteralPayload).getAnnex('extra')).toEqual(attachment)
 		expect(openBuilt.allowAdditionalAnnexes).toBe(true)
 		expect(closedBuilt.allowAdditionalAnnexes).toBeUndefined()
 		void [openPatch, openBadValue, openMissingProof, closedBuiltPayload, closedExplicitPayload, closedLiteralPayload]
 	})
 
-	test('preserves nested fieldset and list inference through fluent builders', () => {
+	test('preserves nested fieldset and list inference through fluent builders', async () => {
 		const profileBuilder = a.field
 			.fieldset()
 			.field('age', a.field.number().required())
@@ -128,15 +128,15 @@ describe('definition payload inference', () => {
 		type Payload = InferFormPayload<typeof form>
 		const payload: Payload = { fields: { profile: { age: 42 }, phones: [] } }
 		expect(payload.fields.profile?.age).toBe(42)
-		const draft = form.fill(payload)
+		const draft = (await a.form.load(form)).fill(payload)
 		expect(draft.fields.profile).toEqual({ age: 42 })
 		expect(draft.fields.phones).toEqual([])
 
-		expect(form.fill({ fields: { profile: {}, phones: [] } }).isValid()).toBe(false)
+		expect((await a.form.load(form)).fill({ fields: { profile: {}, phones: [] } }).isValid()).toBe(false)
 	})
 
-	test('allows recursive nested patches while preserving full payload strictness', () => {
-		const form = a.form({
+	test('allows recursive nested patches while preserving full payload strictness', async () => {
+		const form = await a.form.load({
 			kind: 'form',
 			name: 'progressive-nested',
 			fields: {

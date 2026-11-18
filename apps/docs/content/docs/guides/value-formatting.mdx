@@ -45,7 +45,7 @@ Every key is optional. A key you leave out keeps the printing of the level below
 
 `case: upper` on a layer skips `email`, `uri` and `uuid` fields. It never changes the export values of checkboxes, radio buttons and dropdowns.
 
-Without `country` or `region`, those values print as stored. Without `text.mask`, a masked field prints with its mask. See [Codes and masks](/guides/field-input) for the fields that store codes and masked values.
+Without `country` or `region`, those values print as stored. `country.display` and `region.display` on an address, or on its `country` or `region` member, need the address field to store codes (`"codes": true`). Validation refuses them on an address that stores what it is given, in every layer kind, since such text may not read as a place. Without `text.mask`, a masked field prints with its mask. See [Codes and masks](/guides/field-input) for the fields that store codes and masked values.
 
 ## Where it applies
 
@@ -94,6 +94,14 @@ A binding object can also take `part`, to print one piece of a value as plain di
 | `money` | `units`, `cents` |
 
 An option test (`fields.status:married`) prints nothing, and a split part (`fields.ssn:2`) prints a piece of the raw value, so neither takes a `format` or a `part`. See [Bindings](/schemas/artifacts/shared/layer#bindings).
+
+A part exists only for some values, so the field must hold no other. `areaCode` and `subscriberNumber` need a phone field with `"countryCode": "1"`, and fill then refuses a number of another plan. `units` and `cents` need a money field with a two-decimal `currency` and `"min": 0`. A `phone.region` under `national` or `digits`, or with a part, needs the field's `countryCode` to be the region's. `validate()` names the field and what to add:
+
+```json
+"fields": {
+  "phone": { "type": "phone", "label": "Daytime phone", "countryCode": "1" }
+}
+```
 
 A binding that prints several values in one box is a template, and it takes a `format` too. The `format` applies to each value, merged over the layer's and under the placeholder's own modifiers. Its `case` applies to the whole box, the template's own text included, while a layer's `case` changes the values only. A template takes no `part`; write it as a modifier on the placeholder.
 
@@ -162,7 +170,7 @@ This form prints one text layer with a layer format and some placeholder modifie
 ```ts
 import { a } from '@asterdoc/sdk'
 
-const intake = a.form({
+const intake = await a.form.load({
   name: 'intake',
   fields: {
     name: { type: 'person', label: 'Name' },
@@ -232,8 +240,8 @@ A value prints through its effective format when a binding, an overlay, a field-
 | Code | When |
 |------|------|
 | `invalid_phone` | A phone that does not parse, under a style other than `e164` |
-| `phone_region_mismatch` | A number from another numbering plan under `national` or `digits` with `phone.region` set |
-| `unsupported_part` | A negative amount or a currency without two minor digits as money parts, or `areaCode` and `subscriberNumber` outside +1 |
+| `phone_region_mismatch` | A number from another numbering plan under `national` or `digits` with `phone.region` set. A layer of a valid form never meets it: the field's `countryCode` keeps such numbers out |
+| `unsupported_part` | A negative amount or a currency without two minor digits as money parts, or `areaCode` and `subscriberNumber` outside +1. A layer of a valid form never meets it: the field's constraints keep such values out |
 | `mask_mismatch` | A stored value that does not fit its field's mask |
 | `missing_format_provider` | A format that needs a lookup provider the formatter does not have (see [Lookup providers](#lookup-providers)) |
 

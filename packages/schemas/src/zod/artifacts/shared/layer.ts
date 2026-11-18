@@ -368,6 +368,16 @@ export const PDF_BINDING_OBJECT_RULE = 'A binding object holds either path, whic
 export const PDF_BINDING_TEMPLATE_PART_RULE = 'A template binding takes no part; write it on a placeholder, such as {{fields.dob | part="year"}}';
 
 /**
+ * A standard PDF font an artifact may choose for a PDF layer or a binding.
+ * Every PDF viewer has it, so nothing is embedded; it draws the Windows
+ * Latin 1 characters.
+ */
+export const StandardPdfFontSchema = z.enum(['Helvetica', 'Courier']).meta({
+	title: 'StandardPdfFont',
+	description: 'A standard PDF font: Helvetica, or Courier for monospace text. It draws the Windows Latin 1 characters',
+});
+
+/**
  * One PDF binding written as an object with a path: the path it would be as a
  * string, the format its value prints with, and the part of it it prints.
  */
@@ -381,6 +391,9 @@ export const PdfPathBindingSchema = z.object({
 		.optional(),
 	part: ValuePartSchema
 		.describe('The piece of the value the field prints, as plain digits: a date\'s year, month or day; a phone\'s countryCode, nationalNumber or extension, and for +1 numbers areaCode and subscriberNumber; a money amount\'s units or cents. Not on a qualified path such as ssn:2')
+		.optional(),
+	font: StandardPdfFontSchema
+		.describe('The standard font the field draws in, over the layer\'s font and the field\'s own')
 		.optional(),
 	template: z.never({ error: PDF_BINDING_OBJECT_RULE }).optional(),
 }).strict().meta({
@@ -399,6 +412,9 @@ export const PdfTemplateBindingSchema = z.object({
 		.describe('The text the field prints, in the template language of text layers (e.g., {{fields.city}}, {{fields.state}} {{fields.zip}}). Takes value placeholders with format modifiers, {{#if}} and {{#unless}} blocks, and line breaks for a multi-line field; no {{#each}} loop and no signing directive'),
 	format: ValueFormatSchema
 		.describe('How the template\'s values print, merged over the layer\'s format and under each placeholder\'s format modifiers. Its case applies to the whole field')
+		.optional(),
+	font: StandardPdfFontSchema
+		.describe('The standard font the field draws in, over the layer\'s font and the field\'s own')
 		.optional(),
 	path: z.never({ error: PDF_BINDING_OBJECT_RULE }).optional(),
 	part: z.never({ error: PDF_BINDING_TEMPLATE_PART_RULE }).optional(),
@@ -507,8 +523,8 @@ export const FileLayerObjectSchema = LayerBaseSchema.extend({
 		.max(1000)
 		.describe('Logical resolver path; the CLI resolves file-backed artifacts from their directory and stdin artifacts from cwd'),
 	checksum: ChecksumSchema.optional(),
-	font: LayerFontSchema
-		.describe('Font for filled values and overlay text; PDF layers only. It is tried after a font supplied at render time and before the form\'s own fonts')
+	font: z.union([LayerFontSchema, StandardPdfFontSchema])
+		.describe('Font for filled values and overlay text; PDF layers only. A standard font name (Helvetica or Courier) draws every field in it; a TrueType file is tried first, then each field\'s standard font')
 		.optional(),
 	format: FormatSchema
 		.describe('How the layer prints values, over the caller\'s formatter; layers that print values only. It applies to this layer alone, not to a layer that reuses its bindings')

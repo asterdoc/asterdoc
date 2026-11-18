@@ -40,7 +40,7 @@ if (result.success) {
 ### Using with forms
 
 ```ts
-const form = a.form({
+const form = await a.form.load({
   name: 'booking',
   fields: {
     checkIn: { type: 'date', label: 'Check-in Date' },

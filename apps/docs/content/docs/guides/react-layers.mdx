@@ -53,7 +53,7 @@ A React layer is a file layer with MIME type `text/tsx` (or `text/jsx`). Its `pa
 ```ts title="documents/agreement.ts"
 import { a } from '@asterdoc/core'
 
-export const agreement = a
+export const agreement = await a.form.load(a
   .form()
   .name('service-agreement')
   .version('1.0.0')
@@ -73,7 +73,7 @@ export const agreement = a
     },
   })
   .defaultLayer('composition')
-  .build()
+  .build())
 ```
 
 The layer must be a file layer. An inline layer with a React MIME type fails validation, because there is no module for it to name.

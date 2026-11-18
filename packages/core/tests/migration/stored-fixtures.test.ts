@@ -6,7 +6,9 @@ import { ASTERDOC_SCHEMA_URL, SCHEMA_VERSION, SCHEMA_VERSIONS, type SchemaVersio
 import { createMemoryResolver } from '@asterdoc/resolvers/memory'
 import { inspectAcroFormFields } from '@asterdoc/render/pdf'
 import { SchemaVersionError, load } from '@/serialization'
-import { validate, validateLayers } from '@/validation/artifact'
+import { validate } from '@/validation/artifact'
+import { validateLayers } from '@/artifacts/validate-layers'
+import { migrateArtifact } from '@/migration'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const fixtures = join(here, 'fixtures')
@@ -21,9 +23,9 @@ const stored = (version: SchemaVersion) =>
 		.sort()
 		.map((file) => [file, readFileSync(join(fixtures, version, file), 'utf8')] as const)
 
-function versionError(run: () => unknown): SchemaVersionError {
+async function versionError(run: () => unknown): Promise<SchemaVersionError> {
 	try {
-		run()
+		await run()
 	} catch (error) {
 		if (error instanceof SchemaVersionError) return error
 		throw error
@@ -34,9 +36,9 @@ function versionError(run: () => unknown): SchemaVersionError {
 describe('a stored 2026-11-10 form with a comma-joined binding', () => {
 	const lease = new Map(stored('2026-11-10')).get('lease.json') as string
 
-	test('loads with the template that prints the same text, and keeps the binding\'s format', () => {
+	test('loads with the template that prints the same text, and keeps the binding\'s format', async () => {
 		expect(JSON.parse(lease).layers.pdf.bindings.name).toEqual({ path: 'tenant, signed', format: { date: { pattern: 'MM/DD/YYYY' } } })
-		const upgraded = load<'form'>(lease, { resolver }).toJSON() as unknown as { layers: { pdf: { bindings: Record<string, unknown> } } }
+		const upgraded = (await load<'form'>(lease, { resolver })).toJSON() as unknown as { layers: { pdf: { bindings: Record<string, unknown> } } }
 		expect(upgraded.layers.pdf.bindings.name).toEqual({
 			template: '{{fields.tenant}}{{#if isNotEmpty(fields.signed)}}{{#if isNotEmpty(fields.tenant)}}, {{/if}}{{fields.signed}}{{/if}}',
 			format: { date: { pattern: 'MM/DD/YYYY' } },
@@ -44,13 +46,46 @@ describe('a stored 2026-11-10 form with a comma-joined binding', () => {
 	})
 
 	test('prints one value alone when the other is empty, as the join did', async () => {
-		const draft = load<'form'>(lease, { resolver }).fill({ fields: { tenant: 'Ada Lovelace' } })
+		const draft = (await load<'form'>(lease, { resolver })).fill({ fields: { tenant: 'Ada Lovelace' } })
 		const filled = await inspectAcroFormFields((await draft.render({ layer: 'pdf' })) as Uint8Array)
 		expect(filled.find((field) => field.name === 'name')?.value).toBe('Ada Lovelace')
 	})
 
 	test('passes validateLayers once upgraded', async () => {
 		expect((await validateLayers(JSON.parse(lease), { resolver })).issues).toBeUndefined()
+	})
+})
+
+describe('a stored 2026-11-12 form that binds the area code of a phone of every plan', () => {
+	const lease = new Map(stored('2026-11-12')).get('lease.json') as string
+	const withAreaCode = (phone: Record<string, unknown>) => {
+		const artifact = JSON.parse(lease)
+		artifact.fields.phone = phone
+		artifact.layers.pdf.bindings = { name: { path: 'phone', part: 'areaCode' } }
+		return artifact
+	}
+	const problem = 'Layer "pdf", binding "name": prints phone, but the part "areaCode" exists only for +1 numbers, and fields.phone accepts numbers of every plan; give the field "countryCode": "1".'
+
+	test('loads with nothing added, and validate names the field and the countryCode to add', async () => {
+		const artifact = withAreaCode({ type: 'phone', label: 'Phone' })
+		expect(((await load<'form'>(JSON.stringify(artifact), { resolver })).toJSON() as unknown as { fields: { phone: unknown } }).fields.phone).toEqual({ type: 'phone', label: 'Phone' })
+		expect(validate(artifact).issues).toEqual([expect.objectContaining({ message: problem, path: ['layers', 'pdf', 'bindings', 'name'] })])
+	})
+
+	test('does not migrate, and the refusal says what to add', () => {
+		expect(() => migrateArtifact(withAreaCode({ type: 'phone', label: 'Phone' }))).toThrow(problem)
+	})
+
+	test('migrates and prints the area code once the field states countryCode 1, and a +44 number is refused at fill', async () => {
+		const result = migrateArtifact(withAreaCode({ type: 'phone', label: 'Phone', countryCode: '1' }))
+		expect(result.status).toBe('migrated')
+		const instance = await load<'form'>(JSON.stringify(result.artifact), { resolver })
+		const draft = instance.fill({ fields: { tenant: 'Ada Lovelace', phone: { number: '+12125551234' } } })
+		const filled = await inspectAcroFormFields((await draft.render({ layer: 'pdf' })) as Uint8Array)
+		expect(filled.find((field) => field.name === 'name')?.value).toBe('212')
+		const foreign = instance.safeFill({ fields: { tenant: 'Ada Lovelace', phone: { number: '+442079460958' } } })
+		expect(foreign.success).toBe(false)
+		expect(String((foreign as { error: Error }).error.message)).toContain('+442079460958 has country calling code +44; this field takes only +1 numbers.')
 	})
 })
 
@@ -64,9 +99,9 @@ describe('stored artifacts from every earlier schema date', () => {
 	})
 
 	describe.each(EARLIER_VERSIONS)('at %s', (version) => {
-		test.each(stored(version))('%s declares its date and loads upgraded on the current SDK', (_file, content) => {
+		test.each(stored(version))('%s declares its date and loads upgraded on the current SDK', async (_file, content) => {
 			expect((JSON.parse(content) as { $schema: string }).$schema).toBe(`https://schema.asterdoc.com/${version}.json`)
-			const instance = load(content)
+			const instance = await load(content, (JSON.parse(content) as { kind: string }).kind === 'bundle' ? undefined : { resolver })
 			expect(instance.migratedFrom).toBe(version)
 			expect(instance.toJSON().$schema).toBe(ASTERDOC_SCHEMA_URL)
 		})
@@ -75,34 +110,34 @@ describe('stored artifacts from every earlier schema date', () => {
 			expect(validate(JSON.parse(content)).issues).toBeUndefined()
 		})
 
-		test.each(stored(version))('%s is refused with strictSchema', (_file, content) => {
-			expect(versionError(() => load(content, { strictSchema: true })).code).toBe('outdated-version')
+		test.each(stored(version))('%s is refused with strictSchema', async (_file, content) => {
+			expect((await versionError(async () => await load(content, { strictSchema: true, ...((JSON.parse(content) as { kind: string }).kind !== 'bundle' && { resolver }) }))).code).toBe('outdated-version')
 			expect(validate(JSON.parse(content), { strictSchema: true }).issues?.[0]?.path).toEqual(['$schema'])
 		})
 
-		test.each(stored(version))('%s with a date newer than this SDK is refused', (_file, content) => {
+		test.each(stored(version))('%s with a date newer than this SDK is refused', async (_file, content) => {
 			const newer = content.replace(`/${version}.json`, '/2999-01-01.json')
-			const error = versionError(() => load(newer))
+			const error = await versionError(async () => await load(newer, (JSON.parse(content) as { kind: string }).kind === 'bundle' ? undefined : { resolver }))
 			expect(error.code).toBe('newer-version')
 			expect(error.message).toContain('newer than this SDK knows; update @asterdoc/core')
 		})
 
 		test('the form fills and renders its inline and PDF layers', async () => {
-			const instance = load<'form'>(new Map(stored(version)).get('lease.json') as string, { resolver })
+			const instance = await load<'form'>(new Map(stored(version)).get('lease.json') as string, { resolver })
 			const draft = instance.fill({ fields: { tenant: 'Ada Lovelace', signed: '2026-03-04' } })
 			expect(await draft.render()).toBe('Tenant Ada Lovelace signed on Mar 4, 2026.')
 			const filled = await inspectAcroFormFields((await draft.render({ layer: 'pdf' })) as Uint8Array)
 			const box = filled.find((field) => field.name === 'name')?.value
-			expect(box).toBe({ '2026-10-28': 'Mar 4, 2026', '2026-11-06': '03/04/2026', '2026-11-10': 'Ada Lovelace, 03/04/2026' }[version as string])
+			expect(box).toBe({ '2026-10-28': 'Mar 4, 2026', '2026-11-06': '03/04/2026', '2026-11-10': 'Ada Lovelace, 03/04/2026', '2026-11-12': 'Ada Lovelace, signed 03/04/2026' }[version as string])
 		})
 
 		test('the document, checklist and bundle render or assemble', async () => {
 			const byFile = new Map(stored(version))
-			const notice = load<'document'>(byFile.get('notice.json') as string)
+			const notice = await load<'document'>(byFile.get('notice.json') as string)
 			expect(await notice.prepare().render()).toContain('The office closes at noon.')
-			const checklist = load<'checklist'>(byFile.get('move-in.json') as string)
+			const checklist = await load<'checklist'>(byFile.get('move-in.json') as string)
 			expect(await checklist.fill({}).render()).toContain('Move-in checklist')
-			const packet = load<'bundle'>(byFile.get('move-in-packet.json') as string)
+			const packet = await load<'bundle'>(byFile.get('move-in-packet.json') as string)
 			expect(packet.migratedFrom).toBe(version)
 			expect(packet.contents.map((item) => item.key)).toEqual(['notice', 'move-in'])
 		})
