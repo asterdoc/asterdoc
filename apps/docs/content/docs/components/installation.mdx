@@ -53,6 +53,13 @@ generated from. Two consequences worth knowing before you start:
   The CLI does not overwrite an edited file unless you explicitly pass
   `--overwrite`, so upgrades remain a source change you control.
 
+### Build target
+
+The `invoice`, `purchase-order` and `engagement-letter` blocks load their form
+once, at the top of the module, with `await a.form.load(...)`. Top-level await
+needs an ES2022 build target. Vite 7 and Next.js build for one by default. On
+Vite 6, set `build.target` to `"es2022"` in `vite.config.ts`.
+
 ## Install PDF output
 
 The components render in the browser without anything else. To render a
